@@ -47,8 +47,10 @@ define(function() {
       events: {
         click: function suggestion_click(e) {
           if (e.button !== 0) return;
-          var range = document.createRange();  
-          range.selectNode(this);
+          var range = document.createRange();
+          for (var i = 0; i < this.childNodes.length; i++) {
+            range.selectNode(this.childNodes[i]);
+          }
           window.getSelection().addRange(range);
           if (document.execCommand('copy')) {
             window.getSelection().removeAllRanges();
