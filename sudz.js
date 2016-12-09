@@ -62,7 +62,7 @@ define(function() {
       function readLocalRecord(localOffset, nameLength, extraLength) {
         return fetchBlobBytes(blob, localOffset, 0x1E + nameLength + extraLength)
         .then(function(rawLocal) {
-          if (String.fromCharCode(rawLocal[0], rawLocal[1], rawLocal[2], rawLocal[3]) !== 'PK\3\4') {
+          if (String.fromCharCode(rawLocal[0], rawLocal[1], rawLocal[2], rawLocal[3]) !== 'PK\x03\x04') {
             return Promise.reject('not a valid sudz file: local record does not have valid PK signature');
           }
           var dv = new DataView(rawLocal.buffer, rawLocal.byteOffset, rawLocal.byteLength);
@@ -124,7 +124,7 @@ define(function() {
       var entryPromises;
       return fetchBlobBytes(blob, -22)
       .then(function(suffix) {
-        if (String.fromCharCode.apply(null, suffix.subarray(0, 8)) !== 'PK\5\6\0\0\1\0' || suffix[20] || suffix[21]) {
+        if (String.fromCharCode.apply(null, suffix.subarray(0, 8)) !== 'PK\x05\x06\x00\x00\x01\x00' || suffix[20] || suffix[21]) {
           return Promise.reject('not a valid sudz file: must be a single-part zip with no file comment');
         }
         var dv = new DataView(suffix.buffer, suffix.byteOffset, suffix.byteLength);
@@ -147,7 +147,7 @@ define(function() {
           if (pos > rawRecords.length) {
             return Promise.reject('not a valid sudz file: expecting ' + recordCount + ' records, only found data for ' + i);
           }
-          if (String.fromCharCode.apply(null, rawRecords.subarray(pos, pos + 4)) !== 'PK\1\2') {
+          if (String.fromCharCode.apply(null, rawRecords.subarray(pos, pos + 4)) !== 'PK\x01\x02') {
             return Promise.reject('not a valid sudz file: central record ' + i + ' does not have valid PK signature');
           }
           var localOffset = dv.getUint32(pos + 0x2A, true);
