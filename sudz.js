@@ -59,8 +59,8 @@ define(function() {
     fromBlob: function(blob) {
       var result = {};
       
-      function readLocalRecord(localOffset, nameLength, extraLength) {
-        return fetchBlobBytes(blob, localOffset, 0x1E + nameLength + extraLength)
+      function readLocalRecord(localOffset, fileName, extra) {
+        return fetchBlobBytes(blob, localOffset, 0x1E)
         .then(function(rawLocal) {
           if (String.fromCharCode(rawLocal[0], rawLocal[1], rawLocal[2], rawLocal[3]) !== 'PK\x03\x04') {
             return Promise.reject('not a valid sudz file: local record does not have valid PK signature');
@@ -83,25 +83,11 @@ define(function() {
           if (flags & (1 << 11) === 0) {
             return Promise.reject('not a valid sudz file: text encoding must be UTF-8');
           }
-          if (nameLength !== dv.getUint16(0x1A, true)
-              || extraLength !== dv.getUint16(0x1C, true)
-              || uncompressedSize !== dv.getUint32(0x12, true)) {
-            return Promise.reject('not a valid sudz file: local/central record data length mismatch');
-          }
+          var nameLength = dv.getUint16(0xA, true);
+          var extraLength = dv.getUint16(0xC, true);
           var data_offset = localOffset + 0x1E + nameLength + extraLength;
           var data_blob = blob.slice(data_offset, data_offset + uncompressedSize);
-          if (extraLength > 0) {
-            var extra_pos = 0xE + nameLength;
-            var extra_end = extra_pos + extraLength;
-            data_blob.extra = {};
-            do {
-              var extra_code = String.fromCharCode.apply(rawLocal[extra_pos], rawLocal[extra_pos + 1]);
-              var extra_len = dv.getUint16(extra_pos + 2, false);
-              extra_pos += 4;
-              data_blob.extra[extra_code] = rawLocal.subarray(extra_pos, extra_pos + extra_len);
-              extra_pos += extra_len;
-            } while (extra_pos < extra_end);
-          }
+          var gotExtra;
           var dosTime = dv.getUint16(0xA, true);
           var dosDate = dv.getUint16(0xC, true);
           var second = (dosTime & 31) * 2;
@@ -116,8 +102,21 @@ define(function() {
           minute = ('0' + minute).slice(-2);
           hour = ('0' + hour).slice(-2);
           data_blob.iso8601 = year + '-' + month + '-' + day + 'T' + hour + ':' + minute + ':' + second;
-          var fileName = decodeUTF8(rawLocal.subarray(0xE, 0xE + nameLength));
           result[fileName] = data_blob;
+          data_blob.extra = extra;
+          if (extraLength === 0 || Object.keys(extra).length > 0) return;
+          return fetchBlobBytes(blob, localOffset + 0xE + nameLength, extraLength)
+          .then(function(rawExtra) {
+            var pos = 0;
+            var dv = new DataView(rawExtra.buffer, rawExtra.byteOffset, rawExtra.byteLength);
+            do {
+              var extra_code = String.fromCharCode.apply(rawExtra[pos], rawExtra[pos + 1]);
+              var extra_len = dv.getUint16(pos + 2, true);
+              pos += 4;
+              extra[extra_code] = rawExtra.subarray(pos, pos + extra_len);
+              pos += extra_len;
+            } while (pos < rawExtra.length);
+          });
         });
       }
     
@@ -154,7 +153,20 @@ define(function() {
           var nameLength = dv.getUint16(pos + 0x1C, true);
           var extraLength = dv.getUint16(pos + 0x1E, true);
           var commentLength = dv.getUint16(pos + 0x20, true);
-          entryPromises[i] = readLocalRecord(localOffset, nameLength, extraLength);
+          var fileName = decodeUTF8(rawRecords.subarray(pos + 0x2E, 0x2E + nameLength));
+          var extra = {};
+          if (extraLength > 0) {
+            var extra_pos = pos + 0x2E + nameLength;
+            var extra_end = extra_pos + extraLength;
+            do {
+              var extra_code = String.fromCharCode(rawRecords[extra_pos], rawRecords[extra_pos + 1]);
+              var extra_len = dv.getUint16(extra_pos + 2, true);
+              extra_pos += 4;
+              extra[extra_code] = rawRecords.subarray(extra_pos, extra_pos + extra_len);
+              extra_pos += extra_len;
+            } while (extra_pos < extra_end);
+          }
+          entryPromises[i] = readLocalRecord(localOffset, fileName, extra);
           pos += 0x2E + nameLength + extraLength + commentLength;
         }
         return Promise.all(entryPromises);
