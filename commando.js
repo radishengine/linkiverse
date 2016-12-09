@@ -116,6 +116,7 @@ define(function() {
             detail: { upload: files[i], },
           }));
         }
+        e.preventDefault();
       },
     },
   };
