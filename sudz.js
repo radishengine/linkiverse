@@ -69,7 +69,7 @@ define(function() {
           if (dv.getUint16(0x8, true) !== 0) {
             return Promise.reject('not a valid sudz file: all files must be uncompressed');
           }
-          var uncompressedSize = dv.getUint32(0x18, true);
+          var uncompressedSize = dv.getUint32(0x16, true);
           if (uncompressedSize === 0xffffffff) {
             return Promise.reject('not a valid sudz file: 64-bit archives are not supported');
           }
