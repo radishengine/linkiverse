@@ -95,7 +95,7 @@ define(function() {
           var hour = (dosTime >> 11) & 31;
           var day = dosDate & 31;
           var month = (dosDate >> 5) & 15;
-          var year = 1980 + (dosDate >> 9) & 127;
+          var year = 1980 + ((dosDate >> 9) & 127);
           month = ('0' + month).slice(-2);
           day = ('0' + day).slice(-2);
           second = ('0' + second).slice(-2);
