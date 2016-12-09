@@ -68,7 +68,7 @@ define(function() {
         div.addHeading(heading);
       }
       for (var e in commando.events) {
-        el.addEventListener(e, commando.events[e]);
+        div.addEventListener(e, commando.events[e]);
       }
       container.appendChild(div);
       return div;
