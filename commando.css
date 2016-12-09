@@ -1,0 +1,11 @@
+
+.commando {
+  font-family: sans-serif;
+}
+
+.commando .suggestion {
+  font-family: monospace;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  background: #eee;
+}
