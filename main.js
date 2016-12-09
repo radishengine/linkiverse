@@ -12,5 +12,10 @@ require(['commando'], function(commando) {
   commando.onvar(function(varName, varValue) {
     commando.suggest('console.log(' + varName + ');');
   });
+  
+  window.uploads = [];
+  commando.addEventListener('upload', function commando_upload(e) {
+    window.uploads.push(window.uploads.last = e.detail.upload);
+  });
 
 });
