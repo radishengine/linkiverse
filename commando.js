@@ -46,7 +46,9 @@ define(function() {
       },
       events: {
         click: function suggestion_click(e) {
-          this.select();
+          var range = document.createRange();  
+          range.selectNode(this);
+          window.getSelection().addRange(range);
           document.execCommand('copy');
         },
       },
