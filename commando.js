@@ -15,11 +15,16 @@ define(function() {
   
   loadCss('commando.css');
   
-  var refKeys = Object.assign({}, window);
+  var globalNames = {};
+  var globalNameList = Object.getOwnPropertyNames(window);
+  for (var i = 0; i < globalNameList.length; i++) {
+    globalNames[globalNameList[i]] = true;
+  }
+  globalNames.hasOwnProperty = window.hasOwnProperty;
   window.setInterval(function() {
     for (var k in window) {
-      if (k in refKeys || !window.hasOwnProperty(k)) continue;
-      refKeys[k] = window[k];
+      if (globalNames.hasOwnProperty(k) || !window.hasOwnProperty(k)) continue;
+      globalNames[k] = true;
       window.dispatchEvent(new CustomEvent('newvar', {
         detail: { name:k, value:window[k], },
       }));
