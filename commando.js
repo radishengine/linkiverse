@@ -18,7 +18,7 @@ define(function() {
   var refKeys = Object.assign({}, window);
   window.setInterval(function() {
     for (var k in window) {
-      if (k in refKeys) continue;
+      if (k in refKeys || !window.hasOwnProperty(k)) continue;
       refKeys[k] = window[k];
       window.dispatchEvent(new CustomEvent('newvar', {
         detail: { name:k, value:window[k], },
