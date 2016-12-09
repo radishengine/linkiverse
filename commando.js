@@ -108,6 +108,7 @@ define(function() {
         }
       },
       drop: function commando_drop(e) {
+        e.preventDefault();
         this.dragCount = 0;
         this.classList.remove('dropping');
         var files = e.target.files || e.dataTransfer.files;
@@ -116,7 +117,6 @@ define(function() {
             detail: { upload: files[i], },
           }));
         }
-        e.preventDefault();
       },
     },
   };
