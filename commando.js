@@ -67,6 +67,9 @@ define(function() {
       if (heading) {
         div.addHeading(heading);
       }
+      for (var e in commando.events) {
+        el.addEventListener(e, commando.events[e]);
+      }
       container.appendChild(div);
       return div;
     },
@@ -87,8 +90,32 @@ define(function() {
         }
         window.addEventListener('newvar', onNewVar);
       },
+      dragCount: 0,
     },
     complexProperties: {
+    },
+    events: {
+      dragenter: function commando_dragenter(e) {
+        if (++this.dragCount === 1) {
+          this.classList.add('dropping');
+        }
+        e.preventDefault();
+      },
+      dragleave: function commando_dragleave(e) {
+        if (--this.dragCount === 0) {
+          this.classList.remove('dropping');
+        }
+      },
+      drop: function commando_drop(e) {
+        this.dragCount = 0;
+        this.classList.remove('dropping');
+        var files = e.target.files || e.dataTransfer.files;
+        for (var i = 0; i < files.length; i++) {
+          this.dispatchEvent(new CustomEvent('upload', {
+            { detail: { upload: files[i], }, },
+          }));
+        }
+      },
     },
   };
   
