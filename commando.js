@@ -46,6 +46,7 @@ define(function() {
       },
       events: {
         click: function suggestion_click(e) {
+          if (e.button !== 0) return;
           var range = document.createRange();  
           range.selectNode(this);
           window.getSelection().addRange(range);
