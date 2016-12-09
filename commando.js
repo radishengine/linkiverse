@@ -49,7 +49,9 @@ define(function() {
           var range = document.createRange();  
           range.selectNode(this);
           window.getSelection().addRange(range);
-          document.execCommand('copy');
+          if (document.execCommand('copy')) {
+            window.getSelection().removeRange(range);
+          }
         },
       },
       simpleProperties: {
