@@ -112,7 +112,7 @@ define(function() {
         var files = e.target.files || e.dataTransfer.files;
         for (var i = 0; i < files.length; i++) {
           this.dispatchEvent(new CustomEvent('upload', {
-            { detail: { upload: files[i], }, },
+            detail: { upload: files[i], },
           }));
         }
       },
