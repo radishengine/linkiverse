@@ -9,7 +9,7 @@
   margin: 0.5em 0;
   background-color: #eee;
   color: black;
-  transition: background-color 1000ms linear, color 1000ms linear;
+  transition: background-color 50ms linear, color 30ms linear;
   cursor: pointer;
 }
 
