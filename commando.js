@@ -32,6 +32,29 @@ define(function() {
   }, 250);
   
   var commando = {
+    suggestion: {
+      create: function(suggestion) {
+        var el = document.createElement('DIV');
+        el.className = 'suggestion';
+        el.innerText = suggestion;
+        Object.assign(el, commando.suggestion.simpleProperties);
+        Object.defineProperties(el, commando.suggestion.complexProperties);
+        for (var e in commando.suggestion.events) {
+          el.addEventListener(e, commando.suggestion.events[e]);
+        }
+        this.appendChild(el);
+      },
+      events: {
+        click: function suggestion_click(e) {
+          this.select();
+          document.execCommand('copy');
+        },
+      },
+      simpleProperties: {
+      },
+      complexProperties: {
+      },
+    },
     open: function open(container, heading) {
       var div = document.createElement('DIV');
       div.className = 'commando';
@@ -50,10 +73,7 @@ define(function() {
         this.appendChild(el);
       },
       suggest: function(suggestion) {
-        var el = document.createElement('DIV');
-        el.className = 'suggestion';
-        el.innerText = suggestion;
-        this.appendChild(el);
+        return commando.suggestion.create(suggestion);
       },
       onvar: function(callback) {
         function onNewVar(e) {
