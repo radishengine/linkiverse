@@ -17,14 +17,12 @@ define(function() {
   
   var refKeys = Object.assign({}, window);
   window.setInterval(function() {
-    var i = 0;
-    varloop: for (var k in window) {
-      if (!(k in refKeys)) {
-        refKeys[k] = window[k];
-        window.dispatchEvent(new CustomEvent('newvar', {
-          detail: { name:k, value:window[k], },
-        }));
-      }
+    for (var k in window) {
+      if (k in refKeys) continue;
+      refKeys[k] = window[k];
+      window.dispatchEvent(new CustomEvent('newvar', {
+        detail: { name:k, value:window[k], },
+      }));
     }
   }, 250);
   
