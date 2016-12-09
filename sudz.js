@@ -124,7 +124,7 @@ define(function() {
       var entryPromises;
       return fetchBlobBytes(blob, -22)
       .then(function(suffix) {
-        if (String.fromCharCode.apply(null, suffix.subarray(0, 8)) !== 'PK\x05\x06\x00\x00\x01\x00' || suffix[20] || suffix[21]) {
+        if (String.fromCharCode.apply(null, suffix.subarray(0, 8)) !== 'PK\x05\x06\x00\x00\x00\x00' || suffix[20] || suffix[21]) {
           return Promise.reject('not a valid sudz file: must be a single-part zip with no file comment');
         }
         var dv = new DataView(suffix.buffer, suffix.byteOffset, suffix.byteLength);
