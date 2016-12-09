@@ -15,23 +15,16 @@ define(function() {
   
   loadCss('commando.css');
   
-  var refKeys = Object.keys(window);
+  var refKeys = Object.assign({}, window);
   window.setInterval(function() {
     var i = 0;
     varloop: for (var k in window) {
-      if (!window.hasOwnProperty(k)) continue;
-      if (k !== refKeys[i]) {
-        while (i < refKeys.length) {
-          window.dispatchEvent(new CustomEvent('delvar', {
-            detail: { name:refKeys.splice(i, 1)[0], },
-          }));
-        }
-        refKeys.push(k);
+      if (!(k in refKeys)) {
+        refKeys[k] = window[k];
         window.dispatchEvent(new CustomEvent('newvar', {
           detail: { name:k, value:window[k], },
         }));
       }
-      i++;
     }
   }, 250);
   
