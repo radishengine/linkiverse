@@ -9,14 +9,12 @@
   margin: 0.5em 0;
   background-color: #eee;
   color: black;
-  transition: background-color 1000ms linear;
-  transition: color 1000ms linear;
+  transition: background-color 1000ms linear, color 1000ms linear;
   cursor: pointer;
 }
 
 .commando .suggestion:active {
   background-color: #8fa;
   color: white;
-  transition: background-color 0ms linear;
-  transition: color 0ms linear;
+  transition: background-color 0ms linear, color 0ms linear;
 }
