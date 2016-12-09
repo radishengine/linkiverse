@@ -42,7 +42,7 @@ define(function() {
         for (var e in commando.suggestion.events) {
           el.addEventListener(e, commando.suggestion.events[e]);
         }
-        this.appendChild(el);
+        return el;
       },
       events: {
         click: function suggestion_click(e) {
@@ -73,7 +73,9 @@ define(function() {
         this.appendChild(el);
       },
       suggest: function(suggestion) {
-        return commando.suggestion.create(suggestion);
+        var el = commando.suggestion.create(suggestion);
+        this.appendChild(el);
+        return el;
       },
       onvar: function(callback) {
         function onNewVar(e) {
