@@ -8,5 +8,9 @@ require(['commando'], function(commando) {
   commando = commando.open(document.body, 'Linkiverse');
   
   commando.suggest('var lc = LinkConstraint.domain("youtube.com");');
+  
+  commando.onvar(function(varName, varValue) {
+    commando.suggest('console.log(' + varName + ');');
+  });
 
 });
