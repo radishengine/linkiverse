@@ -19,6 +19,7 @@ define(function() {
   window.setInterval(function() {
     var i = 0;
     varloop: for (var k in window) {
+      if (!window.hasOwnProperty(k)) continue;
       if (k !== refKeys[i]) {
         while (i < refKeys.length) {
           window.dispatchEvent(new CustomEvent('delvar', {
