@@ -97,15 +97,19 @@ define(function() {
     },
     events: {
       dragenter: function commando_dragenter(e) {
+        e.preventDefault();
         if (++this.dragCount === 1) {
           this.classList.add('dropping');
         }
-        e.preventDefault();
       },
       dragleave: function commando_dragleave(e) {
+        e.preventDefault();
         if (--this.dragCount === 0) {
           this.classList.remove('dropping');
         }
+      },
+      dragover: function commando_dragover(e) {
+        e.preventDefault();
       },
       drop: function commando_drop(e) {
         e.preventDefault();
