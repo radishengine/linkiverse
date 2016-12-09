@@ -50,7 +50,7 @@ define(function() {
           range.selectNode(this);
           window.getSelection().addRange(range);
           if (document.execCommand('copy')) {
-            window.getSelection().removeRange(range);
+            window.getSelection().removeAllRanges();
           }
         },
       },
