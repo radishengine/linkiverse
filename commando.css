@@ -3,6 +3,10 @@
   font-family: sans-serif;
 }
 
+.commando.dropping {
+  opacity: 0.5;
+}
+
 .commando .suggestion {
   font-family: monospace;
   padding: 0.5em;
