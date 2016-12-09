@@ -1,5 +1,5 @@
 
-require(['commando'], function(commando) {
+require(['commando', 'sudz'], function(commando, sudz) {
   
   'use strict';
   
@@ -15,7 +15,16 @@ require(['commando'], function(commando) {
   
   window.uploads = [];
   commando.addEventListener('upload', function commando_upload(e) {
-    window.uploads.push(window.uploads.last = e.detail.upload);
+    var upload = e.detail.upload;
+    if (/\.sudz$/i.test(upload.name)) {
+      sudz.fromBlob(upload)
+      .then(function(sudzUpload) {
+        window.uploads.push(window.uploads.last = sudzUpload);
+      });
+    }
+    else {
+      window.uploads.push(window.uploads.last = upload);
+    }
   });
 
 });
