@@ -68,7 +68,7 @@ define(function() {
           var dv = new DataView(rawLocal.buffer, rawLocal.byteOffset, rawLocal.byteLength);
           if (dv.getUint16(0x8, true) !== 0) {
             return Promise.reject('not a valid sudz file: all files must be uncompressed');
-          }v
+          }
           var uncompressedSize = dv.getUint32(0x18, true);
           if (uncompressedSize === 0xffffffff) {
             return Promise.reject('not a valid sudz file: 64-bit archives are not supported');
