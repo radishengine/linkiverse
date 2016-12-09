@@ -83,9 +83,9 @@ define(function() {
           if (flags & (1 << 11) === 0) {
             return Promise.reject('not a valid sudz file: text encoding must be UTF-8');
           }
-          if (nameLength !== dv.getUint16(0x1A)
-              || extraLength !== dv.getUint16(0x1C)
-              || uncompressedSize !== dv.getUint32(0x12)) {
+          if (nameLength !== dv.getUint16(0x1A, true)
+              || extraLength !== dv.getUint16(0x1C, true)
+              || uncompressedSize !== dv.getUint32(0x12, true)) {
             return Promise.reject('not a valid sudz file: local/central record data length mismatch');
           }
           var data_offset = localOffset + 0x1E + nameLength + extraLength;
