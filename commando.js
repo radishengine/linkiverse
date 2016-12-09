@@ -15,6 +15,25 @@ define(function() {
   
   loadCss('commando.css');
   
+  var refKeys = Object.keys(window);
+  window.setInterval(function() {
+    var i = 0;
+    varloop: for (var k in window) {
+      if (k !== refKeys[i]) {
+        while (i < refKeys.length) {
+          window.dispatchEvent(new CustomEvent('delvar', {
+            detail: { name:refKeys.splice(i, 1)[0], },
+          }));
+        }
+        refKeys.push(k);
+        window.dispatchEvent(new CustomEvent('newvar', {
+          detail: { name:k, value:window[k], },
+        }));
+      }
+      i++;
+    }
+  }, 250);
+  
   var commando = {
     open: function open(container, heading) {
       var div = document.createElement('DIV');
@@ -38,6 +57,12 @@ define(function() {
         el.className = 'suggestion';
         el.innerText = suggestion;
         this.appendChild(el);
+      },
+      onvar: function(callback) {
+        function onNewVar(e) {
+          callback(e.detail.name, e.detail.value);
+        }
+        window.addEventListener('newvar', onNewVar);
       },
     },
     complexProperties: {
