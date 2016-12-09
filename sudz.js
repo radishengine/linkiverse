@@ -153,7 +153,7 @@ define(function() {
           var nameLength = dv.getUint16(pos + 0x1C, true);
           var extraLength = dv.getUint16(pos + 0x1E, true);
           var commentLength = dv.getUint16(pos + 0x20, true);
-          var fileName = decodeUTF8(rawRecords.subarray(pos + 0x2E, 0x2E + nameLength));
+          var fileName = decodeUTF8(rawRecords.subarray(pos + 0x2E, pos + 0x2E + nameLength));
           var extra = {};
           if (extraLength > 0) {
             var extra_pos = pos + 0x2E + nameLength;
