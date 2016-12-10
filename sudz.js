@@ -364,6 +364,11 @@ define(function() {
         return finalResult;
       });
     },
+    makeBlob: function(source) {
+      var writer = new SudzWriter();
+      writer.files['values.json'] = new Blob([JSON.stringify(source)], 'application/json');
+      return writer.createBlob();
+    },
   };
   
   return sudz;
