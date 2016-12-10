@@ -194,7 +194,7 @@ define(function() {
       suffixDV.setUint32(0x10, localRecords.byteLength, true);
       var parts = localRecords.concat(centralRecords, [suffix]);
       return Promise.all(promisedCRCs).then(function() {
-        return new Blob(parts, 'application/zip');
+        return new Blob(parts, {type:'application/zip'});
       });
     },
   };
@@ -366,7 +366,7 @@ define(function() {
     },
     makeBlob: function(source) {
       var writer = new SudzWriter();
-      writer.files['values.json'] = new Blob([JSON.stringify(source)], 'application/json');
+      writer.files['values.json'] = new Blob([JSON.stringify(source)], {type:'application/json'});
       return writer.createBlob();
     },
   };
