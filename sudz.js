@@ -137,7 +137,7 @@ define(function() {
         
       for (var i = 0; i < allPaths.length; i++) {
         var path = allPaths[i];
-        var file = this.paths[path];
+        var file = this.files[path];
         var pathBytes = encodeUTF8(path);
         
         var lastModified;
