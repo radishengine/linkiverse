@@ -68,10 +68,135 @@ define(function() {
     });
   }
   
-  var decodeUTF8;
-  var utf8dec = new TextDecoder('utf-8');
+  var promiseCRCTable = new Promise(function(resolve, reject) {
+    var CRC = new Int32Array(256);
+    for (var i = 0; i < 256; i++) {
+      CRC[i] = i;
+      for (var j = 0; j < 8; j++) {
+        CRC[i] = CRC[i] & 1 ? 0xEDB88320 ^ (CRC[i] >>> 1) : (CRC[i] >>> 1);
+      }
+    }
+    resolve(CRC);
+  });
+  
+  Blob.prototype.getCRC32 = function() {
+    var self = this;
+    return Promise.all([fetchBlobBytes(this), promiseCRCTable])
+    .then(function(values) {
+      var bytes = values[0], CRC = values[1];
+      var crc = -1;
+      for (var i = 0; i < bytes.length; i++) {
+        crc = CRC[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+      }
+      crc ^= -1;
+      self.getCRC32 = Promise.resolve(crc);
+      return crc;
+    });
+  };
+  
+  var decodeUTF8, encodeUTF8;
+  var utf8dec = new TextDecoder('utf-8'), utf8enc = new TextEncoder('utf-8');
   decodeUTF8 = function(bytes) {
     return utf8dec.decode(bytes);
+  };
+  encodeUTF8 = function(str) {
+    return utf8enc.encode(str);
+  };
+  
+  function SudzWriter() {
+    this.files = {};
+  }
+  SudzWriter.prototype = {
+    createBlob: function() {
+      var localRecords = [], centralRecords = [];
+      localRecords.byteLength = centralRecords.byteLength = 0;
+      var localTemplate = new Uint8Array(0x1E);
+      var centralTemplate = new Uint8Array(0x2E);
+      var localDV = new DataView(localTemplate.buffer, localTemplate.byteOffset, localTemplate.byteLength);
+      var centralDV = new DataView(centralTemplate.buffer, centralTemplate.byteOffset, centralTemplate.byteLength);
+      localTemplate.set([
+        0x50, 0x4B, 0x03, 0x04, // PK signature
+        0x0A, 0x00, // zip spec version
+        0x00, 0x08, // flags: utf-8
+      ]);
+      centralTemplate.set([
+        0x50, 0x4B, 0x01, 0x02, // PK signature
+        0x0A, 0x00, // zip spec version, creating system
+        0x0A, 0x00, // required zip spec version
+        0x00, 0x08, // flags: utf-8
+      ]);
+      var allPaths = Object.keys(this.files);
+      var now = new Date();
+      var promisedCRCs = [];
+      function setCRC(file, localDV, centralDV) {
+        promisedCRCs.push(file.getCRC32().then(function(crc) {
+          localDV.setInt32(0xE, crc, true);
+          centralDV.getInt32(0x10, crc, true);
+        }));
+      }
+        
+      for (var i = 0; i < allPaths.length; i++) {
+        var path = allPaths[i];
+        var file = this.paths[path];
+        var pathBytes = encodeUTF8(path);
+        
+        var lastModified;
+        if (typeof file.lastModifiedISO8601 === 'string') {
+          lastModified = new Date(file.lastModifiedISO8601);
+        }
+        else if (typeof file.lastModified === 'number') {
+          lastModified = new Date(file.lastModified);
+        }
+        else {
+          lastModified = file.lastModifiedDate || now;
+        }
+        var dosDate = lastModified.getUTCDate()
+            | ((lastModified.getUTCMonth() + 1) << 5)
+            | (((lastModified.getUTCFullYear() - 1980) & 0x31) << 9);
+        var dosTime = (lastModified.getUTCSeconds() >> 1)
+            | (lastModified.getUTCMinutes() << 5)
+            | (lastModified.getUTCHours() << 11);
+        
+        centralDV.setUint16(0x0C, dosTime, true);
+        centralDV.setUint16(0x0E, dosDate, true);
+        centralDV.setUint32(0x14, file.size, true);
+        centralDV.setUint32(0x18, file.size, true);
+        centralDV.setUint16(0x1C, pathBytes.length, true);
+        centralDV.setUint32(0x2A, localRecords.byteLength, true);
+        
+        centralRecords.push(
+          new Uint8Array(centralTemplate),
+          pathBytes);
+        centralRecords.byteLength += centralTemplate.length + pathBytes.length;
+        
+        localDV.setUint16(0x0A, dosTime, true);
+        localDV.setUint16(0x0C, dosDate, true);
+        localDV.setUint32(0x12, file.size, true);
+        localDV.setUint32(0x16, file.size, true);
+        localDV.setUint16(0x1A, pathBytes.length, true);
+        
+        localRecords.push(
+          new Uint8Array(localTemplate),
+          pathBytes,
+          file);
+        localRecords.byteLength += localTemplate.length + pathBytes.length + file.size;
+        
+        setCRC(file, localDV, centralDV);
+      }
+      var suffix = new Uint8Array(0x16);
+      suffix.set([
+        0x50, 0x4B, 0x05, 0x06, // PK signature
+      ]);
+      var suffixDV = new DataView(suffix.buffer, suffix.byteOffset, suffix.byteLength);
+      suffixDV.setUint16(0x08, allPaths.length, true);
+      suffixDV.setUint16(0x0A, allPaths.length, true);
+      suffixDV.setUint32(0x0C, centralRecords.byteLength, true);
+      suffixDV.setUint32(0x10, localRecords.byteLength, true);
+      var parts = localRecords.concat(centralRecords, [suffix]);
+      return Promise.all(promisedCRCs).then(function() {
+        return new Blob(parts, 'application/zip');
+      });
+    },
   };
   
   var sudz = {
