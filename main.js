@@ -13,6 +13,22 @@ require(['commando', 'sudz'], function(commando, sudz) {
     commando.suggest('console.log(' + varName + ');');
   });
   
+  window.sudz = sudz;
+  
+  Blob.prototype.download = function() {
+    var link = document.createElement('A');
+    link.href = URL.createObjectURL(this);
+    document.body.addChild(link);
+    link.click();
+  };
+  
+  sudz.download = function(value) {
+    return sudz.makeBlob(value)
+    .then(function(blob) {
+      blob.download();
+    });
+  };
+  
   window.uploads = [];
   commando.addEventListener('upload', function commando_upload(e) {
     var upload = e.detail.upload;
