@@ -194,7 +194,7 @@ define(function() {
         var files = {};
         var allPaths = Object.keys(result);
         for (var i = 0; i < allPaths.length; i++) {
-          var path = allPaths[i].match(/^files\/((?:[^\/]+\/)*)([^\/\.]*)(?:\.(.*))?$/);
+          var path = allPaths[i].match(/^files\/((?:[^\/]*\/)*)([^\/]*)\.([^\/\.]+)$/);
           if (!path) continue;
           var folders = path[1], fileBase = path[2], fileExtension = path[3];
           var context = files;
