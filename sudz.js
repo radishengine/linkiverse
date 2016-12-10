@@ -112,8 +112,6 @@ define(function() {
       localRecords.byteLength = centralRecords.byteLength = 0;
       var localTemplate = new Uint8Array(0x1E);
       var centralTemplate = new Uint8Array(0x2E);
-      var localDV = new DataView(localTemplate.buffer, localTemplate.byteOffset, localTemplate.byteLength);
-      var centralDV = new DataView(centralTemplate.buffer, centralTemplate.byteOffset, centralTemplate.byteLength);
       localTemplate.set([
         0x50, 0x4B, 0x03, 0x04, // PK signature
         0x0A, 0x00, // zip spec version
@@ -157,6 +155,12 @@ define(function() {
             | (lastModified.getUTCMinutes() << 5)
             | (lastModified.getUTCHours() << 11);
         
+        var local = new Uint8Array(localTemplate);
+        var central = new Uint8Array(centralTemplate);
+        
+        var localDV = new DataView(local.buffer, local.byteOffset, local.byteLength);
+        var centralDV = new DataView(central.buffer, central.byteOffset, central.byteLength);
+        
         centralDV.setUint16(0x0C, dosTime, true);
         centralDV.setUint16(0x0E, dosDate, true);
         centralDV.setUint32(0x14, file.size, true);
@@ -164,10 +168,8 @@ define(function() {
         centralDV.setUint16(0x1C, pathBytes.length, true);
         centralDV.setUint32(0x2A, localRecords.byteLength, true);
         
-        centralRecords.push(
-          new Uint8Array(centralTemplate),
-          pathBytes);
-        centralRecords.byteLength += centralTemplate.length + pathBytes.length;
+        centralRecords.push(central, pathBytes);
+        centralRecords.byteLength += central.length + pathBytes.length;
         
         localDV.setUint16(0x0A, dosTime, true);
         localDV.setUint16(0x0C, dosDate, true);
@@ -175,11 +177,8 @@ define(function() {
         localDV.setUint32(0x16, file.size, true);
         localDV.setUint16(0x1A, pathBytes.length, true);
         
-        localRecords.push(
-          new Uint8Array(localTemplate),
-          pathBytes,
-          file);
-        localRecords.byteLength += localTemplate.length + pathBytes.length + file.size;
+        localRecords.push(local, pathBytes, file);
+        localRecords.byteLength += local.length + pathBytes.length + file.size;
         
         setCRC(file, localDV, centralDV);
       }
