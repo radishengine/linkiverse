@@ -49,6 +49,25 @@ define(function() {
     });
   }
   
+  function fetchBlobText(blob) {
+    return new Promise(function(resolve, reject) {
+      var fr = new FileReader();
+      function onError(e) {
+        fr.removeEventListener('error', onError);
+        fr.removeEventListener('loadend', onLoadEnd);
+        reject(e.message);
+      }
+      function onLoadEnd(e) {
+        fr.removeEventListener('error', onError);
+        fr.removeEventListener('loadend', onLoadEnd);
+        resolve(new Uint8Array(this.result));
+      }
+      fr.addEventListener('error', onError);
+      fr.addEventListener('loadend', onLoadEnd);
+      fr.readAsText(blob);
+    });
+  }
+  
   var decodeUTF8;
   var utf8dec = new TextDecoder('utf-8');
   decodeUTF8 = function(bytes) {
@@ -172,7 +191,51 @@ define(function() {
         return Promise.all(entryPromises);
       })
       .then(function() {
-        return result;
+        var files = {};
+        var allPaths = Object.keys(result);
+        for (var i = 0; i < allPaths.length; i++) {
+          var path = allPaths[i].match(/^files\/((?:[^\/]+\/)*)([^\/\.]*)(?:\.(.*))?$/);
+          if (!path) continue;
+          var folders = path[1], fileBase = path[2], fileExtension = path[3];
+          var context = files;
+          if (folders) {
+            folders = folders.substring(0, folders.length - 1).split(/\//g);
+            for (var j = 0; j < folders.length; j++) {
+              var folderName = decodeURIComponent(folders[j]);
+              if (Object.prototype.hasOwnProperty.call(context, folderName)) {
+                context = context[folderName];
+              }
+              else {
+                context = context[folderName] = {};
+              }
+            }
+          }
+          fileBase = decodeURIComponent(fileBase);
+          context[fileBase] = result[path];
+        }
+        var finalResult = Promise.resolve(files);
+        var valuesJsonBlob = result['values.json'];
+        if (valuesJsonBlob) {
+          finalResult = Promise.all([finalResult, fetchBlobText(valuesJsonBlob)])
+          .then(function(values) {
+            var files = values[0], valuesJsonText = values[1];
+            function merge(target, source) {
+              var keys = Object.keys(source);
+              for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                var value = source[key];
+                if (typeof value === 'object' && value !== null && Object.prototype.hasOwnProperty.call(target, key)) {
+                  merge(target[key], value);
+                }
+                else {
+                  target[key] = value;
+                }
+              }
+            }
+            return merge(files, JSON.parse(valuesJsonText));
+          });
+        }
+        return finalResult;
       });
     },
   };
