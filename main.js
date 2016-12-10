@@ -18,7 +18,7 @@ require(['commando', 'sudz'], function(commando, sudz) {
   Blob.prototype.download = function() {
     var link = document.createElement('A');
     link.href = URL.createObjectURL(this);
-    document.body.addChild(link);
+    document.body.appendChild(link);
     link.click();
   };
   
