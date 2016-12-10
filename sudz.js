@@ -102,8 +102,8 @@ define(function() {
           if (flags & (1 << 11) === 0) {
             return Promise.reject('not a valid sudz file: text encoding must be UTF-8');
           }
-          var nameLength = dv.getUint16(0xA, true);
-          var extraLength = dv.getUint16(0xC, true);
+          var nameLength = dv.getUint16(0x1A, true);
+          var extraLength = dv.getUint16(0x1C, true);
           var data_offset = localOffset + 0x1E + nameLength + extraLength;
           var data_blob = blob.slice(data_offset, data_offset + uncompressedSize);
           var gotExtra;
