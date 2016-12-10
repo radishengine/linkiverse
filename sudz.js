@@ -60,7 +60,7 @@ define(function() {
       function onLoadEnd(e) {
         fr.removeEventListener('error', onError);
         fr.removeEventListener('loadend', onLoadEnd);
-        resolve(new Uint8Array(this.result));
+        resolve(this.result);
       }
       fr.addEventListener('error', onError);
       fr.addEventListener('loadend', onLoadEnd);
