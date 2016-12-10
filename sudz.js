@@ -232,7 +232,8 @@ define(function() {
                 }
               }
             }
-            return merge(files, JSON.parse(valuesJsonText));
+            merge(files, JSON.parse(valuesJsonText));
+            return files;
           });
         }
         return finalResult;
