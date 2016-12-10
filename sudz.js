@@ -129,7 +129,7 @@ define(function() {
       function setCRC(file, localDV, centralDV) {
         promisedCRCs.push(file.getCRC32().then(function(crc) {
           localDV.setInt32(0xE, crc, true);
-          centralDV.getInt32(0x10, crc, true);
+          centralDV.setInt32(0x10, crc, true);
         }));
       }
         
