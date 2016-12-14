@@ -10,6 +10,13 @@ define(function() {
 
   'use strict';
   
+  // percent-encode same as encodeURIComponent except add . * and leave space
+  function encodePathComponent(str) {
+    return str.replace(/[^ ]+/g, encodeURIComponent).replace(/[\.\*]/g, function(c) {
+      return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
+    });
+  }
+  
   function fetchBlobBytes(blob, offset, length) {
     if (arguments.length > 1) {
       if (offset < 0) {
