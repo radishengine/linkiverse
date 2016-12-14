@@ -365,7 +365,7 @@ define(function() {
     },
     makeBlob: function(source) {
       var writer = new SudzWriter();
-      writer.files['values.json'] = new Blob([JSON.stringify(source)], {type:'application/json'});
+      writer.files['data.json'] = new Blob([JSON.stringify(source)], {type:'application/json'});
       return writer.createBlob();
     },
   };
