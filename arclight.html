@@ -23,7 +23,7 @@
     if (typeof xml === 'string') {
       xml = new DOMParser().parseFromString(xml, 'application/xml');
     }
-    var arr = [];
+    var arr = {};
     for (var node = xml.documentElement.firstChild; node != null; node = node.nextSibling) {
       if (node.nodeName !== 'file') continue;
       var obj = {source: node.getAttribute('source')};
@@ -31,7 +31,7 @@
         if (node2.nodeType !== 1) continue;
         obj[node2.nodeName] = node2.textContent;
       }
-      arr.push(obj);
+      arr[node.getAttribute('name')] = obj;
     }
     return arr;
   }
