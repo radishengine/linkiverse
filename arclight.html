@@ -85,7 +85,7 @@ root.getChildItems()
 .then(function(childItems) {
   var itemList = document.getElementById('item-list-container');
   var baseIndex = 0;
-  itemList.style.height = (itemList.length * 2) + 'ex';
+  itemList.style.height = (childItems.length * 2) + 'ex';
   for (var i = 0; i < childItems.length; i++) {
     var item = childItems[i];
     var itemEl = document.createElement('DIV');
