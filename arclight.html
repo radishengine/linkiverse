@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>ArcLight</title>
   <script type='text/javascript'>
     
 function IAItem(identifier) {
@@ -82,13 +83,48 @@ var root = new IAItem('adventuregamestudio');
     
 root.getChildItems()
 .then(function(childItems) {
-  childItems.forEach(function(item) {
+  var itemList = document.getElementById('item-list-container');
+  var baseIndex = 0;
+  itemList.style.height = (itemList.length * 2) + 'ex';
+  for (var i = 0; i < childItems.length; i++) {
+    var item = childItems[i];
+    var itemEl = document.createElement('DIV');
+    itemEl.className = 'item';
+    itemEl.innerText = item.identifier;
+    itemEl.style.top = ((baseIndex + i) * 2) + 'ex'; 
+    itemList.appendChild(itemEl);
     console.log(item.identifier);
-  });
+  }
 });
   
   </script>
+  <style type='text/css'>
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    #item-list {
+      overflow-y: auto;
+      height: 100%;
+      border: 1px solid grey;
+    }
+    #item-list-container {
+      background: black;
+    }
+    .item {
+      height: 2ex;
+      background: white;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      position: absolute;
+    }
+  </style>
 </head>
 <body>
+  <div id='item-list'>
+    <div id='item-list-container'>
+    </div>
+  </div>
 </body>
 </html>
