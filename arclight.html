@@ -28,6 +28,7 @@
       if (node.nodeName !== 'file') continue;
       var obj = {source: node.getAttribute('source')};
       for (var node2 = node.firstChild; node2 != null; node2 = node2.nextSibling) {
+        if (node2.nodeType !== 1) continue;
         obj[node2.nodeName] = node2.textContent;
       }
       arr.push(obj);
