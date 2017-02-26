@@ -2,56 +2,90 @@
 <html>
 <head>
   <script type='text/javascript'>
-  
-  function pullFile(item_id, filename) {
-    return fetch('//cors.archive.org/cors/' + item_id + '/' + filename);
-  }
-  
-  function readItemXML(xml) {
-    if (typeof xml === 'string') {
-      xml = new DOMParser().parseFromString(xml, 'application/xml');
-    }
-    var obj = {};
-    for (var node = xml.documentElement.firstChild; node != null; node = node.nextSibling) {
-      if (node.nodeType !== 1) continue;
-      obj[node.nodeName] = node.textContent;
-    }
-    return obj;
-  }
-  
-  function readFilesXML(xml) {
-    if (typeof xml === 'string') {
-      xml = new DOMParser().parseFromString(xml, 'application/xml');
-    }
-    var arr = {};
-    for (var node = xml.documentElement.firstChild; node != null; node = node.nextSibling) {
-      if (node.nodeName !== 'file') continue;
-      var obj = {source: node.getAttribute('source')};
-      for (var node2 = node.firstChild; node2 != null; node2 = node2.nextSibling) {
-        if (node2.nodeType !== 1) continue;
-        obj[node2.nodeName] = node2.textContent;
+    
+function IAItem(identifier) {
+  this.identifier = identifier;
+}
+
+IAItem.prototype = {
+  getFileRequestUrl: function(filename) {
+    return '//cors.archive.org/cors/' + this.identifier + '/' + filename;
+  },
+  pullXml: function(filename) {
+    return fetch(this.getFileRequestUrl(filename))
+    .then(function(request) {
+      return request.text();
+    })
+    .then(function(text) {
+      return new DOMParser().parseFromString(text);
+    });
+  },
+  getMetadata: function() {
+    return this.pullXml(this.identifier + '_meta.xml')
+    .then(function(xml) {
+      var obj = {};
+      for (var node = xml.documentElement.firstChild; node != null; node = node.nextSibling) {
+        if (node.nodeType !== 1) continue;
+        obj[node.nodeName] = node.textContent;
       }
-      arr[node.getAttribute('name')] = obj;
+      return Object.freeze(obj);
+    });
+  },
+  getFiles: function() {
+    return this.pullXml(this.identifier + '_files.xml')
+    .then(function(xml) {
+      var arr = {};
+      for (var node = xml.documentElement.firstChild; node != null; node = node.nextSibling) {
+        if (node.nodeName !== 'file') continue;
+        var obj = {source: node.getAttribute('source')};
+        for (var node2 = node.firstChild; node2 != null; node2 = node2.nextSibling) {
+          if (node2.nodeType !== 1) continue;
+          obj[node2.nodeName] = node2.textContent;
+        }
+        arr[node.getAttribute('name')] = obj;
+      }
+      return arr;
+    });
+  },
+  getChildItems: function() {
+    var callbackNumber = 0;
+    var callbackName;
+    while (typeof window[callbackName = 'cb'+callbackNumber] !== 'undefined') {
+      callbackNumber++;
     }
-    return arr;
-  }
-  
-  function pullItem(item_id) {
-    var p_item = pullFile(item_id, item_id + '_meta.xml')
-      .then(function(response) { return response.text(); })
-      .then(readItemXML);
-    var p_files = pullFile(item_id, item_id + '_files.xml')
-      .then(function(response) { return response.text(); })
-      .then(readFilesXML);
-    return Promise.all([p_item, p_files])
-      .then(function(values) {
-        var item = values[0], files = values[1];
-        console.log(item);
-        console.log(files);
-      });
-  }
-  
-  pullItem('adventuregamestudio');
+    return new Promise(function(resolve, reject) {
+      var script = document.createElement('SCRIPT');
+      window[callbackName] = function(data) {
+        resolve(Object.freeze(data.response.docs.map(function(doc) {
+          return new IAItem(doc.identifier);
+        })));
+        delete window[callbackName];
+        document.head.removeChild(script);
+      };
+      var url = '//archive.org/advancedsearch.php?'
+        + 'q=collection:' + this.identifier
+        + '&fl[]=identifier'
+        + '&sort[]=publicdate+asc'
+        + '&rows=50'
+        + '&page=1'
+        + '&output=json'
+        + '&callback=' + callbackName
+        + '&save=yes';
+      script.type = 'text/javascript';
+      script.src = url;
+      document.head.appendChild(script);
+    });
+  },
+};
+
+var root = new IAItem('adventuregamestudio');
+    
+root.getChildItems()
+.then(function(childItems) {
+  childItems.forEach(function(item) {
+    console.log(item.identifier);
+  });
+});
   
   </script>
 </head>
