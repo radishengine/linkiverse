@@ -48,13 +48,22 @@ IAItem.prototype = {
     });
   },
   getChildItems: function() {
-    var callbackNumber = 0;
-    var callbackName;
-    while (typeof window[callbackName = 'cb'+callbackNumber] !== 'undefined') {
-      callbackNumber++;
-    }
+    var url = '//archive.org/advancedsearch.php?'
+      + 'q=collection:' + this.identifier
+      + '&fl[]=identifier'
+      + '&sort[]=publicdate+asc'
+      + '&rows=50'
+      + '&page=1'
+      + '&output=json'
+      + '&callback=' + callbackName
+      + '&save=yes';
     return new Promise(function(resolve, reject) {
       var script = document.createElement('SCRIPT');
+      var callbackNumber = 0;
+      var callbackName;
+      while (typeof window[callbackName = 'cb'+callbackNumber] !== 'undefined') {
+        callbackNumber++;
+      }
       window[callbackName] = function(data) {
         resolve(Object.freeze(data.response.docs.map(function(doc) {
           return new IAItem(doc.identifier);
@@ -62,15 +71,6 @@ IAItem.prototype = {
         delete window[callbackName];
         document.head.removeChild(script);
       };
-      var url = '//archive.org/advancedsearch.php?'
-        + 'q=collection:' + this.identifier
-        + '&fl[]=identifier'
-        + '&sort[]=publicdate+asc'
-        + '&rows=50'
-        + '&page=1'
-        + '&output=json'
-        + '&callback=' + callbackName
-        + '&save=yes';
       script.type = 'text/javascript';
       script.src = url;
       document.head.appendChild(script);
