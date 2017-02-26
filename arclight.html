@@ -48,15 +48,7 @@ IAItem.prototype = {
     });
   },
   getChildItems: function() {
-    var url = '//archive.org/advancedsearch.php?'
-      + 'q=collection:' + this.identifier
-      + '&fl[]=identifier'
-      + '&sort[]=publicdate+asc'
-      + '&rows=50'
-      + '&page=1'
-      + '&output=json'
-      + '&callback=' + callbackName
-      + '&save=yes';
+    var self = this;
     return new Promise(function(resolve, reject) {
       var script = document.createElement('SCRIPT');
       var callbackNumber = 0;
@@ -72,7 +64,15 @@ IAItem.prototype = {
         document.head.removeChild(script);
       };
       script.type = 'text/javascript';
-      script.src = url;
+      script.src = '//archive.org/advancedsearch.php'
+        + '?q=collection:' + self.identifier
+        + '&fl[]=identifier'
+        + '&sort[]=publicdate+asc'
+        + '&rows=50'
+        + '&page=1'
+        + '&output=json'
+        + '&callback=' + callbackName
+        + '&save=yes';
       document.head.appendChild(script);
     });
   },
