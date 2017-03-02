@@ -1,4 +1,4 @@
-require(['z/inflate'], function(inflate) {
+require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
 
   'use strict';
   
@@ -312,7 +312,17 @@ require(['z/inflate'], function(inflate) {
           });
         })
         .then(function(files) {
-          console.log(files);
+          console.dir(files);
+          var mainData = files['ac2game.dta'];
+          if (!mainData) {
+            return Promise.reject('ac2game.dta not found!');
+          }
+          return readBlob(mainData);
+        })
+        .then(function(gameData) {
+          var gameView = new GameView(gameData, 0, gameData.byteLength);
+          console.dir(gameView);
+          windo1.gameView = gameView;
         });
       });
     });
