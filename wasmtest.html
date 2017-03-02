@@ -39,14 +39,15 @@ else {
         0x0f, // return
         0x0b, // end of body marker
   ])
-  .then(function(module) {
-    console.log(module);
-    console.log(module.test);
-    console.log(module.test());
-  },
-  function(e) {
-    console.error(e);
-  });
+  .then(
+    function(module) {
+      console.log(module);
+      console.log(module.test);
+      console.log(module.test());
+    },
+    function(e) {
+      console.error(e);
+    });
 }
 
 </script>
