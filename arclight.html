@@ -13,12 +13,12 @@ IAItem.prototype = {
     return '//cors.archive.org/cors/' + this.identifier + '/' + filename;
   },
   pullXml: function(filename) {
-    return fetch(this.getFileRequestUrl(filename))
+    return fetch(this.getFileRequestUrl(filename), {cache:'force-cache'})
     .then(function(request) {
       return request.text();
     })
     .then(function(text) {
-      return new DOMParser().parseFromString(text);
+      return new DOMParser().parseFromString(text, 'application/xml');
     });
   },
   getMetadata: function() {
@@ -136,10 +136,10 @@ root.getChildItems()
       position: absolute;
       width: 100%;
       padding-left: 0.5em;
-      cursor: default;
+      cursor: hand;
     }
     .item:hover {
-      background: #ccc;
+      background: #eee;
     }
   </style>
 </head>
