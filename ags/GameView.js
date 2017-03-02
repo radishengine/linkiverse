@@ -25,10 +25,10 @@ define(function() {
       return this.dv.getUint32(30, true);
     },
     get engineVersion() {
-      return (this.formatVersion < 12) ? null : throw new Error('NYI'); // lenPrefixString(this.bytes, 34);
+      return (this.formatVersion < 12) ? null : (function(){ throw new Error('NYI'); })(); // lenPrefixString(this.bytes, 34);
     },
     get offsetof_header() {
-      return (this.formatVersion < 12) ? 34 : throw new Error('NYI'); // 38 + this.getUint32(34, true);
+      return (this.formatVersion < 12) ? 34 : (function(){ throw new Error('NYI'); })(); // 38 + this.getUint32(34, true);
     },
     get header() {
       var header, offset = this.offsetof_header;
