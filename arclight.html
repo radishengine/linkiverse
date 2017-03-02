@@ -118,7 +118,7 @@ root.getChildItems()
       overflow: hidden;
     }
     .item {
-      box-shadow: #888 0 0 3px;
+      box-shadow: rgba(0,0,0,0.5) 0 0 3px;
       height: 4ex;
       line-height: 4ex;
       background: white;
@@ -129,6 +129,9 @@ root.getChildItems()
       width: 100%;
       padding-left: 0.5em;
       cursor: default;
+    }
+    .item:hover {
+      background: #888;
     }
   </style>
 </head>
