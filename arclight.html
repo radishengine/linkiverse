@@ -111,7 +111,7 @@ ZipRecord.prototype = {
       var compressedSize = dv.getUint32(18, true);
       var compressedOffset = self.localOffset + 30 + dv.getUint16(26, true) + dv.getUint16(28, true);
       return self.zipBlob.slice(compressedOffset, compressedOffset + compressedSize);
-    }));
+    });
   },
 };
 ZipRecord.getAll = function(zipBlob) {
