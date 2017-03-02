@@ -45,8 +45,8 @@ else {
       console.log(module);
       var instance = new WebAssembly.Instance(module);
       console.log(instance);
-      console.log(instance.test);
-      console.log(instance.test());
+      console.log(instance.exports.test);
+      console.log(instance.exports.test());
     },
     function(e) {
       console.error(e);
