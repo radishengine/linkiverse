@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type='text/javascript'>
+
+if (typeof window.WebAssembly === 'undefined') {
+  console.error('WebAssembly not present/enabled');
+}
+else {
+  WebAssembly.compile(new Uint8Array([
+    0, 'a'.charCodeAt(0), 's'.charCodeAt(0), 'm'.charCodeAt(0), // magic number
+    1, // section: function signature declarations
+      5, // section size in bytes
+      1, // number of function signatures
+      // function signature 0:
+        0x60, // 'func'
+        0, // parameter count
+        1, // return count
+        0x7f, // 'i32'
+    3, // section: function declarations
+      2 // section size in bytes
+      1, // declaration count
+      0, // function signature 0
+    7, // section: exports
+      8, // section size in bytes
+      1, // number of exports
+      // export 0:
+        4, // name length
+        't'.charCodeAt(0), 'e'.charCodeAt(0), 's'.charCodeAt(0), 't'.charCodeAt(0),
+        0, // kind: Function
+        0, // function index 0
+    10, // section: code
+      3, // section size in bytes
+      1, // function body count
+      // function body 0:
+        10, // function body size in bytes
+        0, // number of locals
+        0x41, 42, // i32.const: 42
+        0x0f, // return
+        0x0b, // end of body marker
+  ])
+  .then(function(module) {
+    console.log(module);
+    console.log(module.test);
+    console.log(module.test());
+  },
+  function(e) {
+    console.error(e);
+  });
+}
+
+</script>
+</head>
+<body>
+</body>
+</html>
