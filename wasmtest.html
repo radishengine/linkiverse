@@ -43,8 +43,10 @@ else {
   .then(
     function(module) {
       console.log(module);
-      console.log(module.test);
-      console.log(module.test());
+      var instance = new WebAssembly.Instance(module);
+      console.log(instance);
+      console.log(instance.test);
+      console.log(instance.test());
     },
     function(e) {
       console.error(e);
