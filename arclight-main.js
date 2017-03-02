@@ -72,7 +72,7 @@ require(['z/inflate'], function(inflate) {
         script.src = '//archive.org/advancedsearch.php'
           + '?q=collection:' + self.identifier
           + '&fl[]=identifier'
-          + '&sort[]=date+asc'
+          + '&sort[]=publicdate+asc'
           + '&rows=50'
           + '&page=1'
           + '&output=json'
