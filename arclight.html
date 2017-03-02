@@ -156,12 +156,11 @@ ZipRecord.getAll = function(zipBlob) {
         return Promise.reject('invalid zip file');
       }
     } while (1);
-    dv = new DataView(suffix.buffer, suffix.byteOffset + i, 20);
-    if (dv.getUint16(4, true) !== 0) {
+    if (dv.getUint16(i + 4, true) !== 0) {
       return Promise.reject('multipart zip not supported');
     }
-    var centralOffset = dv.getUint32(16, true);
-    var centralLength = dv.getUint32(12, true);
+    var centralOffset = dv.getUint32(i + 16, true);
+    var centralLength = dv.getUint32(i + 12, true);
     if (centralOffset >= suffixOffset) {
       return new Uint8Array(suffix.buffer, suffix.byteOffset + centralOffset - suffixOffset, centralLength);
     }
