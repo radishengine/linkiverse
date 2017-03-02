@@ -127,7 +127,7 @@ require(['z/inflate'], function(inflate) {
               var output = new Uint8Array(uncompressedSize);
               inflater.next_in = new Uint8Array(this.buffer);
               inflater.next_out = output;
-              if (inflater.inflate('flush') !== 'done') {
+              if (inflater.inflate('finish') !== 'done') {
                 reject('inflation failed');
                 return;
               }
