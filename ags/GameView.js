@@ -66,7 +66,7 @@ define(function() {
         pos += VintageGUI.byteLength;
       }
       list.afterPos = pos;
-      Object.defineProperty(this, 'vintageGUIs', list);
+      Object.defineProperty(this, 'vintageGUIs', {value:list});
       return list;
     },
     get activeGUICount() {
