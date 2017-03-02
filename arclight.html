@@ -81,6 +81,13 @@ IAItem.prototype = {
 
 var root = new IAItem('adventuregamestudio');
     
+function clickItem() {
+  this.item.getFiles()
+  .then(function(files) {
+    console.log(files);
+  });
+}
+    
 root.getChildItems()
 .then(function(childItems) {
   var itemList = document.getElementById('item-list-container');
@@ -89,11 +96,12 @@ root.getChildItems()
   for (var i = 0; i < childItems.length; i++) {
     var item = childItems[i];
     var itemEl = document.createElement('DIV');
+    itemEl.item = item;
+    itemEl.addEventListener('click', clickItem);
     itemEl.className = 'item';
     itemEl.innerText = item.identifier;
     itemEl.style.top = ((baseIndex + i) * 4) + 'ex'; 
     itemList.appendChild(itemEl);
-    console.log(item.identifier);
   }
 });
   
