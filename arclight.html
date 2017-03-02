@@ -180,10 +180,14 @@ ZipRecord.getAll = function(zipBlob) {
       if (dv.getUint32(pos, true) !== 0x02014b50) {
         return Promise.reject('invalid zip file');
       }
-      var nameBytes = new Uint8Array(central.buffer, central.byteOffset + 46, dv.getUint16(pos + 28, true));
+      var nameBytes = new Uint8Array(central.buffer, central.byteOffset + pos + 46, dv.getUint16(pos + 28, true));
       var name = String.fromCharCode.apply(null, nameBytes); // TODO: support utf-8 encoded
       records[name] = new ZipRecord(zipBlob, dv.getUint32(42, true));
-      pos += 46 + dv.getUint32(20, true) + nameBytes.length + dv.getUint16(pos + 30, true) + dv.getUint16(32, true);
+      pos += 46 +
+        dv.getUint32(pos + 20, true) +
+        nameBytes.length +
+        dv.getUint16(pos + 30, true) +
+        dv.getUint16(pos + 32, true);
     }
     return records;
   });
