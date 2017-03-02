@@ -21,6 +21,12 @@ IAItem.prototype = {
       return new DOMParser().parseFromString(text, 'application/xml');
     });
   },
+  pullBlob: function(filename) {
+    return fetch(this.getFileRequestUrl(filename), {cache:'force-cache'})
+    .then(function(request) {
+      return request.blob();
+    });
+  },
   getMetadata: function() {
     return this.pullXml(this.identifier + '_meta.xml')
     .then(function(xml) {
@@ -82,9 +88,25 @@ IAItem.prototype = {
 var root = new IAItem('adventuregamestudio');
     
 function clickItem() {
-  this.item.getFiles()
-  .then(function(files) {
-    console.log(files);
+  var item = this.item;
+  item.getFiles().then(function(files) {
+    var filenames = Object.keys(files);
+    var zips = [];
+    for (var i = 0; i < filenames.length; i++) {
+      if (/\.zip$/i.test(filenames[i])) {
+        zips.push(filenames[i]);
+      }
+    }
+    if (zips.length === 0) {
+      return Promise.reject('no zip found');
+    }
+    if (zips.length > 1) {
+      return Promise.reject('more than one zip found');
+    }
+    return item.pullBlob(zips[0]);
+  })
+  .then(function(blob) {
+    console.log(blob.size);
   });
 }
     
