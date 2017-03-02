@@ -70,7 +70,7 @@ require(['z/inflate'], function(inflate) {
         };
         script.type = 'text/javascript';
         script.src = '//archive.org/advancedsearch.php'
-          + '?q=collection:' + self.identifier
+          + '?q=collection:' + self.identifier + '+-subject:"game+creation+software"'
           + '&fl[]=identifier'
           + '&sort[]=publicdate+asc'
           + '&rows=50'
