@@ -215,6 +215,56 @@ require(['z/inflate'], function(inflate) {
       return records;
     });
   }
+  
+  function readBlob(blob) {
+    return new Promise(function(resolve, reject) {
+      var fr = new FileReader();
+      fr.addEventListener('load', function() {
+        resolve(this.result);
+      });
+      fr.readAsArrayBuffer(blob);
+    });
+  }
+  
+  function loadGame(mainBlob, getRelativeBlob) {
+    function onPrefix(prefix) {
+      prefix = new Uint8Array(prefix);
+      if (String.fromCharCode(prefix[0], prefix[1], prefix[2], prefix[3]) !== 'CLIB') {
+        return Promise.reject('resource package not found');
+      }
+      var version = prefix[5];
+      switch (version) {
+        default: return Promise.reject('unsupported format version: ' + version);
+        case 6:
+          return readBlob(mainBlob.slice(8, 10))
+          .then(function(count) {
+            count = new DataView(count).getUint16(0, true);
+            var offset = 23 + count * (13 + 4 + 2);
+            return readBlob(mainBlob.slice(23, offset))
+            .then(function(fileData) {
+              var files = {};
+              var names = new Uint8Array(fileData, 0, 13 * count);
+              var lengths = new DataView(fileData, names.byteLength, 4 * count);
+              var flags = new DataView(fileData, names.byteLength + lengths.byteLength, 2 * count);
+              for (var i = 0; i < count; i++) {
+                var name = String.fromCharCode.apply(null, names.subarray(13 * i, 13 * (i + 1))).replace(/\0.*/, '');
+                var length = lengths.getUint32(i * 4, true);
+                var flags = flags.getUint16(i * 2, true);
+                files[name] = mainBlob.slice(offset, length);
+                offset += length;
+              }
+              return files;
+            });
+          });
+      }
+    }
+    return readBlob(mainBlob.slice(mainBlob.size - 16)).then(function(suffix) {
+      if (String.fromCharCode.apply(null, new Uint8Array(suffix, 4, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
+        mainBlob = mainBlob.slice(new DataView(suffix, 0, 4).readUint32(0, true), mainBlob.size - 16);
+      }
+      return readBlob(mainBlob.slice(0, 6)).then(onPrefix);
+    });
+  }
 
   function clickItem() {
     var item = this.item;
@@ -254,11 +304,16 @@ require(['z/inflate'], function(inflate) {
         console.log(gameFiles[0]);
         var gameFile = zipRecords[gameFiles[0]];
         gameFile.getCompressedBlob().then(function(compressed) {
-          console.log(compressed.size);
           return gameFile.getUncompressedBlob();
         })
         .then(function(uncompressed) {
-          console.log(uncompressed.size);
+          var folder = gameFiles.replace(/\/[^\/]*$/, '/');
+          return loadGame(uncompressed, function getRelativeBlob(path) {
+            return gameFiles[folder + path];
+          });
+        })
+        .then(function(files) {
+          console.log(files);
         });
       });
     });
