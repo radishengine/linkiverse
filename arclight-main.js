@@ -249,7 +249,6 @@ require(['z/inflate'], function(inflate) {
               for (var i = 0; i < count; i++) {
                 var name = String.fromCharCode.apply(null, names.subarray(13 * i, 13 * (i + 1))).replace(/\0.*/, '');
                 var length = lengths.getUint32(i * 4, true);
-                var flags = flags.getUint16(i * 2, true);
                 files[name] = mainBlob.slice(offset, offset + length);
                 offset += length;
               }
