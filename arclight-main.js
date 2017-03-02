@@ -111,6 +111,32 @@ require(['z/inflate'], function(inflate) {
         return self.zipBlob.slice(compressedOffset, compressedOffset + compressedSize);
       });
     },
+    getUncompressedBlob: function() {
+      return this._uncompressedBlob = this._uncompressedBlob
+      || Promise.all([this.getLocalDataView(), this.getCompressedBlob()])
+        .then(function(values) {
+          var dv = values[0], compressedBlob = values[1];
+          var compressMode = dv.getUint16(8, true);
+          if (compressMode === 0) return compressedBlob; // uncompressed
+          if (compressMode !== 8) return Promise.reject('unsupported compression method');
+          var uncompressedSize = dv.getUint32(22, true);
+          return new Promise(function(resolve, reject) {
+            var fr = new FileReader();
+            fr.addEventListener('load', function() {
+              var inflater = new inflate.State(-15);
+              var output = new Uint8Array(uncompressedSize);
+              inflater.next_in = new Uint8Array(this.buffer);
+              inflater.next_out = output;
+              if (inflater.inflate() !== 'done') {
+                reject('inflation failed');
+                return;
+              }
+              resolve(new Blob([output]));
+            });
+            fr.readAsArrayBuffer(compressedBlob);
+          });
+        });
+    },
   };
   ZipRecord.getAll = function(zipBlob) {
     var suffixOffset = Math.max(0, zipBlob.size - (0xffff + 22 + 3));
@@ -219,7 +245,21 @@ require(['z/inflate'], function(inflate) {
             gameFiles.push(filenames[i]);
           }
         }
-        console.log(gameFiles);
+        if (gameFiles.length === 0) {
+          return Promise.reject('no game file found');
+        }
+        if (gameFiles.length > 1) {
+          console.warn('more than one game file found');
+        }
+        console.log(gameFiles[0]);
+        var gameFile = zipRecords[gameFiles[0]];
+        gameFile.getCompressedBlob().then(function(compressed) {
+          console.log(compressed.size);
+          return gameFile.getUncompressedBlob();
+        })
+        .then(function(uncompressed) {
+          console.log(uncompressed.size);
+        });
       });
     });
   }
