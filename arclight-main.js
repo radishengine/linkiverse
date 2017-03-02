@@ -322,7 +322,7 @@ require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
         .then(function(gameData) {
           var gameView = new GameView(gameData, 0, gameData.byteLength);
           console.dir(gameView);
-          windo1.gameView = gameView;
+          window.gameView = gameView;
         });
       });
     });
