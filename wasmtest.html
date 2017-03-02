@@ -9,7 +9,7 @@ if (typeof window.WebAssembly === 'undefined') {
 else {
   WebAssembly.compile(new Uint8Array([
     0, 'a'.charCodeAt(0), 's'.charCodeAt(0), 'm'.charCodeAt(0), // magic number
-    1, 0, 0, 0, // version number (uint32)
+    0xd, 0, 0, 0, // version number (uint32)
     1, // section: function signature declarations
       5, // section size in bytes
       1, // number of function signatures
