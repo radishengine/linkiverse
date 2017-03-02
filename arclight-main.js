@@ -260,7 +260,7 @@ require(['z/inflate'], function(inflate) {
     }
     return readBlob(mainBlob.slice(mainBlob.size - 16)).then(function(suffix) {
       if (String.fromCharCode.apply(null, new Uint8Array(suffix, 4, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
-        mainBlob = mainBlob.slice(new DataView(suffix, 0, 4).readUint32(0, true), mainBlob.size - 16);
+        mainBlob = mainBlob.slice(new DataView(suffix, 0, 4).getUint32(0, true), mainBlob.size - 16);
       }
       return readBlob(mainBlob.slice(0, 6)).then(onPrefix);
     });
