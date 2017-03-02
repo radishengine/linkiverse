@@ -307,7 +307,7 @@ require(['z/inflate'], function(inflate) {
           return gameFile.getUncompressedBlob();
         })
         .then(function(uncompressed) {
-          var folder = gameFiles.replace(/\/[^\/]*$/, '/');
+          var folder = gameFiles[0].replace(/\/[^\/]*$/, '/');
           return loadGame(uncompressed, function getRelativeBlob(path) {
             return gameFiles[folder + path];
           });
