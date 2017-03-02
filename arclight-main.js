@@ -206,7 +206,7 @@ require(['z/inflate'], function(inflate) {
         }
         var nameBytes = new Uint8Array(central.buffer, central.byteOffset + pos + 46, dv.getUint16(pos + 28, true));
         var name = String.fromCharCode.apply(null, nameBytes); // TODO: support utf-8 encoded
-        records[name] = new ZipRecord(zipBlob, dv.getUint32(42, true));
+        records[name] = new ZipRecord(zipBlob, dv.getUint32(pos + 42, true));
         pos += 46 +
           nameBytes.length +
           dv.getUint16(pos + 30, true) +
