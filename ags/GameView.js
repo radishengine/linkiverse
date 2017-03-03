@@ -43,6 +43,8 @@ define(function() {
     },
   };
   
+  const EVENT_BLOCK_SIZE = 8*4 + 8*4 + 8*4 + 8*4 + 4 + 8*2;
+  
   function VintageHeader(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -82,10 +84,125 @@ define(function() {
         list[i] = new CursorView(buffer, byteOffset + pos, CursorView.byteLength);
         pos += CursorView.byteLength;
       }
-      Object.defineProperty(this, 'cursors', list);
+      list.afterPos = pos;
+      Object.defineProperty(this, 'cursors', {value:list});
+      return list;
+    },
+    get characterCount() {
+      return this.dv.getInt32(this.cursors.afterPos + 4);
+    },
+    get characterEventBlocks() {
+      var list = new Array(this.characterCount);
+      var dv = this.dv;
+      var pos = this.cursors.afterPos + 8;
+      list.afterPos = pos + EVENT_BLOCK_SIZE * 50;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'character' + i + '_');
+      }
+      Object.defineProperty(this, 'characterEventBlocks', {value:list});
+      return list;
+    },
+    get inventoryItemCount() {
+      return this.dv.getInt32(this.characterEventBlocks.afterPos, true);
+    },
+    get inventoryItemEventBlocks() {
+      var list = new Array(this.inventoryItemCount);
+      var dv = this.dv;
+      var pos = this.characterEventBlocks.afterPos + 4;
+      list.afterPos = pos + EVENT_BLOCK_SIZE * 100;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'inventory' + i + '_');
+      }
+      Object.defineProperty(this, 'inventoryItemEventBlocks', {value:list});
       return list;
     },
   };
+  
+  function readEventBlock(dv, pos, func_name_prefix) {
+    var list = new Array(dv.getUint32(pos + 8*4 + 8*4 + 8*4 + 8*4, true));
+    for (var i = 0; i < list.length; i++) {
+      var event_id = dv.getUint32(pos + 4 * i, true);
+      var respond = dv.getUint32(pos + 4*8 + 4*i, true);
+      var respondval = dv.getUint32(pos + 4*8 + 4*8 + 4*i, true);
+      var data = dv.getUint32(pos + 4*8 + 4*8 + 4*8 + 4*i, true);
+      var score = dv.getUint16(pos + 4*8 + 4*8 + 4*8 + 4*8 + 4 + 2*8, true);
+      var handler = list[i] = {};
+      switch (event_id) {
+        case 0: handler.event = 'on_look_at'; break;
+        case 1: handler.event = 'on_interact'; break;
+        case 2: handler.event = 'on_talk_to'; break;
+        case 3:
+          handler.event = 'on_use_inventory';
+          handler.ifUsingInventory = data;
+          break;
+        case 4: handler.event = 'on_any_click'; break;
+        case 5: handler.event = 'on_pick_up'; break;
+        case 6: handler.event = 'on_user_mode_1'; break;
+        case 7: handler.event = 'on_user_mode_2'; break;
+      }
+      switch (respond) {
+        case 0:
+          handler.response = 'Player_GoToRoom';
+          handler.room = respondval;
+          break;
+        case 1:
+          handler.response = 'DoNothing';
+          break;
+        case 2:
+          handler.response = 'Player_StopWalking';
+          break;
+        case 3:
+          handler.response = 'RunPlayerDiesScript';
+          break;
+        case 4:
+          handler.response = 'RunAnimation';
+          handler.animation = respondval;
+          break;
+        case 5:
+          handler.response = 'Game_DisplayMessage';
+          handler.message = respondval;
+          break;
+        case 6:
+          handler.response = 'Object_Hide';
+          handler.object = respondval;
+          break;
+        case 7:
+          handler.response = 'RemoveObjectAddInventory';
+          handler.object = respondval;
+          handler.inventoryItem = data;
+          break;
+        case 8:
+          handler.response = 'Player_GiveInventory';
+          handler.inventoryItem = respondval;
+          break;
+        case 9:
+          handler.response = 'RunTextScriptFunction';
+          handler.functionName = func_name_prefix + String.fromCharCode('a'.charCodeAt(0) + respondval);
+          break;
+        case 10:
+          handler.response = 'RunGraphicalScript';
+          handler.graphicalScript = respondval;
+          break;
+        case 11:
+          handler.response = 'PlaySoundEffect';
+          handler.soundEffect = respondval;
+          break;
+        case 12:
+          handler.response = 'PlayFlic';
+          handler.flic = respondval;
+          break;
+        case 13:
+          handler.response = 'Object_Show';
+          handler.object = respondval;
+          break;
+        case 14:
+          handler.response = 'RunDialogTopic';
+          handler.dialog = respondval;
+          break;
+      }
+    }
+    return list;
+  }
   
   function CursorView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
