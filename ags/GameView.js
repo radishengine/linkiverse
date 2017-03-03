@@ -94,7 +94,7 @@ define(function() {
     get characterEventBlocks() {
       var list = new Array(50);
       var dv = this.dv;
-      var pos = this.cursors.afterPos + 8;
+      var pos = this.cursors.afterPos + 12;
       list.afterPos = pos + EVENT_BLOCK_SIZE * list.length;
       for (var i = 0; i < list.length; i++) {
         list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'character' + i + '_');
