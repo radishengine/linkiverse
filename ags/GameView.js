@@ -235,7 +235,7 @@ define(function() {
     get byteLength() {
       return this.afterPos_globalMessageFlags +
         (this.formatVersion >= 6 ? 9 + 9 + 4 + 4 + 4*8 : 0) +
-        (this.formatVersion >= 9 ? 6000 : 0);
+        (this.formatVersion > 9 ? 6000 : 0);
     },
   };
   
