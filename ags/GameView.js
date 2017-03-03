@@ -97,12 +97,14 @@ define(function() {
         for (var i = 0; i < list.length; i++) {
           var view = list[i] = {};
           view.loops = new Array(this.dv.getUint16(pos, true));
+          pos += 2;
           for (var j = 0; j < 8; j++) {
             if (j < view.loops.length) {
-              view.loops[j] = {frames: new Array(this.dv.getUint16(pos + 2, true))};
+              view.loops[j] = {frames: new Array(this.dv.getUint16(pos, true))};
             }
             pos += 2;
           }
+          pos += 2; // align to 4 byte boundary
           for (var j = 0; j < 8; j++) {
             for (var k = 0; k < 10; k++) {
               if (j < view.loops.length && k < view.loops[j].frames.length) {
