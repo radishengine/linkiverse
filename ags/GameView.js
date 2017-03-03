@@ -7,7 +7,7 @@ define(function() {
   }
   
   function nullTerminated(bytes, offset, length) {
-    return String.fromCharCode.apply(null, bytes.subarray(offset, offset + length)).replace(/\0.*$/, '');
+    return String.fromCharCode.apply(null, bytes.subarray(offset, offset + length)).match(/^[^\0]*/)[0];
   }
 
   function GameView(buffer, byteOffset, byteLength) {
