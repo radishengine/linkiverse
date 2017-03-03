@@ -76,7 +76,7 @@ define(function() {
       var pos = this.dictionary.afterPos;
       if (this.formatVersion <= 12) {
         script.source = masked('Avis Durgan', this.bytes, pos + 4, this.dv.getInt32(pos, true));
-        pos += 4 + len;
+        pos += 4 + script.source.length;
       }
       if (this.formatVersion <= 9) {
         script.compiled = this.bytes.subarray(pos + 4, pos + 4 + this.dv.getInt32(pos, true));
