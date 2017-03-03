@@ -113,6 +113,22 @@ define(function() {
       Object.defineProperty(this, 'inventoryItemEventBlocks', {value:list});
       return list;
     },
+    get playerCharacterId() {
+      return this.dv.getUint8(this.inventoryItemEventBlocks.afterPos + 4, true);
+    },
+    get spriteFlags() {
+      var pos = this.inventoryItemEventBlocks.afterPos + 8;
+      var flags = this.bytes.subarray(pos, pos + 2100);
+      flags.afterPos = pos + flags.byteLength;
+      Object.defineProperty(this, 'spriteFlags', {value:flags});
+      return flags;
+    },
+    get totalScore() {
+      return this.dv.getInt32(this.spriteFlags.afterPos, true);
+    },
+    get inventoryItemCount() {
+      return this.dv.getInt32(this.spriteFlags.afterPos + 4, true);
+    },
   };
   
   function readEventBlock(dv, pos, func_name_prefix) {
