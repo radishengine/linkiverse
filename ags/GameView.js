@@ -9,6 +9,14 @@ define(function() {
   function nullTerminated(bytes, offset, length) {
     return String.fromCharCode.apply(null, bytes.subarray(offset, offset + length)).match(/^[^\0]*/)[0];
   }
+  
+  function masked(mask, bytes, offset, length) {
+    var value = '';
+    for (var i = 0; i < length; i++) {
+      value += String.fromCharCode(bytes[offset + i] ^ mask.charCodeAt(i % mask.length));
+    }
+    return value;
+  }
 
   function GameView(buffer, byteOffset, byteLength) {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -34,12 +42,32 @@ define(function() {
       var header, offset = this.offsetof_header;
       if (this.formatVersion <= 12) {
         header = new VintageHeader(this.dv.buffer, this.dv.byteOffset + offset, this.dv.byteLength - offset);
+        header.formatVersion = this.formatVersion;
       }
       else {
         header = new ModernHeader(this.dv.buffer, this.dv.byteOffset + offset, this.dv.byteLength - offset);
       }
       Object.defineProperty(this, 'header', {value:header});
       return header;
+    },
+    get dictionary() {
+      var pos = this.offsetof_header + this.header.byteLength;
+      var dict = {};
+      if (this.header.hasDictionary) {
+        var count = this.dv.getInt32(pos, true);
+        pos += 4;
+        dict.entries = {};
+        for (var i = 0; i < count; i++) {
+          var len = this.dv.getInt32(pos, true);
+          var word = masked('Avis Durgan', this.bytes, pos + 4, len);
+          var id = this.dv.getInt16(pos + 4 + len, true);
+          dict.entries[word] = id;
+          pos += 4 + len + 2;
+        }
+      }
+      dict.afterPos = pos;
+      Object.defineProperty(this, 'dictionary', {value:dict});
+      return dict;
     },
   };
   
@@ -141,6 +169,62 @@ define(function() {
       }
       Object.defineProperty(this, 'inventoryItems', {value:list});
       return list;
+    },
+    get dialogCount() {
+      return this.dv.getInt32(this.inventoryItems.afterPos, true);
+    },
+    get dialogMessageCount() {
+      return this.dv.getInt32(this.inventoryItems.afterPos + 4, true);
+    },
+    get fontCount() {
+      return this.dv.getInt32(this.inventoryItems.afterPos + 8, true);
+    },
+    get colorDepth() {
+      return this.dv.getInt32(this.inventoryItems.afterPos + 12, true);
+    },
+    get target_win() {
+      return this.dv.getInt32(this.inventoryItems.afterPos + 16, true);
+    },
+    get dialog_bullet_sprite_idx() {
+      return this.dv.getInt32(this.inventoryItems.afterPos + 20, true);
+    },
+    get hotdot() {
+      return this.dv.getInt16(this.inventoryItems.afterPos + 24, true);
+    },
+    get hotdot_outer() {
+      return this.dv.getInt16(this.inventoryItems.afterPos + 26, true);
+    },
+    get unique_int32() {
+      return this.dv.getInt32(this.inventoryItems.afterPos + 28, true);
+    },
+    // reserved int[2]
+    get languageCodes() {
+      var pos = this.inventoryItems.afterPos + 40;
+      var list = new Array(this.dv.getInt16(pos, true));
+      list.afterPos = pos + 3 * 5 + 3;
+      pos += 2;
+      for (var i = 0; i < list.length: i++) {
+        list[i] = nullTerminated(this.bytes, pos, 3);
+        pos += 3;
+      }
+      Object.defineProperty(this, 'languageCodes', {value:list});
+      return list;
+    },
+    isGlobalMessagePresent: function(idx) {
+      if (idx < 500 || idx > 999) throw new RangeError('global message ID out of range');
+      return this.dv.getInt32(this.languageCodes.afterPos + idx * 4, true) !== 0;
+    },
+    get afterPos_globalMessageFlags() {
+      return this.languageCodes.afterPos + 4 * 500;
+    },
+    // TODO: ...more here...
+    get hasDictionary() {
+      return this.dv.getInt32(this.afterPos_globalMessageFlags + 9*8*2, true) !== 0;
+    },
+    get byteLength() {
+      return this.afterPos_globalMessageFlags
+        + (this.formatVersion >= 6 ? 9 + 9 + 4 + 4 + 4*10 : 0)
+        + (this.formatVersion >= 9 ? 6000 : 0);
     },
   };
   
