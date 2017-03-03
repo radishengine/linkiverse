@@ -92,24 +92,21 @@ define(function() {
       return this.dv.getInt32(this.cursors.afterPos + 4, true);
     },
     get characterEventBlocks() {
-      var list = new Array(this.characterCount);
+      var list = new Array(50);
       var dv = this.dv;
       var pos = this.cursors.afterPos + 8;
-      list.afterPos = pos + EVENT_BLOCK_SIZE * 50;
+      list.afterPos = pos + EVENT_BLOCK_SIZE * list.length;
       for (var i = 0; i < list.length; i++) {
         list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'character' + i + '_');
       }
       Object.defineProperty(this, 'characterEventBlocks', {value:list});
       return list;
     },
-    get inventoryItemCount() {
-      return this.dv.getInt32(this.characterEventBlocks.afterPos, true);
-    },
     get inventoryItemEventBlocks() {
-      var list = new Array(this.inventoryItemCount);
+      var list = new Array(100);
       var dv = this.dv;
-      var pos = this.characterEventBlocks.afterPos + 4;
-      list.afterPos = pos + EVENT_BLOCK_SIZE * 100;
+      var pos = this.characterEventBlocks.afterPos;
+      list.afterPos = pos + EVENT_BLOCK_SIZE * list.length;
       for (var i = 0; i < list.length; i++) {
         list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'inventory' + i + '_');
       }
