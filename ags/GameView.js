@@ -11,11 +11,13 @@ define(function() {
   }
   
   function masked(mask, bytes, offset, length) {
-    var value = '';
+    var buf = new Array(length);
     for (var i = 0; i < length; i++) {
-      value += String.fromCharCode(bytes[offset + i] ^ mask.charCodeAt(i % mask.length));
+      var b = bytes[offset + i];
+      var mb = mask.charCodeAt(i % mask.length);
+      buf[i] = String.fromCharCode((b - mb) & 0xff);
     }
-    return value;
+    return buf.join('');
   }
 
   function GameView(buffer, byteOffset, byteLength) {
