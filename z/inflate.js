@@ -519,7 +519,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                             put.set(from.subarray(0, op), out_p);
                             out_p += op;
                             // rest from output
-                            from = put.subarray(out_p - dist);
+                            from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist);
                           }
                         }
                         else if (wnext < op) {
@@ -539,7 +539,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                               put.set(from.subarray(0, op), out_p);
                               out_p += op;
                               // rest from output
-                              from = put.subarray(out_p - dist, out_p);
+                              from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist);
                             }
                           }
                         }
@@ -552,7 +552,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                             put.set(from.subarray(0, op), out_p);
                             out_p += op;
                             // rest from output
-                            from = put.subarray(out_p - dist, out_p);
+                            from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist);
                           }
                         }
                         put.set(from.subarray(0, len), out_p);
@@ -560,7 +560,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                       }
                       else {
                         /* copy direct from output */
-                        put.set(put.subarray(out_p - dist, (out_p - dist) + len), out_p);
+                        put.set(new Uint8Array(put.buffer, put.byteOffset + out_p - dist, len), out_p);
                         out_p += len;
                       }
                       continue fastLoop;
