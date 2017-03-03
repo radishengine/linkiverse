@@ -230,12 +230,12 @@ define(function() {
     },
     // TODO: ...more here...
     get hasDictionary() {
-      return this.dv.getInt32(this.afterPos_globalMessageFlags + 9 + 9, true) !== 0;
+      return this.dv.getInt32(this.afterPos_globalMessageFlags + 9 + 9 + 4, true) !== 0;
     },
     get byteLength() {
-      return this.afterPos_globalMessageFlags
-        + (this.formatVersion >= 6 ? 9 + 9 + 4 + 4 + 4*10 : 0)
-        + (this.formatVersion >= 9 ? 6000 : 0);
+      return this.afterPos_globalMessageFlags +
+        (this.formatVersion >= 6 ? 9 + 9 + 4 + 4 + 4*8 : 0) +
+        (this.formatVersion >= 9 ? 6000 : 0);
     },
   };
   
