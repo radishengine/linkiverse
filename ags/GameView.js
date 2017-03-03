@@ -69,6 +69,17 @@ define(function() {
       Object.defineProperty(this, 'dictionary', {value:dict});
       return dict;
     },
+    get globalScript() {
+      var script = {};
+      var pos = this.dictionary.afterPos;
+      if (this.formatVersion <= 12) {
+        script.source = masked('Avis Durgan', this.bytes, pos + 4, this.dv.getInt32(pos, true));
+        pos += 4 + len;
+      }
+      script.afterPos = pos;
+      Object.defineProperty(this, 'globalScript', {value:script});
+      return script;
+    },
   };
   
   const EVENT_BLOCK_SIZE = 8*4 + 8*4 + 8*4 + 8*4 + 4 + 8*2;
