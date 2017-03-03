@@ -78,11 +78,74 @@ define(function() {
         script.source = masked('Avis Durgan', this.bytes, pos + 4, this.dv.getInt32(pos, true));
         pos += 4 + len;
       }
+      if (this.formatVersion <= 9) {
+        script.compiled = this.bytes.subarray(pos + 4, pos + 4 + this.dv.getInt32(pos, true));
+        pos += 4 + script.compiled.length;
+      }
+      else {
+        throw new Error('NYI');
+      }
       script.afterPos = pos;
       Object.defineProperty(this, 'globalScript', {value:script});
       return script;
     },
+    get views() {
+      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset;
+      var list = new Array(this.header.viewCount);
+      var pos = this.globalScript.afterPos;
+      if (this.formatVersion <= 12) {
+        for (var i = 0; i < list.length; i++) {
+          var view = list[i] = {};
+          view.loops = new Array(this.dv.getUint16(pos, true));
+          for (var j = 0; j < 8; j++) {
+            if (j < view.loops.length) {
+              view.loops[j] = {frames: new Array(this.dv.getUint16(pos + 2, true))};
+            }
+            pos += 2;
+          }
+          for (var j = 0; j < 8; j++) {
+            for (var k = 0; k < 10; k++) {
+              if (j < view.loops.length && k < view.loops[j].frames.length) {
+                view.loops[j].frames[k] = new AnimFrameView(buffer, byteOffset + pos, AnimFrameView.byteLength);
+              }
+              pos += AnimFrameView.byteLength;
+            }
+          }
+        }
+      }
+      else {
+        throw new Error('NYI');
+      }
+      list.afterPos = pos;
+      Object.defineProperty(this, 'views', {value:list});
+      return list;
+    },
   };
+    
+  function AnimFrameView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  AnimFrameView.prototype = {
+    get spriteNumber() {
+      return this.dv.getInt32(0, true);
+    },
+    get offsetX() {
+      return this.dv.getInt16(4, true);
+    },
+    get offsetY() {
+      return this.dv.getInt16(6, true);
+    },
+    get delayFrames() {
+      return this.dv.getInt16(8, true);
+    },
+    get flags() {
+      return this.dv.getInt32(12);
+    },
+    get soundNumber() {
+      return this.dv.getInt32(16);
+    },
+  };
+  AnimFrameView.byteLength = 28;
   
   const EVENT_BLOCK_SIZE = 8*4 + 8*4 + 8*4 + 8*4 + 4 + 8*2;
   
