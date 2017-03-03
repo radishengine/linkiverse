@@ -129,7 +129,49 @@ define(function() {
     get inventoryItemCount() {
       return this.dv.getInt32(this.spriteFlags.afterPos + 4, true);
     },
+    get inventoryItems() {
+      var list = new Array(this.inventoryItemCount);
+      var buffer = this.bytes.buffer;
+      var pos = this.spriteFlags.afterPos + 8;
+      list.afterPos = pos + InventoryItemView.byteLength * 100;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = new InventoryItemView(buffer, pos, InventoryItemView.byteLength);
+        list[i].eventBlock = this.inventoryItemEventBlocks[i];
+        pos += InventoryItemView.byteLength;
+      }
+      Object.defineProperty(this, 'inventoryItems', {value:list});
+      return list;
+    },
   };
+  
+  function InventoryItemView(buffer, byteOffset, byteLength) {
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  InventoryItemView.prototype = {
+    get name() {
+      return nullTerminated(this.bytes, 0, 25);
+    },
+    get sprite() {
+      return this.dv.getInt32(28, true);
+    },
+    get cursorSprite() {
+      return this.dv.getInt32(32, true);
+    },
+    get handleX() {
+      return this.dv.getInt32(36, true);
+    },
+    get handleY() {
+      return this.dv.getInt32(40, true);
+    },
+    get flags() {
+      return this.bytes[64];
+    },
+    get startWith() {
+      return !!(this.flags & 1);
+    },
+  };
+  InventoryItemView.byteLength = 68;
   
   function readEventBlock(dv, pos, func_name_prefix) {
     var list = new Array(dv.getUint32(pos + 8*4 + 8*4 + 8*4 + 8*4, true));
