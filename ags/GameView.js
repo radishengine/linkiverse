@@ -89,7 +89,7 @@ define(function() {
       return list;
     },
     get characterCount() {
-      return this.dv.getInt32(this.cursors.afterPos + 4);
+      return this.dv.getInt32(this.cursors.afterPos + 4, true);
     },
     get characterEventBlocks() {
       var list = new Array(this.characterCount);
