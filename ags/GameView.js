@@ -219,7 +219,7 @@ define(function() {
     },
     // TODO: ...more here...
     get hasDictionary() {
-      return this.dv.getInt32(this.afterPos_globalMessageFlags + 9*8*2, true) !== 0;
+      return this.dv.getInt32(this.afterPos_globalMessageFlags + 9 + 9, true) !== 0;
     },
     get byteLength() {
       return this.afterPos_globalMessageFlags
