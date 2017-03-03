@@ -131,11 +131,11 @@ define(function() {
     },
     get inventoryItems() {
       var list = new Array(this.inventoryItemCount);
-      var buffer = this.bytes.buffer;
+      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset;
       var pos = this.spriteFlags.afterPos + 8;
       list.afterPos = pos + InventoryItemView.byteLength * 100;
       for (var i = 0; i < list.length; i++) {
-        list[i] = new InventoryItemView(buffer, pos, InventoryItemView.byteLength);
+        list[i] = new InventoryItemView(buffer, byteOffset + pos, InventoryItemView.byteLength);
         list[i].eventBlock = this.inventoryItemEventBlocks[i];
         pos += InventoryItemView.byteLength;
       }
