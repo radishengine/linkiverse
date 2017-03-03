@@ -363,6 +363,18 @@ define(function() {
     throw new Error('NYI');
   }
   
+  window.download = function download(b) {
+    if (!(b instanceof Blob)) b = new Blob([b]);
+    var link = document.createElement('A');
+    link.setAttribute('download', 'file.dat');
+    link.setAttribute('href', URL.createObjectURL(b));
+    link.addEventListener('click', function() {
+      document.body.removeChild(link);
+    });
+    document.body.appendChild(link);
+    link.click();
+  };
+  
   return GameView;
 
 });
