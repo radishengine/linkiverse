@@ -717,6 +717,7 @@ define(function() {
     get byteLength() {
       var len = this.offsetof_act_x + 4 + this.nameBufferSize + this.scriptNameBufferSize + 2;
       Object.defineProperty(this, 'byteLength', {value:len});
+      return len;
     },
   };
   
