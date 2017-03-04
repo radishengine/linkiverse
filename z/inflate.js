@@ -555,15 +555,15 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                             from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist);
                           }
                         }
-                        for (var i = 0; i < len; i++) {
-                          put[out_p++] = from[i++];
+                        for (var i = 0; i < len; ) {
+                          put[out_p++] = from[i];
                         }
                       }
                       else {
                         /* copy direct from output */
                         var from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist, len);
                         for (var i = 0; i < len; i++) {
-                          put[out_p++] = from[i++];
+                          put[out_p++] = from[i];
                         }
                       }
                       continue fastLoop;
