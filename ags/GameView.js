@@ -409,6 +409,7 @@ define(function() {
     },
     isGlobalMessagePresent: function(idx) {
       if (idx < 500 || idx > 999) throw new RangeError('global message ID out of range');
+      idx -= 500;
       return this.dv.getInt32(this.languageCodes.afterPos + idx * 4, true) !== 0;
     },
     get afterPos_globalMessageFlags() {
