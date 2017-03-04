@@ -1,4 +1,4 @@
-require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
+require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameView, RoomView) {
 
   'use strict';
   
@@ -326,8 +326,10 @@ require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
             if (!roomData) {
               return Promise.reject('room' + startRoom + '.crm not found!');
             }
-            return readBlob(roomData).then(function(roomData) {
-              console.log(roomData.length);
+            return readBlob(roomData).then(function(roomBuffer) {
+              var roomView = new RoomView(roomBuffer, 0, roomBuffer.byteLength);
+              console.dir(roomView);
+              window.roomView = roomView;
             });
           });
         });
