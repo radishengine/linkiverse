@@ -590,7 +590,7 @@ define(function() {
       return this.dv.getInt32(28, true);
     },
     get flags() {
-      if (self.formatVersion <= 11) {
+      if (this.formatVersion <= 11) {
         return this.dv.getInt32(32, true) & 0xffffff;
       }
       return this.dv.getInt32(32, true);
@@ -632,7 +632,7 @@ define(function() {
       throw new Error('NYI');
     },
     get speechColor() {
-      if (self.formatVersion <= 11) {
+      if (this.formatVersion <= 11) {
         return this.dv.getInt32(32, true) >>> 24;
       }
       throw new Error('NYI');
@@ -662,7 +662,7 @@ define(function() {
       return this.dv.getInt32(52, true);
     },
     get offsetof_loop() {
-      if (self.formatVersion > 12) {
+      if (this.formatVersion > 12) {
         throw new Error('NYI');
       }
       return 56;
@@ -689,7 +689,7 @@ define(function() {
       return this.offsetof_loop + 12;
     },
     get offsetof_act_x() {
-      return this.offsetof_inventorySlots + 2 * (self.formatVersion <= 12 ? 100 : 301);
+      return this.offsetof_inventorySlots + 2 * (this.formatVersion <= 12 ? 100 : 301);
     },
     get act_x() {
       return this.dv.getInt16(this.offsetof_act_x, true);
