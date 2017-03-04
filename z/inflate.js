@@ -555,7 +555,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                             from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist);
                           }
                         }
-                        for (var i = 0; i < len; ) {
+                        for (var i = 0; i < len; i++) {
                           put[out_p++] = from[i];
                         }
                       }
