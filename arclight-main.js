@@ -72,7 +72,7 @@ require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
         script.src = '//archive.org/advancedsearch.php'
           + '?q=collection:' + self.identifier + '+-subject:"game+creation+software"'
           + '&fl[]=identifier'
-          + '&sort[]=publicdate+asc'
+          + '&sort[]=date+asc'
           + '&rows=50'
           + '&page=1'
           + '&output=json'
