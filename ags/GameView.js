@@ -146,8 +146,8 @@ define(function() {
     },
     get characters() {
       var list = new Array(this.header.characterCount);
-      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength;
       var pos = this.offsetof_characters;
+      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength - pos;
       for (var i = 0; i < list.length; i++) {
         var c = list[i] = new CharacterView(buffer, byteOffset + pos, byteLength);
         pos += c.byteLength;
@@ -561,6 +561,7 @@ define(function() {
   
   function CharacterView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   CharacterView.prototype = {
     get normal_view() {
