@@ -322,7 +322,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
         case 15 /* COPY */:
           var copy = this.length;
           if (copy > 0) {
-            if (copy = Math.min(copy, next.length, put.length) === 0) {
+            if ((copy = Math.min(copy, next.length, put.length)) === 0) {
               break inflation;
             }
             put.set(next.subarray(0, copy));
