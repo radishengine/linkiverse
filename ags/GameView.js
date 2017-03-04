@@ -398,7 +398,7 @@ define(function() {
     get languageCodes() {
       var pos = this.inventoryItems.afterPos + 40;
       var list = new Array(this.dv.getInt16(pos, true));
-      list.afterPos = pos + 3 * 5 + 3;
+      list.afterPos = pos + 2 + 3 * 5 + 3;
       pos += 2;
       for (var i = 0; i < list.length; i++) {
         list[i] = nullTerminated(this.bytes, pos, 3);
