@@ -169,7 +169,9 @@ define(function() {
         if (!this.header.isGlobalMessagePresent(i)) continue;
         else if (isMasked) {
           var len = this.dv.getInt32(pos, true);
-          list[i] = masked('Avis Durgan', this.bytes, pos + 4, len);
+          if (len > 0) {
+            list[i] = masked('Avis Durgan', this.bytes, pos + 4, len);
+          }
           pos += 4 + len;
         }
         else {
@@ -177,7 +179,9 @@ define(function() {
           while (this.bytes[endPos] !== 0) {
             endPos++;
           }
-          list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+          if (endPos !== pos) {
+            list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+          }
           pos = endPos + 1;
         }
       }
