@@ -317,12 +317,19 @@ require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
           if (!mainData) {
             return Promise.reject('ac2game.dta not found!');
           }
-          return readBlob(mainData);
-        })
-        .then(function(gameData) {
-          var gameView = new GameView(gameData, 0, gameData.byteLength);
-          console.dir(gameView);
-          window.gameView = gameView;
+          return readBlob(mainData).then(function(gameData) {
+            var gameView = new GameView(gameData, 0, gameData.byteLength);
+            console.dir(gameView);
+            window.gameView = gameView;
+            var startRoom = gameView.characters[gameView.header.playerCharacterId].room;
+            var roomData = files['room' + startRoom + '.crm'] || files['ROOM' + startRoom + '.CRM'];
+            if (!roomData) {
+              return Promise.reject('room' + startRoom + '.crm not found!');
+            }
+            return readBlob(roomData).then(function(roomData) {
+              console.log(roomData.length);
+            });
+          });
         });
       });
     });
