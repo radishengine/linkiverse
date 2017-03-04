@@ -218,7 +218,7 @@ define(function() {
           pos += list[i].codeSize;
           var compiledLen = this.dv.getInt32(pos, true);
           list[i].script.source = masked(this.bytes, pos + 4, compiledLen);
-          pos += compiledLen;
+          pos += 4 + compiledLen;
         }
         list.messages = new Array(this.header.dialogMessageCount);
         if (this.formatVersion > 25) {
