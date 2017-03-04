@@ -290,7 +290,7 @@ require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
         var gameFiles = [];
         for (var i = 0; i < filenames.length; i++) {
           if (/(^|\/)ac2game.dat$/i.test(filenames[i])
-              || (/\.exe$/i.test(filenames[i]) && !/(^|\/)((win)?setup|ac(win)?|cwsdpmi)\.exe$/i.test(filenames[i]))) {
+              || (/\.exe$/i.test(filenames[i]) && !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi)\.exe$/i.test(filenames[i]))) {
             gameFiles.push(filenames[i]);
           }
         }
