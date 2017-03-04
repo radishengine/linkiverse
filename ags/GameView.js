@@ -704,12 +704,12 @@ define(function() {
       return this.formatVersion <= 12 ? 16 : 20;
     },
     get name() {
-      return nullTerminated(this.bytes, this.offset_act_x + 4, this.nameBufferSize);
+      return nullTerminated(this.bytes, this.offsetof_act_x + 4, this.nameBufferSize);
     },
     get scriptName() {
       return nullTerminated(
         this.bytes,
-        this.offset_act_x + 4 + this.nameBufferSize,
+        this.offsetof_act_x + 4 + this.nameBufferSize,
         this.scriptNameBufferSize);
     },
     get on() {
