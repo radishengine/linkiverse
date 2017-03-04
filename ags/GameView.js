@@ -181,6 +181,19 @@ define(function() {
           pos = endPos + 1;
         }
       }
+      list[983] = list[983] || "Sorry, not now.";
+      list[984] = list[984] || "Restore";
+      list[985] = list[985] || "Cancel";
+      list[986] = list[986] || "Select a game to restore:";
+      list[987] = list[987] || "Save";
+      list[988] = list[988] || "Type a name to save as:";
+      list[989] = list[989] || "Replace";
+      list[990] = list[990] || "The save directory is full. You must replace an existing game:";
+      list[991] = list[991] || "Replace:";
+      list[992] = list[992] || "With:";
+      list[993] = list[993] || "Quit";
+      list[994] = list[994] || "Play";
+      list[995] = list[995] || "Are you sure you want to quit?";
       list.afterPos = pos;
       Object.defineProperty(this, 'globalMessages', {value:list});
       return list;
