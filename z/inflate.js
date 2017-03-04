@@ -308,7 +308,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
           // go to byte boundary
           hold >>= bits & 7; bits -= bits & 7;
           if (!NEEDBITS(32)) break inflation;
-          if ((hold & 0xffff) !== ((hold >> 16) ^ 0xffff)) {
+          if ((hold & 0xffff) !== ((hold >>> 16) ^ 0xffff)) {
             throw new Error("invalid stored block lengths");
           }
           this.length = hold & 0xffff;
