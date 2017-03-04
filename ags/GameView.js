@@ -689,7 +689,7 @@ define(function() {
       return this.offsetof_loop + 12;
     },
     get offsetof_act_x() {
-      return this.offsetof_inventorySlots + 2 * (this.formatVersion <= 12 ? 100 : 301);
+      return this.offsetof_inventoryCounts + 2 * (this.formatVersion <= 12 ? 100 : 301);
     },
     get act_x() {
       return this.dv.getInt16(this.offsetof_act_x, true);
