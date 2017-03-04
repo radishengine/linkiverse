@@ -150,6 +150,7 @@ define(function() {
       var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength - pos;
       for (var i = 0; i < list.length; i++) {
         var c = list[i] = new CharacterView(buffer, byteOffset + pos, byteLength);
+        c.formatVersion = this.formatVersion;
         pos += c.byteLength;
         byteLength -= c.byteLength;
       }
