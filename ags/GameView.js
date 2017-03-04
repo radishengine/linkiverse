@@ -154,7 +154,35 @@ define(function() {
         pos += c.byteLength;
         byteLength -= c.byteLength;
       }
+      list.afterPos = pos;
       Object.defineProperty(this, 'characters', {value:list});
+      return list;
+    },
+    get offsetof_globalMessages() {
+      return this.characters.afterPos + (this.formatVersion >= 21 ? 50 * 20 : 0);
+    },
+    get globalMessages() {
+      var list = new Array(1000);
+      var pos = this.offsetof_globalMessages;
+      var isMasked = this.formatVersion >= 26;
+      for (var i = 500; i < 1000; i++) {
+        if (!this.header.isGlobalMessagePresent(i)) continue;
+        else if (isMasked) {
+          var len = this.dv.getInt32(pos, true);
+          list[i] = masked('Avis Durgan', this.bytes, pos + 4, len);
+          pos += 4 + len;
+        }
+        else {
+          var endPos = pos;
+          while (this.bytes[endPos] !== 0) {
+            endPos++;
+          }
+          list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+          pos = endPos + 1;
+        }
+      }
+      list.afterPos = pos;
+      Object.defineProperty(this, 'globalMessages', {value:list});
       return list;
     },
   };
