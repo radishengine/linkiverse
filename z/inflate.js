@@ -555,13 +555,16 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
                             from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist);
                           }
                         }
-                        put.set(from.subarray(0, len), out_p);
-                        out_p += len;
+                        for (var i = 0; i < len; i++) {
+                          put[out_p++] = from[i++];
+                        }
                       }
                       else {
                         /* copy direct from output */
-                        put.set(new Uint8Array(put.buffer, put.byteOffset + out_p - dist, len), out_p);
-                        out_p += len;
+                        var from = new Uint8Array(put.buffer, put.byteOffset + out_p - dist, len);
+                        for (var i = 0; i < len; i++) {
+                          put[out_p++] = from[i++];
+                        }
                       }
                       continue fastLoop;
                     }
