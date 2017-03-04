@@ -217,7 +217,7 @@ define(function() {
           list[i].script.compiled = this.bytes.subarray(pos, pos + list[i].codeSize);
           pos += list[i].codeSize;
           var compiledLen = this.dv.getInt32(pos, true);
-          list[i].script.source = masked(this.bytes, pos + 4, compiledLen);
+          list[i].script.source = masked('Avis Durgan', this.bytes, pos + 4, compiledLen);
           pos += 4 + compiledLen;
         }
         list.messages = new Array(this.header.dialogMessageCount);
