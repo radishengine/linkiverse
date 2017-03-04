@@ -812,8 +812,8 @@ define(function() {
   }
   DialogView.prototype = {
     get options() {
-      var maxOptionCount = this.formatVersion <= 12) ? 15 : 30;
-      var maxOptionLength = (this.formatVersion <= 12) ? 70 : 150;
+      var maxOptionCount = this.formatVersion <= 12 ? 15 : 30;
+      var maxOptionLength = this.formatVersion <= 12 ? 70 : 150;
       var afterPos_text = maxOptionCount * maxOptionLength;
       afterPos_text += afterPos_text % 4;
       var offsetof_flags = afterPos_text;
