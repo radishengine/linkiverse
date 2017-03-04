@@ -313,7 +313,7 @@ require(['z/inflate', 'ags/GameView'], function(inflate, GameView) {
         })
         .then(function(files) {
           console.dir(files);
-          var mainData = files['ac2game.dta'];
+          var mainData = files['ac2game.dta'] || files['AC2GAME.DTA'];
           if (!mainData) {
             return Promise.reject('ac2game.dta not found!');
           }
