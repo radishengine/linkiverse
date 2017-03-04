@@ -144,6 +144,18 @@ define(function() {
       Object.defineProperty(this, 'offsetof_characters', {value:pos});
       return pos;
     },
+    get characters() {
+      var list = new Array(this.header.characterCount);
+      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength;
+      var pos = this.offsetof_characters;
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i] = new CharacterView(buffer, byteOffset + pos, byteLength);
+        pos += c.byteLength;
+        byteLength -= c.byteLength;
+      }
+      Object.defineProperty(this, 'characters', {value:list});
+      return list;
+    },
   };
     
   function AnimFrameView(buffer, byteOffset, byteLength) {
@@ -546,6 +558,166 @@ define(function() {
   function ModernHeader() {
     throw new Error('NYI');
   }
+  
+  function CharacterView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  CharacterView.prototype = {
+    get normal_view() {
+      return this.dv.getInt32(0, true);
+    },
+    get speech_view() {
+      return this.dv.getInt32(4, true);
+    },
+    get view() {
+      return this.dv.getInt32(8, true);
+    },
+    get room() {
+      return this.dv.getInt32(12, true);
+    },
+    get prev_room() {
+      return this.dv.getInt32(16, true);
+    },
+    get x() {
+      return this.dv.getInt32(20, true);
+    },
+    get y() {
+      return this.dv.getInt32(24, true);
+    },
+    get anim_delay() {
+      return this.dv.getInt32(28, true);
+    },
+    get flags() {
+      if (self.formatVersion <= 11) {
+        return this.dv.getInt32(32, true) & 0xffffff;
+      }
+      return this.dv.getInt32(32, true);
+    },
+    get ignoresScaling() {
+      return !!(this.dv.getInt32(32, true) & 1);
+    },
+    get isClickable() {
+      return !(this.dv.getInt32(32, true) & 4);
+    },
+    get usesDiagonalLoops() {
+      return !(this.dv.getInt32(32, true) & 8);
+    },
+    get ignoresLighting() {
+      return !!(this.dv.getInt32(32, true) & 0x20);
+    },
+    get turnsBeforeWorking() {
+      return !(this.dv.getInt32(32, true) & 0x40);
+    },
+    get ignoreWalkbehinds() {
+      return !(this.dv.getInt32(32, true) & 0x80);
+    },
+    get isSolid() {
+      return (this.formatVersion >= 21) && !(this.dv.getInt32(32, true) & 0x200);
+    },
+    get linksSpeedToScale() {
+      return !!(this.dv.getInt32(32, true) & 0x400);
+    },
+    get blinksWhileThinking() {
+      return !(this.dv.getInt32(32, true) & 0x800);
+    },
+    get linksAudioVolumeToScale() {
+      return !!(this.dv.getInt32(32, true) & 0x1000);
+    },
+    get linksMovementToAnimation() {
+      if (this.formatVersion <= 12) {
+        return false;
+      }
+      throw new Error('NYI');
+    },
+    get speechColor() {
+      if (self.formatVersion <= 11) {
+        return this.dv.getInt32(32, true) >>> 24;
+      }
+      throw new Error('NYI');
+    },
+    get following() {
+      return this.dv.getInt16(36, true);
+    },
+    get followinfo() {
+      return this.dv.getInt16(38, true);
+    },
+    get idleView() {
+      return this.dv.getInt32(40, true);
+    },
+    get idleTime() {
+      return this.dv.getInt16(44, true);
+    },
+    get idleLeft() {
+      return this.dv.getInt16(46, true);
+    },
+    get transparency() {
+      return this.dv.getInt16(48, true);
+    },
+    get baseline() {
+      return this.dv.getInt16(50, true);
+    },
+    get active_inv() {
+      return this.dv.getInt32(52, true);
+    },
+    get offsetof_loop() {
+      if (self.formatVersion > 12) {
+        throw new Error('NYI');
+      }
+      return 56;
+    },
+    get loop() {
+      return this.dv.getInt16(this.offsetof_loop, true);
+    },
+    get frame() {
+      return this.dv.getInt16(this.offsetof_loop + 2, true);
+    },
+    get walking() {
+      return this.dv.getInt16(this.offsetof_loop + 4, true);
+    },
+    get animating() {
+      return this.dv.getInt16(this.offsetof_loop + 6, true);
+    },
+    get walk_speed_x() {
+      return this.dv.getInt16(this.offsetof_loop + 8, true);
+    },
+    get animspeed() {
+      return this.dv.getInt16(this.offsetof_loop + 10, true);
+    },
+    get offsetof_inventoryCounts() {
+      return this.offsetof_loop + 12;
+    },
+    get offsetof_act_x() {
+      return this.offsetof_inventorySlots + 2 * (self.formatVersion <= 12 ? 100 : 301);
+    },
+    get act_x() {
+      return this.dv.getInt16(this.offsetof_act_x, true);
+    },
+    get act_y() {
+      return this.dv.getInt16(this.offsetof_act_x + 2, true);
+    },
+    get nameBufferSize() {
+      return this.formatVersion <= 12 ? 30 : 40;
+    },
+    get scriptNameBufferSize() {
+      return this.formatVersion <= 12 ? 16 : 20;
+    },
+    get name() {
+      return nullTerminated(this.bytes, this.offset_act_x + 4, this.nameBufferSize);
+    },
+    get scriptName() {
+      return nullTerminated(
+        this.bytes,
+        this.offset_act_x + 4 + this.nameBufferSize,
+        this.scriptNameBufferSize);
+    },
+    get on() {
+      return this.bytes[this.offsetof_act_x + 4 + this.nameBufferSize + this.scriptNameBufferSize];
+    },
+    get byteLength() {
+      var len = this.offsetof_act_x + 4 + this.nameBufferSize + this.scriptNameBufferSize + 2;
+      Object.defineProperty(this, 'byteLength', {value:len});
+    },
+  };
   
   window.download = function download(b) {
     if (!(b instanceof Blob)) b = new Blob([b]);
