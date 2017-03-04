@@ -122,6 +122,28 @@ define(function() {
       Object.defineProperty(this, 'views', {value:list});
       return list;
     },
+    get offsetof_characters() {
+      var pos = this.views.afterPos;
+      if (this.formatVersion <= 12) {
+        var count = this.dv.getInt32(pos, true);
+        pos += 4;
+        var number_count, name_length;
+        if (this.formatVersion >= 11) {
+          number_count = 241;
+          name_length = 30;
+        }
+        else {
+          number_count = 121;
+          name_length = 22;
+        }
+        pos += count * (4 + 2 * number_count + name_length);
+      }
+      else if (this.formatVersion <= 19) {
+        pos += 4 * 0x204;
+      }
+      Object.defineProperty(this, 'offsetof_characters', {value:pos});
+      return pos;
+    },
   };
     
   function AnimFrameView(buffer, byteOffset, byteLength) {
