@@ -202,6 +202,45 @@ define(function() {
       Object.defineProperty(this, 'globalMessages', {value:list});
       return list;
     },
+    get dialogs() {
+      var list = new Array(this.header.dialogCount);
+      var pos = this.globalMessages.afterPos;
+      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength;
+      for (var i = 0; i < list.length; i++) {
+        var dialog = list[i] = new DialogView(buffer, byteOffset + pos, byteLength - pos);
+        dialog.formatVersion = this.formatVersion;
+        pos += dialog.byteLength;
+      }
+      if (this.formatVersion <= 37) {
+        for (var i = 0; i < list.length; i++) {
+          list[i].script = {};
+          list[i].script.compiled = this.bytes.subarray(pos, pos + list[i].codeSize);
+          pos += list[i].codeSize;
+          var compiledLen = this.dv.getInt32(pos, true);
+          list[i].script.source = masked(this.bytes, pos + 4, compiledLen);
+          pos += compiledLen;
+        }
+        list.messages = new Array(this.header.dialogMessageCount);
+        if (this.formatVersion > 25) {
+          throw new Error('NYI');
+        }
+        else {
+          for (var i = 0; i < list.messages.length; i++) {
+            var endPos = pos;
+            while (this.bytes[endPos] !== 0) {
+              endPos++;
+            }
+            if (endPos !== pos) {
+              list.messages[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+            }
+            pos = endPos + 1;
+          }
+        }
+      }
+      list.afterPos = pos;
+      Object.defineProperty(this, 'dialogs', {value:list});
+      return list;
+    },
   };
     
   function AnimFrameView(buffer, byteOffset, byteLength) {
@@ -764,6 +803,53 @@ define(function() {
       var len = this.offsetof_act_x + 4 + this.nameBufferSize + this.scriptNameBufferSize + 2;
       Object.defineProperty(this, 'byteLength', {value:len});
       return len;
+    },
+  };
+  
+  function DialogView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+  }
+  DialogView.prototype = {
+    get options() {
+      var maxOptionCount = this.formatVersion <= 12) ? 15 : 30;
+      var maxOptionLength = (this.formatVersion <= 12) ? 70 : 150;
+      var afterPos_text = maxOptionCount * maxOptionLength;
+      afterPos_text += afterPos_text % 4;
+      var offsetof_flags = afterPos_text;
+      var afterPos_flags = offsetof_flags + 4 * maxOptionCount;
+      var offsetof_entryPoints = afterPos_flags + 4;
+      var afterPos_entryPoints = offsetof_entryPoints + 2 * maxOptionCount;
+      var offsetof_optionCount = afterPos_entryPoints + 2 + 2;
+      offsetof_optionCount += offsetof_optionCount % 4;
+      var list = new Array(this.dv.getInt32(offsetof_optionCount, true));
+      list.afterPos_entryPoints = afterPos_entryPoints;
+      for (var i = 0; i < list.length; i++) {
+        var flags = this.dv.getInt32(offsetof_flags + i * 4, true);
+        list[i] = {
+          text: nullTerminated(this.bytes, maxOptionLength * i, maxOptionLength),
+          on: !!(flags & 1),
+          offForever: !!(flags & 2),
+          spoken: !(flags & 4),
+          hasBeenChosen: !!(flags & 8),
+          entryPoint: this.dv.getInt16(offsetof_entryPoints + i * 2, true),
+        };
+      }
+      list.afterPos = offsetof_optionCount + 4;
+      Object.defineProperty(this, 'options', {value:list});
+      return list;
+    },
+    get entryPoint() {
+      return this.dv.getInt16(this.options.afterPos_entryPoints, true);
+    },
+    get codeSize() {
+      return this.dv.getInt16(this.options.afterPos_entryPoints + 2, true);
+    },
+    get usesParser() {
+      return (this.formatVersion > 12) && !!(this.getInt32(this.options.afterPos, true) & 1);
+    },
+    get byteLength() {
+      return this.options.afterPos + (this.formatVersion > 12 ? 4 : 0);
     },
   };
   
