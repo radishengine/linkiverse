@@ -7,6 +7,9 @@ define(function() {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   RoomView.prototype = {
+    get formatVersion() {
+      return this.dv.getInt16(0, true);
+    },
   };
   
   return RoomView;
