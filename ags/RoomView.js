@@ -142,6 +142,7 @@ define(function() {
         points: dv.getInt16(pos + 132 + 2*i, true),
       };
     }
+    return list;
   }
   
   return RoomView;
