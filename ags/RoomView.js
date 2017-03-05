@@ -23,7 +23,7 @@ define(function() {
           if (chunkType === 0xff) break;
           var len = this.dv.getInt32(pos, true);
           pos += 4;
-          var chunk = list[i] = {data: this.bytes.subarray(pos, pos+len), type:chunkType};
+          var chunk = {data: this.bytes.subarray(pos, pos+len), type:chunkType};
           switch (chunkType) {
             case 1: chunk.type = 'main'; break;
             case 2: chunk.type = 'script_source'; break;
@@ -36,6 +36,7 @@ define(function() {
             case 9: chunk.type = 'object_script_names'; break;
           }
           pos += len;
+          list.push(chunk);
         }
       }
       list.afterPos = pos;
