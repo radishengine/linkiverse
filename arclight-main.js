@@ -70,11 +70,11 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
         };
         script.type = 'text/javascript';
         script.src = '//archive.org/advancedsearch.php'
-          + '?q=collection:' + self.identifier + '+-subject:"game+creation+software"' //'+ags_format_version:(7 OR 9)'
+          + '?q=collection:' + self.identifier + '+ags_format_version:(7 OR 9)' // '+-subject:"game+creation+software"'
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
           + '&rows=100'
-          + '&page=3'
+          + '&page=1'
           + '&output=json'
           + '&callback=' + callbackName
           + '&save=yes';
