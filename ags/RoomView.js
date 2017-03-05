@@ -135,7 +135,7 @@ define(function() {
         list = null;
       }
       else {
-        list = new Array(this.usedHotspots);
+        list = new Array(this.hotspotCount);
         var pos = this.interactions_v2.afterPos;
         for (var i = 0; i < list.length; i++) {
           list[i] = {
