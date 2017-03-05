@@ -40,6 +40,7 @@ define(function() {
       }
       list.afterPos = pos;
       Object.defineProperty(this, 'chunks', {value:list});
+      return list;
     },
   };
   
