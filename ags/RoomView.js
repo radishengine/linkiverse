@@ -1,6 +1,8 @@
 define(function() {
 
   'use strict';
+  
+  const INTERACTIONS_V2_SIZE = 148;
 
   function RoomView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
@@ -100,7 +102,47 @@ define(function() {
       Object.defineProperty(this, 'walkbehindBaselines', {value:list});
       return list;
     },
+    get hotspotCount() {
+      if (this.formatVersion < 9) {
+        return this.maxHotspots;
+      }
+      return this.dv.getInt32(this.walkbehindBaselines.afterPos, true);
+    },
+    get interactions_v2() {
+      var obj = {};
+      var pos = this.walkbehindBaselines.afterPos + (this.formatVersion < 9 ? 0 : 4);
+      if (this.formatVersion >= 9 && this.formatVersion <= 14) {
+        obj.forHotspots = new Array(this.maxHotspots);
+        for (var i = 0; i < obj.forHotspots.length; i++) {
+          obj.forHotspots[i] = readInteractionsV2(this.dv, pos);
+          pos += INTERACTIONS_V2_SIZE;
+        }
+        obj.forObjects = new Array(this.maxObjects);
+        for (var i = 0; i < obj.forObjects.length; i++) {
+          obj.forObjects[i] = readInteractionsV2(this.dv, pos);
+          pos += INTERACTIONS_V2_SIZE;
+        }
+        obj.forRoom = readInteractionsV2(this.dv, pos);
+        pos += INTERACTIONS_V2_SIZE;
+      }
+      obj.afterPos = pos;
+      Object.defineProperty(this, 'interactions_v2', {value:obj});
+      return obj;
+    },
   };
+  
+  function readInteractionsV2(dv, pos) {
+    var list = new Array(dv.getInt32(pos + 128, true));
+    for (var i = 0; i < list.length; i++) {
+      list[i] = {
+        event: dv.getInt32(pos + 4*i, true),
+        response: dv.getInt32(pos + 32 + 4*i, true),
+        data1: dv.getInt32(pos + 64 + 4*i, true),
+        data2: dv.getInt32(pos + 96 + 4*i, true),
+        points: dv.getInt16(pos + 132 + 2*i, true),
+      };
+    }
+  }
   
   return RoomView;
 
