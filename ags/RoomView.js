@@ -3,7 +3,11 @@ define(function() {
   'use strict';
   
   const INTERACTIONS_V2_SIZE = 148;
-
+  
+  function nullTerminated(bytes, offset, length) {
+    return String.fromCharCode.apply(null, bytes.subarray(offset, offset + length)).match(/^[^\0]*/)[0];
+  }
+  
   function RoomView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -146,6 +150,37 @@ define(function() {
         list.afterPos = pos + list.length * 4;
       }
       Object.defineProperty(this, 'hotspotWalkToPoints', {value:list});
+      return list;
+    },
+    get hotspotNames() {
+      var list;
+      if (this.formatVersion >= 9) {
+        var pos = this.hotspotWalkToPoints.afterPos;
+        list = new Array(this.hotspotCount);
+        if (this.formatVersion >= 28) {
+          for (var i = 0; i < list.length; i++) {
+            var endPos = pos;
+            while (this.bytes[endPos] !== 0) {
+              endPos++;
+            }
+            if (pos !== endPos) {
+              list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+            }
+            pos = endPos + 1;
+          }
+        }
+        else {
+          for (var i = 0; i < list.length; i++) {
+            list[i] = nullTerminated(this.bytes, pos, 30));
+            pos += 30;
+          }
+        }
+        list.afterPos = pos;
+      }
+      else {
+        list = null;
+      }
+      Object.defineProperty(this, 'hotspotNames', {value:list});
       return list;
     },
   };
