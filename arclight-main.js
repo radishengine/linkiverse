@@ -323,6 +323,9 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
             window.gameView = gameView;
             var startRoom = gameView.characters[gameView.header.playerCharacterId].room;
             var roomData = files['room' + startRoom + '.crm'] || files['ROOM' + startRoom + '.CRM'];
+            if (!roomData && startRoom === 0) {
+              roomData = files['intro.crm'] || files['INTRO.CRM'];
+            }
             if (!roomData) {
               return Promise.reject('room' + startRoom + '.crm not found!');
             }
