@@ -171,7 +171,7 @@ define(function() {
         }
         else {
           for (var i = 0; i < list.length; i++) {
-            list[i] = nullTerminated(this.bytes, pos, 30));
+            list[i] = nullTerminated(this.bytes, pos, 30);
             pos += 30;
           }
         }
