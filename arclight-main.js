@@ -74,7 +74,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
           + '&rows=50'
-          + '&page=4'
+          + '&page=5'
           + '&output=json'
           + '&callback=' + callbackName
           + '&save=yes';
