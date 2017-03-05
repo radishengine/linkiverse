@@ -73,8 +73,8 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
           + '?q=collection:' + self.identifier + '+-subject:"game+creation+software"' //'+ags_format_version:(7 OR 9)'
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
-          + '&rows=50'
-          + '&page=5'
+          + '&rows=100'
+          + '&page=3'
           + '&output=json'
           + '&callback=' + callbackName
           + '&save=yes';
