@@ -129,6 +129,25 @@ define(function() {
       Object.defineProperty(this, 'interactions_v2', {value:obj});
       return obj;
     },
+    get hotspotWalkToPoints() {
+      var list;
+      if (this.formatVersion < 9) {
+        list = null;
+      }
+      else {
+        list = new Array(this.usedHotspots);
+        var pos = this.interactions_v2.afterPos;
+        for (var i = 0; i < list.length; i++) {
+          list[i] = {
+            x: this.dv.getInt16(pos + i * 4, true),
+            y: this.dv.getInt16(pos + i * 4 + 2, true),
+          };
+        }
+        list.afterPos = pos + list.length * 4;
+      }
+      Object.defineProperty(this, 'hotspotWalkToPoints', {value:list});
+      return list;
+    },
   };
   
   function readInteractionsV2(dv, pos) {
