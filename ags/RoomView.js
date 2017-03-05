@@ -51,7 +51,8 @@ define(function() {
       else {
         for (var i = 0; i < this.chunks.length; i++) {
           if (this.chunks[i].type === 'main') {
-            main = new RoomMainView(this.chunks[i].buffer, this.chunks[i].byteOffset, this.chunks[i].byteLength);
+            var data = this.chunks[i].data;
+            main = new RoomMainView(data.buffer, data.byteOffset, data.byteLength);
             break;
           }
         }
