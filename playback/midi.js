@@ -193,7 +193,7 @@ define(function() {
       else {
         return Promise.reject('source must be Blob, ArrayBuffer, DataView or Uint8Array');
       }
-      if (String.fromCharCode.apply(null, bytes.subarray(0, 8)) !== 'MThd\x00\x00\x00\x06')) {
+      if (String.fromCharCode.apply(null, bytes.subarray(0, 8)) !== 'MThd\x00\x00\x00\x06') {
         return Promise.reject('invalid midi file');
       }
       var trackMode;
