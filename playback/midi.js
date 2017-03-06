@@ -15,22 +15,28 @@ define(function() {
   var channels = new Array(16);
   
   function Channel() {
+    this.volumeControl = audioContext.createGain();
     this.oscillator = audioContext.createOscillator();
     this.oscillator.type = 'square';
     this.oscillator.start();
+    this.oscillator.connect(this.volumeControl);
+    this.finalNode = this.volumeControl;
   }
   Channel.prototype = {
     on: function(key, velocity) {
       if (velocity === 0) return this.off(key, velocity);
       this.oscillator.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
-      this.oscillator.connect(audioContext.destination);
+      this.finalNode.connect(audioContext.destination);
     },
     off: function(key, velocity) {
-      this.oscillator.disconnect();
+      this.finalNode.disconnect();
     },
     keyPressure: function(key, pressure) {
     },
     control: function(control, value) {
+      switch (control) {
+        case 7: this.volumeControl.gain = value/127; break;
+      }
     },
     program: function(program) {
     },
