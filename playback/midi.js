@@ -16,6 +16,7 @@ define(function() {
   
   function Channel() {
     this.oscillator = audioContext.createOscillator();
+    this.oscillator.type = 'square';
     this.oscillator.start();
   }
   Channel.prototype = {
