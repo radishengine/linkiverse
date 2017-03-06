@@ -2,6 +2,8 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function
 
   'use strict';
   
+  window.midi = midi;
+  
   function IAItem(identifier) {
     this.identifier = identifier;
   }
@@ -362,7 +364,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function
           });
         })
         .then(function(files) {
-          console.dir(files);
+          console.dir(window.files = files);
           var mainData = files['ac2game.dta'] || files['AC2GAME.DTA'];
           if (!mainData) {
             return Promise.reject('ac2game.dta not found!');
