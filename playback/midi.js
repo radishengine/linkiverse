@@ -19,11 +19,11 @@ define(function() {
   }
   Channel.prototype = {
     on: function(key, velocity) {
-      this.oscillator.frequency = (440 / 32) * Math.pow(2, ((key - 9) / 12));
-      this.oscillator.start();
+      this.oscillator.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
+      this.oscillator.connect(audioContext.destination);
     },
     off: function(key, velocity) {
-      this.oscillator.stop();
+      this.oscillator.disconnect();
     },
     keyPressure: function(key, pressure) {
     },
