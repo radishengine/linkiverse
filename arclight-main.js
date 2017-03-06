@@ -269,7 +269,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
             .then(function(bytes) {
               bytes = new Uint8Array(bytes);
               var files = new Array((bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24)) >>> 0);
-              return readBlob(mainBlob, 6 + 1 + 4, fileCountOffset + 4 + 25*files.length + 4*files.length + 4*files.length + files.length)
+              return readBlob(mainBlob.slice(6 + 1 + 4, fileCountOffset + 4 + 25*files.length + 4*files.length + 4*files.length + files.length))
               .then(function(listData) {
                 var dv = new DataView(listData);
                 listData = new Uint8Array(listData);
