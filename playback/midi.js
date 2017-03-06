@@ -20,7 +20,9 @@ define(function() {
     this.oscillator.type = 'square';
     this.oscillator.start();
     this.oscillator.connect(this.volumeControl);
-    this.finalNode = this.volumeControl;
+    this.panControl = audioContext.createStereoPanner();
+    this.volumeControl.connect(this.panControl);
+    this.finalNode = this.panControl;
   }
   Channel.prototype = {
     on: function(key, velocity) {
@@ -36,6 +38,9 @@ define(function() {
     control: function(control, value) {
       switch (control) {
         case 7: this.volumeControl.gain.value = value/127; break;
+        case 10:
+          this.panControl.pan.value = (value - 64) / (value >= 64 ? 63 : 64);
+          break;
       }
     },
     program: function(program) {
