@@ -227,7 +227,6 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
   }
   
   function loadGame(mainBlob, getRelativeBlob) {
-    var selfBlob = mainBlob;
     function onPrefix(prefix) {
       prefix = new Uint8Array(prefix);
       if (String.fromCharCode(prefix[0], prefix[1], prefix[2], prefix[3]) !== 'CLIB') {
@@ -298,7 +297,9 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
                 }
                 var fileMap = {};
                 for (var i = 0; i < files.length; i++) {
-                  fileMap[files[i].name] = selfBlob.slice(files[i].offset, files[i].offset + files[i].length);
+                  if (files[i].container === 'ac2game.dat') {
+                    fileMap[files[i].name] = mainBlob.slice(files[i].offset, files[i].offset + files[i].length);
+                  }
                 }
                 return fileMap;
               });
