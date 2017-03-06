@@ -1,4 +1,4 @@
-require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'midi'], function(inflate, GameView, RoomView, midi) {
+require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function(inflate, GameView, RoomView, midi) {
 
   'use strict';
   
