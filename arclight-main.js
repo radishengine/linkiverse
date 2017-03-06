@@ -259,17 +259,17 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
             });
           });
         case 10:
-          return readBlob(mainBlob.slice(8, 13))
+          return readBlob(mainBlob.slice(6, 11))
           .then(function(bytes) {
             bytes = new Uint8Array(bytes);
             if (bytes[0] !== 0) return Promise.reject('not first datafile in chain');
             var containers = new Array((bytes[1] | (bytes[2] << 8) | (bytes[3] << 16) | (bytes[4] << 24)) >>> 0);
-            var fileCountOffset = 8 + 1 + 4 + 20*containers.length;
+            var fileCountOffset = 6 + 1 + 4 + 20*containers.length;
             return readBlob(mainBlob.slice(fileCountOffset, fileCountOffset + 4))
             .then(function(bytes) {
               bytes = new Uint8Array(bytes);
               var files = new Array((bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24)) >>> 0);
-              return readBlob(mainBlob, 8 + 1 + 4, fileCountOffset + 4 + 25*files.length + 4*files.length + 4*files.length + files.length)
+              return readBlob(mainBlob, 6 + 1 + 4, fileCountOffset + 4 + 25*files.length + 4*files.length + 4*files.length + files.length)
               .then(function(listData) {
                 var dv = new DataView(listData);
                 listData = new Uint8Array(listData);
