@@ -35,7 +35,7 @@ define(function() {
     },
     control: function(control, value) {
       switch (control) {
-        case 7: this.volumeControl.gain = value/127; break;
+        case 7: this.volumeControl.gain.value = value/127; break;
       }
     },
     program: function(program) {
