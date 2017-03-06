@@ -227,14 +227,16 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
   }
   
   function loadGame(mainBlob, getRelativeBlob) {
+    var selfBlob = mainBlob;
     function onPrefix(prefix) {
       prefix = new Uint8Array(prefix);
       if (String.fromCharCode(prefix[0], prefix[1], prefix[2], prefix[3]) !== 'CLIB') {
         return Promise.reject('resource package not found');
       }
       var version = prefix[5];
+      console.log('packing version: ' + version);
       switch (version) {
-        default: return Promise.reject('unsupported format version: ' + version);
+        default: return Promise.reject('unsupported packing format version: ' + version);
         case 6:
           return readBlob(mainBlob.slice(8, 10))
           .then(function(count) {
@@ -248,11 +250,55 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
               var flags = new DataView(fileData, names.byteLength + lengths.byteLength, 2 * count);
               for (var i = 0; i < count; i++) {
                 var name = String.fromCharCode.apply(null, names.subarray(13 * i, 13 * (i + 1))).replace(/\0.*/, '');
+                name = name.toLowerCase();
                 var length = lengths.getUint32(i * 4, true);
                 files[name] = mainBlob.slice(offset, offset + length);
                 offset += length;
               }
               return files;
+            });
+          });
+        case 10:
+          return readBlob(mainBlob.slice(8, 13))
+          .then(function(bytes) {
+            if (bytes[0] !== 0) return Promise.reject('not first datafile in chain');
+            var containers = new Array((bytes[1] | (bytes[2] << 8) | (bytes[3] << 16) | (bytes[4] << 24)) >>> 0);
+            var fileCountOffset = 8 + 1 + 4 + 20*containers.length;
+            return readBlob(mainBlob.slice(fileCountOffset, fileCountOffset + 4))
+            .then(function(bytes) {
+              var files = new Array((bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24)) >>> 0);
+              return readBlob(mainBlob, 8 + 1 + 4, fileCountOffset + 4 + 25*files.length + 4*files.length + 4*files.length + files.length)
+              .then(function(listData) {
+                var dv = new DataView(listData.buffer, listData.byteOffset, listData.byteLength);
+                var pos = 0;
+                var containers = new Array(containerCount);
+                for (var i = 0; i < containers.length; i++) {
+                  containers[i] = String.fromCharCode.apply(null, listData.subarray(pos, pos + 20)).match(/^[^\0]*/)[0];
+                  pos += 20;
+                }
+                for (var i = 0; i < files.length; i++) {
+                  files[i] = {
+                    name: String.fromCharCode.apply(null, listData.subarray(pos, pos + 25)).match(/^[^\0]*/)[0],
+                  };
+                  pos += 25;
+                }
+                for (var i = 0; i < files.length; i++) {
+                  files[i].offset = dv.getInt32(pos, true);
+                  pos += 4;
+                }
+                for (var i = 0; i < files.length; i++) {
+                  files[i].length = dv.getInt32(pos, true);
+                  pos += 4;
+                }
+                for (var i = 0; i < files.length; i++) {
+                  files[i].container = containers[listData[pos++]];
+                }
+                var fileMap = {};
+                for (var i = 0; i < files.length; i++) {
+                  fileMap[files[i].name] = selfBlob.slice(files[i].offset, files[i].offset + files[i].length);
+                }
+                return fileMap;
+              });
             });
           });
       }
@@ -308,7 +354,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
         .then(function(uncompressed) {
           var folder = gameFiles[0].replace(/\/[^\/]*$/, '/');
           return loadGame(uncompressed, function getRelativeBlob(path) {
-            return gameFiles[folder + path];
+            return zipRecords[folder + path];
           });
         })
         .then(function(files) {
