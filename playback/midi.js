@@ -162,7 +162,7 @@ define(function() {
     },
     pause: function() {
       if (updateInterval === null) return;
-      removeInterval(updateInterval);
+      clearInterval(updateInterval);
       updateInterval = null;
     },
     play: function() {
@@ -244,6 +244,9 @@ define(function() {
     stop: function() {
       this.pause();
       activeTracks.splice(0, activeTracks.length);
+      for (var i = 0; i < channels.length; i++) {
+        channels[i].off();
+      }
     },
   };
   
