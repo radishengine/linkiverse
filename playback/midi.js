@@ -20,6 +20,7 @@ define(function() {
   }
   Channel.prototype = {
     on: function(key, velocity) {
+      if (velocity === 0) return this.off(key, velocity);
       this.oscillator.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
       this.oscillator.connect(audioContext.destination);
     },
