@@ -49,7 +49,7 @@ define(function() {
   
   function updateAudio(doNotLoop) {
     var now = audioContext.currentTime;
-    elapsed = now - baseTime;
+    var elapsed = now - baseTime;
     baseTime = now;
     var anyPlayed = false;
     for (var i = 0; i < activeTracks.length; i++) {
