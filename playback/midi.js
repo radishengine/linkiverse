@@ -172,7 +172,7 @@ define(function() {
         var fr = new FileReader();
         return new Promise(function(resolve, reject) {
           fr.addEventListener('load', function() {
-            resolve(midi.play(this.result, trackNumber));
+            resolve(midi.play(this.result, selectTrackNumber));
           });
           fr.readAsArrayBuffer(source);
         });
