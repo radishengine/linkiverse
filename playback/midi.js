@@ -57,7 +57,7 @@ define(function() {
       if (track.pos >= track.length) continue;
       anyPlayed = true;
       track.remainingDelta -= secondsToDelta(elapsed);
-      while (track.remainingDelta <= 0) {
+      commandLoop: while (track.remainingDelta <= 0) {
         var command = track[track.pos++];
         if (command < 0x80) {
           command = track.lastCommand;
@@ -103,7 +103,7 @@ define(function() {
               var meta = track[track.pos++];
               if (meta == 0x2F) {
                 track.pos = track.length + 1;
-                break;
+                break commandLoop;
               }
               var metaPos = track.pos;
               var metaLength = track.nextVarint();
