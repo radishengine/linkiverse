@@ -278,6 +278,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView'], function(inflate, GameVie
                   containers[i] = String.fromCharCode.apply(null, listData.subarray(pos, pos + 20)).match(/^[^\0]*/)[0];
                   pos += 20;
                 }
+                pos += 4;
                 for (var i = 0; i < files.length; i++) {
                   files[i] = {
                     name: String.fromCharCode.apply(null, listData.subarray(pos, pos + 25)).match(/^[^\0]*/)[0],
