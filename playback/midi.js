@@ -28,10 +28,6 @@ define(function() {
     _tpb: 5,
   };
   
-  function secondsToDelta(sec) {
-    return sec * 100;
-  }
-  
   var channels = new Array(16);
   
   function Channel() {
@@ -104,7 +100,7 @@ define(function() {
       var track = activeTracks[i];
       if (track.pos >= track.length) continue;
       anyPlayed = true;
-      track.remainingDelta -= secondsToDelta(elapsed);
+      track.remainingDelta -= elapsed / ticksPerSecond;
       commandLoop: while (track.remainingDelta <= 0) {
         var command = track[track.pos++];
         if (command < 0x80) {
