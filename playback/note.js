@@ -8,12 +8,12 @@ define(['require'], function(require) {
   
   var note = {
     load: function(audioContext) {
-      fetch(require.toUrl('note1.wav'), {cache:'force-cache'})
+      fetch(require.toUrl('./note1.wav'), {cache:'force-cache'})
       .then(function(req) {
         return req.arrayBuffer();
       })
       .then(function(data) {
-        return audioContext.decodeAudioData(arrayBuffer)
+        return audioContext.decodeAudioData(data);
       })
       .then(function(buffer) {
         var samples = buffer.getChannelData();
