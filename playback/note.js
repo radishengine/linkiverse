@@ -16,7 +16,7 @@ define(['require'], function(require) {
         return audioContext.decodeAudioData(data);
       })
       .then(function(buffer) {
-        var samples = buffer.getChannelData();
+        var samples = buffer.getChannelData(0);
         var keys = new Array(128);
         var i = -1;
         function doKeys(toKey, len, unity, loopStart, loopLen, attenuation_dB, tune_cents) {
