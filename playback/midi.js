@@ -46,12 +46,13 @@ define(function() {
     this.finalNode.connect(audioContext.destination);
   }
   Channel.prototype = {
+    isPercussionChannel: false,
     on: function(key, velocity) {
       if (velocity === 0) return this.off(key, velocity);
       var keyNode = this.keys[key];
       if (!keyNode) {
         keyNode = audioContext.createOscillator();
-        keyNode.type = 'square';
+        keyNode.type = this.isPercussionChannel ? 'triangle' : 'square';
         keyNode.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
         keyNode.start();
         var copy = audioContext.createGain();
@@ -61,6 +62,9 @@ define(function() {
         this.keys[key] = keyNode;
       }
       keyNode.gain.value = velocity/127;
+      if (this.isPercussionChannel) {
+        keyNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
+      }
       keyNode.connect(this.firstNode);
     },
     off: function(key, velocity) {
@@ -90,6 +94,7 @@ define(function() {
   for (var i = 0; i < channels.length; i++) {
     channels[i] = new Channel();
   }
+  channels[9].isPercussionChannel = true;
   
   function systemExclusive(bytes) {
   }
