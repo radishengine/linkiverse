@@ -12,7 +12,7 @@ define(function() {
   
   var timing = {
     recalc: function() {
-      ticksPerSecond = 60 / (this.beatsPerMinute * this.ticksPerBeat);
+      ticksPerSecond = (this.ticksPerBeat * this.beatsPerMinute) / 60;
     },
     get beatsPerMinute() { return this._bpm; },
     set beatsPerMinute(value) {
