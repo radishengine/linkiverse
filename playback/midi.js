@@ -302,7 +302,9 @@ define(function() {
       this.pause();
       activeTracks.splice(0, activeTracks.length);
       for (var i = 0; i < channels.length; i++) {
-        channels[i].off();
+        for (var j = 0; j < 128; j++) {
+          channels[i].off(j, 127);
+        }
       }
     },
   };
