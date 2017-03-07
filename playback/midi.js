@@ -16,22 +16,29 @@ define(function() {
   
   function Channel() {
     this.volumeControl = audioContext.createGain();
-    this.oscillator = audioContext.createOscillator();
-    this.oscillator.type = 'square';
-    this.oscillator.start();
-    this.oscillator.connect(this.volumeControl);
+    this.firstNode = this.volumeControl;
     this.panControl = audioContext.createStereoPanner();
     this.volumeControl.connect(this.panControl);
     this.finalNode = this.panControl;
+    this.keys = new Array(128);
   }
   Channel.prototype = {
     on: function(key, velocity) {
       if (velocity === 0) return this.off(key, velocity);
-      this.oscillator.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
-      this.finalNode.connect(audioContext.destination);
+      var keyNode = this.keys[key];
+      if (!keyNode) {
+        keyNode = this.keys[key] = audioContext.createOscillator();
+        keyNode.type = 'square';
+        keyNode.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
+        keyNode.start();
+      }
+      keyNode.connect(this.firstNode);
     },
     off: function(key, velocity) {
-      this.finalNode.disconnect();
+      var keyNode = this.keys[key];
+      if (keyNode) {
+        keyNode.disconnect();
+      }
     },
     keyPressure: function(key, pressure) {
     },
