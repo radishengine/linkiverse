@@ -238,6 +238,10 @@ define(function() {
       }
       else {
         deltaTimeUnit = 'ticksPerBeat';
+        var beatsPerSecond = (120 / 2);
+        secondsToDelta = function(seconds) {
+          return seconds * beatsPerSecond * deltaTimeValue;
+        };
       }
       var foundTracks = [];
       for (var pos = 14; pos < bytes.length; ) {
@@ -253,7 +257,7 @@ define(function() {
         return Promise.reject('expected ' + trackCount + ' tracks, found ' + foundTracks.length);
       }
       if (trackMode === 'separate' && trackCount > 1) {
-        foundTracks = [foundTracks[selectedTrackNumber]];
+        foundTracks = [foundTracks[selectTrackNumber]];
       }
       for (var i = 0; i < foundTracks.length; i++) {
         foundTracks[i].pos = 0;
