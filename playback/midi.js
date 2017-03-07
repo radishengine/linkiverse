@@ -28,7 +28,7 @@ define(function() {
       if (velocity === 0) return this.off(key, velocity);
       var keyNode = this.keys[key];
       if (!keyNode) {
-        keyNode = this.keys[key] = audioContext.createOscillator();
+        keyNode = audioContext.createOscillator();
         keyNode.type = 'square';
         keyNode.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
         keyNode.start();
@@ -36,6 +36,7 @@ define(function() {
         copy.frequency = keyNode.frequency;
         keyNode.connect(copy);
         keyNode = copy;
+        this.keys[key] = keyNode;
       }
       keyNode.gain.value = velocity/127;
       keyNode.connect(this.firstNode);
