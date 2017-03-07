@@ -32,7 +32,12 @@ define(function() {
         keyNode.type = 'square';
         keyNode.frequency.value = (440 / 32) * Math.pow(2, ((key - 9) / 12));
         keyNode.start();
+        var copy = audioContext.createGain();
+        copy.frequency = keyNode.frequency;
+        keyNode.connect(copy);
+        keyNode = copy;
       }
+      keyNode.gain.value = velocity/127;
       keyNode.connect(this.firstNode);
     },
     off: function(key, velocity) {
