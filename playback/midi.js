@@ -163,9 +163,8 @@ define(function() {
                 track.pos = track.length + 1;
                 break commandLoop;
               }
-              var metaPos = track.pos;
               var metaLength = track.nextVarint();
-              onMeta(meta, track.subarray(metaPos, metaPos + metaLength));
+              onMeta(meta, track.subarray(track.pos, track.pos + metaLength));
               track.pos += metaLength;
             }
             else if (command === 0xF0) {
