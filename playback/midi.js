@@ -8,6 +8,26 @@ define(function() {
   
   var activeTracks = [];
   
+  var ticksPerSecond;
+  
+  var timing = {
+    recalc: function() {
+      ticksPerSecond = 60 / (this.beatsPerMinute * this.ticksPerBeat);
+    },
+    get beatsPerMinute() { return this._bpm; },
+    set beatsPerMinute(value) {
+      this._bpm = value;
+      this.recalc();
+    },
+    get ticksPerBeat() { return this._tpb; },
+    set ticksPerBeat(value) {
+      this._tpb = value;
+      this.recalc();
+    },
+    _bpm: 120,
+    _tpb: 5,
+  };
+  
   function secondsToDelta(sec) {
     return sec * 100;
   }
@@ -244,10 +264,7 @@ define(function() {
       }
       else {
         deltaTimeUnit = 'ticksPerBeat';
-        var beatsPerSecond = 120 / 60;
-        secondsToDelta = function(seconds) {
-          return seconds * beatsPerSecond * deltaTimeValue;
-        };
+        timing.ticksPerBeat = deltaTimeValue;
       }
       var foundTracks = [];
       for (var pos = 14; pos < bytes.length; ) {
