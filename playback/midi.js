@@ -100,7 +100,7 @@ define(function() {
       var track = activeTracks[i];
       if (track.pos >= track.length) continue;
       anyPlayed = true;
-      track.remainingDelta -= elapsed / ticksPerSecond;
+      track.remainingDelta -= elapsed * ticksPerSecond;
       commandLoop: while (track.remainingDelta <= 0) {
         var command = track[track.pos++];
         if (command < 0x80) {
