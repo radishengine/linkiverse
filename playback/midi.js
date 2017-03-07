@@ -21,6 +21,7 @@ define(function() {
     this.volumeControl.connect(this.panControl);
     this.finalNode = this.panControl;
     this.keys = new Array(128);
+    this.finalNode.connect(audioContext.destination);
   }
   Channel.prototype = {
     on: function(key, velocity) {
