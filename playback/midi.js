@@ -238,7 +238,7 @@ define(function() {
       }
       else {
         deltaTimeUnit = 'ticksPerBeat';
-        var beatsPerSecond = (120 / 2);
+        var beatsPerSecond = 120 / 60;
         secondsToDelta = function(seconds) {
           return seconds * beatsPerSecond * deltaTimeValue;
         };
