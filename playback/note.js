@@ -29,8 +29,8 @@ define(['require'], function(require) {
             key.buffer = sliceBuffer;
             key.loopEnd = (key.loopStart = loopStart) + loopLen;
             key.loop = true;
-            key.playbackRate = noteFreq(i) / playbackRateDenominator;
-            key.detune = tune_cents;
+            key.playbackRate.value = noteFreq(i) / playbackRateDenominator;
+            key.detune.value = tune_cents;
           }
         }
         doKeys(38, 13672, 36, 11989, 1682, -11.3, -4);
