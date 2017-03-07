@@ -62,9 +62,6 @@ define(function() {
         this.keys[key] = keyNode;
       }
       keyNode.gain.value = velocity/127;
-      if (this.isPercussionChannel) {
-        keyNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
-      }
       keyNode.connect(this.firstNode);
     },
     off: function(key, velocity) {
