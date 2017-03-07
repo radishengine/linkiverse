@@ -12,7 +12,7 @@ define(function() {
   
   var timing = {
     recalc: function() {
-      ticksPerSecond = (this.ticksPerBeat * this.beatsPerMinute) / 60;
+      ticksPerSecond = this.speedMultiplier * (this.ticksPerBeat * this.beatsPerMinute) / 60;
     },
     get beatsPerMinute() { return this._bpm; },
     set beatsPerMinute(value) {
@@ -24,8 +24,14 @@ define(function() {
       this._tpb = value;
       this.recalc();
     },
+    get speedMultiplier() { return this._mul; },
+    set speedMultiplier(value) {
+      this._mul = value;
+      this.recalc();
+    },
     _bpm: 120,
     _tpb: 5,
+    _mul: 1,
   };
   
   var channels = new Array(16);
@@ -89,6 +95,14 @@ define(function() {
   }
   
   function onMeta(code, bytes) {
+    switch (code) {
+      case 0x51:
+        timing.beatsPerMinute = 6e7 / (bytes[0] * 0x10000 + bytes[1] * 0x100 + bytes[2]);
+        break;
+      case 0x58:
+        timing.speedMultiplier = bytes[3] / 8;
+        break;
+    }
   }
   
   function updateAudio(doNotLoop) {
