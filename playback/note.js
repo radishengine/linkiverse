@@ -234,6 +234,17 @@ define(['require'], function(require) {
               break;
           }
           break;
+        case 0x07:
+          noteNumber = 9;
+          parts = [
+            [46, 636, 48, 467, 168, -5.58, -6],
+            [65, 375, 60, 290, 84, -4.57, -6],
+            [78, 249, 72, 206, 42, -4.15, -6],
+            [95, 98, 84, 76, 21, -6.2, -6],
+            1523,
+            [127, 227, 103, 212, 14, -11, -8],
+          ];
+          break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
@@ -262,6 +273,10 @@ define(['require'], function(require) {
           }
         }
         for (var j = 0; j < parts.length; j++) {
+          if (typeof parts[j] === 'number') {
+            samples = samples.subarray(parts[j]);
+            continue;
+          }
           doKeys.apply(null, parts[j]);
         }
         return keys;
