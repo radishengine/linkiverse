@@ -327,6 +327,19 @@ define(['require'], function(require) {
             [127, 227, 103, 212, 14, -7.2, -8],
           ];
           break;
+        case 0x10:
+          switch (bank) {
+            case 0: default:
+              noteNumber = 10;
+              parts = [
+                445 + 317 + 170 + 1167,
+                [79, 545, 73, 465, 79, -5.6, -12],
+                [92, 277, 85, 236, 40, -9.5, 10],
+                [127, 145, 97, 124, 20, -11.5, 10],
+              ];
+              break;
+          }
+          break;
         case 0x58:
           noteNumber = 9;
           parts = [
