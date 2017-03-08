@@ -38,10 +38,10 @@ define(['require'], function(require) {
           sliceBuffer.copyToChannel(samples.subarray(0, len), 0);
           samples = samples.subarray(len);
           var playbackRateDenominator = noteFreq(unity);
-          while (++i <= toKey) {
+          for (; i <= toKey; i++) {
             var key = keys[i] = audioContext.createBufferSource();
             key.buffer = sliceBuffer;
-            key.loopEnd = (key.loopStart = loopStart) + loopLen;
+            key.loopEnd = (key.loopStart = loopStart / 22050) + (loopLen / 22050);
             key.loop = true;
             key.playbackRate.value = noteFreq(i) / playbackRateDenominator;
             key.detune.value = tune_cents;
