@@ -366,6 +366,32 @@ define(['require'], function(require) {
                 [127, -98, 97, 87, 10, -9.2, 10],
               ];
               break;
+            case 4:
+              // 0 with different attenuation
+              noteNumber = 10;
+              parts = [
+                445 + 317 + 170 + 1167,
+                [79, 545, 73, 465, 79, -5.3, -12],
+                [92, 277, 85, 236, 40, -5.7, 10],
+                [127, 145, 97, 124, 20, -6, 10],
+              ];
+              break;
+          }
+          break;
+        case 0x11:
+          switch (bank) {
+            case 0: default:
+              throw new Error('NYI');
+            case 4:
+              // 0x10 bank 0 with different attenuation and key range
+              noteNumber = 10;
+              parts = [
+                445 + 317 + 170 + 1167,
+                [76, 545, 73, 465, 79, -0.7, -12],
+                [92, 277, 85, 236, 40, -1.11, 10],
+                [127, 145, 97, 124, 20, -1.4, 10],
+              ];
+              break;              
           }
           break;
         case 0x1F:
