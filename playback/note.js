@@ -187,6 +187,53 @@ define(['require'], function(require) {
               break;
           }
           break;
+        case 0x06:
+          switch (bank) {
+            case 0x00: default:
+              noteNumber = 8;
+              parts = [
+                [54, 6687, 48, 5506, 1180, -7.62, 0],
+                [66, 5176, 60, 4501, 674, -7.62, -1],
+                [80, 4008, 72, 3291, 716, -7.62, -1],
+                [100, 3666, 87, 3169, 496, -8.6, 0],
+                [127, -3666, 87, 3169, 496, -9.6, 0],
+              ];
+              break;
+            case 0x01:
+              // same as 0x00 with attenuation and key range differences
+              noteNumber = 8;
+              parts = [
+                [51, 6687, 48, 5506, 1180, -9.62, 0],
+                [63, 5176, 60, 4501, 674, -9.62, -1],
+                [77, 4008, 72, 3291, 716, -9.62, -1],
+                [97, 3666, 87, 3169, 496, -9.62, 0],
+                [127, -3666, 87, 3169, 496, -9.62, 0],
+              ];
+              break;
+            case 0x02:
+              // same as 0x00 with attenuation differences
+              noteNumber = 8;
+              parts = [
+                [54, 6687, 48, 5506, 1180, -7.12, 0],
+                [66, 5176, 60, 4501, 674, -7.12, -1],
+                [80, 4008, 72, 3291, 716, -7.12, -1],
+                [100, 3666, 87, 3169, 496, -8.1, 0],
+                [127, -3666, 87, 3169, 496, -9.1, 0],
+              ];
+              break;
+            case 0x03:
+              // same as 0x00 with attenuation and key range differences
+              noteNumber = 8;
+              parts = [
+                [54, 6687, 48, 5506, 1180, -10.35, 0],
+                [66, 5176, 60, 4501, 674, -10.35, -1],
+                [80, 4008, 72, 3291, 716, -10.35, -1],
+                [100, 3666, 87, 3169, 496, -11.3, 0],
+                [127, -3666, 87, 3169, 496, -12.3, 0],
+              ];
+              break;
+          }
+          break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
