@@ -16,7 +16,9 @@ define(['require'], function(require) {
     this.audioBuffer = audioBuffer;
   }
   Note.prototype = {
-    createSourceNode: function(destination, baseTime, startTime, endTime) {
+    createSourceNode: function(destination, baseTime, startTime, endTime, velocity) {
+      if (isNaN(velocity)) velocity = 1;
+      if (velocity <= 0) return;
       var node = this.audioContext.createBufferSource();
       node.buffer = this.audioBuffer;
       if (this.loop) {
@@ -29,7 +31,7 @@ define(['require'], function(require) {
       node.start(baseTime + startTime);
       node.stop(baseTime + endTime);
       var gain = this.audioContext.createGain();
-      gain.gain.value = this.gain;
+      gain.gain.value = velocity * this.gain;
       var fadeStart = endTime - 0.1;
       if (fadeStart > startTime) {
         gain.gain.setValueAtTime(this.gain, baseTime + fadeStart);
