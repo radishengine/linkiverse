@@ -563,6 +563,25 @@ define(['require'], function(require) {
               break;
           }
           break;
+        case 0x19:
+          noteNumber = 19;
+          switch (bank) {
+            case 0: default:
+              parts = [
+                [44, 9361, 41, 8352, 1008, -4.3, -4],
+                [52, 5905, 49, 4790, 1114, -4.3, 0],
+                [60, 5026, 57, 4724, 301, -4.3, 2],
+                [69, 5140, 65, 4886, 253, -3.3, 3],
+                [81, 3785, 74, 3596, 188, -3.3, 3],
+                [88, 2954, 84, 2763, 190, -5.7, 3],
+                [127, -2954, 84, 2763, 190, -8, 3],
+              ];
+              break;
+            case 1:
+            case 2:
+              throw new Error('NYI');
+          }
+          break;
         case 0x1C:
           noteNumber = 18;
           switch (bank) {
