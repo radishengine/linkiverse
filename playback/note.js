@@ -450,6 +450,17 @@ define(['require'], function(require) {
               break;
           }
           break;
+        case 0x14:
+          noteNumber = 16;
+          parts = [
+            791 + 589,
+            [46, 296, 53, 41, 254, -8.2, 10],
+            [68, -296, 53, 41, 254, -10.6, 10],
+            [83, 56, 72, 12, 43, -5.4, 35],
+            [92, -56, 72, 12, 43, -7.4, 35],
+            [127, 101, 88, 50, 50, -8, -6],
+          ];
+          break;
         case 0x1F:
           switch (bank) {
             case 0: default:
