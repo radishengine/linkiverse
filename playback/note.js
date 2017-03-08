@@ -245,6 +245,17 @@ define(['require'], function(require) {
             [127, 227, 103, 212, 14, -11, -8],
           ];
           break;
+        case 0x08:
+          noteNumber = 9;
+          parts = [
+            636 + 375 + 249 + 98 + 1523 + 227,
+            [98, 545, 77, 292, 252, -4.2, -4],
+            797,
+            [102, 144, 101, 81, 62, -5.1, -32],
+            1085 + 595 + 5466 + 3196 + 1912 + 1603,
+            [127, 315, 90, 299, 15, -5, 12],
+          ];
+          break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
