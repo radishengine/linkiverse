@@ -105,7 +105,7 @@ define(['require'], function(require) {
           ];
           break;
       }
-      return loadNoteData(1).then(function(samples) {
+      return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
         var i = -1;
         function doKeys(toKey, len, unity, loopStart, loopLen, attenuation_dB, tune_cents) {
