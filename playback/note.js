@@ -29,7 +29,8 @@ define(['require'], function(require) {
       node.start(baseTime + startTime);
       node.stop(baseTime + endTime);
       var gain = this.audioContext.createGain();
-      gain.gain.setValueAtTime(1, baseTime + endTime - 0.1);
+      gain.gain.value = this.gain;
+      gain.gain.setValueAtTime(this.gain, baseTime + endTime - 0.1);
       gain.gain.exponentialRampToValueAtTime(1e-4, baseTime + endTime);
       gain.connect(destination);
       node.addEventListener('ended', gain.disconnect.bind(gain));
@@ -39,6 +40,7 @@ define(['require'], function(require) {
     unityNote: 69,
     loop: null,
     detune: 0,
+    gain: 1,
   };
   
   var note = {
@@ -68,12 +70,14 @@ define(['require'], function(require) {
           sliceBuffer.copyToChannel(samples.subarray(0, len), 0);
           samples = samples.subarray(len);
           var playbackRateDenominator = noteFreq(unity);
+          var gain = Math.pow(10, attenuation_dB / 20);
           for (; i <= toKey; i++) {
             var key = keys[i] = new Note(audioContext, sliceBuffer);
             key.note = i;
             key.unityNote = unity;
             key.loop = {start:loopStart, end:loopStart+loopLen};
             key.detune = tune_cents;
+            key.gain = gain;
           }
         }
         doKeys(38, 13672, 36, 11989, 1682, -11.3, -4);
