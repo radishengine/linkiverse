@@ -34,7 +34,7 @@ define(['require'], function(require) {
       gain.gain.value = velocity * this.gain;
       var fadeStart = endTime - 0.1;
       if (fadeStart > startTime) {
-        gain.gain.setValueAtTime(this.gain, baseTime + fadeStart);
+        gain.gain.setValueAtTime(gain.gain.value, baseTime + fadeStart);
       }
       gain.gain.exponentialRampToValueAtTime(1e-4, baseTime + endTime);
       gain.connect(destination);
