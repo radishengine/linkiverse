@@ -26,10 +26,13 @@ define(['require'], function(require) {
       }
       node.playbackRate.value = noteFreq(this.note) / noteFreq(this.unityNote);
       node.detune.value = this.detune;
-      node.connect(destination);
-      node.addEventListener('ended', node.disconnect);
       node.start(baseTime + startTime);
       node.stop(baseTime + endTime);
+      var gain = this.audioContext.createGain();
+      gain.gain.exponentialRampToValueAtTime(0, baseTime + endTime);
+      gain.connect(destination);
+      node.addEventListener('ended', gain.disconnect.bind(gain));
+      node.connect(gain);
     },
     note: 69,
     unityNote: 69,
