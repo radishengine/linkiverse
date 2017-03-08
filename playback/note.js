@@ -6,6 +6,11 @@ define(['require'], function(require) {
     return (440 / 32) * Math.pow(2, ((note - 9) / 12));
   }
   
+  var littleEndianMode = (function() {
+    var n = new Uint8Array([1, 0]);
+    return new Uint16Array(n.buffer, n.byteOffset, 2)[0] === 1;
+  })();
+  
   var note = {
     load: function(audioContext) {
       return fetch(require.toUrl('./note1.wav'), {cache:'force-cache'})
@@ -13,10 +18,19 @@ define(['require'], function(require) {
         return req.arrayBuffer();
       })
       .then(function(data) {
-        return audioContext.decodeAudioData(data);
-      })
-      .then(function(buffer) {
-        var samples = buffer.getChannelData(0);
+        var samples = new Float32Array((data.byteLength - 44) / 2);
+        if (littleEndianMode) {
+          var samples16 = new Int16Array(data, 44, samples.length);
+          for (var i = 0; i < samples.length; i++) {
+            samples[i] = samples16[i] / 32768;
+          }
+        }
+        else {
+          var dv = new DataView(data);
+          for (var i = 0; i < samples.length; i++) {
+            samples[i] = dv.getInt16(44 + i * 2, true) / 32768;
+          }
+        }
         var keys = new Array(128);
         var i = -1;
         function doKeys(toKey, len, unity, loopStart, loopLen, attenuation_dB, tune_cents) {
