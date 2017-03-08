@@ -8,7 +8,7 @@ define(['require'], function(require) {
   
   var note = {
     load: function(audioContext) {
-      fetch(require.toUrl('./note1.wav'), {cache:'force-cache'})
+      return fetch(require.toUrl('./note1.wav'), {cache:'force-cache'})
       .then(function(req) {
         return req.arrayBuffer();
       })
