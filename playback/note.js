@@ -104,6 +104,31 @@ define(['require'], function(require) {
             [127, 2004, 96, 1802, 201, -5.04, 7],
           ];
           break;
+        case 0x04:
+          switch (bank) {
+            case 0x00: default:
+              noteNumber = 3;
+              parts = [
+                [46, 961, 49, 800, 160, -4.5, 10],
+                [66, 839, 56, 731, 107, -4.5, 13],
+                [80, 418, 67, 361, 56, -4.5, -8],
+                [101, 496, 80, 442, 53, -4.5, -3],
+                [127, 115, 97, 104, 10, -8.2, 10],
+              ];
+              break;
+            case 0x02:
+              // 0x00 with minor changes to attenuation & key ranges
+              noteNumber = 3;
+              parts = [
+                [46, 961, 49, 800, 160, -5.6, 10],
+                [66, 839, 56, 731, 107, -5.6, 13],
+                [80, 418, 67, 361, 56, -5.6, -8],
+                [93, 496, 80, 442, 53, -5.6, -3],
+                [127, 115, 97, 104, 10, -5.6, 10],
+              ];
+              break;
+          }
+          break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
