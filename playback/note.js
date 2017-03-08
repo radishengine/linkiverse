@@ -124,7 +124,7 @@ define(['require'], function(require) {
           }
         }
         for (var j = 0; j < parts.length; j++) {
-          doKeys.apply(null, parts);
+          doKeys.apply(null, parts[j]);
         }
         return keys;
       });
