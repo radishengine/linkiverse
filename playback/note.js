@@ -11,6 +11,32 @@ define(['require'], function(require) {
     return new Uint16Array(n.buffer, n.byteOffset, 1)[0] === 1;
   })();
   
+  function Note(audioContext, audioBuffer) {
+    this.audioContext = audioContext;
+    this.audioBuffer = audioBuffer;
+  }
+  Note.prototype = {
+    createSourceNode: function(destination, baseTime, startTime, endTime) {
+      var node = this.audioBuffer.createBufferSource();
+      node.buffer = this.audioBuffer;
+      if (this.loop) {
+        node.loop = true;
+        if (!isNaN(this.loop.start)) node.loopStart = this.loop.start;
+        if (!isNaN(this.loop.end)) node.loopEnd = this.loop.end;
+      }
+      node.playbackRate.value = noteFreq(this.note) / noteFreq(this.unityNote);
+      node.detune.value = this.detune;
+      node.connect(destination);
+      node.addEventListener('ended', node.disconnect);
+      node.start(baseTime + startTime);
+      node.stop(baseTime + endTime);
+    },
+    note: 69,
+    unityNote: 69,
+    loop: null,
+    detune: 0,
+  };
+  
   var note = {
     load: function(audioContext) {
       return fetch(require.toUrl('./note1.wav'), {cache:'force-cache'})
@@ -39,12 +65,11 @@ define(['require'], function(require) {
           samples = samples.subarray(len);
           var playbackRateDenominator = noteFreq(unity);
           for (; i <= toKey; i++) {
-            var key = keys[i] = audioContext.createBufferSource();
-            key.buffer = sliceBuffer;
-            key.loopEnd = (key.loopStart = loopStart / 22050) + (loopLen / 22050);
-            key.loop = true;
-            key.playbackRate.value = noteFreq(i) / playbackRateDenominator;
-            key.detune.value = tune_cents;
+            var key = keys[i] = new Note(audioContext, sliceBuffer);
+            key.note = i;
+            key.unityNote = unity;
+            key.loop = {start:loopStart, end:loopStart+loopLen};
+            key.detune = tune_cents;
           }
         }
         doKeys(38, 13672, 36, 11989, 1682, -11.3, -4);
