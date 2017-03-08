@@ -29,7 +29,7 @@ define(['require'], function(require) {
       node.start(baseTime + startTime);
       node.stop(baseTime + endTime);
       var gain = this.audioContext.createGain();
-      gain.gain.setValueAtTime(1, baseTime + endTime - 1e-2);
+      gain.gain.setValueAtTime(1, baseTime + endTime - 0.1);
       gain.gain.exponentialRampToValueAtTime(1e-4, baseTime + endTime);
       gain.connect(destination);
       node.addEventListener('ended', gain.disconnect.bind(gain));
