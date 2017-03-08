@@ -8,7 +8,7 @@ define(['require'], function(require) {
   
   var littleEndianMode = (function() {
     var n = new Uint8Array([1, 0]);
-    return new Uint16Array(n.buffer, n.byteOffset, 2)[0] === 1;
+    return new Uint16Array(n.buffer, n.byteOffset, 1)[0] === 1;
   })();
   
   var note = {
