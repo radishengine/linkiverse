@@ -17,7 +17,7 @@ define(['require'], function(require) {
   }
   Note.prototype = {
     createSourceNode: function(destination, baseTime, startTime, endTime) {
-      var node = this.audioBuffer.createBufferSource();
+      var node = this.audioContext.createBufferSource();
       node.buffer = this.audioBuffer;
       if (this.loop) {
         node.loop = true;
