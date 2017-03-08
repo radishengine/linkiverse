@@ -21,8 +21,8 @@ define(['require'], function(require) {
       node.buffer = this.audioBuffer;
       if (this.loop) {
         node.loop = true;
-        if (!isNaN(this.loop.start)) node.loopStart = this.loop.start;
-        if (!isNaN(this.loop.end)) node.loopEnd = this.loop.end;
+        if (!isNaN(this.loop.start)) node.loopStart = this.loop.start / this.audioBuffer.sampleRate;
+        if (!isNaN(this.loop.end)) node.loopEnd = this.loop.end / this.audioBuffer.sampleRate;
       }
       node.playbackRate.value = noteFreq(this.note) / noteFreq(this.unityNote);
       node.detune.value = this.detune;
