@@ -295,6 +295,29 @@ define(['require'], function(require) {
             [127, 315, 90, 299, 15, -9, 12],
           ];
           break;
+        case 0x0E:
+          noteNumber = 10;
+          switch (bank) {
+            case 0: default:
+              parts = [
+                445 + 317 + 170,
+                [89, 1167, 84, 294, 872, -7.2, -5],
+                [96, -1167, 84, 294, 872, -10, -5],
+                [127, -1167, 84, 294, 872, -13, -5],
+              ];
+              break;
+            case 1:
+              // same as 0 with different attenuation
+              // there's also a duplicate entry with: -7.6, -15, -20
+              parts = [
+                445 + 317 + 170,
+                [89, 1167, 84, 294, 872, -8.1, -5],
+                [96, -1167, 84, 294, 872, -11, -5],
+                [127, -1167, 84, 294, 872, -16, -5],
+              ];
+              break;
+          }
+          break;
         case 0x0F:
           noteNumber = 9;
           parts = [
