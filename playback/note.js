@@ -381,7 +381,23 @@ define(['require'], function(require) {
         case 0x11:
           switch (bank) {
             case 0: default:
-              throw new Error('NYI');
+              noteNumber = 13;
+              parts = [
+                [64, 3936, 53, 3682, 253, -1.8, 3],
+                [82, 1771, 68, 1663, 107, -1.3, 13],
+                [127, 1416, 86, 1340, 75, -3.3, -2],
+              ];
+              break;
+            case 1:
+              // 0 with different attenuation (including an additional key range)
+              noteNumber = 13;
+              parts = [
+                [64, 3936, 53, 3682, 253, 0, 3],
+                [82, 1771, 68, 1663, 107, 0, 13],
+                [94, 1416, 86, 1340, 75, -4.5, -2],
+                [127, -1416, 86, 1340, 75, -8.3, -2],
+              ];
+              break;
             case 4:
               // 0x10 bank 0 with different attenuation and key range
               noteNumber = 10;
