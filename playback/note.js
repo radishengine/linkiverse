@@ -116,6 +116,15 @@ define(['require'], function(require) {
                 [127, 115, 97, 104, 10, -8.2, 10],
               ];
               break;
+            case 0x01:
+              noteNumber = 4;
+              parts = [
+                [47, 6934, 60, 6178, 755, -4.15, -8],
+                [72, -6934, 60, 6178, 755, -7.13, -8],
+                [103, 2218, 84, 2112, 105, -4.2, -6],
+                [127, -2218, 84, 2112, 105, -6.2, -6],
+              ];
+              break;
             case 0x02:
               // 0x00 with minor changes to attenuation & key ranges
               noteNumber = 3;
@@ -134,9 +143,17 @@ define(['require'], function(require) {
         var keys = new Array(128);
         var i = -1;
         function doKeys(toKey, len, unity, loopStart, loopLen, attenuation_dB, tune_cents) {
-          var sliceBuffer = audioContext.createBuffer(1, len, 22050);
-          sliceBuffer.copyToChannel(samples.subarray(0, len), 0);
-          samples = samples.subarray(len);
+          var sliceBuffer;
+          if (len < 0) {
+            len = -len;
+            sliceBuffer = audioContext.createBuffer(1, len, 22050);
+            sliceBuffer.copyToChannel(new Float32Array(samples.buffer, samples.byteOffset - len * 4, len), 0);
+          }
+          else {
+            sliceBuffer = audioContext.createBuffer(1, len, 22050);
+            sliceBuffer.copyToChannel(samples.subarray(0, len), 0);
+            samples = samples.subarray(len);
+          }
           var playbackRateDenominator = noteFreq(unity);
           var gain = Math.pow(10, attenuation_dB / 20);
           for (; i <= toKey; i++) {
