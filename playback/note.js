@@ -164,6 +164,14 @@ define(['require'], function(require) {
                 [127, 286, 96, 190, 95, -12.4, 3],
               ];
               break;
+            case 0x01:
+              noteNumber = 7;
+              parts = [
+                [83, 5048, 78, 1365, 3682, -9.3, -6],
+                [95, -5048, 78, 1365, 3682, -13.3, -6],
+                [127, -5048, 78, 1365, 3682, -16.3, -6],
+              ];
+              break;
             case 0x02:
               // same as 0x00 with some attenuation differences
               noteNumber = 6;
