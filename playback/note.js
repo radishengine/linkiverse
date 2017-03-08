@@ -150,6 +150,35 @@ define(['require'], function(require) {
               break;
           }
           break;
+        case 0x05:
+          switch (bank) {
+            case 0x00: default:
+              noteNumber = 6;
+              parts = [
+                [60, 2004, 48, 1835, 168, -9.56, -6],
+                [68, 1313, 56, 1206, 106, -9.56, -3],
+                [76, 965, 64, 897, 67, -8.07, 3],
+                [84, 544, 72, 501, 42, -8, -6],
+                [92, 405, 80, 351, 53, -9, -3],
+                [100, 354, 88, 303, 50, -11, -6],
+                [127, 286, 96, 190, 95, -12.4, 3],
+              ];
+              break;
+            case 0x02: default:
+              // same as 0x00 with some attenuation differences
+              noteNumber = 6;
+              parts = [
+                [60, 2004, 48, 1835, 168, -10.2, -6],
+                [68, 1313, 56, 1206, 106, -10.2, -3],
+                [76, 965, 64, 897, 67, -8.72, 3],
+                [84, 544, 72, 501, 42, -8.03, -6],
+                [92, 405, 80, 351, 53, -8.03, -3],
+                [100, 354, 88, 303, 50, -9, -6],
+                [127, 286, 96, 190, 95, -10, 3],
+              ];
+              break;
+          }
+          break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
