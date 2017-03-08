@@ -348,6 +348,13 @@ define(['require'], function(require) {
                 [127, 145, 97, 124, 20, -11.5, 10],
               ];
               break;
+            case 1:
+              noteNumber = 12;
+              parts = [
+                [64, 4669, 90, 903, 3766, -2.5, -2],
+                [127, -4669, 90, 903, 3766, -5.47, -2],
+              ];
+              break;
             case 2:
               noteNumber = 10;
               parts = [
