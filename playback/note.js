@@ -1188,6 +1188,22 @@ define(['require'], function(require) {
             [127, 6268, 84, 21, 6246, -10.35, 3],
           ];
           break;
+        case 0x6C:
+          noteNumber = 37;
+          parts = [
+            [103, 1495, 70, 1446, 48, -0.4, 25],
+            3123,
+            [127, 2182, 96, 2033, 148, -3.7, 6],
+          ];
+          break;
+        case 0x72:
+          noteNumber = 37;
+          parts = [
+            1495,
+            [106, 3123, 83, 2661, 461, -4.6, -29],
+            [127, 2182, 96, 2033, 148, -10, 6],
+          ];
+          break;
         case 0x74:
           noteNumber = 31;
           parts = [
@@ -1202,6 +1218,20 @@ define(['require'], function(require) {
             [124, -6769, 55, -1, -1, -35.63, -44],
             [127, -6769, 55, -1, -1, -3276.8, -44],
           ];
+          break;
+        case 0x7D:
+          switch (bank) {
+            case 0: default:
+              throw new Error('NYI');
+            case 1:
+              // conflict?
+              noteNumber = 37;
+              parts = [
+                1495 + 3123 + 2182,
+                [127, 18202, 67, 553, 17648, -7.1, 1],
+              ];
+              break;
+          }
           break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
