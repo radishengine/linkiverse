@@ -29,14 +29,16 @@ define(['require'], function(require) {
       node.playbackRate.value = noteFreq(this.note) / noteFreq(this.unityNote);
       node.detune.value = this.detune;
       node.start(baseTime + startTime);
-      node.stop(baseTime + endTime);
       var gain = this.audioContext.createGain();
       gain.gain.value = velocity * this.gain;
-      var fadeStart = endTime - 0.1;
-      if (fadeStart > startTime) {
-        gain.gain.setValueAtTime(gain.gain.value, baseTime + fadeStart);
+      if (node.loop) {
+        node.stop(baseTime + endTime);
+        var fadeStart = endTime - 0.1;
+        if (fadeStart > startTime) {
+          gain.gain.setValueAtTime(gain.gain.value, baseTime + fadeStart);
+        }
+        gain.gain.exponentialRampToValueAtTime(1e-4, baseTime + endTime);
       }
-      gain.gain.exponentialRampToValueAtTime(1e-4, baseTime + endTime);
       gain.connect(destination);
       node.addEventListener('ended', gain.disconnect.bind(gain));
       node.connect(gain);
@@ -991,6 +993,15 @@ define(['require'], function(require) {
             [127, 23, 96, 1, 21, -7, -6],
           ];
           break;
+        case 0x2C:
+          noteNumber = 31;
+          parts = [
+            6769,
+            [55, 9962, 57, 251, 9710, -7.53, -7],
+            [83, 11420, 71, 147, 11272, -7.53, -7],
+            [127, 7548, 88, 136, 7411, -8.95, 8],
+          ];
+          break;
         case 0x2D:
           noteNumber = 24;
           parts = [
@@ -1007,6 +1018,21 @@ define(['require'], function(require) {
             [76, 3458, 70, 2937, 520, -0.7, -1],
             [86, 2760, 83, 2290, 469, 0, 1],
             [127, 2182, 96, 2033, 148, 2.7, 6],
+          ];
+          break;
+        case 0x2F:
+          noteNumber = 31;
+          parts = [
+            [50,  6769, 55, -1, -1,  0,   -44],
+            [55, -6769, 55, -1, -1, -0.98, -44],
+            [60, -6769, 55, -1, -1, -2.18, -44],
+            [65, -6769, 55, -1, -1, -3.47, -44],
+            [70, -6769, 55, -1, -1, -5.41, -44],
+            [76, -6769, 55, -1, -1, -8.02, -44],
+            [82, -6769, 55, -1, -1, -13.62, -44],
+            [88, -6769, 55, -1, -1, -25.07, -44],
+            [95, -6769, 55, -1, -1, -34.93, -44],
+            [127, -6769, 55, -1, -1, -96, -44],
           ];
           break;
         case 0x4E:
@@ -1050,6 +1076,23 @@ define(['require'], function(require) {
             [127, 3196, 81, 2374, 821, -4.1, -12],
           ];
           break;
+        case 0x74:
+          noteNumber = 31;
+        case 0x2F:
+          noteNumber = 31;
+          parts = [
+            [79,  6769, 55, -1, -1, -0.7,  -44],
+            [84, -6769, 55, -1, -1, -1.68, -44],
+            [89, -6769, 55, -1, -1, -2.88, -44],
+            [94, -6769, 55, -1, -1, -4.17, -44],
+            [99, -6769, 55, -1, -1, -6.11, -44],
+            [105, -6769, 55, -1, -1, -8.72, -44],
+            [111, -6769, 55, -1, -1, -14.31, -44],
+            [117, -6769, 55, -1, -1, -25.77, -44],
+            [124, -6769, 55, -1, -1, -35.63, -44],
+            [127, -6769, 55, -1, -1, -3276.8, -44],
+          ];
+          break;
       }
       return loadNoteData(noteNumber).then(function(samples) {
         var keys = new Array(128);
@@ -1072,7 +1115,9 @@ define(['require'], function(require) {
             var key = keys[i] = new Note(audioContext, sliceBuffer);
             key.note = i;
             key.unityNote = unity;
-            key.loop = {start:loopStart, end:loopStart+loopLen};
+            if (loopLen !== -1) {
+              key.loop = {start:loopStart, end:loopStart+loopLen};
+            }
             key.detune = tune_cents;
             key.gain = gain;
           }
