@@ -760,7 +760,7 @@ define(['require'], function(require) {
           }
           break;
         case 0x54:
-          noteNumber = 22;
+          noteNumber = 23;
           parts = [
             [52, 6133, 60, 5879, 253, -2.5, 1],
             [72, -6133, 60, 5879, 253, -4.7, 1],
