@@ -1067,6 +1067,12 @@ define(['require'], function(require) {
             [127, 7548, 88, 136, 7411, -6.41, 8],
           ];
           break;
+        case 0x37:
+          noteNumber = 34;
+          parts = [
+            [127, 15392, 68, 13377, 2014, 0, -3],
+          ];
+          break;
         case 0x3D:
           noteNumber = 32;
           switch (bank) {
