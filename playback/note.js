@@ -829,7 +829,7 @@ define(['require'], function(require) {
           ];
           break;
         case 0x2E:
-          noteNumber = 25;
+          noteNumber = 26;
           parts = [
             2824 + 2562 + 1132 + 30,
             [62, 3842, 57, 3340, 501, -0.7, 0],
