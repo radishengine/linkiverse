@@ -311,6 +311,277 @@ define(function() {
     },
   };
   
+  function mergeTracks(tracks) {
+    var totalSize = 0;
+    for (var i = 0; i < tracks.length; i++) {
+      totalSize += tracks[i].length;
+    }
+    var combined = new Uint8Array(totalSize);
+    combined.pos = 0;
+    function writeVarint(v, highBit) {
+      if (v >= 0x80) {
+        writeVarint(v >>> 7, true);
+      }
+      combined[combined.pos++] = (v & 0x7f) | (highBit ? 0x80 : 0);
+    }
+    tracks = tracks.map(function(track) {
+      track = new Uint8Array(track.buffer, track.byteOffset, track.byteLength);
+      track.pos = 0;
+      track.nextVarint = function() {
+        var value = 0;
+        var b = this[this.pos++];
+        while (b & 0x80) {
+          value = (value << 7) | (b & 0x7f);
+          b = this[this.pos++];
+        }
+        return (value << 7) | b;
+      };
+      track.remainingTicks = track.nextVarint();
+      return track;
+    });
+    do {
+      var i = 0, j = 1;
+      while (tracks[i].remainingTicks > 0 && j < tracks.length) {
+        if (tracks[j].remainingTicks < tracks[i].remainingTicks) {
+          i = j;
+        }
+        j++;
+      }
+      var track = tracks[i];
+      for (j = 0; j < tracks.length; j++) {
+        if (i === j) continue;
+        tracks[j].remainingTicks -= track.remainingTicks;
+      }
+      var startPos = track.pos;
+      var command = track[track.pos++];
+      if (command < 0x80) {
+        command = track.lastCommand;
+        --track.pos;
+      }
+      else {
+        track.lastCommand = command;
+      }
+      switch (command & 0xf0) {
+        case 0x80:
+        case 0x90:
+        case 0xA0:
+        case 0xB0:
+        case 0xE0:
+          track.pos += 2;
+          break;
+        case 0xC0:
+        case 0xD0:
+          track.pos++;
+          break;
+        case 0xF0:
+          if (command === 0xFF) {
+            command = track[track.pos++];
+            if (command === 0x2F) {
+              track = null;
+              break;
+            }
+            var metaLength = track.nextVarint();
+            track.pos += metaLength;
+          }
+          else if (command === 0xF0 || command === 0xF7) {
+            while (track[track.pos] !== 0xF7) {
+              track.pos++;
+            }
+          }
+          else {
+            throw new Error('unknown midi command: 0x' + command.toString(16));
+          }
+          break;
+      }
+      if (track === null) {
+        tracks.splice(i, 1);
+      }
+      else {
+        combined.writeVarint(track.remainingTicks);
+        var segment = track.subarray(startPos, track.pos);
+        combined.set(segment, combined.pos);
+        combined.pos += segment.length;
+        if (track.pos >= track.length) {
+          tracks.splice(i, 1);
+        }
+        else {
+          track.remainingTicks = track.nextVarint();
+        }
+      }
+    } while (tracks.length !== 0);
+    return combined.subarray(0, combined.pos);
+  }
+  
+  function MIDIChannel(number) {
+    this.number = number;
+    this.control = new Uint8Array(128);
+  }
+  MIDIChannel.prototype = {
+    get isPercussion() { return this.number === 9; },
+    number: 0,
+    pressure: 1,
+    program: 0,
+    bank: 0,
+  };
+  
+  function MIDIRecital(singleTrack, destination, ticksPerSecond) {
+    this.track = singleTrack;
+    this.remainingTicks = this.nextVarint();
+    this.destination = destination;
+    this.node = destination.context.createGain();
+    this.node.connect(this.destination);
+    this.playingNodes = [];
+    this.ticksPerSecond = ticksPerSecond;
+    this.channels = new Array(16);
+    for (var i = 0; i < this.channels.length; i++) {
+      this.channels[i] = new MIDIChannel(i);
+    }
+  }
+  MIDIRecital.prototype = {
+    pos: 0,
+    remainingTicks: 0,
+    nextVarint: function() {
+      var value = 0;
+      var b = this.track[this.pos++];
+      while (b & 0x80) {
+        value = (value << 7) | (b & 0x7f);
+        b = this.track[this.pos++];
+      }
+      return (value << 7) | b;
+    },
+    aheadSeconds: 3,
+    get eventTarget() {
+      return this.node;
+    },
+    start: function(startTime) {
+      startTime = isNaN(startTime) ? this.node.context.currentTime : startTime;
+      this.frontierTime = this.startTime = startTime;
+      this.populate();
+    },
+    populate: function() {
+      if (this.pos >= this.track.length) {
+        if (this.playingNodes.length === 0) {
+          this.node.disconnect();
+          this.node.dispatchEvent(new CustomEvent('ended'));
+        }
+        return;
+      }
+      var maxFrontierTime = this.node.context.currentTime + this.aheadSeconds;
+      do {
+        if (this.remainingTicks > 0) {
+          this.frontierTime += this.remainingTicks / this.ticksPerSecond;
+        }
+        var command = this.track[this.pos++];
+        if (command < 0x80) {
+          command = this.lastCommand;
+          --this.pos;
+        }
+        else {
+          this.lastCommand = command;
+        }
+        switch (command & 0xf0) {
+          case 0x80: // note off
+          case 0xA0: // key pressure
+            this.pos += 2;
+            break;
+          case 0x90:
+            var key = this.track[this.pos++];
+            var velocity = this.track[this.pos++];
+            if (velocity === 0) {
+              // same as note off
+            }
+            else {
+              // TODO: note on!
+              throw new Error('NYI');
+            }
+            break;
+          case 0xB0:
+            var control = this.track[this.pos++];
+            var value = this.track[this.pos++];
+            this.channels[command & 0xf].control[control] = value;
+            break;
+          case 0xC0:
+            this.channels[command & 0xf].program = this.track[this.pos++];
+            break;
+          case 0xD0:
+            this.channels[command & 0xf].pressure = this.track[this.pos++];
+            break;
+          case 0xE0:
+            var range = this.track[this.pos++];
+            range |= this.track[this.pos++] << 7;
+            range -= 0x2000;
+            this.channels[command & 0xf].pitchBend = range;
+            break;
+          case 0xF0:
+            if (command === 0xFF) {
+              command = this.track[this.track.pos++];
+              if (command === 0x2F) {
+                this.pos = this.track.length + 1;
+                break;
+              }
+              var metaLength = this.nextVarint();
+              var metaData = this.track.subarray(this.pos, this.pos + metaLength);
+              this.pos += metaLength;
+              switch (command) {
+                case 0x00: // sequence number
+                  break;
+                case 0x01: // text
+                  break;
+                case 0x02: // copyright notice
+                  break;
+                case 0x03: // sequence/track name
+                  break;
+                case 0x04: // instrument name
+                  break;
+                case 0x05: // lyric text
+                  break;
+                case 0x06: // marker text
+                  break;
+                case 0x07: // cue point
+                  break;
+                case 0x20: // channel prefix assignment
+                  break;
+                case 0x51: // tempo setting
+                  break;
+                case 0x54: // smpte offset
+                  break;
+                case 0x58: // time signature
+                  break;
+                case 0x59: // key signature
+                  break;
+                case 0x7F: // sequencer specific event
+                  break;
+                default:
+                  break;
+              }
+            }
+            else if (command === 0xF0 || command === 0xF7) {
+              var firstPos = this.pos - (command === 0xF7 ? 0 : 1);
+              while (this.track[this.pos] !== 0xF7) {
+                this.pos++;
+              }
+              var systemExclusive = this.track.subarray(firstPos, this.pos - 1));
+              // do something with this system exclusive data...?
+            }
+            else {
+              throw new Error('unknown midi command: 0x' + command.toString(16));
+            }
+            break;
+        }
+        if (this.pos < this.track.length) {
+          this.remainingTicks += this.nextVarint();
+        }
+        else {
+          if (this.playingNodes.length === 0) {
+            this.node.disconnect();
+            this.node.dispatchEvent(new CustomEvent('ended'));
+          }
+          break;
+        }
+      } while (this.frontierTime < maxFrontierTime || this.playingNodes.length === 0);
+    },
+  };
+  
   return midi;
 
 });
