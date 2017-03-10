@@ -1366,7 +1366,7 @@ define(['require'], function(require) {
   ];
   percussionMisc.noteNumber = 501;
   
-  note.getPercussion = function(audioContext, velocity, key, program) {
+  note.getPercussion = function(audioContext, key, program) {
     var pack, index, override_finetune, override_attenuation;
     switch (key) {
       default: throw new Error('NYI');
