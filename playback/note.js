@@ -78,9 +78,9 @@ define(['require'], function(require) {
       var noteNumber, parts;
       switch (program) {
         case 0x00: default:
+          noteNumber = 1;
           switch (bank) {
             case 0x00: default:
-              noteNumber = 1;
               parts = [
                 [38, 13672, 36, 11989, 1682, -11.3, -4],
                 [43, 13103, 41, 10830, 2272, -9.98, -1],
@@ -94,7 +94,54 @@ define(['require'], function(require) {
                 [127, 4842, 103, 4686, 155, -9.425, 3],
               ];
               break;
+            case 0x10:
+              // bank 0x00 with +/- attenuation, key ranges
+              parts = [
+                [32, 13672, 36, 11989, 1682, -10.13, -4],
+                [37, 13103, 41, 10830, 2272, -9.71, -1],
+                [44, 11168, 48, 9313, 1854, -10.13, 0],
+                [53, 9797, 56, 8309, 1487, -10.13, 0],
+                [61, 10516, 64, 9176, 1139, -10.13, 1],
+                [68, 7588, 73, 6194, 1393, -8.2, 1],
+                [75, 7669, 78, 6447, 1221, -8.7, -1],
+                [82, 7345, 84, 5976, 1368, -9.15, -2],
+                [96, 6442, 92, 5392, 1049, -9.1, 1],
+                [127, 4842, 103, 4686, 155, -9.1, 3],
+              ];
+              break;
           }
+          break;
+        case 0x01:
+          // program 0x00 with +/- attenuation, key ranges
+          noteNumber = 1;
+          parts = [
+            [41, 13672, 36, 11989, 1682, -9.01, -4],
+            [46, 13103, 41, 10830, 2272, -8.58, -1],
+            [53, 11168, 48, 9313, 1854, -9.01, 0],
+            [62, 9797, 56, 8309, 1487, -8.7, 0],
+            [70, 10516, 64, 9176, 1139, -8.7, 1],
+            [77, 7588, 73, 6194, 1393, -7.2, 1],
+            [84, 7669, 78, 6447, 1221, -8.2, -1],
+            [91, 7345, 84, 5976, 1368, -8.03, -2],
+            [100, 6442, 92, 5392, 1049, -8.03, 1],
+            [127, 4842, 103, 4686, 155, -8.03, 3],
+          ];
+          break;
+        case 0x02:
+          // program 0x00 with +/- attenuation, key ranges
+          noteNumber = 1;
+          parts = [
+            [45, 13672, 36, 11989, 1682, -6.03, -4],
+            [50, 13103, 41, 10830, 2272, -5.6, -1],
+            [57, 11168, 48, 9313, 1854, -6.03, 0],
+            [66, 9797, 56, 8309, 1487, -6.03, 0],
+            [74, 10516, 64, 9176, 1139, -6.03, 1],
+            [81, 7588, 73, 6194, 1393, -5.04, 1],
+            [88, 7669, 78, 6447, 1221, -5.74, -1],
+            [95, 7345, 84, 5976, 1368, -5.04, -2],
+            [104, 6442, 92, 5392, 1049, -5.04, 1],
+            [127, 4842, 103, 4686, 155, -5.04, 3],
+          ];
           break;
         case 0x03:
           noteNumber = 2;
@@ -118,7 +165,7 @@ define(['require'], function(require) {
                 [127, 115, 97, 104, 10, -8.2, 10],
               ];
               break;
-            case 0x01:
+            case 0x08:
               noteNumber = 4;
               parts = [
                 [47, 6934, 60, 6178, 755, -4.15, -8],
@@ -127,7 +174,7 @@ define(['require'], function(require) {
                 [127, -2218, 84, 2112, 105, -6.2, -6],
               ];
               break;
-            case 0x02:
+            case 0x10:
               // 0x00 with minor changes to attenuation & key ranges
               noteNumber = 3;
               parts = [
@@ -138,7 +185,7 @@ define(['require'], function(require) {
                 [127, 115, 97, 104, 10, -5.6, 10],
               ];
               break;
-            case 0x03:
+            case 0x18:
               noteNumber = 5;
               parts = [
                 [45, 1096, 48, 927, 168, -6.88, -6],
@@ -166,7 +213,7 @@ define(['require'], function(require) {
                 [127, 286, 96, 190, 95, -12.4, 3],
               ];
               break;
-            case 0x01:
+            case 0x08:
               noteNumber = 7;
               parts = [
                 [83, 5048, 78, 1365, 3682, -9.3, -6],
@@ -174,7 +221,7 @@ define(['require'], function(require) {
                 [127, -5048, 78, 1365, 3682, -16.3, -6],
               ];
               break;
-            case 0x02:
+            case 0x10:
               // same as 0x00 with some attenuation differences
               noteNumber = 6;
               parts = [
@@ -190,9 +237,9 @@ define(['require'], function(require) {
           }
           break;
         case 0x06:
+          noteNumber = 8;
           switch (bank) {
             case 0x00: default:
-              noteNumber = 8;
               parts = [
                 [54, 6687, 48, 5506, 1180, -7.62, 0],
                 [66, 5176, 60, 4501, 674, -7.62, -1],
@@ -201,9 +248,8 @@ define(['require'], function(require) {
                 [127, -3666, 87, 3169, 496, -9.6, 0],
               ];
               break;
-            case 0x01:
+            case 0x08:
               // same as 0x00 with attenuation and key range differences
-              noteNumber = 8;
               parts = [
                 [51, 6687, 48, 5506, 1180, -9.62, 0],
                 [63, 5176, 60, 4501, 674, -9.62, -1],
@@ -212,9 +258,8 @@ define(['require'], function(require) {
                 [127, -3666, 87, 3169, 496, -9.62, 0],
               ];
               break;
-            case 0x02:
+            case 0x10:
               // same as 0x00 with attenuation differences
-              noteNumber = 8;
               parts = [
                 [54, 6687, 48, 5506, 1180, -7.12, 0],
                 [66, 5176, 60, 4501, 674, -7.12, -1],
@@ -223,9 +268,8 @@ define(['require'], function(require) {
                 [127, -3666, 87, 3169, 496, -9.1, 0],
               ];
               break;
-            case 0x03:
+            case 0x18:
               // same as 0x00 with attenuation and key range differences
-              noteNumber = 8;
               parts = [
                 [54, 6687, 48, 5506, 1180, -10.35, 0],
                 [66, 5176, 60, 4501, 674, -10.35, -1],
@@ -310,7 +354,7 @@ define(['require'], function(require) {
         case 0x0E:
           noteNumber = 10;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 445 + 317 + 170,
                 [89, 1167, 84, 294, 872, -7.2, -5],
@@ -318,14 +362,22 @@ define(['require'], function(require) {
                 [127, -1167, 84, 294, 872, -13, -5],
               ];
               break;
-            case 1:
+            case 0x08:
               // same as 0 with different attenuation
-              // there's also a duplicate entry with: -7.6, -15, -20
               parts = [
                 445 + 317 + 170,
                 [89, 1167, 84, 294, 872, -8.1, -5],
                 [96, -1167, 84, 294, 872, -11, -5],
                 [127, -1167, 84, 294, 872, -16, -5],
+              ];
+              break;
+            case 0x09:
+              // same as 0 with different attenuation
+              parts = [
+                445 + 317 + 170,
+                [89, 1167, 84, 294, 872, -7.6, -5],
+                [96, -1167, 84, 294, 872, -15, -5],
+                [127, -1167, 84, 294, 872, -20, -5],
               ];
               break;
           }
@@ -341,7 +393,7 @@ define(['require'], function(require) {
           break;
         case 0x10:
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               noteNumber = 10;
               parts = [
                 445 + 317 + 170 + 1167,
@@ -350,14 +402,14 @@ define(['require'], function(require) {
                 [127, 145, 97, 124, 20, -11.5, 10],
               ];
               break;
-            case 1:
+            case 0x08:
               noteNumber = 12;
               parts = [
                 [64, 4669, 90, 903, 3766, -2.5, -2],
                 [127, -4669, 90, 903, 3766, -5.47, -2],
               ];
               break;
-            case 2:
+            case 0x10:
               noteNumber = 10;
               parts = [
                 445 + 317 + 170 + 1167 + 545 + 277 + 145,
@@ -368,7 +420,7 @@ define(['require'], function(require) {
                 [127, -98, 97, 87, 10, -9.2, 10],
               ];
               break;
-            case 4:
+            case 0x20:
               // 0 with different attenuation
               noteNumber = 10;
               parts = [
@@ -382,7 +434,7 @@ define(['require'], function(require) {
           break;
         case 0x11:
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               noteNumber = 13;
               parts = [
                 [64, 3936, 53, 3682, 253, -1.8, 3],
@@ -390,7 +442,7 @@ define(['require'], function(require) {
                 [127, 1416, 86, 1340, 75, -3.3, -2],
               ];
               break;
-            case 1:
+            case 0x08:
               // 0 with different attenuation (including an additional key range)
               noteNumber = 13;
               parts = [
@@ -400,7 +452,7 @@ define(['require'], function(require) {
                 [127, -1416, 86, 1340, 75, -8.3, -2],
               ];
               break;
-            case 4:
+            case 0x20:
               // 0x10 bank 0 with different attenuation and key range
               noteNumber = 10;
               parts = [
@@ -423,7 +475,7 @@ define(['require'], function(require) {
         case 0x13:
           noteNumber = 15;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 [52, 2125, 46, 1752, 372, -10.53, -30],
                 [60, 1542, 56, 914, 627, -10.53, -28],
@@ -432,7 +484,7 @@ define(['require'], function(require) {
                 [127, 794, 90, 764, 29, -9.5, -47],
               ];
               break;
-            case 1: // 0 with +/- attenuation
+            case 0x08: // 0 with +/- attenuation
               parts = [
                 [52, 2125, 46, 1752, 372, -9.9, -30],
                 [60, 1542, 56, 914, 627, -9.9, -28],
@@ -441,7 +493,7 @@ define(['require'], function(require) {
                 [127, 794, 90, 764, 29, -9.9, -47],
               ];
               break;
-            case 2: // 0 with +/- attenuation, key ranges
+            case 0x10: // 0 with +/- attenuation, key ranges
               parts = [
                 [49, 2125, 46, 1752, 372, -10.53, -30],
                 [57, 1542, 56, 914, 627, -10.53, -28],
@@ -475,7 +527,7 @@ define(['require'], function(require) {
                 [127, 415, 95, 403, 11, -4, -25],
               ];
               break;
-            case 1:
+            case 0x08:
               parts = [
                 [48, 3762, 68, 2752, 1009, -4.24, 0],
                 [84, -3762, 68, 2752, 1009, -7.5, 0],
@@ -511,7 +563,7 @@ define(['require'], function(require) {
         case 0x18:
           noteNumber = 18;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 1410 + 1075 + 511,
                 [52, 4472, 48, 3460, 1011, -4.57, -1],
@@ -524,7 +576,7 @@ define(['require'], function(require) {
                 [127, 2491, 101, 1843, 647, -9.8, 0],
               ];
               break;
-            case 1:
+            case 0x08:
               parts = [
                 1410 + 1075 + 511,
                 [44, 4472, 48, 3460, 1011, -6.57, -1],
@@ -536,7 +588,7 @@ define(['require'], function(require) {
                 [127, 3322, 104, 3308, 13, -7.88, -36],
               ];
               break;
-            case 2:
+            case 0x10:
               // case 0 with +/- attenuation
               parts = [
                 1410 + 1075 + 511,
@@ -550,7 +602,7 @@ define(['require'], function(require) {
                 [127, 2491, 101, 1843, 647, -9.8, 0],
               ];
               break;
-            case 4:
+            case 0x20:
               parts = [
                 1410 + 1075 + 511,
                 [52, 4472, 48, 3460, 1011, -2.73, -1],
@@ -568,7 +620,7 @@ define(['require'], function(require) {
         case 0x19:
           noteNumber = 19;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 [44, 9361, 41, 8352, 1008, -4.3, -4],
                 [52, 5905, 49, 4790, 1114, -4.3, 0],
@@ -579,7 +631,7 @@ define(['require'], function(require) {
                 [127, -2954, 84, 2763, 190, -8, 3],
               ];
               break;
-            case 1:
+            case 0x08:
               parts = [
                 9361,
                 [47, 5905, 49, 4790, 1114, -6.5, 0],
@@ -589,7 +641,7 @@ define(['require'], function(require) {
                 [127, 2410, 89, 1827, 582, -5.47, -6],
               ];
               break;
-            case 2:
+            case 0x10:
               parts = [
                 [36, 9361, 41, 8352, 1008, -2.7, -4],
                 [44, 5905, 49, 4790, 1114, -2.7, 0],
@@ -604,7 +656,7 @@ define(['require'], function(require) {
         case 0x1A:
           noteNumber = 20;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 [54, 6485, 50, 4982, 1502, -1.72, 0],
                 [63, 6394, 59, 4518, 1875, -1.72, 0],
@@ -615,7 +667,7 @@ define(['require'], function(require) {
                 [127, 2491, 101, 1843, 647, -6.2, 0],
               ];
               break;
-            case 1:
+            case 0x08:
               // case 0 with +/- attenuation, key ranges
               parts = [
                 [66, 6485, 50, 4982, 1502, -7.71, 0],
@@ -632,7 +684,7 @@ define(['require'], function(require) {
         case 0x1B:
           noteNumber = 21;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 [54, 5025, 48, 4686, 338, -4.48, 4],
                 [62, 3771, 60, 3433, 337, -4.8, -1],
@@ -642,7 +694,7 @@ define(['require'], function(require) {
                 [127, 2954, 84, 2763, 190, -8.7, 3],
               ];
               break;
-            case 1:
+            case 0x08:
               // case 0 with +/i attenuation, key ranges
               parts = [
                 [54, 5025, 48, 4686, 338, -5.1, 4],
@@ -658,7 +710,7 @@ define(['require'], function(require) {
         case 0x1C:
           noteNumber = 18;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 [69, 1410, 43, 1184, 225, -4.1, 0],
                 [72, 1075, 64, 1007, 67, -3.3, 3],
@@ -670,7 +722,7 @@ define(['require'], function(require) {
                 [127, 2491, 101, 1843, 647, -9.2, 0],
               ];
               break;
-            case 1:
+            case 0x08:
               // case 0 with +/- attenuation and key ranges
               parts = [
                 [56, 1410, 43, 1184, 225, -7.3, 0],
@@ -683,7 +735,7 @@ define(['require'], function(require) {
                 [127, 2491, 101, 1843, 647, -8.6, 0],
               ];
               break;
-            case 2:
+            case 0x10:
               // case 0 with +/- attenuation
               parts = [
                 [69, 1410, 43, 1184, 225, -6.8, 0],
@@ -716,7 +768,7 @@ define(['require'], function(require) {
         case 0x1E:
           noteNumber = 23;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 6133 + 3232,
                 [48, 3652, 36, 3314, 337, -4.15, -1],
@@ -730,7 +782,7 @@ define(['require'], function(require) {
                 [127, 514, 97, 503, 10, -10.2, 10],
               ];
               break;
-            case 1:
+            case 0x08:
               // case 0 with +/- attenuation
               parts = [
                 6133 + 3232,
@@ -749,7 +801,7 @@ define(['require'], function(require) {
           break;
         case 0x1F:
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               noteNumber = 10;
               parts = [
                 445 + 317 + 170 + 1167 + 545 + 277 + 145 + 244 + 101 + 98,
@@ -759,7 +811,7 @@ define(['require'], function(require) {
                 [127, -710, 99, 691, 18, -7.8, 26], // 99 seems like a mistake here?
               ];
               break;
-            case 1:
+            case 0x08:
               noteNumber = 24;
               parts = [
                 1445 + 1424 + 2472 + 687,
@@ -844,16 +896,7 @@ define(['require'], function(require) {
           break;
         case 0x26:
           switch (bank) {
-            case 0: default:
-              // two entries?
-              /*
-              noteNumber = 24;
-              parts = [
-                [34, 1445, 59, 1353, 91, -0.76, 33],
-                [46, -1445, 59, 1353, 91, -3.74, 33],
-                [127, 1424, 72, 1380, 43, -6.2, 35],
-              ];
-              */
+            case 0x00: default:
               noteNumber = 29;
               parts = [
                 8964 + 6101,
@@ -863,7 +906,15 @@ define(['require'], function(require) {
                 [127, 1378, 96, 1356, 21, -2.66, -6],
               ];
               break;
-            case 1:
+            case 0x01:
+              noteNumber = 24;
+              parts = [
+                [34, 1445, 59, 1353, 91, -0.76, 33],
+                [46, -1445, 59, 1353, 91, -3.74, 33],
+                [127, 1424, 72, 1380, 43, -6.2, 35],
+              ];
+              break;
+            case 0x08:
               noteNumber = 29;
               parts = [
                 [54, 8964, 36, 8625, 338, -2.5, 4],
@@ -877,7 +928,7 @@ define(['require'], function(require) {
           break;
         case 0x27:
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               noteNumber = 28;
               parts = [
                 1798 + 7419 + 5488 + 351,
@@ -888,7 +939,7 @@ define(['require'], function(require) {
                 [127, 2954, 84, 2763, 190, -6.3, 3],
               ];
               break;
-            case 1:
+            case 0x08:
               noteNumber = 29;
               parts = [
                 8964,
@@ -899,7 +950,7 @@ define(['require'], function(require) {
                 [127, 1378, 96, 1356, 21, -2.5, -6],
               ];
               break;
-            case 2:
+            case 0x10:
               noteNumber = 24;
               parts = [
                 [34, 1445, 59, 1353, 91, -3.19, 33],
@@ -916,7 +967,7 @@ define(['require'], function(require) {
         case 0x28:
           noteNumber = 30;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 1783 + 1067 + 1105 + 797 + 487,
                 [68, 1448, 56, 1341, 106, -7.45, -3],
@@ -930,7 +981,7 @@ define(['require'], function(require) {
                 [127, 411, 95, 366, 44, -7.3, -25],
               ];
               break;
-            case 1:
+            case 0x08:
               parts = [
                 1783,
                 [57, 1067, 41, 813, 253, -4.72, 3],
@@ -1039,7 +1090,7 @@ define(['require'], function(require) {
           // same as 2C bank 0 with +/- attenuation
           noteNumber = 31;
           switch (bank) {
-            case 0:
+            case 0x00:
               parts = [
                 6769,
                 [55, 9962, 57, 251, 9710, -5.04, -7],
@@ -1047,7 +1098,7 @@ define(['require'], function(require) {
                 [127, 7548, 88, 136, 7411, -6.47, 8],
               ];
               break;
-            case 1:
+            case 0x08:
               parts = [
                 6769,
                 [55, 9962, 57, 251, 9710, -6.58, -7],
@@ -1093,20 +1144,41 @@ define(['require'], function(require) {
           break;
         case 0x39:
           noteNumber = 38;
-          // conflict?
-          parts = [
-            4183 + 3503 + 3368 + 2874 + 1654 + 1180 + 2210,
-            [43, 2894, 48, 2724, 169, 0, 4],
-            [53, 2365, 55, 2251, 113, -0.04, 8],
-            1993 + 2707 + 1602 + 951 + 474,
-            [65, 1403, 53, 1275, 127, 0, 10],
-            [73, 1291, 61, 1210, 80, 0, 10],
-            [81, 1043, 69, 942, 100, 0, -4],
-            [86, 760, 74, 721, 38, 0, 21],
-            [93, 588, 80, 560, 27, 0, 29],
-            [102, 461, 89, 444, 16, 0, 23],
-            [127, 227, 99, 208, 18, -1, 27],
-          ];
+          switch (bank) {
+            case 0x00:
+              // same as program 0x38 with +/- attenuation, key ranges
+              parts = [
+                4183 + 3503 + 3368 + 2874 + 1654 + 1180,
+                [43, 2210, 40, 1941, 268, -3.48, 3],
+                [50, 2894, 48, 2724, 169, -3.48, 4],
+                [57, 2365, 55, 2251, 113, -4.04, 8],
+                1993 + 2707 + 1602 + 951 + 474,
+                [64, 1403, 53, 1275, 127, -4.91, 10],
+                [72, 1291, 61, 1210, 80, -4.61, 10],
+                [81, 1043, 69, 942, 100, -4.61, -4],
+                [88, 760, 74, 721, 38, -5.66, 21],
+                [93, 588, 80, 560, 27, -5.7, 29],
+                [103, 461, 89, 444, 16, -4.6, 23],
+                227,
+                [127, 411, 95, 366, 44, -5.1, -25],
+              ];
+              break;
+            case 0x01:
+              parts = [
+                4183 + 3503 + 3368 + 2874 + 1654 + 1180 + 2210,
+                [43, 2894, 48, 2724, 169, 0, 4],
+                [53, 2365, 55, 2251, 113, -0.04, 8],
+                1993 + 2707 + 1602 + 951 + 474,
+                [65, 1403, 53, 1275, 127, 0, 10],
+                [73, 1291, 61, 1210, 80, 0, 10],
+                [81, 1043, 69, 942, 100, 0, -4],
+                [86, 760, 74, 721, 38, 0, 21],
+                [93, 588, 80, 560, 27, 0, 29],
+                [102, 461, 89, 444, 16, 0, 23],
+                [127, 227, 99, 208, 18, -1, 27],
+              ];
+              break;
+          }
           break;
         case 0x3A:
           noteNumber = 38;
@@ -1143,7 +1215,7 @@ define(['require'], function(require) {
         case 0x3D:
           noteNumber = 32;
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
               parts = [
                 [68, 5872, 64, 5805, 66, -2.19, -23],
                 [80, 7453, 72, 7241, 211, -1.3, 2],
@@ -1151,7 +1223,7 @@ define(['require'], function(require) {
                 [127, 5227, 96, 5183, 43, -3.2, 35],
               ];
               break;
-            case 1:
+            case 0x08:
               // bank 0 with +/- attenuation
               parts = [
                 [68, 5872, 64, 5805, 66, -1.72, -23],
@@ -1233,12 +1305,18 @@ define(['require'], function(require) {
           ];
           break;
         case 0x62:
-          noteNumber = 9;
-          parts = [
-            [102, 1630, 88, 1428, 201, -1, 3],
-            636 + 375 + 249 + 98 + 1523 + 227 + 545 + 797 + 144 + 1085 + 595 + 5466,
-            [127, 3196, 81, 2374, 821, -4.1, -12],
-          ];
+          switch (bank) {
+            case 0x00: default:
+              noteNumber = 9;
+              parts = [
+                [102, 1630, 88, 1428, 201, -1, 3],
+                636 + 375 + 249 + 98 + 1523 + 227 + 545 + 797 + 144 + 1085 + 595 + 5466,
+                [127, 3196, 81, 2374, 821, -4.1, -12],
+              ];
+              break;
+            case 0x01:
+              throw new Error('NYI');
+          }
           break;
         case 0x63:
           noteNumber = 36;
@@ -1272,26 +1350,39 @@ define(['require'], function(require) {
           ];
           break;
         case 0x74:
-          noteNumber = 31;
-          parts = [
-            [79,  6769, 55, -1, -1, -0.7,  -44],
-            [84, -6769, 55, -1, -1, -1.68, -44],
-            [89, -6769, 55, -1, -1, -2.88, -44],
-            [94, -6769, 55, -1, -1, -4.17, -44],
-            [99, -6769, 55, -1, -1, -6.11, -44],
-            [105, -6769, 55, -1, -1, -8.72, -44],
-            [111, -6769, 55, -1, -1, -14.31, -44],
-            [117, -6769, 55, -1, -1, -25.77, -44],
-            [124, -6769, 55, -1, -1, -35.63, -44],
-            [127, -6769, 55, -1, -1, -3276.8, -44],
-          ];
+          switch (bank) {
+            case 0x00: default:
+              throw new Error('NYI');
+            case 0x08:
+              noteNumber = 31;
+              parts = [
+                [79,  6769, 55, -1, -1, -0.7,  -44],
+                [84, -6769, 55, -1, -1, -1.68, -44],
+                [89, -6769, 55, -1, -1, -2.88, -44],
+                [94, -6769, 55, -1, -1, -4.17, -44],
+                [99, -6769, 55, -1, -1, -6.11, -44],
+                [105, -6769, 55, -1, -1, -8.72, -44],
+                [111, -6769, 55, -1, -1, -14.31, -44],
+                [117, -6769, 55, -1, -1, -25.77, -44],
+                [124, -6769, 55, -1, -1, -35.63, -44],
+                [127, -6769, 55, -1, -1, -3276.8, -44],
+              ];
+              break;
+          }
           break;
         case 0x7D:
           switch (bank) {
-            case 0: default:
+            case 0x00: default:
+            case 0x01:
+            case 0x02:
+            case 0x03:
+            case 0x04:
+            case 0x05:
+            case 0x06:
+            case 0x07:
+            case 0x08:
               throw new Error('NYI');
-            case 1:
-              // conflict?
+            case 0x09:
               noteNumber = 37;
               parts = [
                 1495 + 3123 + 2182,
