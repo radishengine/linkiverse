@@ -1341,6 +1341,219 @@ define(['require'], function(require) {
     },
   };
   
+  var percussionMisc = [
+    {len:641, attenuation:-11, finetune:45},
+    {len:2864, finetune:0, attenuation:-5},
+    {len:1516, finetune:0, attenuation:-6.6},
+    {len:1828, finetune:0, attenuation:-5.8},
+    {len:1558, finetune:0, attenuation:-0.7},
+    {len:67, finetune:0, attenuation:-0.4},
+    {len:880, finetune:2, attenuation:-1},
+    {len:841, finetune:0, attenuation:-1.5},
+    {len:5558, finetune:0, attenuation:-1.1},
+    {len:3548, finetune:0, attenuation:0},
+    {len:375, finetune:0, attenuation:0},
+    {len:4892, finetune:-1, attenuation:-1.5},
+    {len:7264, finetune:44, attenuation:0},
+    {len:1579, finetune:0, attenuation:-2},
+    {len:2005, finetune:0, attenuation:0},
+    {len:6019, finetune:0, attenuation:0},
+    {len:2254, finetune:0, attenuation:-10},
+    {len:9121, finetune:0, attenuation:-8},
+    {len:4916, finetune:0, attenuation:-0.5},
+    {len:232, finetune:-20, attenuation:-5},
+    {len:51, finetune:-23, attenuation:-5.8},
+  ];
+  percussionMisc.noteNumber = 501;
+  
+  note.getPercussion = function(audioContext, velocity, key, program) {
+    var pack, index, override_finetune, override_attenuation;
+    switch (key) {
+      default: throw new Error('NYI');
+      case 27:
+        if (program === 0x30) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 0;
+        break;
+      case 28:
+        if (program === 0x30) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 1;
+        break;
+      case 29:
+        if (program === 0x30) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 2;
+        break;
+      case 30:
+        if (program === 0x30) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 3;
+        break;
+      case 31:
+        pack = percussionMisc;
+        index = 4;
+        break;
+      case 32:
+        pack = percussionMisc;
+        index = 5;
+        break;
+      case 34:
+        pack = percussionMisc;
+        index = 6;
+        break;
+      case 36:
+        if (program !== 0x10) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 14;
+        break;
+      case 38:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x10:
+            pack = percussionMisc;
+            index = 15;
+            break;
+          case 0x19:
+            pack = percussionMisc;
+            index = 13;
+            break;
+          case 0x28:
+            pack = percussionMisc;
+            index = 16;
+            break;
+        }
+        break;
+      case 40:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x18:
+            pack = percussionMisc;
+            index = 15;
+            break;
+          case 0x28:
+            pack = percussionMisc;
+            index = 17;
+            break;
+        }
+        break;
+      case 42:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 18;
+            break;
+        }
+        break;
+      case 44:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 18;
+            break;
+        }
+        break;
+      case 46:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 18;
+            break;
+        }
+        break;
+      case 56:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 19;
+            break;
+        }
+        break;
+      case 62:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 20;
+            override_finetune = -23;
+            override_attenuation = -1;
+            break;
+        }
+        break;
+      case 63:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 20;
+            override_finetune = -45;
+            override_attenuation = -4.4;
+            break;
+        }
+        break;
+      case 64:
+        switch (program) {
+          default: throw new Error('NYI');
+          case 0x19:
+            pack = percussionMisc;
+            index = 20;
+            override_finetune = -58;
+            override_attenuation = -2;
+            break;
+        }
+        break;
+      case 82:
+        if (program === 0x38) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 7;
+        break;
+      case 83:
+        if (program === 0x38) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 8;
+        break;
+      case 84:
+        if (program === 0x38) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 9;
+        break;
+      case 85:
+        if (program === 0x38) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 10;
+        break;
+      case 86:
+      case 87:
+        if (program === 0x38) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 11;
+        break;
+      case 88:
+        if (program !== 0x38) throw new Error('NYI');
+        pack = percussionMisc;
+        index = 12;
+        break;
+    }
+    return loadNoteData(pack.noteNumber)
+    .then(function(samples) {
+      var offset = 0;
+      for (var i = 0; i < index; i++) {
+        offset += pack[i].len;
+      }
+      samples = samples.subarray(offset, offset + pack[index].len);
+      var sliceBuffer = audioContext.createBuffer(1, samples.length, 22050);
+      sliceBuffer.copyToChannel(samples, 0);
+      var note = new Note(audioContext, sliceBuffer);
+      note.detune = pack[i].finetune;
+      note.gain = Math.pow(10, pack[i].attenuation / 20);
+      return note;
+    });
+  };
+  
   return note;
   
 });
