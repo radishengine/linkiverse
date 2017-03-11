@@ -1131,7 +1131,16 @@ define(['require'], function(require) {
               ];
               break;
             case 0x08:
-              throw new Error('NYI');
+              noteNumber = 47;
+              parts = [
+                [77, 14388, 67, 2336, 12051, -5.14, 2],
+                [88, 6051, 82, 983, 5067, -5.1, 2],
+                [92, 7548, 88, 136, 7411, -5.3, 8],
+                -7548,
+                [95, -6051, 82, 983, 5067, -5.1, 2],
+                7548,
+                [127, 9590, 86, 82, 9507, -7.6, 2],
+              ];
               break;
           }
           break;
@@ -1806,7 +1815,7 @@ define(['require'], function(require) {
         }
         for (var j = 0; j < parts.length; j++) {
           if (typeof parts[j] === 'number') {
-            samples = samples.subarray(parts[j]);
+            samples = new Float32Array(samples.buffer, samples.byteOffset + parts[j] * 4, samples.length - parts[j]);
             continue;
           }
           doKeys.apply(null, parts[j]);
