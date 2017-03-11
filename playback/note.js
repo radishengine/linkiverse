@@ -1513,6 +1513,17 @@ define(['require'], function(require) {
             [127, 315, 90, 299, 15, -8, 12],
           ];
           break;
+        case 0x5C:
+          // program 0x04 bank 0x00 with +/- attenuation, key ranges
+          noteNumber = 3;
+          parts = [
+            [46, 961, 49, 800, 160, -5.58, 10],
+            [64, 839, 56, 731, 107, -5.6, 13],
+            [80, 418, 67, 361, 56, -5.6, -8],
+            [93, 496, 80, 442, 53, -5.58, -3],
+            [127, 115, 97, 104, 10, -5.58, 10],
+          ];
+          break;
         case 0x60:
           noteNumber = 33;
           parts = [
