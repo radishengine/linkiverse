@@ -1650,7 +1650,15 @@ define(['require'], function(require) {
           switch (bank) {
             case 0x00:
             default:
-              throw new Error('NYI');
+              noteNumber = 52;
+              parts = [
+                [55, 15244, 48, 5111, 10132, -2.2, 3],
+                [67, 10312, 60, 4408, 5903, 0, 1],
+                [85, 10020, 72, 3892, 6127, -0.7, 5],
+                [107, 9590, 86, 82, 9507, -1.7, 2],
+                [127, 2429, 95, 2406, 22, -2.7, -25],
+              ];
+              break;
             case 0x01:
               noteNumber = 45;
               parts = [
