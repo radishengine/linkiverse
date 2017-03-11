@@ -1443,6 +1443,8 @@ define(['require'], function(require) {
               ];
               break;
             case 0x01:
+              throw new Error('NYI');
+            case 0x08:
               noteNumber = 24;
               parts = [
                 1445 + 1424 + 2472 + 687,
@@ -1454,8 +1456,6 @@ define(['require'], function(require) {
                 [127, 30, 99, 11, 18, -6, 27],
               ];
               break;
-            case 0x08:
-              throw new Error('NYI');
           }
           break;
         case 0x51:
