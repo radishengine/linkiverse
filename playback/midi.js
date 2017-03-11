@@ -639,7 +639,7 @@ define(['./note'], function(noteData) {
               while (this.track[this.pos] !== 0xF7) {
                 this.pos++;
               }
-              var systemExclusive = this.track.subarray(firstPos, this.pos - 1));
+              var systemExclusive = this.track.subarray(firstPos, this.pos - 1);
               // do something with this system exclusive data...?
             }
             else {
