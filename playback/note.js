@@ -1118,6 +1118,33 @@ define(['require'], function(require) {
             [127, 7548, 88, 136, 7411, -6.41, 8],
           ];
           break;
+        case 0x32:
+          switch (bank) {
+            case 0x00:
+            default:
+              noteNumber = 46;
+              parts = [
+                5635 + 6318,
+                [53, 10975, 48, 169, 10805, -7.8, 3],
+                [78, 11026, 69, 284, 10741, -5.6, 3],
+                [127, 9590, 86, 82, 9507, -5.6, 2],
+              ];
+              break;
+            case 0x08:
+              throw new Error('NYI');
+              break;
+          }
+          break;
+        case 0x33:
+          // 0x32 bank 0x00 with +/- attenuation, key ranges
+          noteNumber = 46;
+          parts = [
+            5635 + 6318,
+            [52, 10975, 48, 169, 10805, -8.8, 3],
+            [76, 11026, 69, 284, 10741, -6.62, 3],
+            [127, 9590, 86, 82, 9507, -6.62, 2],
+          ];
+          break;
         case 0x37:
           noteNumber = 34;
           parts = [
@@ -1233,6 +1260,16 @@ define(['require'], function(require) {
               ];
               break;
           }
+          break;
+        case 0x3F:
+          // 0x32 bank 0x00 with +/- attenuation, key ranges
+          noteNumber = 46;
+          parts = [
+            5635 + 6318,
+            [52, 10975, 48, 169, 10805, -3.3, 3],
+            [76, 11026, 69, 284, 10741, -1.12, 3],
+            [127, 9590, 86, 82, 9507, -1.12, 2],
+          ];
           break;
         case 0x40:
           noteNumber = 40;
@@ -1502,6 +1539,15 @@ define(['require'], function(require) {
               break;
           }
           break;
+        case 0x52:
+          noteNumber = 46;
+          parts = [
+            [78, 5635, 72, 2088, 3546, 0, 3],
+            [102, 6318, 84, 2192, 4125, -0.7, -2],
+            10975 + 11026,
+            [127, 9590, 86, 82, 9507, -5.3, 2],
+          ];
+          break;
         case 0x53:
           noteNumber = 36;
           parts = [
@@ -1570,6 +1616,16 @@ define(['require'], function(require) {
             [78, 2938, 71, 2848, 89, -4.98, -6],
             [90, 2607, 84, 2585, 21, -4.98, -6],
             [127, 2004, 96, 1802, 201, -4.98, 7],
+          ];
+          break;
+        case 0x5F:
+          // 0x32 bank 0x00 with +/- attenuation, key ranges
+          noteNumber = 46;
+          parts = [
+            5635 + 6318,
+            [52, 10975, 48, 169, 10805, -6.71, 3],
+            [76, 11026, 69, 284, 10741, -4.53, 3],
+            [127, 9590, 86, 82, 9507, -4.53, 2],
           ];
           break;
         case 0x60:
