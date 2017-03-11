@@ -1,4 +1,4 @@
-define(function() {
+define(['./note'], function(noteData) {
 
   'use strict';
   
@@ -415,6 +415,7 @@ define(function() {
   function MIDIChannel(number) {
     this.number = number;
     this.control = new Uint8Array(128);
+    this.keyAftertouch = new Uint8Array(128);
   }
   MIDIChannel.prototype = {
     get isPercussion() { return this.number === 9; },
@@ -422,6 +423,7 @@ define(function() {
     pressure: 1,
     program: 0,
     bank: 0,
+    channelAftertouch: 0,
   };
   
   function MIDIRecital(singleTrack, destination, ticksPerSecond) {
@@ -480,31 +482,108 @@ define(function() {
           this.lastCommand = command;
         }
         switch (command & 0xf0) {
-          case 0x80: // note off
-          case 0xA0: // key pressure
+          case 0x80: // note off (handled by earlier note-on handler)
             this.pos += 2;
             break;
+          case 0xA0: // key aftertouch
+            var key = this.track[this.pos++];
+            this.channels[command & 0xf].keyAftertouch[key] = this.track[this.pos++];
+            break;
           case 0x90:
+            var channel = command & 0xf;
             var key = this.track[this.pos++];
             var velocity = this.track[this.pos++];
             if (velocity === 0) {
               // same as note off
+              break;
             }
-            else {
-              // TODO: note on!
-              throw new Error('NYI');
+            var noteSource = this.node.context.createBufferSource();
+            noteData.loadBuffer(noteSource, key, channel.isPercussion, channel.program, channel.control[0]);
+            var noteGain = this.node.context.createGain();
+            noteGain.gain.value = velocity/127;
+            noteSource.connect(noteGain);
+            noteGain.connect(this.node);
+            noteSource.recital = this;
+            noteSource.gain = noteGain;
+            this.playingNodes.push(noteSource);
+            noteSource.addEventListener('ended', function() {
+              this.gain.disconnect();
+              this.recital.playingNodes.splice(this.recital.playingNodes.indexOf(this), 1);
+              this.recital.populate();
+            });
+            var frontierTime2 = this.frontierTime;
+            noteSource.start(frontierTime2);
+            var restorePos = this.pos;
+            var lastCommand = command;
+            var ticksPerSecond = this.ticksPerSecond;
+            readLoop: while (this.pos < this.track.length) {
+              var ticks = this.nextVarint();
+              frontierTime2 += ticks / ticksPerSecond;
+              var command = this.track[this.pos++];
+              if (command < 0x80) {
+                command = lastCommand;
+                --this.pos;
+              }
+              else {
+                lastCommand = command;
+              }
+              switch (command & 0xf0) {
+                case 0x80: // note off
+                case 0x90: // note on
+                  var key2 = this.track[this.pos++];
+                  var velocity2 = this.track[this.pos++];
+                  if (key === key2 && channel === (command & 0xf)) {
+                    break readLoop;
+                  }
+                  break;
+                case 0xA0: // key aftertouch
+                  this.pos += 2;
+                  break;
+                case 0xB0: // control
+                  var control = this.track[this.pos++];
+                  var value = this.track[this.pos++];
+                  throw new Error('NYI');
+                  break;
+                case 0xC0: // channel program
+                case 0xD0: // channel aftertouch
+                  this.pos++;
+                  break;
+                case 0xF0:
+                  if (command === 0xFF) {
+                    command = this.track[this.pos++];
+                    if (command === 0x2F) {
+                      break readLoop;
+                    }
+                    var metaLength = this.nextVarint();
+                    this.pos += metaLength;
+                    throw new Error('NYI');
+                  }
+                  else if (command === 0xF0 || command === 0xF7) {
+                    while (this.track[this.pos] !== 0xF7) {
+                      this.pos++;
+                    }
+                  }
+                  else {
+                    throw new Error('unknown midi command: 0x' + command.toString(16));
+                  }
+                  break;
+              }
             }
+            this.pos = restorePos;
+            noteGain.gain.setValueAtTime(velocity/127, frontierTime2 - 0.1);
+            noteGain.gain.exponentialRampToValueAtTime(1e-4, frontierTime2);
+            noteSource.stop(frontierTime2);
+            maxFrontierTime = Math.max(maxFrontierTime, frontierTime2);
             break;
           case 0xB0:
             var control = this.track[this.pos++];
-            var value = this.track[this.pos++];
-            this.channels[command & 0xf].control[control] = value;
+            this.channels[command & 0xf].control[control] = this.track[this.pos++];
             break;
           case 0xC0:
             this.channels[command & 0xf].program = this.track[this.pos++];
             break;
           case 0xD0:
-            this.channels[command & 0xf].pressure = this.track[this.pos++];
+            this.channels[command & 0xf].channelAftertouch = this.track[this.pos++];
             break;
           case 0xE0:
             var range = this.track[this.pos++];
