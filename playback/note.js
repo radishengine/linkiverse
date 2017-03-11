@@ -1733,6 +1733,16 @@ define(['require'], function(require) {
             [127, 6268, 84, 21, 6246, -10.35, 3],
           ];
           break;
+        case 0x66:
+          // 0x5E with +/- attenuation
+          noteNumber = 48;
+          parts = [
+            [85, 12402, 68, 3689, 8712, 0, -20],
+            [101, 9590, 86, 82, 9507, 0, 2],
+            3221,
+            [127, 6566, 79, 1346, 5219, -2.4, -4],
+          ];
+          break;
         case 0x68:
           noteNumber = 41;
           switch (bank) {
