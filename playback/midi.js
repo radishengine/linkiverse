@@ -63,10 +63,8 @@ define(['./note'], function(noteData) {
         self.keys[key] = null;
         mul.disconnect();
       });
-      noteData.loadBuffer(bufferSource, key, false, this.program, this.cc0)
-      .then(function() {
-        bufferSource.start(startTime);
-      });
+      bufferSource.start(startTime);
+      noteData.loadBuffer(bufferSource, key, false, this.program, this.cc0);
       /*
       var keyNode = this.keys[key];
       if (!keyNode) {
