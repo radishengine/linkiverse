@@ -52,6 +52,7 @@ define(['./note'], function(noteData) {
       var startTime = audioContext.currentTime;
       var bufferSource = audioContext.createBufferSource();
       var mul = audioContext.createGain();
+      // TODO: nice volume reduction
       if (this.keys[key]) {
         this.keys[key].disconnect();
       }
