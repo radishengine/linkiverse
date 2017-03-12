@@ -20,14 +20,7 @@ define(['require'], function(require) {
       if (isNaN(velocity)) velocity = 1;
       if (velocity <= 0) return;
       var node = this.audioContext.createBufferSource();
-      node.buffer = this.audioBuffer;
-      if (this.loop) {
-        node.loop = true;
-        if (!isNaN(this.loop.start)) node.loopStart = this.loop.start / this.audioBuffer.sampleRate;
-        if (!isNaN(this.loop.end)) node.loopEnd = this.loop.end / this.audioBuffer.sampleRate;
-      }
-      node.playbackRate.value = noteFreq(this.note) / noteFreq(this.unityNote);
-      node.detune.value = this.detune;
+      this.populateSourceNode(node);
       node.start(baseTime + startTime);
       var gain = this.audioContext.createGain();
       gain.gain.value = velocity * this.gain;
@@ -42,6 +35,16 @@ define(['require'], function(require) {
       gain.connect(destination);
       node.addEventListener('ended', gain.disconnect.bind(gain));
       node.connect(gain);
+    },
+    populateSourceNode: function(node) {
+      node.buffer = this.audioBuffer;
+      if (this.loop) {
+        node.loop = true;
+        if (!isNaN(this.loop.start)) node.loopStart = this.loop.start / this.audioBuffer.sampleRate;
+        if (!isNaN(this.loop.end)) node.loopEnd = this.loop.end / this.audioBuffer.sampleRate;
+      }
+      node.playbackRate.value = noteFreq(this.note) / noteFreq(this.unityNote);
+      node.detune.value = this.detune;
     },
     note: 69,
     unityNote: 69,
@@ -74,6 +77,12 @@ define(['require'], function(require) {
   }
   
   var note = {
+    loadBuffer: function(bufferSource, key, isPercussion, program, cc0) {
+      return this.load(bufferSource.context, program, cc0)
+      .then(function(keys) {
+        keys[key].populateSourceNode(bufferSource);
+      });
+    },
     load: function(audioContext, program, bank) {
       var noteNumber, parts;
       switch (program) {
