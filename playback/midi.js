@@ -49,6 +49,20 @@ define(['./note'], function(noteData) {
     isPercussionChannel: false,
     on: function(key, velocity) {
       if (velocity === 0) return this.off(key, velocity);
+      var startTime = audioContext.currentTime;
+      var bufferSource = audioContext.createBufferSource();
+      var mul = audioContext.createGain();
+      mul.gain.value = velocity/127;
+      bufferSource.connect(mul);
+      mul.connect(this.firstNode);
+      bufferSource.addEventListener('ended', function() {
+        mul.disconnect();
+      });
+      noteData.loadBuffer(bufferSource, key, false, this.program, this.cc0)
+      .then(function() {
+        bufferSource.start(startTime);
+      });
+      /*
       var keyNode = this.keys[key];
       if (!keyNode) {
         keyNode = audioContext.createOscillator();
@@ -63,6 +77,7 @@ define(['./note'], function(noteData) {
       }
       keyNode.gain.value = velocity/127;
       keyNode.connect(this.firstNode);
+      */
     },
     off: function(key, velocity) {
       var keyNode = this.keys[key];
@@ -74,14 +89,15 @@ define(['./note'], function(noteData) {
     },
     control: function(control, value) {
       switch (control) {
+        case 0: this.cc0 = value; break;
         case 7: this.volumeControl.gain.value = value/127; break;
         case 10:
           this.panControl.pan.value = (value - 64) / (value >= 64 ? 63 : 64);
           break;
       }
     },
-    program: function(program) {
-    },
+    cc0: 0,
+    program: 0,
     pressure: function(program) {
     },
     pitchBend: function(range) {
@@ -148,7 +164,7 @@ define(['./note'], function(noteData) {
             channels[command & 0xf].control(control, value);
             break;
           case 0xC0:
-            channels[command & 0xf].program(track[track.pos++]);
+            channels[command & 0xf].program = track[track.pos++];
             break;
           case 0xD0:
             channels[command & 0xf].pressure(track[track.pos++]);
