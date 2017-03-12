@@ -60,7 +60,9 @@ define(['./note'], function(noteData) {
       mul.connect(this.firstNode);
       var self = this;
       bufferSource.addEventListener('ended', function() {
-        self.keys[key] = null;
+        if (self.keys[key] === mul) {
+          self.keys[key] = null;
+        }
         mul.disconnect();
       });
       bufferSource.start(startTime);
