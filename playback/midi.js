@@ -52,11 +52,9 @@ define(['./note'], function(noteData) {
       var startTime = audioContext.currentTime;
       var bufferSource = audioContext.createBufferSource();
       var mul = audioContext.createGain();
-      // TODO: nice volume reduction
-      if (this.keys[key]) {
-        this.keys[key].disconnect();
-      }
+      this.off(key, 0);
       this.keys[key] = mul;
+      mul.bufferNode = bufferSource;
       mul.gain.value = velocity/127;
       bufferSource.connect(mul);
       mul.connect(this.firstNode);
@@ -89,7 +87,10 @@ define(['./note'], function(noteData) {
     off: function(key, velocity) {
       var keyNode = this.keys[key];
       if (keyNode) {
-        keyNode.disconnect();
+        var now = this.audioContext.currentTime;
+        keyNode.gain.exponentialRampToValueAtTime(1e-4, now + 0.1);
+        keyNode.bufferNode.stop(now + 0.1);
+        this.keys[key] = null;
       }
     },
     keyPressure: function(key, pressure) {
