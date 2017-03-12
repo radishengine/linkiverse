@@ -2147,6 +2147,7 @@ define(['require'], function(require) {
           }
           break;
         case 0x7B:
+          noteNumber = 56;
           switch (bank) {
             case 0x00:
             default:
@@ -2176,6 +2177,7 @@ define(['require'], function(require) {
           }
           break;
         case 0x7C:
+          noteNumber = 56;
           switch (bank) {
             case 0x00:
             default:
