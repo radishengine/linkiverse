@@ -2108,7 +2108,7 @@ define(['require'], function(require) {
               noteNumber = 57;
               parts = [
                 230 + 1539 + 1731 + 375,
-                [127, 4892, 72, -1, -1, -2.5, -1],
+                [127, 4892, 72, 3574, 1317, -2.5, -1],
               ];
               break;
             case 0x08:
