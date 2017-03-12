@@ -52,10 +52,13 @@ define(['./note'], function(noteData) {
       var startTime = audioContext.currentTime;
       var bufferSource = audioContext.createBufferSource();
       var mul = audioContext.createGain();
+      this.keys[key] = mul;
       mul.gain.value = velocity/127;
       bufferSource.connect(mul);
       mul.connect(this.firstNode);
+      var self = this;
       bufferSource.addEventListener('ended', function() {
+        self.keys[key] = null;
         mul.disconnect();
       });
       noteData.loadBuffer(bufferSource, key, false, this.program, this.cc0)
