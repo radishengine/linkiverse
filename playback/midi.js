@@ -87,7 +87,7 @@ define(['./note'], function(noteData) {
     off: function(key, velocity) {
       var keyNode = this.keys[key];
       if (keyNode) {
-        var now = this.audioContext.currentTime;
+        var now = audioContext.currentTime;
         keyNode.gain.exponentialRampToValueAtTime(1e-4, now + 0.1);
         keyNode.bufferNode.stop(now + 0.1);
         this.keys[key] = null;
