@@ -78,8 +78,10 @@ define(['require'], function(require) {
   
   var note = {
     loadBuffer: function(bufferSource, key, isPercussion, program, cc0) {
-      return this.load(bufferSource.context, program, cc0)
-      .then(function(keys) {
+      var context = bufferSource.context;
+      var name = '_' + (isPercussion ? 'p' : 'm') + program + '_' + cc0;
+      context[name] = context[name] || this.load(context, program, cc0);
+      return context[name].then(function(keys) {
         keys[key].populateSourceNode(bufferSource);
       });
     },
