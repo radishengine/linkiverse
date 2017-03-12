@@ -2089,6 +2089,7 @@ define(['require'], function(require) {
           noteNumber = 56;
           switch (bank) {
             case 0x00:
+            default:
               parts = [
                 [88, 1783, 84, 942, 840, -16.61, -6],
                 [108, 884, 96, 484, 399, -12.46, -6],
