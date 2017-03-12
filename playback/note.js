@@ -2221,6 +2221,7 @@ define(['require'], function(require) {
           }
           break;
         case 0x7D:
+          noteNumber = 56;
           switch (bank) {
             case 0x00: default:
               parts = [
