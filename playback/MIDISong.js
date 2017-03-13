@@ -99,9 +99,139 @@ define(['./note'], function(noteData) {
       Object.defineProperty(this, 'usedNotes', {value:notes});
       return notes;
     },
+    createRecital: function(destination) {
+      var masterNode = destination.context.createGain();
+      masterNode.connect(destination);
+      var recital = new MIDISongRecital(masterNode, this);
+      return recital;
+    },
+  };
+  
+  function MIDISongChannel(number) {
+    this.number = number;
+    this.control = new Uint8Array(128);
+  }
+  MIDISongChannel = {
+    program: 0,
+    pitchBend: 0,
+    get isPercussion() {
+      return this.number === 9;
+    },
+  };
+  
+  function MIDISongRecital(song, masterNode) {
+    this.song = song;
+    this.masterNode = masterNode;
+    this.baseTime = masterNode.context.currentTime;
+    this.active = new Set();
+    this.channels = new Array(16);
+    for (var i = 0; i < this.channels.length; i++) {
+      this.channels[i] = new MIDISongChannel(i);
+    }
+  }
+  MIDISongRecital.prototype = {
+    pos: 0,
+    nextVarint: function() {
+      var value = 0;
+      var b = this.song.track[this.pos++];
+      while (b & 0x80) {
+        value = (value << 7) | (b & 0x7f);
+        b = this.song.track[this.pos++];
+      }
+      return (value << 7) | b;
+    },
+    deltaSeconds: function(d) {
+      throw new Error('NYI');
+    },
+    save: function() {
+      return {
+        pos: this.pos,
+        lastCommand: this.lastCommand,
+      };
+    },
+    restore: function(savePoint) {
+      Object.assign(this, savePoint);
+    },
+    playNote: function(channel, key, velocity) {
+      throw new Error('NYI');
+    },
+    update: function() {
+      this.frontierTime = this.masterNode.context.currentTime + 3;
+      var nextEventNote, nextEventListener;
+      while (this.active.size === 0 || this.baseTime < this.frontierTime) {
+        this.baseTime += this.deltaSeconds(this.nextVarint());
+        var command = this.song.track[this.pos++];
+        if (command < 0x80) {
+          command = this.lastCommand;
+          --this.pos;
+        }
+        else {
+          this.lastCommand = command;
+        }
+        switch (command & 0xF0) {
+          case 0x80:
+          case 0xA0:
+            this.pos += 2;
+            break;
+          case 0x90:
+            var key = this.song.track[this.pos++];
+            var velocity = this.song.track[this.pos++];
+            if (velocity > 0) {
+              var savePoint = this.save();
+              var notePlay = this.playNote(this.channels[command & 0x0F], key, velocity);
+              this.restore(savePoint);
+            }
+            break;
+          case 0xB0:
+            var control = this.song.track[this.pos++];
+            this.channels[command & 0xF].control[control] = this.song.track[this.pos++];
+            break;
+          case 0xC0:
+            this.channels[command & 0xF].program = this.song.track[this.pos++];
+            break;
+          case 0xD0:
+            this.channels[command & 0xF].pressure = this.song.track[this.pos++];
+            break;
+          case 0xE0:
+            var range = this.song.track[this.pos++];
+            range = (range << 7) | this.song.track[this.pos++];
+            this.channels[command & 0xF].pitchBend = (range - 8192) / 8192;
+            break;
+          case 0xF0:
+            if (command === 0xFF) {
+              command = this.song.track[this.pos++];
+              if (command === 0x2F) {
+                this.pos = this.song.track.length;
+                break;
+              }
+              var metaLen = this.nextVarint();
+              var metaData = this.song.track.subarray(this.pos, this.pos + metaLen);
+              this.pos += metaLen;
+              break;
+            }
+            if (command === 0xF0 || command === 0xF7) {
+              var startPos = this.pos - (command == 0xF0 ? 1 : 0);
+              do {
+                if (this.pos >= this.song.track.length) {
+                  throw new Error('unterminated sysex');
+                }
+              } while (this.song.track[this.pos++] !== 0xF7);
+              var sysex = this.song.track.subarray(startPos, this.pos);
+              break;
+            }
+            throw new Error('unknown MIDI message: 0x' + command.toString(16));
+        }
+        if (this.pos >= this.song.track.length) {
+          if (nextEventNote) nextEventNote.removeEventLi
+          this.masterNode.dispatchEvent(new CustomEvent('ended'));
+          return;
+        }
+      }
+    },
   };
   
   return Object.assign(MIDISong, {
+    Recital: MIDISongRecital,
     getAll: function(bytes) {
       if (bytes instanceof Blob) {
         return new Promise(function(resolve, reject) {
