@@ -49,6 +49,7 @@ define(['./note'], function(noteData) {
     isPercussionChannel: false,
     on: function(key, velocity) {
       if (velocity === 0) return this.off(key, velocity);
+      if (this.isPercussionChannel) return;
       var startTime = audioContext.currentTime;
       var bufferSource = audioContext.createBufferSource();
       var mul = audioContext.createGain();
