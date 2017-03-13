@@ -50,7 +50,7 @@ define(['./note'], function(noteData) {
           throw new Error('invalid MIDI file');
         }
         var trackLength = dv.getUint32(pos+4, false);
-        tracks[i] = bytes.subarray(pos+4, pos+4+trackLength);
+        tracks[i] = bytes.subarray(pos+8, pos+8+trackLength);
         pos += 4 + trackLength;
       }
       if (format === 'tracks') {
