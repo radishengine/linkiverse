@@ -134,7 +134,7 @@ define(['./note'], function(noteData) {
                 track = null;
                 break;
               }
-              var metaLength = track.nextVarint();
+              var metaLength = nextVarint(track);
               track.pos += metaLength;
             }
             else if (command === 0xF0 || command === 0xF7) {
