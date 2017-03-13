@@ -87,7 +87,7 @@ define(['./note'], function(noteData) {
         return (value << 7) | b;
       };
       for (var i = 0; i < tracks.length; i++) {
-        tracks[i] = new Uint8Array(tracks[i].buffer, tracks[i].byteOffset, track.byteLength);
+        tracks[i] = new Uint8Array(tracks[i].buffer, tracks[i].byteOffset, tracks[i].byteLength);
         tracks[i].pos = 0;
         tracks[i].remaining = nextVarint(tracks[i]);
       }
