@@ -12,6 +12,16 @@ define(['./note'], function(noteData) {
   
   return Object.assign(MIDISong, {
     getAll: function(bytes) {
+      if (bytes instanceof Blob) {
+        return new Promise(function(resolve, reject) {
+          var fr = new FileReader();
+          fr.addEventListener('load', function() {
+            resolve(new Uint8Array(this.result));
+          });
+          fr.readAsArrayBuffer(bytes);
+        })
+        .then(this.getAll);
+      }
       var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       if (String.fromCharCode.apply(null, bytes.subarray(0, 8)) !== 'MThd\x00\x00\x00\x06') {
         throw new Error('invalid MIDI file');
