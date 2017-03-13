@@ -47,7 +47,7 @@ define(['./note'], function(noteData) {
             if (velocity !== 0) {
               var channel = channels[command & 0xf];
               var name = (channel.isPercussion ? 'p' : 'm') +
-                ('0' + channel.program.toString(16).toUpperCase()).slice(-1);
+                ('0' + channel.program.toString(16).toUpperCase()).slice(-2);
               if (channel.control[0x00] || channel.control[0x32]) {
                 name += '_' + ('0' + channel.control[0x00].toString(16).toUpperCase()).slice(-2);
                 if (channel.control[0x32]) {
