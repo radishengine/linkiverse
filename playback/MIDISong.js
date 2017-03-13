@@ -1,4 +1,4 @@
-define(['note'], function(noteData) {
+define(['./note'], function(noteData) {
 
   'use strict';
   
