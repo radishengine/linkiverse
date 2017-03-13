@@ -153,7 +153,7 @@ define(['./note'], function(noteData) {
           tracks.splice(i, 1);
         }
         else {
-          writeVarint(track.remainingTicks);
+          writeVarint(track.remaining);
           var segment = track.subarray(startPos, track.pos);
           combined.set(segment, combined.pos);
           combined.pos += segment.length;
@@ -161,7 +161,7 @@ define(['./note'], function(noteData) {
             tracks.splice(i, 1);
           }
           else {
-            track.remainingTicks = nextVarint(track);
+            track.remaining = nextVarint(track);
           }
         }
       }
