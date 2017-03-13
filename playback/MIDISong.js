@@ -71,11 +71,17 @@ define(['./note'], function(noteData) {
       }
       var combined = new Uint8Array(totalSize);
       combined.pos = 0;
+      combined.lastCommand = -1;
       function writeVarint(v, highBit) {
         if (v >= 0x80) {
           writeVarint(v >>> 7, true);
         }
         combined[combined.pos++] = (v & 0x7f) | (highBit ? 0x80 : 0);
+      }
+      function varintLen(v) {
+        var len = 1;
+        while ((v >>>= 7) > 0) len++;
+        return len;
       }
       function nextVarint(track) {
         var value = 0;
@@ -106,7 +112,6 @@ define(['./note'], function(noteData) {
             tracks[j].remaining -= track.remaining;
           }
         }
-        var startPos = track.pos;
         var command = track[track.pos++];
         if (command < 0x80) {
           command = track.lastCommand;
@@ -115,6 +120,7 @@ define(['./note'], function(noteData) {
         else {
           track.lastCommand = command;
         }
+        var startPos = track.pos;
         switch (command & 0xF0) {
           case 0x80:
           case 0x90:
@@ -129,8 +135,7 @@ define(['./note'], function(noteData) {
             break;
           case 0xF0:
             if (command === 0xFF) {
-              command = track[track.pos++];
-              if (command === 0x2F) {
+              if (track[track.pos++] === 0x2F) {
                 track = null;
                 break;
               }
@@ -151,18 +156,35 @@ define(['./note'], function(noteData) {
         }
         if (track === null) {
           tracks.splice(i, 1);
+          continue;
+        }
+        if ((command & 0xF0) !== 0xF0 && command === combined.lastCommand) {
+          command = -1;
+        }
+        if (command !== -1) {
+          combined.lastCommand = command;
+        }
+        var segment = track.subarray(startPos, track.pos);
+        var len = varintLen(track.remaining) + (command === -1 ? 0 : 1) + segment.length;
+        if ((combined.pos + len) > combined.length) {
+          var extended = new Uint8Array(Math.ceil(combined.length * 1.5));
+          extended.set(combined);
+          extended.pos = combined.pos;
+          extended.remaining = combined.remaining;
+          extended.lastCommand = combined.lastCommand;
+          combined = extended;
+        }
+        writeVarint(track.remaining);
+        if (command !== -1) {
+          combined[combined.pos++] = command;
+        }
+        combined.set(segment, combined.pos);
+        combined.pos += segment.length;
+        if (track.pos >= track.length) {
+          tracks.splice(i, 1);
         }
         else {
-          writeVarint(track.remaining);
-          var segment = track.subarray(startPos, track.pos);
-          combined.set(segment, combined.pos);
-          combined.pos += segment.length;
-          if (track.pos >= track.length) {
-            tracks.splice(i, 1);
-          }
-          else {
-            track.remaining = nextVarint(track);
-          }
+          track.remaining = nextVarint(track);
         }
       }
       return combined.subarray(0, combined.pos);    
