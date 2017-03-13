@@ -96,7 +96,7 @@ define(['./note'], function(noteData) {
             break;
         }
       }
-      Object.defineProperty(this, 'notes', {value:notes});
+      Object.defineProperty(this, 'usedNotes', {value:notes});
       return notes;
     },
   };
