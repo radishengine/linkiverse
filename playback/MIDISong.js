@@ -8,6 +8,98 @@ define(['./note'], function(noteData) {
   MIDISong.prototype = {
     beatsPerMinute: 120,
     tickDenominator: 'beats',
+    get usedNotes() {
+      var notes = {};
+      var pos = 0;
+      var track = this.track;
+      function nextVarint() {
+        var value = 0;
+        var b = track[pos++];
+        while (b & 0x80) {
+          value = (value << 7) | (b & 0x7f);
+          b = track[pos++];
+        }
+        return (value << 7) | b;
+      }
+      var lastCommand = -1;
+      var channels = new Array(16);
+      for (var i = 0; i < channels.length; i++) {
+        channels[i] = {
+          program: 0,
+          control: new Uint8Array(128),
+          isPercussion: (i === 9),
+        };
+      }
+      while (pos < track.length) {
+        do { } while (track[pos++] & 0x80);
+        var command = track[pos++];
+        if (command < 0x80) {
+          command = lastCommand;
+          --pos;
+        }
+        else {
+          lastCommand = command;
+        }
+        switch (command & 0xF0) {
+          case 0x90:
+            var key = track[pos++];
+            var velocity = track[pos++];
+            if (velocity !== 0) {
+              var channel = channels[command & 0xf];
+              var container = channel.isPercussion ? notes.percussion : notes.melody;
+              var name = (channel.isPercussion ? 'p' : 'm') +
+                ('0' + channel.program.toString(16).toUpperCase()).slice(-1);
+              if (channel.control[0x00] || channel.control[0x32]) {
+                name += '_' + ('0' + channel.control[0x00].toString(16).toUpperCase()).slice(-2);
+                if (channel.control[0x32]) {
+                  name += '_' + ('0' + channel.control[0x32].toString(16).toUpperCase()).slice(-2);
+                }
+              }
+              if (channel.isPercussion) {
+                name += ':' + ('0' + key.toString(16).toUpperCase()).slice(-2);
+              }
+              notes[name] = true;
+            }
+            break;
+          case 0xC0:
+            channels[command & 0xf].program = track[pos++];
+            break;
+          case 0xB0:
+            var control = track[pos++];
+            channels[command & 0xf].control[control] = track[pos++];
+            break;
+          case 0x80:
+          case 0xA0:
+          case 0xE0:
+            pos += 2;
+            break;
+          case 0xD0:
+            pos++;
+            break;
+          case 0xF0:
+            if (command === 0xFF) {
+              if (track[pos++] === 0x2F) {
+                break;
+              }
+              var metaLength = nextVarint();
+              pos += metaLength;
+            }
+            else if (command === 0xF0 || command === 0xF7) {
+              while (track[pos++] !== 0xF7) {
+                if (pos >= track.length) {
+                  throw new Error('unterminated sysex section');
+                }
+              }
+            }
+            else {
+              throw new Error('unknown midi command: 0x' + command.toString(16));
+            }
+            break;
+        }
+      }
+      Object.defineProperty(this, 'notes', {value:notes});
+      return notes;
+    },
   };
   
   return Object.assign(MIDISong, {
