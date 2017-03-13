@@ -54,7 +54,7 @@ define(['./note'], function(noteData) {
         pos += 8 + trackLength;
       }
       if (format === 'tracks') {
-        tracks.splice(0, tracks.length, this.mergeTracks(tracks));
+        tracks.splice(0, tracks.length, MIDISong.mergeTracks(tracks));
       }
       var songs = new Array(tracks.length);
       for (var i = 0; i < songs.length; i++) {
