@@ -51,7 +51,7 @@ define(['./note'], function(noteData) {
         }
         var trackLength = dv.getUint32(pos+4, false);
         tracks[i] = bytes.subarray(pos+8, pos+8+trackLength);
-        pos += 4 + trackLength;
+        pos += 8 + trackLength;
       }
       if (format === 'tracks') {
         tracks.splice(0, tracks.length, this.mergeTracks(tracks));
