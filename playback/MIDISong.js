@@ -2,12 +2,81 @@ define(['./note'], function(noteData) {
 
   'use strict';
   
-  function MIDISong(track) {
+  function BeatTiming() {
+  }
+  BeatTiming.prototype = {
+    ticksPerBeat: 24,
+    beatsPerMinute: 120,
+    speedRatio: 1,
+    get ticksPerSecond() {
+      return this.speedRatio * this.ticksPerBeat * (this.beatsPerMinute / 60);
+    },
+    cloneWith: function(settings) {
+      return Object.assign(new BeatTiming, this, settings);
+    },
+  };
+  
+  function SMPTETiming() {
+  }
+  SMPTETiming.prototype = {
+    framesPerSecond: 25,
+    ticksPerFrame: 2,
+    get ticksPerSecond() {
+      return this.speedRatio * this.ticksPerFrame * this.framesPerSecond;
+    },
+    cloneWith: function(settings) {
+      return Object.assign(new SMPTETiming, this, settings);
+    },
+  };
+  
+  function dataStream(buffer, byteOffset, byteLength) {
+    return Object.assign(new Uint8Array(buffer, byteOffset, byteLength), dataStream.init);
+  }
+  dataStream.init = {
+    pos: 0,
+    lastCommand: -1,
+    clone: function() {
+      return Object.assign(
+        dataStream(this.buffer, this.byteOffset, this.byteLength),
+        {pos:this.pos, lastCommand:this.lastCommand});
+    },
+    readVarint: function() {
+      var v = 0;
+      var b = this[this.pos++];
+      while (b & 0x80) {
+        v = (v <<< 7) | (b & 0x7F);
+        b = this[this.pos++];
+      }
+      return (v <<< 7) | b;
+    },
+    writeVarint: function(v, highBit) {
+      if (v >= 0x80) {
+        this.writeVarint(v >>> 7, true);
+      }
+      this[this.pos++] = (v & 0x7f) | (highBit ? 0x80 : 0);
+    },
+    readCommand: function() {
+      var cmd = this[this.pos++];
+      if (cmd < 0x80) {
+        --this.pos;
+        return this.lastCommand;
+      }
+      this.lastCommand = cmd;
+      return cmd;
+    },
+    writeCommand: function(cmd) {
+      if (cmd >= 0xF0 || cmd !== this.lastCommand) {
+        this[this.pos++] = cmd;
+      }
+      this.lastCommand = cmd;
+    },
+  };
+  
+  function MIDISong(track, timing) {
     this.track = track;
+    this.timing = timing;
   }
   MIDISong.prototype = {
-    deltaUnit: 'note',
-    deltaMultiplier: 1/(4 * 24),
     get usedNotes() {
       var notes = {};
       var pos = 0;
@@ -103,8 +172,6 @@ define(['./note'], function(noteData) {
       var masterNode = destination.context.createGain();
       masterNode.connect(destination);
       var recital = new MIDISongRecital(masterNode, this);
-      recital.deltaUnit = this.deltaUnit;
-      recital.deltaMultiplier = this.deltaMultiplier;
       return recital;
     },
   };
@@ -135,6 +202,7 @@ define(['./note'], function(noteData) {
   
   function MIDISongRecital(song, masterNode) {
     this.song = song;
+    this.timing = song.timing;
     this.masterNode = masterNode;
     this.baseTime = masterNode.context.currentTime;
     this.active = new Set();
@@ -145,17 +213,6 @@ define(['./note'], function(noteData) {
   }
   MIDISongRecital.prototype = {
     pos: 0,
-    deltaUnit: 'note',
-    deltaMultiplier: 1/(4 * 24),
-    notesPerSecond: 1/2,
-    speedRatio: 1,
-    get deltaSeconds() {
-      switch (this.deltaUnit) {
-        case 'second': return this.deltaMultiplier / this.speedRatio;
-        case 'note': return this.deltaMultiplier / (this.notesPerSecond * this.speedRatio);
-      }
-      throw new Error('unknown deltaUnit');
-    },
     nextVarint: function() {
       var value = 0;
       var b = this.song.track[this.pos++];
@@ -176,7 +233,7 @@ define(['./note'], function(noteData) {
     },
     playNote: function(channel_i, key, velocity) {
       var program = this.channels[channel_i].program,
-          volume = velocity * this.channels[channel_i].volume,
+          channelVolume = this.channels[channel_i].volume,
           pitchBend = this.channels[channel_i].pitchBend,
           time = this.baseTime,
           lastCommand = this.lastCommand,
@@ -189,7 +246,7 @@ define(['./note'], function(noteData) {
       bufferSource.addEventListener('ended', function() {
         gain.disconnect();
       });
-      gain.gain.value = volume;
+      gain.gain.value = velocity * channelVolume;
       bufferSource.connect(gain);
       gain.connect(this.masterNode);
       bufferSource.loop = true;
@@ -288,7 +345,7 @@ define(['./note'], function(noteData) {
             throw new Error('unknown MIDI message: 0x' + command.toString(16));
         }
       }
-      gain.gain.setValueAtTime(volume, time);
+      gain.gain.setValueAtTime(channelVolume * velocity, time);
       time += 0.1;
       gain.gain.exponentialRampToValueAtTime(1e-4, time);
       return time;
@@ -297,7 +354,7 @@ define(['./note'], function(noteData) {
       this.frontierTime = this.masterNode.context.currentTime + 3;
       var nextEventNote, nextEventListener;
       while (this.active.size === 0 || this.baseTime < this.frontierTime) {
-        this.baseTime += this.deltaSeconds * this.nextVarint();
+        this.baseTime += this.nextVarint() / this.timing.ticksPerSecond;
         var command = this.song.track[this.pos++];
         if (command < 0x80) {
           command = this.lastCommand;
@@ -437,14 +494,15 @@ define(['./note'], function(noteData) {
         throw new Error('invalid number of tracks');
       }
       var deltaInfo = dv.getInt16(12, false);
-      var deltaUnit, deltaMultiplier;
+      var timing;
       if (deltaInfo < 0) {
-        deltaUnit = 'second';
-        deltaMultiplier = (deltaInfo & 0x7F) / -(deltaInfo >> 8);
+        timing = new SMPTETiming();
+        timing.ticksPerFrame = deltaInfo & 0x7F;
+        timing.framesPerSecond = -(deltaInfo >> 8);
       }
       else {
-        deltaUnit = 'note';
-        deltaMultiplier = 1 / (4 * deltaInfo);
+        timing = new BeatTiming();
+        timing.ticksPerBeat = deltaInfo;
       }
       var tracks = new Array(trackCount);
       var pos = 14;
@@ -461,9 +519,7 @@ define(['./note'], function(noteData) {
       }
       var songs = new Array(tracks.length);
       for (var i = 0; i < songs.length; i++) {
-        songs[i] = new MIDISong(tracks[i]);
-        songs[i].deltaUnit = deltaUnit;
-        songs[i].deltaMultiplier = deltaMultiplier;
+        songs[i] = new MIDISong(tracks[i], timing);
       }
       return songs;
     },
