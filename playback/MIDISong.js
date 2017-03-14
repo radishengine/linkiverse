@@ -329,6 +329,14 @@ define(['./note'], function(noteData) {
         totalSize += tracks[i].length;
       }
       var combined = new Uint8Array(totalSize);
+      function extend() {
+        var extended = new Uint8Array(Math.ceil(combined.length * 1.5));
+        extended.set(combined);
+        extended.pos = combined.pos;
+        extended.remaining = combined.remaining;
+        extended.lastCommand = combined.lastCommand;
+        combined = extended;
+      }
       combined.pos = 0;
       combined.lastCommand = -1;
       function writeVarint(v, highBit) {
@@ -379,6 +387,7 @@ define(['./note'], function(noteData) {
         else {
           track.lastCommand = command;
         }
+        var done = false;
         var startPos = track.pos;
         switch (command & 0xF0) {
           case 0x80:
@@ -395,7 +404,7 @@ define(['./note'], function(noteData) {
           case 0xF0:
             if (command === 0xFF) {
               if (track[track.pos++] === 0x2F) {
-                track = null;
+                done = true;
                 break;
               }
               var metaLength = nextVarint(track);
@@ -413,8 +422,18 @@ define(['./note'], function(noteData) {
             }
             break;
         }
-        if (track === null) {
+        if (done) {
           tracks.splice(i, 1);
+          if (tracks.length === 0) {
+            while ((combined.pos + varintLen(track.remaining) + 3) > combined.length) {
+              extend();
+            }
+            writeVarint(track.remaining);
+            combined[combined.pos++] = 0xFF;
+            combined[combined.pos++] = 0x2F;
+            combined[combined.pos++] = 0x00;
+            break;
+          }
           continue;
         }
         if ((command & 0xF0) !== 0xF0 && command === combined.lastCommand) {
@@ -425,13 +444,8 @@ define(['./note'], function(noteData) {
         }
         var segment = track.subarray(startPos, track.pos);
         var len = varintLen(track.remaining) + (command === -1 ? 0 : 1) + segment.length;
-        if ((combined.pos + len) > combined.length) {
-          var extended = new Uint8Array(Math.ceil(combined.length * 1.5));
-          extended.set(combined);
-          extended.pos = combined.pos;
-          extended.remaining = combined.remaining;
-          extended.lastCommand = combined.lastCommand;
-          combined = extended;
+        while ((combined.pos + len) > combined.length) {
+          extend();
         }
         writeVarint(track.remaining);
         if (command !== -1) {
