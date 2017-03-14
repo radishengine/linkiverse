@@ -209,7 +209,7 @@ define(function() {
       else {
         list = null;
       }
-      Obect.defineProperty(this, 'walls', {value:list});
+      Object.defineProperty(this, 'walls', {value:list});
       return list;
     },
     get interactions_v1() {
