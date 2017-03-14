@@ -6,8 +6,8 @@ define(['./note'], function(noteData) {
     this.track = track;
   }
   MIDISong.prototype = {
-    beatsPerMinute: 120,
-    tickDenominator: 'beats',
+    deltaUnit: 'note',
+    deltaMultiplier: 1/(4 * 24),
     get usedNotes() {
       var notes = {};
       var pos = 0;
@@ -103,6 +103,8 @@ define(['./note'], function(noteData) {
       var masterNode = destination.context.createGain();
       masterNode.connect(destination);
       var recital = new MIDISongRecital(masterNode, this);
+      recital.deltaUnit = this.deltaUnit;
+      recital.deltaMultiplier = this.deltaMultiplier;
       return recital;
     },
   };
@@ -110,12 +112,24 @@ define(['./note'], function(noteData) {
   function MIDISongChannel(number) {
     this.number = number;
     this.control = new Uint8Array(128);
+    this.control[7] = 127;
+    this.control[11] = 127;
   }
   MIDISongChannel = {
     program: 0,
     pitchBend: 0,
     get isPercussion() {
       return this.number === 9;
+    },
+    get volume() {
+      var volume, hi = this.control[7], lo = this.control[39];
+      if (lo & 0x80) volume = ((hi << 7) | (lo & 0x7F)) / 0x3FFF;
+      else volume = hi / 0x7F;
+      hi = this.control[11];
+      lo = this.control[43];
+      if (lo & 0x80) volume *= ((hi << 7) | (lo & 0x7F)) / 0x3FFF;
+      else volume *= hi / 0x7F;
+      return volume;
     },
   };
   
@@ -131,6 +145,17 @@ define(['./note'], function(noteData) {
   }
   MIDISongRecital.prototype = {
     pos: 0,
+    deltaUnit: 'note',
+    deltaMultiplier: 1/(4 * 24),
+    notesPerSecond: 1/2,
+    speedRatio: 1,
+    get deltaSeconds() {
+      switch (this.deltaUnit) {
+        case 'second': return this.deltaMultiplier / this.speedRatio;
+        case 'note': return this.deltaMultiplier / (this.notesPerSecond * this.speedRatio);
+      }
+      throw new Error('unknown deltaUnit');
+    },
     nextVarint: function() {
       var value = 0;
       var b = this.song.track[this.pos++];
@@ -139,9 +164,6 @@ define(['./note'], function(noteData) {
         b = this.song.track[this.pos++];
       }
       return (value << 7) | b;
-    },
-    deltaSeconds: function(d) {
-      throw new Error('NYI');
     },
     save: function() {
       return {
@@ -152,14 +174,130 @@ define(['./note'], function(noteData) {
     restore: function(savePoint) {
       Object.assign(this, savePoint);
     },
-    playNote: function(channel, key, velocity) {
-      throw new Error('NYI');
+    playNote: function(channel_i, key, velocity) {
+      var program = this.channels[channel_i].program,
+          volume = velocity * this.channels[channel_i].volume,
+          pitchBend = this.channels[channel_i].pitchBend,
+          time = this.baseTime,
+          lastCommand = this.lastCommand,
+          deltaSeconds = this.deltaSeconds,
+          deltaMultiplier = this.deltaMultiplier,
+          notesPerSecond = this.notesPerSecond,
+          speedRatio = this.speedRatio;
+      var bufferSource = this.masterNode.context.createBufferSource();
+      var gain = this.masterNode.context.createGain();
+      bufferSource.addEventListener('ended', function() {
+        gain.disconnect();
+      });
+      gain.gain.value = volume;
+      bufferSource.connect(gain);
+      gain.connect(this.masterNode);
+      bufferSource.loop = true;
+      bufferSource.start(time);
+      forwardLoop: for (;;) {
+        time += deltaSeconds * this.nextVarint();
+        var command = this.song.track[this.pos++];
+        if (command < 0x80) {
+          command = lastCommand;
+          --this.pos;
+        }
+        else {
+          lastCommand = command;
+        }
+        switch (command & 0xF0) {
+          case 0x80: // note off
+            var offKey = this.song.track[this.pos++];
+            var offVelocity = this.song.track[this.pos++];
+            if ((command & 0xF) === channel_i && offKey === key) {
+              break forwardLoop;
+            }
+            break;
+          case 0x90: // note on
+            var onKey = this.song.track[this.pos++];
+            var onVelocity = this.song.track[this.pos++];
+            if ((command & 0xF) === channel_i && onKey === key) {
+              break forwardLoop;
+            }
+            break;
+          case 0xA0: // key pressure
+            var pressureKey = this.song.track[this.pos++];
+            var pressure = this.song.track[this.pos++];
+            if ((command & 0xF) === channel_i && pressureKey === key) {
+              // TODO
+            }
+            break;
+          case 0xB0: // control change
+            var control = this.song.track[this.pos++];
+            var value = this.song.track[this.pos++];
+            if ((command & 0xF) === channel_i) {
+              // TODO
+            }
+            break;
+          case 0xC0: // program change (ignore)
+            this.pos++;
+            break;
+          case 0xD0: // channel pressure
+            var channelPressure = this.song.track[this.pos++];
+            if ((command & 0xF) === channel_i) {
+              // TODO
+            }
+            break;
+          case 0xE0: // pitch bend
+            var range = this.song.track[this.pos++];
+            range = (range << 7) | this.song.track[this.pos++];
+            if ((command & 0xF) === channel_i) {
+              // TODO
+            }
+            break;
+          case 0xF0:
+            if (command === 0xFF) {
+              command = this.song.track[this.pos++];
+              var metaLen = this.nextVarint();
+              var metaData = this.song.track.subarray(this.pos, this.pos + metaLen);
+              this.pos += metaLen;
+              switch (command) {
+                case 0x2F:
+                  break forwardLoop;
+                case 0x51:
+                  deltaSeconds *= notesPerSecond;
+                  var microsecondsPerQuarterNote = (metaData[0] << 16) | (metaData[1] << 8) | metaData[2];
+                  notesPerSecond = 4e6 / microsecondsPerQuarterNote;
+                  deltaSeconds /= notesPerSecond;
+                  break;
+                case 0x58: // time signature
+                  //var numerator = metaData[0];
+                  //var denominator = metaData[1];
+                  //var metronomeDelta = metaData[2];
+                  deltaSeconds *= speedRatio;
+                  speedRatio = metaData[3] / 8;
+                  deltaSeconds /= speedRatio;
+                  break;
+              }
+              break;
+            }
+            if (command === 0xF0 || command === 0xF7) {
+              var startPos = this.pos - (command == 0xF0 ? 1 : 0);
+              do {
+                if (this.pos >= this.song.track.length) {
+                  throw new Error('unterminated sysex');
+                }
+              } while (this.song.track[this.pos++] !== 0xF7);
+              var sysex = this.song.track.subarray(startPos, this.pos);
+              break;
+            }
+            throw new Error('unknown MIDI message: 0x' + command.toString(16));
+        }
+      }
+      gain.gain.setValueAtTime(volume, time);
+      time += 0.1;
+      gain.gain.exponentialRampToValueAtTime(1e-4, time);
+      return time;
     },
     update: function() {
       this.frontierTime = this.masterNode.context.currentTime + 3;
       var nextEventNote, nextEventListener;
       while (this.active.size === 0 || this.baseTime < this.frontierTime) {
-        this.baseTime += this.deltaSeconds(this.nextVarint());
+        this.baseTime += this.deltaSeconds * this.nextVarint();
         var command = this.song.track[this.pos++];
         if (command < 0x80) {
           command = this.lastCommand;
@@ -178,13 +316,15 @@ define(['./note'], function(noteData) {
             var velocity = this.song.track[this.pos++];
             if (velocity > 0) {
               var savePoint = this.save();
-              var notePlay = this.playNote(this.channels[command & 0x0F], key, velocity);
+              var notePlay = this.playNote(command & 0x0F, key, velocity/0x7F);
               this.restore(savePoint);
             }
             break;
           case 0xB0: // control change
             var control = this.song.track[this.pos++];
-            this.channels[command & 0xF].control[control] = this.song.track[this.pos++];
+            var value = this.song.track[this.pos++];
+            if (control >= 32 && control <= 45) value |= 0x80;
+            this.channels[command & 0xF].control[control] = value;
             break;
           case 0xC0: // program change
             this.channels[command & 0xF].program = this.song.track[this.pos++];
@@ -296,11 +436,15 @@ define(['./note'], function(noteData) {
       if (format === 'track' && trackCount !== 1) {
         throw new Error('invalid number of tracks');
       }
-      var tickDenominator = 'beats';
-      var tickMultiplier = dv.getUint16(12, false);
-      if (tickMultiplier < 0) {
-        tickMultiplier = -tickMultiplier;
-        tickDenominator = 'seconds';
+      var deltaInfo = dv.getInt16(12, false);
+      var deltaUnit, deltaMultiplier;
+      if (deltaInfo < 0) {
+        deltaUnit = 'second';
+        deltaMultiplier = (deltaInfo & 0x7F) / -(deltaInfo >> 8);
+      }
+      else {
+        deltaUnit = 'note';
+        deltaMultiplier = 1 / (4 * deltaInfo);
       }
       var tracks = new Array(trackCount);
       var pos = 14;
@@ -318,8 +462,8 @@ define(['./note'], function(noteData) {
       var songs = new Array(tracks.length);
       for (var i = 0; i < songs.length; i++) {
         songs[i] = new MIDISong(tracks[i]);
-        songs[i].tickDenominator = tickDenominator;
-        songs[i].tickMultiplier = tickMultiplier;
+        songs[i].deltaUnit = deltaUnit;
+        songs[i].deltaMultiplier = deltaMultiplier;
       }
       return songs;
     },
