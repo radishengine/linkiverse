@@ -183,7 +183,72 @@ define(function() {
       Object.defineProperty(this, 'hotspotNames', {value:list});
       return list;
     },
+    get hotspotScriptNames() {
+      var list;
+      if (this.formatVersion >= 24) {
+        throw new Error('NYI');
+      }
+      else {
+        list = null;
+      }
+      Object.defineProperty(this, 'hotspotScriptNames', {value:list});
+      return list;
+    },
+    get walls() {
+      var list;
+      if (this.formatVersion >= 9) {
+        var pos = (this.hotspotScriptNames || this.hotspotNames).afterPos;
+        list = new Array(this.dv.getUint32(pos, true));
+        pos += 4;
+        for (var i = 0; i < list.length; i++) {
+          list[i] = new WallView(this.bytes.buffer, this.bytes.byteOffset + pos, WallView.byteLength);
+          pos += WallView.byteLength;
+        }
+        list.afterPos = pos;
+      }
+      else {
+        list = null;
+      }
+      Obect.defineProperty(this, 'walls', {value:list});
+      return list;
+    },
+    get interactions_v1() {
+      if (this.formatVersion >= 9) {
+        return null;
+      }
+      throw new Error('NYI');
+    },
+    get edges() {
+      var pos = (this.interactions_v1 || this.walls).afterPos;
+      var obj = {
+        top: this.dv.getInt16(pos, true),
+        bottom: this.dv.getInt16(pos + 2, true),
+        left: this.dv.getInt16(pos + 4, true),
+        right: this.dv.getInt16(pos + 6, true),
+        afterPos: pos + 8,
+      };
+      Object.defineProperty(this, 'edges', {value:obj});
+      return obj;
+    },
   };
+  
+  function WallView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  WallView.prototype = {
+    get points() {
+      var list = new Array(this.dv.getUint32(30*4 + 30*4, true));
+      for (var i = 0; i < list.length; i++) {
+        list[i] = {
+          x: this.dv.getInt32(i*4, true),
+          y: this.dv.getInt32((30+i)*4, true),
+        };
+      }
+      Object.defineProperty(this, 'points', {value:list});
+      return list;
+    },
+  };
+  WallView.byteLength = 30*4 + 30*4 + 4;
   
   function readInteractionsV2(dv, pos) {
     var list = new Array(dv.getInt32(pos + 128, true));
