@@ -72,7 +72,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function
         };
         script.type = 'text/javascript';
         script.src = '//archive.org/advancedsearch.php'
-          + '?q=collection:' + self.identifier + '+-subject:"game+creation+software"' // '+ags_format_version:(7 OR 9)'
+          + '?q=collection:' + self.identifier + '+ags_format_version:(7 OR 9)' // '+-subject:"game+creation+software"'
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
           + '&rows=100'
