@@ -169,11 +169,11 @@ define(['./note'], function(noteData) {
           this.lastCommand = command;
         }
         switch (command & 0xF0) {
-          case 0x80:
-          case 0xA0:
+          case 0x80: // note off
+          case 0xA0: // key pressure
             this.pos += 2;
             break;
-          case 0x90:
+          case 0x90: // note on
             var key = this.song.track[this.pos++];
             var velocity = this.song.track[this.pos++];
             if (velocity > 0) {
@@ -182,17 +182,17 @@ define(['./note'], function(noteData) {
               this.restore(savePoint);
             }
             break;
-          case 0xB0:
+          case 0xB0: // control change
             var control = this.song.track[this.pos++];
             this.channels[command & 0xF].control[control] = this.song.track[this.pos++];
             break;
-          case 0xC0:
+          case 0xC0: // program change
             this.channels[command & 0xF].program = this.song.track[this.pos++];
             break;
-          case 0xD0:
+          case 0xD0: // channel pressure
             this.channels[command & 0xF].pressure = this.song.track[this.pos++];
             break;
-          case 0xE0:
+          case 0xE0: // pitch bend
             var range = this.song.track[this.pos++];
             range = (range << 7) | this.song.track[this.pos++];
             this.channels[command & 0xF].pitchBend = (range - 8192) / 8192;
@@ -207,6 +207,44 @@ define(['./note'], function(noteData) {
               var metaLen = this.nextVarint();
               var metaData = this.song.track.subarray(this.pos, this.pos + metaLen);
               this.pos += metaLen;
+              switch (command) {
+                case 0x00:
+                  this.sequenceNumber = (metaData[0] << 8) | metaData[1];
+                  break;
+                case 0x01: // text
+                case 0x02: // copyright
+                case 0x03: // sequence/track name
+                case 0x04: // instrument name
+                case 0x05: // lyric
+                case 0x06: // marker
+                case 0x07: // cue point
+                  break;
+                case 0x20:
+                  var channelPrefix = metaData[0];
+                  break;
+                case 0x51:
+                  var microsecondsPerQuarterNote = (metaData[0] << 16) | (metaData[1] << 8) | metaData[2];
+                  break;
+                case 0x54: // smpte starting offset
+                  var hours = metaData[0],
+                      minutes = metaData[1],
+                      seconds = metaData[2],
+                      frames = metaData[3],
+                      framesDiv100 = metaData[4];
+                  break;
+                case 0x58: // time signature
+                  var numerator = metaData[0],
+                      denominator = metaData[1],
+                      clocksPerTick = metaData[2],
+                      speedRatio = metaData[3] / 8;
+                  break;
+                case 0x59: // key signature
+                  var sharpsOrFlats = metaData[0], // -ve:flats 0:C +ve:sharps
+                      key = metaData[1] === 0 ? 'major' : 'minor';
+                  break;
+                case 0x7F: // sequencer specific (like sysex)
+                  break;
+              }
               break;
             }
             if (command === 0xF0 || command === 0xF7) {
