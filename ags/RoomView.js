@@ -230,6 +230,56 @@ define(function() {
       Object.defineProperty(this, 'edges', {value:obj});
       return obj;
     },
+    get objects() {
+      var pos = this.edges.afterPos;
+      var list = new Array(this.dv.getUint16(pos, true));
+      pos += 2;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = new ObjectView(this.bytes.buffer, this.bytes.byteOffset + pos, ObjectView.byteLength);
+        pos += ObjectView.byteLength;
+      }
+      list.afterPos = pos;
+      Object.defineProperty(this, 'objects', {value:list});
+      return list;
+    },
+    get v3_local_vars() {
+      if (this.formatVersion >= 19) {
+        throw new Error('NYI');
+      }
+      return null;
+    },
+    get interactions_v3() {
+      if (this.formatVersion >= 15 && this.formatVersion < 26) {
+        throw new Error('NYI');
+      }
+      return null;
+    },
+    get regionCount() {
+      if (this.formatVersion < 21) return 0;
+      var pos = (this.interactions_v3 || this.objects).afterPos;
+      return this.dv.getUint16(pos, true);
+    },
+  };
+  
+  function ObjectView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  ObjectView.prototype = {
+    get sprite() {
+      return this.dv.getInt16(0, true);
+    },
+    get x() {
+      return this.dv.getInt16(2, true);
+    },
+    get y() {
+      return this.dv.getInt16(4, true);
+    },
+    get room() {
+      return this.dv.getInt16(6, true);
+    },
+    get on() {
+      return !!this.dv.getInt16(8, true);
+    },
   };
   
   function WallView(buffer, byteOffset, byteLength) {
