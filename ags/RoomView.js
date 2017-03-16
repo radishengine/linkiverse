@@ -257,7 +257,33 @@ define(function() {
     get regionCount() {
       if (this.formatVersion < 21) return 0;
       var pos = (this.interactions_v3 || this.objects).afterPos;
-      return this.dv.getUint16(pos, true);
+      return this.dv.getUint32(pos, true);
+    },
+    get interactions_v4() {
+      if (this.formatVersion >= 26) {
+        throw new Error('NYI');
+      }
+      return null;
+    },
+    get objectBaselines() {
+      var list = new Array(this.objects.length);
+      var pos = this.interactions_v4
+        ? this.interactions_v4.afterPos
+        : (this.interactions_v3 || this.objects).afterPos + 4;
+      if (this.formatVersion >= 9) {
+        for (var i = 0; i < list.length; i++) {
+          list[i] = this.dv.getInt32(pos, true);
+          pos += 4;
+        }
+      }
+      else {
+        for (var i = 0; i < list.length; i++) {
+          list[i] = -1;
+        }
+      }
+      list.afterPos = pos;
+      Object.defineProperty(this, 'objectBaselines', {value:list});
+      return list;
     },
   };
   
