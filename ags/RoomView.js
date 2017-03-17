@@ -679,7 +679,7 @@ define(function() {
                     var g = (rgb >> 5) & ((1 << 6) - 1);
                     var r = rgb >> 11;
                     b = (b << 3) | (b >> 2);
-                    g = (g << 2) | (b >> 4);
+                    g = (g << 2) | (g >> 4);
                     r = (r << 3) | (r >> 2);
                     imageData.data[(y*w + x) * 4] = r;
                     imageData.data[(y*w + x) * 4 + 1] = g;
