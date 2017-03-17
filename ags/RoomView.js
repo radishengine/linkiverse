@@ -636,7 +636,8 @@ define(function() {
         }
         return {
           palette: this.bytes.subarray(paletteOffset, paletteOffset + 256 * 4),
-          width: dv.getInt32(0, true),
+          stride: dv.getInt32(0, true),
+          width: this.width,
           height: dv.getInt32(4, true),
           data: uncompressed.subarray(8),
           bitsPerPixel: this.bitsPerPixel,
