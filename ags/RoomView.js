@@ -8,7 +8,8 @@ define(function() {
     return String.fromCharCode.apply(null, bytes.subarray(offset, offset + length)).match(/^[^\0]*/)[0];
   }
   
-  function RoomView(buffer, byteOffset, byteLength) {
+  function RoomView(game, buffer, byteOffset, byteLength) {
+    this.game = game;
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
@@ -647,6 +648,13 @@ define(function() {
             switch (this.bitsPerPixel) {
               case 8:
                 var palette = new Uint8Array(this.palette);
+                for (var i = 0; i < this.game.header.palette_uses.length; i++) {
+                  if (this.game.header.palette_uses[i]) {
+                    palette[i*4] = this.game.header.palette[i*4];
+                    palette[i*4 + 1] = this.game.header.palette[i*4 + 1];
+                    palette[i*4 + 2] = this.game.header.palette[i*4 + 2];
+                  }
+                }
                 for (var i = 0; i < palette.length; i += 4) {
                   palette[i] = (palette[i] << 2) | (palette[i] >> 4);
                   palette[i+1] = (palette[i+1] << 2) | (palette[i+1] >> 4);
