@@ -525,7 +525,7 @@ define(function() {
       for (var i = 0; i < list.length; i++) {
         var len = this.bytes[offset++];
         list[i] = String.fromCharCode.apply(null, this.bytes.subarray(offset, offset + len));
-        offset += len + 1;
+        offset += len;
       }
       this.endOffset = offset;
       return list;
