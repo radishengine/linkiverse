@@ -301,7 +301,296 @@ define(function() {
       };
     });
     
+    function member_dimension() {
+      if (this.formatVersion < 9) return NaN;
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getInt16(offset, true);
+      };
+    }
+    
+    this.member('width', member_dimension);
+    this.member('height', member_dimension);
+    
+    this.member('objectFlags', function() {
+      if (this.formatVersion < 23) return null;
+      this.endOffset += this.objectCount * 2;
+      return function() {
+        throw new Error('NYI');
+      };
+    });
+    
+    this.member('resolution', function() {
+      if (this.formatVersion < 11) return 'low';
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        var value = this.dv.getInt16(offset, true);
+        switch (value) {
+          case 1: value = 'low'; break;
+          case 2: value = 'high'; break;
+        }
+        return value;
+      };
+    });
+    
+    this.member('walkZoneCount', function() {
+      if (this.formatVersion < 10) return 0;
+      if (this.formatVersion < 14) return this.maxWalkZones;
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        var count = this.dv.getInt32(offset, true);
+        return count === 0 ? this.maxWalkZones : count;
+      };
+    });
+    
+    this.member('walkZoneScaleTop', function() {
+      if (this.formatVersion < 10) return null;
+      const offset = this.endOffset;
+      this.endOffset += (this.walkZoneCount - 1) * 2;
+      return function() {
+        var list = new Array(this.walkZoneCount);
+        for (var i = 1; i < list.length; i++) {
+          list[i] = this.dv.getInt16(offset + (i-1)*2, true);
+        }
+        return list;
+      };
+    });
+    
+    this.member('walkZoneLightLevels', function() {
+      if (this.formatVersion < 21) return null;
+      const offset = this.endOffset;
+      this.endOffset += 2 * this.walkZoneCount;
+      if (this.formatVersion >= 13) return null; // regions have light level, not walk zones
+      return function() {
+        var list = new Array(this.walkZoneCount);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = this.dv.getInt16(offset + i*2, true);
+        }
+        return list;
+      };
+    });
+    
+    this.member('walkZoneScaleInfo', function() {
+      if (this.formatVersion < 18) return null;
+      this.endOffset += this.walkZoneCount * 6;
+      return function() {
+        throw new Error('NYI');
+      };
+    });
+    
+    this.member('password', function() {
+      const offset = this.endOffset;
+      this.endOffset += 11;
+      return function() {
+        throw new Error('NYI');
+      };
+    });
+    
+    function member_uint8() {
+      const offset = this.endOffset;
+      this.endOffset++;
+      return function() {
+        return this.bytes[offset];
+      };
+    }
+    
+    function member_int8() {
+      const offset = this.endOffset;
+      this.endOffset++;
+      return function() {
+        return this.dv.getInt8(offset);
+      };
+    }
+    
+    function member_bool8() {
+      const offset = this.endOffset;
+      this.endOffset++;
+      return function() {
+        return !!this.bytes[offset];
+      };
+    }
+    
+    this.member('startupMusic', member_uint8);
+    this.member('allowsSaveLoad', member_bool8);
+    this.member('hidesPlayerCharacter', member_bool8);
+    this.member('playerSpecialView', member_uint8); // 0 = no view
+    this.member('musicVolume', member_int8); // 0 normal, -3 quietest, 5 loudest (3 highest setting in editor)
+    
+    this.member('messageCount', function() {
+      this.endOffset += 5; // unused room options
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getUint16(offset, true);
+      };
+    });
+    
+    this.member('gameID', function() {
+      if (this.formatVersion < 25) return null;
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    });
+    
+    this.member('messageFlags', function() {
+      // TODO: check pre-v3?
+      const offset = this.endOffset;
+      this.endOffset += this.messageCount * 2;
+      return function() {
+        var list = new Array(this.messageCount);
+        for (var i = 0; i < list.length; i++) {
+          var flags1 = this.bytes[offset*2];
+          var flags2 = this.bytes[offset*2 + 1];
+          list[i] = {
+            isShownAsSpeech: !!flags1,
+            continuesToNext: !!(flags2 & 1),
+            isRemovedAfterTimeout: !!(flags2 & 2),
+          };
+        }
+        return list;
+      };
+    });
+    
+    // TODO: messages that end in \xC8 continue to the next
+    
+    this.member('messages', function() {
+      var list = new Array(this.messageCount);
+      var pos = this.endOffset;
+      if (this.formatVersion >= 21) {
+        throw new Error('NYI');
+      }
+      else for (var i = 0; i < list.length; i++) {
+        var startPos = pos;
+        do { } while (this.bytes[pos++] !== 0);
+        list[i] = String.fromCharCode.apply(null, this.bytes.subarray(startPos, pos-1));
+      }
+      this.endOffset = pos;
+      return list;
+    });
+    
+    this.member('animationCount', function() {
+      if (this.formatVersion < 6) return 0;
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getInt16(offset, true);
+      };
+    });
+    
+    this.member('animations', function() {
+      const offset = this.endOffset;
+      const size = RoomAnimStageView.maxCount * RoomAnimStageView.byteLength + 4;
+      this.endOffset += this.animationCount * size;
+      return function() {
+        var list = new Array(this.animationCount);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = new Array(this.dv.getInt32(size - 4));
+          for (var j = 0; j < list[j].length; j++) {
+            list[j] = new RoomAnimStageView(
+              this.bytes.buffer,
+              this.bytes.byteOffset + size * i + RoomAnimStageView.byteLength * j,
+              RoomAnimStageView.byteLength);
+          }
+        }
+        return list;
+      };
+    });
+    
+    this.member('graphicalScriptVersion', function() {
+      if (this.formatVersion < 4 || this.formatVersion > 15) return NaN;
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    });
+    
+    this.member('graphicalVarCount', function() {
+      if (this.formatVersion < 4 || this.formatVersion > 15) return 0;
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    });
+    
+    this.member('graphicalVarNames', function() {
+      var offset = this.endOffset;
+      var list = new Array(this.graphicalVarCount);
+      for (var i = 0; i < list.length; i++) {
+        var len = this.bytes[offset++];
+        list[i] = String.fromCharCode.apply(null, this.bytes.subarray(offset, offset + len));
+        offset += len + 1;
+      }
+      this.endOffset = offset;
+      return list;
+    });
+    
+    this.member('graphicalScripts', function() {
+      if (this.formatVersion < 4 || this.formatVersion > 15) return null;
+      var offset = this.endOffset;
+      var list = [];
+      for (;;) {
+        var number = this.dv.getInt32(offset, true);
+        offset += 4;
+        if (number === -1) break;
+        var len = this.dv.getInt32(offset, true);
+        offset += 4;
+        list.push({
+          number: number,
+          code: this.bytes.subarray(offset, offset + len),
+        });
+        offset += len;
+      }
+      this.endOffset = offset;
+      return list;
+    });
+    
+    this.member('shadowViews', function() {
+      if (this.formatVersion < 8) return null;
+      const offset = this.endOffset;
+      this.endOffset += 2 * this.maxShadowLayers;
+      return function() {
+        var list = new Array(this.maxShadowLayers);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = this.dv.getInt16(offset + i*2, true);
+        }
+        return list;
+      };
+    });
+    
+    this.member('regionLightLevels', function() {
+      if (this.formatVersion < 21) return null;
+      const offset = this.endOffset;
+      this.endOffset += this.regionCount * 2;
+      return function() {
+        var list = new Array(this.regionCount);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = this.dv.getInt16(i*2, true);
+        }
+        return list;
+      };
+    });
+    
+    this.member('regionTintLevels', function() {
+      if (this.formatVersion < 21) return null;
+      const offset = this.endOffset;
+      this.endOffset += this.regionCount * 4;
+      return function() {
+        var list = new Array(this.regionCount);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = this.dv.getInt16(i*4, true);
+        }
+        return list;
+      };
+    });
   }
+  
   RoomMainView.prototype = {
     member: function(name, def) {
       var value = def.apply(this);
@@ -383,6 +672,15 @@ define(function() {
     }
     return list;
   }
+  
+  function RoomAnimStageView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  RoomAnimStageView.prototype = {
+    
+  };
+  RoomAnimStageView.byteLength = 24;
+  RoomAnimStageView.maxCount = 10;
   
   return RoomView;
 
