@@ -80,7 +80,7 @@ define(function() {
         return 8;
       }
       const offset = this.endOffset;
-      this.endOffset += 2;
+      this.endOffset += 4;
       return function() {
         return this.dv.getInt32(offset, true) * 8;
       };
