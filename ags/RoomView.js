@@ -53,13 +53,13 @@ define(function() {
     get main() {
       var main;
       if (this.chunks === null) {
-        main = new RoomMainView(this.formatVersion, this.bytes.buffer, this.bytes.byteOffset + 2, this.bytes.byteLength - 2);
+        main = new RoomMainView(this, this.bytes.buffer, this.bytes.byteOffset + 2, this.bytes.byteLength - 2);
       }
       else {
         for (var i = 0; i < this.chunks.length; i++) {
           if (this.chunks[i].type === 'main') {
             var data = this.chunks[i].data;
-            main = new RoomMainView(this.formatVersion, data.buffer, data.byteOffset, data.byteLength);
+            main = new RoomMainView(this, data.buffer, data.byteOffset, data.byteLength);
             break;
           }
         }
@@ -69,8 +69,9 @@ define(function() {
     },
   };
   
-  function RoomMainView(formatVersion, buffer, byteOffset, byteLength) {
-    this.formatVersion = formatVersion;
+  function RoomMainView(room, buffer, byteOffset, byteLength) {
+    this.formatVersion = room.formatVersion;
+    this.game = room.game;
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
     
