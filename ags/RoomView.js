@@ -647,9 +647,9 @@ define(function() {
               case 8:
                 var palette = new Uint8Array(this.palette);
                 for (var i = 0; i < palette.length; i += 4) {
-                  palette[i] = (palette[i] << 2) | (palette[i] >> 6);
-                  palette[i+1] = (palette[i+1] << 2) | (palette[i+1] >> 6);
-                  palette[i+2] = (palette[i+2] << 2) | (palette[i+2] >> 6);
+                  palette[i] = (palette[i] << 2) | (palette[i] >> 4);
+                  palette[i+1] = (palette[i+1] << 2) | (palette[i+1] >> 4);
+                  palette[i+2] = (palette[i+2] << 2) | (palette[i+2] >> 4);
                   palette[i+3] = 0xFF;
                 }
                 var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
