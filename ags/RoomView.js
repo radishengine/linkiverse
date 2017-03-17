@@ -350,6 +350,7 @@ define(function() {
       return !!this.dv.getInt16(8, true);
     },
   };
+  ObjectView.byteLength = 10;
   
   function WallView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
