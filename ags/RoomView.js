@@ -639,7 +639,7 @@ define(function() {
         var palette = this.bytes.subarray(paletteOffset, paletteOffset + 256 * 4);
         palette = new Uint8Array(palette);
         for (var i = 0; i < this.game.header.palette_uses.length; i++) {
-          if (this.game.header.palette_uses[i]) {
+          if (this.game.header.palette_uses[i] & 1) {
             palette[i*4] = this.game.header.palette[i*4];
             palette[i*4 + 1] = this.game.header.palette[i*4 + 1];
             palette[i*4 + 2] = this.game.header.palette[i*4 + 2];
