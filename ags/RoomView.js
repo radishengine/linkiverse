@@ -73,6 +73,8 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
     
+    this.endOffset = 0;
+    
     this.member('bytesPerPixel', function() {
       if (this.formatVersion < 12) {
         return 8;
