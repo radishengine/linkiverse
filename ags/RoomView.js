@@ -593,7 +593,65 @@ define(function() {
     });
     
     function member_allegro_bitmap() {
-      throw new Error('NYI');
+      const w = this.dv.getUint16(this.endOffset, true);
+      const h = this.dv.getUint16(this.endOffset + 2, true);
+      this.endOffset += 4;
+      var compressed = new Int8Array(this.bytes.buffer, this.bytes.byteOffset + this.endOffset);
+      var uncompressed = new Uint8Array(w * h);
+      compressed.pos = 0;
+      uncompressed.pos = 0;
+      while (uncompressed.pos < uncompressed.length) {
+        var cx = compressed[compressed.pos++];
+        if (cx === -128) {
+          uncompressed[uncompressed.pos++] = compressed[compressed.pos++];
+        }
+        else if (cx < 0) {
+          var rep = compressed[compressed.pos++];
+          do { uncompressed[uncompressed.pos++] = rep; } while (++cx !== 0);
+        }
+        else {
+          cx++;
+          var part = compressed.subarray(compressed.pos, compressed.pos + cx);
+          uncompressed.set(part, uncompressed.pos);
+          uncompressed.pos += cx;
+          compressed.pos += cx;
+        }
+      }
+      this.endOffset += compressed.pos;
+      const paletteOffset = this.endOffset;
+      this.endOffset += 256 * 3;
+      return function() {
+        var palette = new Uint8Array(256 * 4);
+        for (var i = 0; i < 256; i++) {
+          if (this.game.header.palette_uses[i] & 1) {
+            palette[i*4] = this.game.header.palette[i*4];
+            palette[i*4 + 1] = this.game.header.palette[i*4 + 1];
+            palette[i*4 + 2] = this.game.header.palette[i*4 + 2];
+          }
+          else {
+            palette[i*4] = this.bytes[paletteOffset + i*3];
+            palette[i*4 + 1] = this.bytes[paletteOffset + i*3 + 1];
+            palette[i*4 + 2] = this.bytes[paletteOffset + i*3 + 2];
+          }
+          palette[i*4 + 3] = 0xFF;
+        }
+        return {
+          width: w,
+          height: h,
+          data: uncompressed,
+          palette: palette,
+          setImageData: function (imageData) {
+            var w = this.width, h = this.height, data = this.data;
+            var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
+            var pal4 = new Int32Array(this.palette.buffer, this.palette.byteOffset, 256);
+            for (var y = 0; y < this.height; y++) {
+              for (var x = 0; x < this.width; x++) {
+                pix4[y*w + x] = pal4[data[y*w + x]];
+              }
+            }
+          },
+        };
+      };
     }
     
     function member_lzw_bitmap() {
@@ -650,7 +708,7 @@ define(function() {
           palette[i+1] = (palette[i+1] << 2) | (palette[i+1] >> 4);
           palette[i+2] = (palette[i+2] << 2) | (palette[i+2] >> 4);
           palette[i+3] = 0xFF;
-        }            
+        }
         return {
           stride: dv.getInt32(0, true),
           width: this.width,
