@@ -362,7 +362,7 @@ define(function() {
     this.member('walkZoneLightLevels', function() {
       if (this.formatVersion < 21) return null;
       const offset = this.endOffset;
-      this.endOffset += 2 * this.walkZoneCount;
+      this.endOffset += 2 * (this.walkZoneCount - 1);
       if (this.formatVersion >= 13) return null; // regions have light level, not walk zones
       return function() {
         var list = new Array(this.walkZoneCount);
