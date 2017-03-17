@@ -600,7 +600,7 @@ define(function() {
       var uncompressed = new Uint8Array(w * h);
       compressed.pos = 0;
       uncompressed.pos = 0;
-      while (uncompressed.pos < uncompressed.length) {
+      for (;;) {
         var cx = compressed[compressed.pos++];
         if (cx === -128) {
           uncompressed[uncompressed.pos++] = compressed[compressed.pos++];
