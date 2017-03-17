@@ -156,6 +156,7 @@ define(function() {
             y: this.dv.getInt16(offset + i * 4 + 2, true),
           };
         }
+        return list;
       };
     });
     
