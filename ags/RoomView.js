@@ -689,7 +689,7 @@ define(function() {
                 throw new Error('unknown pixel format: ' + this.bitsPerPixel + 'bpp');
             }
             for (var i = 3; i < imageData.data.length; i += 4) {
-              pix4[i] = 0xff;
+              imageData.data[i] = 0xff;
             }
           },
         };
