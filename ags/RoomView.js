@@ -80,18 +80,25 @@ define(function() {
       const offset = this.endOffset;
       this.endOffset += 2;
       return function() {
-        return this.dv.getUint16(0, true) * 8;
+        return this.dv.getInt32(offset, true) * 8;
+      };
+    });
+    
+    this.member('walkbehindCount', function() {
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getUint16(offset, true);
       };
     });
     
     this.member('walkbehinds', function() {
       const offset = this.endOffset;
-      const count = this.dv.getUint16(offset, true);
-      this.endOffset += 2 + count*2;
+      this.endOffset += this.walkbehindCount * 2;
       return function() {
-        var list = new Array(this.dv.getUint16(offset, true));
-        for (var i = 0; i < count; i++) {
-          list[i] = {baseline:this.dv.getInt16(2 + i*2, true)};
+        var list = new Array(this.walkbehindCount);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = {baseline:this.dv.getInt16(offset + i*2, true)};
         }
         return list;
       };
