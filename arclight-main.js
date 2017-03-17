@@ -382,7 +382,7 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function
               return Promise.reject('room' + startRoom + '.crm not found!');
             }
             return readBlob(roomData).then(function(roomBuffer) {
-              var roomView = new RoomView(roomBuffer, 0, roomBuffer.byteLength);
+              var roomView = new RoomView(gameView, roomBuffer, 0, roomBuffer.byteLength);
               console.dir(roomView);
               window.roomView = roomView;
             });
