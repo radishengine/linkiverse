@@ -674,7 +674,7 @@ define(function() {
                 var dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
                 for (var y = 0; y < this.height; y++) {
                   for (var x = 0; x < this.width; x++) {
-                    var rgb = dv.getUint16(2 * (y*w + x), false);
+                    var rgb = dv.getUint16(2 * (y*w + x), true);
                     var b = rgb & ((1 << 5) - 1);
                     var g = (rgb >> 5) & ((1 << 6) - 1);
                     var r = rgb >> 11;
