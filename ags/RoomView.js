@@ -799,7 +799,7 @@ define(function() {
     var ctx = canvas.getContext('2d');
     var imageData = ctx.createImageData(pic.width, pic.height);
     pic.setImageData(imageData);
-    ctx.putImageData(imageData);
+    ctx.putImageData(imageData, 0, 0);
     console.log('%cTest',
        'display: inline-block;'
        + 'width: ' + pic.width + 'px;'
