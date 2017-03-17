@@ -637,7 +637,7 @@ define(function() {
           throw new Error('decompression underflow');
         }
         var palette = this.bytes.subarray(paletteOffset, paletteOffset + 256 * 4);
-        var palette = new Uint8Array(this.palette);
+        palette = new Uint8Array(palette);
         for (var i = 0; i < this.game.header.palette_uses.length; i++) {
           if (this.game.header.palette_uses[i]) {
             palette[i*4] = this.game.header.palette[i*4];
