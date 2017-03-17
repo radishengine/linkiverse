@@ -642,6 +642,7 @@ define(function() {
           bitsPerPixel: this.bitsPerPixel,
           setImageData: function (imageData) {
             var w = this.width, h = this.height, data = this.data;
+            var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
             switch (this.bitsPerPixel) {
               case 8:
                 var palette = this.palette;
@@ -649,7 +650,6 @@ define(function() {
                   palette = new Uint8Array(this.palette);
                 }
                 var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
-                var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
                 for (var y = 0; y < this.height; y++) {
                   for (var x = 0; x < this.width; x++) {
                     pix4[y*w + x] = pal4[data[y*w + x]];
@@ -687,6 +687,9 @@ define(function() {
                 break;
               default:
                 throw new Error('unknown pixel format: ' + this.bitsPerPixel + 'bpp');
+            }
+            for (var i = 3; i < imageData.data.length; i += 4) {
+              pix4[i] = 0xff;
             }
           },
         };
