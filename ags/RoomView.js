@@ -607,7 +607,12 @@ define(function() {
         }
         else if (cx < 0) {
           var rep = compressed[compressed.pos++];
-          do { uncompressed[uncompressed.pos++] = rep; } while (++cx !== 0);
+          if (rep === 0) {
+            uncompressed.pos += -cx;
+          }
+          else {
+            do { uncompressed[uncompressed.pos++] = rep; } while (++cx !== 0);
+          }
         }
         else if (cx === 0) {
           break;
