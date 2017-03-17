@@ -774,6 +774,42 @@ define(function() {
       }
       return member_lzw_bitmap.apply(this);
     });
+    
+    this.member('regionBitmap', function() {
+      if (this.formatVersion < 13) return null;
+      if (this.formatVersion < 21) {
+        return function() {
+          return this.walkZoneBitmap;
+        };
+      }
+      return member_allegro_bitmap.apply(this);
+    });
+    
+    this.member('shadowBitmap', function() {
+      if (this.formatVersion < 8) {
+        return null;
+      }
+      if (this.formatVersion === 8) {
+        return member_allegro_bitmap.apply(this);
+      }
+      member_allegro_bitmap.apply(this); // ignore!
+      return function() {
+        return this.walkZoneBitmap;
+      };
+    });
+    
+    this.member('wallBitmap', function() {
+      if (this.formatVersion >= 9) return null;
+      return member_allegro_bitmap.apply(this);
+    });
+    
+    this.member('walkZoneBitmap', function() {
+      if (this.formatVersion < 9) return null;
+      return member_allegro_bitmap.apply(this);
+    });
+    
+    this.member('walkBehindBitmap', member_allegro_bitmap);
+    this.member('hotspotBitmap', member_allegro_bitmap);
   }
   
   RoomMainView.prototype = {
