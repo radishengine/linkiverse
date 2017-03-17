@@ -609,6 +609,9 @@ define(function() {
           var rep = compressed[compressed.pos++];
           do { uncompressed[uncompressed.pos++] = rep; } while (++cx !== 0);
         }
+        else if (cx === 0) {
+          break;
+        }
         else {
           cx++;
           var part = compressed.subarray(compressed.pos, compressed.pos + cx);
