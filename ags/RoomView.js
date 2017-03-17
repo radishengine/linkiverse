@@ -113,7 +113,7 @@ define(function() {
       const offset = this.endOffset;
       this.endOffset += 4;
       return function() {
-        return this.dv.getInt32(offset, true);
+        return this.dv.getUint16(offset, true);
       };
     });
     
@@ -202,7 +202,7 @@ define(function() {
       const offset = this.endOffset;
       this.endOffset += 4;
       return function() {
-        return this.dv.getUint32(offset, true);
+        return this.dv.getUint16(offset, true);
       };
     });
     
