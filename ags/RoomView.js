@@ -589,6 +589,114 @@ define(function() {
         return list;
       };
     });
+    
+    function member_allegro_bitmap() {
+      throw new Error('NYI');
+    }
+    
+    function member_lzw_bitmap() {
+      const paletteOffset = this.endOffset;
+      this.endOffset += 4 * 256;
+      const uncompressedSize = this.dv.getInt32(this.endOffset, true);
+      this.endOffset += 4;
+      const compressedSize = this.dv.getInt32(this.endOffset, true);
+      const compressedOffset = this.endOffset + 4;
+      this.endOffset = compressedOffset + compressedSize;
+      return function() {
+        var compressed = this.bytes.subarray(compressedOffset, compressedOffset + compressedSize);
+        var uncompressed = new Uint8Array(uncompressedSize);
+        var dv = new DataView(uncompressed.buffer, uncompressed.byteOffset, uncompressed.byteLength);
+        var lzbuffer = new Uint8Array(0x1000);
+        uncompressed.pos = 0;
+        compressed.pos = 0;
+        var ix = 0x1000 - 0x10;
+        while (uncompressed.pos < uncompressed.length) {
+          var bits = compressed[compressed.pos++];
+          for (var bit = 1; bit < 0x100; bit <<= 1) {
+            if (bits & bit) {
+              var jx = compressed[compressed.pos] | (compressed[compressed.pos + 1] << 8);
+              compressed.pos += 2;
+              var len = ((jx >>> 12) & 0xF) + 3;
+              jx = (ix - jx - 1) & 0xFFF;
+              for (var i = 0; i < len; i++) {
+                uncompressed[uncompressed.pos++] = lzbuffer[jx];
+                lzbuffer[ix] = lzbuffer[jx];
+                jx = (jx + 1) & 0xFFF;
+                ix = (ix + 1) & 0xFFF;
+              }
+            }
+            else {
+              var ch = compressed[compressed.pos++];
+              lzbuffer[ix] = ch;
+              uncompressed[uncompressed.pos] = ch;
+              ix = (ix + 1) & 0xFFF;
+            }
+          }
+        }
+        if (uncompressed.pos < uncompressed.length) {
+          throw new Error('decompression underflow');
+        }
+        return {
+          palette: this.bytes.subarray(paletteOffset, paletteOffset + 256 * 4),
+          width: dv.getInt32(0, true),
+          height: dv.getInt32(4, true),
+          data: uncompressed.subarray(8),
+          bitsPerPixel: this.bitsPerPixel,
+          setImageData: function (imageData) {
+            var w = this.width, h = this.height, data = this.data;
+            switch (this.bitsPerPixel) {
+              case 8:
+                var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
+                var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
+                for (var y = 0; y < this.height; y++) {
+                  for (var x = 0; x < this.width; x++) {
+                    pix4[y*w + x] = pal4[data[y*w + x]];
+                  }
+                }
+                break;
+              case 16:
+                var dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+                for (var y = 0; y < this.height; y++) {
+                  for (var x = 0; x < this.width; x++) {
+                    var rgb = dv.getUint16(2 * (y*w + x), false);
+                    var b = rgb & ((1 << 5) - 1);
+                    var g = (rgb >> 5) & ((1 << 6) - 1);
+                    var r = rgb >> 11;
+                    b = (b << 3) | (b >> 2);
+                    g = (g << 2) | (b >> 4);
+                    r = (r << 3) | (r >> 2);
+                    imageData.data[(y*w + x) * 4] = r;
+                    imageData.data[(y*w + x) * 4 + 1] = g;
+                    imageData.data[(y*w + x) * 4 + 2] = b;
+                  }
+                }
+                break;
+              case 24:
+                for (var y = 0; y < this.height; y++) {
+                  for (var x = 0; x < this.width; x++) {
+                    imageData.data[(y*w + x) * 4] = data[(y*w + x) * 3];
+                    imageData.data[(y*w + x) * 4 + 1] = data[(y*w + x) * 3 + 1];
+                    imageData.data[(y*w + x) * 4 + 2] = data[(y*w + x) * 3 + 2];
+                  }
+                }
+                break;
+              case 32:
+                imageData.data.set(data);
+                break;
+              default:
+                throw new Error('unknown pixel format: ' + this.bitsPerPixel + 'bpp');
+            }
+          },
+        };
+      };
+    }
+    
+    this.member('backgroundBitmap', function() {
+      if (this.formatVersion < 5) {
+        return member_allegro_bitmap.apply(this);
+      }
+      return member_lzw_bitmap.apply(this);
+    });
   }
   
   RoomMainView.prototype = {
@@ -681,6 +789,23 @@ define(function() {
   };
   RoomAnimStageView.byteLength = 24;
   RoomAnimStageView.maxCount = 10;
+  
+  console.pic = function(pic) {
+    var canvas = document.createElement('CANVAS');
+    canvas.width = pic.width;
+    canvas.height = pic.height;
+    var ctx = canvas.getContext('2d');
+    var imageData = ctx.createImageData(pic.width, pic.height);
+    pic.setImageData(imageData);
+    ctx.putImageData(imageData);
+    console.log('%cTest',
+       'display: inline-block;'
+       + 'width: ' + pic.width + 'px;'
+       + 'height: ' + pic.height + 'px;'
+       + 'background-image: url(' + canvas.toDataURL() + ');'
+       + 'text-indent: 100%; white-space: nowrap; overflow: hidden;',
+    );
+  };
   
   return RoomView;
 
