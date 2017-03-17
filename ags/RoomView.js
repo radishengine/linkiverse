@@ -187,23 +187,28 @@ define(function() {
       };
     });
     
+    this.member('wallCount', function() {
+      if (this.formatVersion < 9) return 0;
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getUint32(offset, true);
+      };
+    });
+    
     this.member('walls', function() {
-      var list;
-      if (this.formatVersion >= 9) {
-        var pos = (this.hotspotScriptNames || this.hotspotNames).afterPos;
-        list = new Array(this.dv.getUint32(pos, true));
-        pos += 4;
+      const offset = this.endOffset;
+      this.endOffset += this.wallCount * WallView.byteLength;
+      return function() {
+        var list = new Array(this.wallCount);
         for (var i = 0; i < list.length; i++) {
-          list[i] = new WallView(this.bytes.buffer, this.bytes.byteOffset + pos, WallView.byteLength);
-          pos += WallView.byteLength;
-        }
-        list.afterPos = pos;
-      }
-      else {
-        list = null;
-      }
-      Object.defineProperty(this, 'walls', {value:list});
-      return list;
+          list[i] = new WallView(
+            this.bytes.buffer,
+            this.bytes.byteOffset + offset + i * WallView.byteLength,
+            WallView.byteLength);
+        };
+        return list;
+      };
     });
     
     this.member('interactions_v1', function() {
