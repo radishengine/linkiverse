@@ -221,7 +221,7 @@ define(function() {
           left: this.dv.getInt16(offset + 4, true),
           right: this.dv.getInt16(offset + 6, true),
         };
-      });
+      };
     });
     
     this.member('objectCount', function() {
