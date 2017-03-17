@@ -75,7 +75,7 @@ define(function() {
     
     this.endOffset = 0;
     
-    this.member('bytesPerPixel', function() {
+    this.member('bitsPerPixel', function() {
       if (this.formatVersion < 12) {
         return 8;
       }
