@@ -636,33 +636,34 @@ define(function() {
         if (uncompressed.pos < uncompressed.length) {
           throw new Error('decompression underflow');
         }
+        var palette = this.bytes.subarray(paletteOffset, paletteOffset + 256 * 4);
+        var palette = new Uint8Array(this.palette);
+        for (var i = 0; i < this.game.header.palette_uses.length; i++) {
+          if (this.game.header.palette_uses[i]) {
+            palette[i*4] = this.game.header.palette[i*4];
+            palette[i*4 + 1] = this.game.header.palette[i*4 + 1];
+            palette[i*4 + 2] = this.game.header.palette[i*4 + 2];
+          }
+        }
+        for (var i = 0; i < palette.length; i += 4) {
+          palette[i] = (palette[i] << 2) | (palette[i] >> 4);
+          palette[i+1] = (palette[i+1] << 2) | (palette[i+1] >> 4);
+          palette[i+2] = (palette[i+2] << 2) | (palette[i+2] >> 4);
+          palette[i+3] = 0xFF;
+        }            
         return {
-          palette: this.bytes.subarray(paletteOffset, paletteOffset + 256 * 4),
           stride: dv.getInt32(0, true),
           width: this.width,
           height: dv.getInt32(4, true),
           data: uncompressed.subarray(8),
+          palette: palette,
           bitsPerPixel: this.bitsPerPixel,
           setImageData: function (imageData) {
             var w = this.width, h = this.height, data = this.data;
             var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
             switch (this.bitsPerPixel) {
               case 8:
-                var palette = new Uint8Array(this.palette);
-                for (var i = 0; i < this.game.header.palette_uses.length; i++) {
-                  if (this.game.header.palette_uses[i]) {
-                    palette[i*4] = this.game.header.palette[i*4];
-                    palette[i*4 + 1] = this.game.header.palette[i*4 + 1];
-                    palette[i*4 + 2] = this.game.header.palette[i*4 + 2];
-                  }
-                }
-                for (var i = 0; i < palette.length; i += 4) {
-                  palette[i] = (palette[i] << 2) | (palette[i] >> 4);
-                  palette[i+1] = (palette[i+1] << 2) | (palette[i+1] >> 4);
-                  palette[i+2] = (palette[i+2] << 2) | (palette[i+2] >> 4);
-                  palette[i+3] = 0xFF;
-                }
-                var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
+                var pal4 = new Int32Array(this.palette.buffer, this.palette.byteOffset, 256);
                 for (var y = 0; y < this.height; y++) {
                   for (var x = 0; x < this.width; x++) {
                     pix4[y*w + x] = pal4[data[y*w + x]];
