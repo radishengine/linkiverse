@@ -792,7 +792,7 @@ define(function() {
   RoomAnimStageView.byteLength = 24;
   RoomAnimStageView.maxCount = 10;
   
-  console.pic = function(pic) {
+  window.pic = function(pic) {
     var canvas = document.createElement('CANVAS');
     canvas.width = pic.width;
     canvas.height = pic.height;
@@ -800,13 +800,10 @@ define(function() {
     var imageData = ctx.createImageData(pic.width, pic.height);
     pic.setImageData(imageData);
     ctx.putImageData(imageData, 0, 0);
-    console.log('%cTest',
-       'display: inline-block;'
-       + 'width: ' + pic.width + 'px;'
-       + 'height: ' + pic.height + 'px;'
-       + 'background-image: url(' + canvas.toDataURL() + ');'
-       + 'text-indent: 100%; white-space: nowrap; overflow: hidden;',
-    );
+    canvas.style.position = 'fixed';
+    canvas.style.right = '0px';
+    canvas.style.top = '0px';
+    document.body.appendChild(canvas);
   };
   
   return RoomView;
