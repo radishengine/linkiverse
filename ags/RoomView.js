@@ -644,7 +644,11 @@ define(function() {
             var w = this.width, h = this.height, data = this.data;
             switch (this.bitsPerPixel) {
               case 8:
-                var pal4 = new Int32Array(this.palette.buffer, this.palette.byteOffset, 256);
+                var palette = this.palette;
+                if (palette.byteOffset%4 !== 0) {
+                  palette = new Uint8Array(this.palette);
+                }
+                var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
                 var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
                 for (var y = 0; y < this.height; y++) {
                   for (var x = 0; x < this.width; x++) {
