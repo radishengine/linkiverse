@@ -629,16 +629,20 @@ define(function() {
       return function() {
         var palette = new Uint8Array(256 * 4);
         for (var i = 0; i < 256; i++) {
+          var r, g, b;
           if (this.game.header.palette_uses[i] & 1) {
-            palette[i*4] = this.game.header.palette[i*4];
-            palette[i*4 + 1] = this.game.header.palette[i*4 + 1];
-            palette[i*4 + 2] = this.game.header.palette[i*4 + 2];
+            r = this.game.header.palette[i*4];
+            g = this.game.header.palette[i*4 + 1];
+            b = this.game.header.palette[i*4 + 2];
           }
           else {
-            palette[i*4] = this.bytes[paletteOffset + i*3];
-            palette[i*4 + 1] = this.bytes[paletteOffset + i*3 + 1];
-            palette[i*4 + 2] = this.bytes[paletteOffset + i*3 + 2];
+            r = this.bytes[paletteOffset + i*3];
+            g = this.bytes[paletteOffset + i*3 + 1];
+            b = this.bytes[paletteOffset + i*3 + 2];
           }
+          palette[i*4] = (r << 2) | (r >> 4);
+          palette[i*4 + 1] = (g << 2) | (g >> 4);
+          palette[i*4 + 2] = (b << 2) | (b >> 4);
           palette[i*4 + 3] = 0xFF;
         }
         return {
