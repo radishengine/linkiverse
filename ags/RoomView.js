@@ -8,6 +8,22 @@ define(function() {
     return String.fromCharCode.apply(null, bytes.subarray(offset, offset + length)).match(/^[^\0]*/)[0];
   }
   
+  function masked(op, mask, bytes) {
+    bytes = new Uint8Array(bytes);
+    if (op == '+') {
+      for (var i = 0; i < bytes.length; i++) {
+        bytes[i] = (bytes[i] + mask.charCodeAt(i % mask.length)) & 0xFF;
+      }
+    }
+    else if (op === '-') {
+      for (var i = 0; i < bytes.length; i++) {
+        bytes[i] = (bytes[i] - mask.charCodeAt(i % mask.length)) & 0xFF;
+      }
+    }
+    else throw new Error('unsupported mask op', 2)
+    return String.fromCharCode.apply(null, bytes);
+  }
+  
   function RoomView(game, buffer, byteOffset, byteLength) {
     this.game = game;
     this.dv = new DataView(buffer, byteOffset, byteLength);
@@ -49,6 +65,15 @@ define(function() {
       list.afterPos = pos;
       Object.defineProperty(this, 'chunks', {value:list});
       return list;
+    },
+    get scriptSource() {
+      if (!this.chunks) return null;
+      for (var i = 0; i < this.chunks.length; i++) {
+        if (this.chunks[i].type === 'script_source') {
+          return masked('+', 'Avis Durgan', this.chunks[i].data);
+        }
+      }
+      return null;
     },
     get main() {
       var main;
