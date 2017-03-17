@@ -52,70 +52,71 @@ define(function() {
     get main() {
       var main;
       if (this.chunks === null) {
-        main = new RoomMainView(this.buffer, this.byteOffset + 2, this.byteLength - 2);
+        main = new RoomMainView(this.formatVersion, this.bytes.buffer, this.bytes.byteOffset + 2, this.bytes.byteLength - 2);
       }
       else {
         for (var i = 0; i < this.chunks.length; i++) {
           if (this.chunks[i].type === 'main') {
             var data = this.chunks[i].data;
-            main = new RoomMainView(data.buffer, data.byteOffset, data.byteLength);
+            main = new RoomMainView(this.formatVersion, data.buffer, data.byteOffset, data.byteLength);
             break;
           }
         }
-      }
-      if (main) {
-        main.formatVersion = this.formatVersion;
       }
       Object.defineProperty(this, 'main', {value:main});
       return main;
     },
   };
   
-  function RoomMainView(buffer, byteOffset, byteLength) {
+  function RoomMainView(formatVersion, buffer, byteOffset, byteLength) {
+    this.formatVersion = formatVersion;
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
-  }
-  RoomMainView.prototype = {
-    get maxHotspots() {
-      return (this.formatVersion >= 25) ? 50
-        : (this.formatVersion >= 23) ? 30
-        : (this.formatVersion >= 9) ? 20
-        : 16;
-    },
-    get maxObjects() {
-      return 10;
-    },
-    get maxWalkZones() {
-      return this.formatVersion >= 9 ? 16 : 0;
-    },
-    get maxShadowLayers() {
-      return this.formatVersion >= 8 ? 16 : 0;
-    },
-    get bitsPerPixel() {
-      return this.formatVersion >= 12 ? this.dv.getUint16(0, true) * 8 : 8;
-    },
-    get walkbehindBaselines() {
-      var pos = this.formatVersion >= 12 ? 2 : 0;
-      var list = new Array(this.dv.getUint16(pos, true));
-      pos += 2;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = this.dv.getInt16(pos, true);
-        pos += 2;
+    
+    this.member('bytesPerPixel', function() {
+      if (this.formatVersion < 12) {
+        return 8;
       }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'walkbehindBaselines', {value:list});
-      return list;
-    },
-    get hotspotCount() {
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getUint16(0, true) * 8;
+      };
+    });
+    
+    this.member('walkbehinds', function() {
+      const offset = this.endOffset;
+      const count = this.dv.getUint16(offset, true);
+      this.endOffset += 2 + count*2;
+      return function() {
+        var list = new Array(this.dv.getUint16(offset, true));
+        for (var i = 0; i < count; i++) {
+          list[i] = {baseline:this.dv.getInt16(2 + i*2, true)};
+        }
+        return list;
+      };
+    });
+    
+    this.member('hotspotCount', function() {
       if (this.formatVersion < 9) {
         return this.maxHotspots;
       }
-      return this.dv.getInt32(this.walkbehindBaselines.afterPos, true);
-    },
-    get interactions_v2() {
-      var obj = {};
-      var pos = this.walkbehindBaselines.afterPos + (this.formatVersion < 9 ? 0 : 4);
-      if (this.formatVersion >= 9 && this.formatVersion <= 14) {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    });
+    
+    this.member('interactions_v2', function() {
+      if (this.formatVersion < 9 || this.formatVersion > 14) {
+        return null;
+      }
+      const offset = this.endOffset;
+      this.endOffset += INTERACTIONS_V2_SIZE * (this.maxHotspots + this.maxObjects + 1);
+      return function() {
+        var obj = {};
+        var pos = offset;
         obj.forHotspots = new Array(this.maxHotspots);
         for (var i = 0; i < obj.forHotspots.length; i++) {
           obj.forHotspots[i] = readInteractionsV2(this.dv, pos);
@@ -128,73 +129,65 @@ define(function() {
         }
         obj.forRoom = readInteractionsV2(this.dv, pos);
         pos += INTERACTIONS_V2_SIZE;
-      }
-      obj.afterPos = pos;
-      Object.defineProperty(this, 'interactions_v2', {value:obj});
-      return obj;
-    },
-    get hotspotWalkToPoints() {
-      var list;
+        return obj;
+      };
+    });
+    
+    this.member('hotspotWalkToPoints', function() {
       if (this.formatVersion < 9) {
-        list = null;
+        return null;
       }
-      else {
-        list = new Array(this.hotspotCount);
-        var pos = this.interactions_v2.afterPos;
+      const offset = this.endOffset;
+      this.endOffset += this.hotspotCount * 4;
+      return function() {
+        var list = new Array(this.hotspotCount);
         for (var i = 0; i < list.length; i++) {
           list[i] = {
-            x: this.dv.getInt16(pos + i * 4, true),
-            y: this.dv.getInt16(pos + i * 4 + 2, true),
+            x: this.dv.getInt16(offset + i * 4, true),
+            y: this.dv.getInt16(offset + i * 4 + 2, true),
           };
         }
-        list.afterPos = pos + list.length * 4;
-      }
-      Object.defineProperty(this, 'hotspotWalkToPoints', {value:list});
-      return list;
-    },
-    get hotspotNames() {
-      var list;
-      if (this.formatVersion >= 9) {
-        var pos = this.hotspotWalkToPoints.afterPos;
-        list = new Array(this.hotspotCount);
-        if (this.formatVersion >= 28) {
+      };
+    });
+    
+    this.member('hotspotNames', function() {
+      const offset = this.endOffset;
+      if (this.formatVersion < 9) return null;
+      if (this.formatVersion < 28) {
+        this.endOffset += this.hotspotCount * 30;
+        return function() {
+          var list = new Array(this.hotspotCount);
           for (var i = 0; i < list.length; i++) {
-            var endPos = pos;
-            while (this.bytes[endPos] !== 0) {
-              endPos++;
-            }
-            if (pos !== endPos) {
-              list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
-            }
-            pos = endPos + 1;
+            list[i] = nullTerminated(this.bytes, offset + i*30, 30);
           }
-        }
-        else {
-          for (var i = 0; i < list.length; i++) {
-            list[i] = nullTerminated(this.bytes, pos, 30);
-            pos += 30;
-          }
-        }
-        list.afterPos = pos;
+          return list;
+        };
       }
-      else {
-        list = null;
+      var list = new Array(this.hotspotCount);
+      var pos = offset;
+      for (var i = 0; i < list.length; i++) {
+        var endPos = pos;
+        while (this.bytes[endPos] !== 0) {
+          endPos++;
+        }
+        if (pos !== endPos) {
+          list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+        }
+        pos = endPos + 1;
       }
-      Object.defineProperty(this, 'hotspotNames', {value:list});
+      this.endOffset = pos;
       return list;
-    },
-    get hotspotScriptNames() {
-      var list;
-      if (this.formatVersion >= 24) {
+    });
+    
+    this.member('hotspotScriptNames', function() {
+      if (this.formatVersion < 24) return null;
+      this.endOffset += this.hotspotCount * 20;
+      return function() {
         throw new Error('NYI');
-      }
-      else {
-        list = null;
-      }
-      Object.defineProperty(this, 'hotspotScriptNames', {value:list});
-      return list;
-    },
-    get walls() {
+      };
+    });
+    
+    this.member('walls', function() {
       var list;
       if (this.formatVersion >= 9) {
         var pos = (this.hotspotScriptNames || this.hotspotNames).afterPos;
@@ -211,80 +204,115 @@ define(function() {
       }
       Object.defineProperty(this, 'walls', {value:list});
       return list;
-    },
-    get interactions_v1() {
-      if (this.formatVersion >= 9) {
+    });
+    
+    this.member('interactions_v1', function() {
+      if (this.formatVersion >= 9) return null;
+      throw new Error('NYI');
+    });
+    
+    this.member('edges', function() {
+      const offset = this.endOffset;
+      this.endOffset += 8;
+      return function() {
+        return {
+          top: this.dv.getInt16(offset, true),
+          bottom: this.dv.getInt16(offset + 2, true),
+          left: this.dv.getInt16(offset + 4, true),
+          right: this.dv.getInt16(offset + 6, true),
+        };
+      });
+    });
+    
+    this.member('objectCount', function() {
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getUint16(offset, true);
+      };
+    });
+    
+    this.member('objects', function() {
+      const offset = this.endOffset;
+      this.endOffset += this.objectCount * ObjectView.byteLength;
+      return function() {
+        var list = new Array(this.objectCount);
+        for (var i = 0; i < list.length; i++) {
+          list[i] = new ObjectView(
+            this.bytes.buffer,
+            this.bytes.byteOffset + offset + i * ObjectView.byteLength,
+            ObjectView.byteLength);
+        }
+        return list;
+      };
+    });
+    
+    this.member('v3_local_vars', function() {
+      if (this.formatVersion < 19) return null;
+      throw new Error('NYI');
+    });
+    
+    this.member('interactions_v3', function() {
+      if (this.formatVersion < 15 || this.formatVersion >= 26) {
         return null;
       }
       throw new Error('NYI');
-    },
-    get edges() {
-      var pos = (this.interactions_v1 || this.walls).afterPos;
-      var obj = {
-        top: this.dv.getInt16(pos, true),
-        bottom: this.dv.getInt16(pos + 2, true),
-        left: this.dv.getInt16(pos + 4, true),
-        right: this.dv.getInt16(pos + 6, true),
-        afterPos: pos + 8,
-      };
-      Object.defineProperty(this, 'edges', {value:obj});
-      return obj;
-    },
-    get objects() {
-      var pos = this.edges.afterPos;
-      var list = new Array(this.dv.getUint16(pos, true));
-      pos += 2;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = new ObjectView(this.bytes.buffer, this.bytes.byteOffset + pos, ObjectView.byteLength);
-        pos += ObjectView.byteLength;
-      }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'objects', {value:list});
-      return list;
-    },
-    get v3_local_vars() {
-      if (this.formatVersion >= 19) {
-        throw new Error('NYI');
-      }
-      return null;
-    },
-    get interactions_v3() {
-      if (this.formatVersion >= 15 && this.formatVersion < 26) {
-        throw new Error('NYI');
-      }
-      return null;
-    },
-    get regionCount() {
+    });
+    
+    this.member('regionCount', function() {
       if (this.formatVersion < 21) return 0;
-      var pos = (this.interactions_v3 || this.objects).afterPos;
-      return this.dv.getUint32(pos, true);
-    },
-    get interactions_v4() {
-      if (this.formatVersion >= 26) {
-        throw new Error('NYI');
-      }
-      return null;
-    },
-    get objectBaselines() {
-      var list = new Array(this.objects.length);
-      var pos = this.interactions_v4
-        ? this.interactions_v4.afterPos
-        : (this.interactions_v3 || this.objects).afterPos + 4;
-      if (this.formatVersion >= 9) {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getUint32(offset, true);
+      };
+    });
+    
+    this.member('interactions_v4', function() {
+      if (this.formatVersion < 26) return null;
+      throw new Error('NYI');
+    });
+    
+    this.member('objectBaselines', function() {
+      if (this.formatVersion < 9) return null;
+      const offset = this.endOffset;
+      this.endOffset += 4 * this.objectCount;
+      return function() {
+        var list = new Array(this.objects.length);
         for (var i = 0; i < list.length; i++) {
-          list[i] = this.dv.getInt32(pos, true);
-          pos += 4;
+          list[i] = this.dv.getInt32(offset + i * 4, true);
         }
+        return list;
+      };
+    });
+    
+  }
+  RoomMainView.prototype = {
+    member: function(name, def) {
+      var value = def.apply(this);
+      if (typeof value === 'function') {
+        Object.defineProperty(this, name, {get:value});
       }
       else {
-        for (var i = 0; i < list.length; i++) {
-          list[i] = -1;
-        }
+        Object.defineProperty(this, name, {value:value});
       }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'objectBaselines', {value:list});
-      return list;
+      return this;
     },
+    get maxHotspots() {
+      return (this.formatVersion >= 25) ? 50
+        : (this.formatVersion >= 23) ? 30
+        : (this.formatVersion >= 9) ? 20
+        : 16;
+    },
+    get maxObjects() {
+      return 10;
+    },
+    get maxWalkZones() {
+      return this.formatVersion >= 9 ? 16 : 0;
+    },
+    get maxShadowLayers() {
+      return this.formatVersion >= 8 ? 16 : 0;
+    },    
   };
   
   function ObjectView(buffer, byteOffset, byteLength) {
