@@ -626,9 +626,7 @@ define(function() {
               }
             }
             else {
-              var ch = compressed[compressed.pos++];
-              lzbuffer[ix] = ch;
-              uncompressed[uncompressed.pos] = ch;
+              lzbuffer[ix] = uncompressed[uncompressed.pos++] = compressed[compressed.pos++];
               ix = (ix + 1) & 0xFFF;
             }
           }
