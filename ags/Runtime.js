@@ -43,9 +43,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         
           this.fileSystem.loadAsArrayBuffer('ac2game.dta')
           .then(function(buffer) {
-            var buffer = values[0], sprites = values[1];
             self.game = new GameView(buffer, 0, buffer.byteLength);
-            self.sprites = sprites;
             return self.loadRoom(self.game.playerCharacter.room)
           })
           .then(function(room) {
