@@ -174,6 +174,8 @@ define(function() {
           'first_time_enters_screen',
           'player_enters_screen',
           'repeatedly_execute',
+          'enter_screen_after_fadein',
+          'leave_screen',
         ], [
           'go_to_screen',
           'do_nothing',
