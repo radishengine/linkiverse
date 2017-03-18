@@ -1,4 +1,4 @@
-define(['./GameView'], function(GameView) {
+define(['./GameView', './RoomView'], function(GameView, RoomView) {
 
   'use strict';
   
@@ -21,10 +21,37 @@ define(['./GameView'], function(GameView) {
     set ticksPerSecond(v) {
       this.tickMillisecs = 1000/v;
     },
+    loadRoom: function(n) {
+      var promise = this.fileSystem.loadAsArrayBuffer('room' + n + '.crm');
+      if (n === 0) {
+        var self = this;
+        promise = promise.then(null, function() {
+          return this.fileSystem.loadAsArrayBuffer('intro.crm');
+        });
+      }
+      return promise.then(function(buffer) {
+        return new RoomView(buffer, 0, buffer.byteLength);
+      });
+    },
+    init: function() {
+      var self = this;
+      return this._init = this._init ||
+        this.fileSystem.loadAsArrayBuffer('ac2game.dta')
+        .then(function(buffer) {
+          self.game = new GameView(buffer, 0, buffer.byteLength);
+          return self.loadRoom(self.game.playerCharacter.room)
+        })
+        .then(function(room) {
+          self.room = room;
+        });
+    },
     begin: function() {
       //this.loadRoom(this.game.playerCharacter.room);
-      this.nextTick = performance.now() + this.tickMillisecs;
-      requestAnimationFrame(this.update);
+      var self = this;
+      return this._begin = this._begin || this.init().then(function() {
+        self.nextTick = performance.now();
+        requestAnimationFrame(self.update);
+      });
     },
     update: function(now) {
       requestAnimationFrame(this.update);
