@@ -73,6 +73,90 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
         self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
       });
     },
+    runDialog: function(n) {
+      var dialog = this.game.dialogs[n];
+      var messages = this.game.dialogs.messages;
+      var code = dialog.script.compiled.subarray();
+      code.pos = dialog.entryPoint;
+      code.nextArg = function() {
+        var pos = this.pos;
+        this.pos = pos + 2;
+        return this[pos] | (this[pos+1] << 8);
+      };
+      dialogLoop: while (code.pos < code.length) {
+        switch (code[code.pos++]) {
+          case 1:
+            var speaker = code.nextArg();
+            var text = code.nextArg();
+            text = messages[text];
+            console.log('say', speaker, text);
+            continue dialogLoop;
+          case 2:
+            var option = code.nextArg();
+            console.log('option off', option);
+            break dialogLoop;
+          case 3:
+            var option = code.nextArg();
+            console.log('option on', option);
+            break dialogLoop;
+          case 4:
+            console.log('return');
+            break dialogLoop;
+          case 5:
+            console.log('stop dialog');
+            break dialogLoop;
+          case 6:
+            var option = code.nextArg();
+            console.log('option off forever', option);
+            continue dialogLoop;
+          case 7:
+            var arg = code.nextArg();
+            console.log('run text script', arg);
+            continue dialogLoop;
+          case 8:
+            var dialog = code.nextArg();
+            console.log('go to dialog', dialog);
+            break dialogLoop;
+          case 9:
+            var sound = code.nextArg();
+            console.log('play sound', option);
+            continue dialogLoop;
+          case 10:
+            var item = code.nextArg();
+            console.log('add inventory', item);
+            continue dialogLoop;
+          case 11:
+            var character = code.nextArg();
+            var view = code.nextArg();
+            console.log('set speech view', character, view);
+            continue dialogLoop;
+          case 12:
+            var room = code.nextArg();
+            console.log('go to room', room);
+            continue dialogLoop;
+          case 13:
+            var id = code.nextArg();
+            var value = code.nextArg();
+            console.log('set global var', id, value);
+            continue dialogLoop;
+          case 14:
+            var points = code.nextArg();
+            console.log('add score', points);
+            continue dialogLoop;
+          case 15:
+            console.log('go to previous');
+            break dialogLoop;
+          case 16:
+            var item = code.nextArg();
+            console.log('lose inventory', item);
+            continue dialogLoop;
+          case 0xff:
+            console.log('end script');
+            break dialogLoop;
+          default: throw new Error('unknown dialog opcode: ' + code[code.pos - 1]);
+        }
+      }
+    },
     runGraphicalScriptBlock: function(script, n) {
       var block = script.blocks[n];
       for (var i = 0; i < block.length; i++) {
@@ -100,6 +184,9 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
             break;
           case 'go_to_screen':
             this.goToRoom(step.data1);
+            break;
+          case 'run_dialog_topic':
+            this.runDialog(step.data1);
             break;
         }
       }
