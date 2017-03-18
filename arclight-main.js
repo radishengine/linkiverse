@@ -395,35 +395,10 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           runtime.element.style.right = 0;
           runtime.element.style.top = 0;
           var ctx = runtime.element.getContext('2d');
-          runtime.eventTarget.addEventListener('update', function() {
-            ctx.fillStyle = 'hsl(' + Math.random()*360 + ', 100%, 50%)';
-            ctx.fillRect(0, 0, runtime.element.width, runtime.element.height);
-          });
           document.body.appendChild(runtime.element);
           runtime.begin();
+          window.runtime = runtime;
           console.dir(window.files = files);
-          var mainData = files['ac2game.dta'] || files['AC2GAME.DTA'];
-          if (!mainData) {
-            return Promise.reject('ac2game.dta not found!');
-          }
-          return readBlob(mainData).then(function(gameData) {
-            var gameView = new GameView(gameData, 0, gameData.byteLength);
-            console.dir(gameView);
-            window.gameView = gameView;
-            var startRoom = gameView.characters[gameView.header.playerCharacterId].room;
-            var roomData = files['room' + startRoom + '.crm'] || files['ROOM' + startRoom + '.CRM'];
-            if (!roomData && startRoom === 0) {
-              roomData = files['intro.crm'] || files['INTRO.CRM'];
-            }
-            if (!roomData) {
-              return Promise.reject('room' + startRoom + '.crm not found!');
-            }
-            return readBlob(roomData).then(function(roomBuffer) {
-              var roomView = new RoomView(gameView, roomBuffer, 0, roomBuffer.byteLength);
-              console.dir(roomView);
-              window.roomView = roomView;
-            });
-          });
         });
       });
     });
