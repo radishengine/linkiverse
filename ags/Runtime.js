@@ -23,14 +23,14 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
     },
     loadRoom: function(n) {
       var promise = this.fileSystem.loadAsArrayBuffer('room' + n + '.crm');
+      var self = this;
       if (n === 0) {
-        var self = this;
         promise = promise.then(null, function() {
           return self.fileSystem.loadAsArrayBuffer('intro.crm');
         });
       }
       return promise.then(function(buffer) {
-        return new RoomView(buffer, 0, buffer.byteLength);
+        return new RoomView(self.game, buffer, 0, buffer.byteLength);
       });
     },
     init: function() {
