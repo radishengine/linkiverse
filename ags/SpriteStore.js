@@ -149,6 +149,7 @@ define(function() {
     }
     this.lastNumber = this.dv.getInt16(this.endOffset, true);
     this.endOffset += 2;
+    this.byteLength = this.endOffset;
   }
   HeaderView.maxByteLength = 2 + ' Sprite File '.length + 256 * 3 + 2;
   
