@@ -196,6 +196,9 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
         case 'run_graphical_script':
           this.runGraphicalScript(interaction.data1);
           break;
+        case 'run_dialog_topic':
+          this.runDialog(interaction.data1);
+          break;
       }
     },
     onEnteringRoom: function() {
