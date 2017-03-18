@@ -166,7 +166,29 @@ define(function() {
           obj.forObjects[i] = readInteractionsV2(this.dv, pos);
           pos += INTERACTIONS_V2_SIZE;
         }
-        obj.forRoom = readInteractionsV2(this.dv, pos);
+        obj.forRoom = readInteractionsV2(this.dv, pos, [
+          'walk_off_left',
+          'walk_off_right',
+          'walk_off_bottom',
+          'walk_off_top',
+          'first_time_enters_screen',
+        ], [
+          'go_to_screen',
+          'do_nothing',
+          'stop_man_walking',
+          'player dies',
+          'run_animation',
+          'display_message',
+          'remove_object',
+          'remove_object_add_inventory',
+          'add_inventory',
+          'run_script',
+          'run_graphical_script',
+          'play_sound',
+          'play_flic',
+          'turn_object_on',
+          'run_dialog_topic',
+        ]);
         pos += INTERACTIONS_V2_SIZE;
         return obj;
       };
@@ -918,12 +940,16 @@ define(function() {
   };
   WallView.byteLength = 30*4 + 30*4 + 4;
   
-  function readInteractionsV2(dv, pos) {
+  function readInteractionsV2(dv, pos, eventNames, responseNames) {
     var list = new Array(dv.getInt32(pos + 128, true));
     for (var i = 0; i < list.length; i++) {
+      var event = dv.getInt32(pos + 4*i, true);
+      var response = dv.getInt32(pos + 32 + 4*i, true);
+      if (eventNames) event = eventNames[event] || event;
+      if (responseNames) response = responseNames[response] || response;
       list[i] = {
-        event: dv.getInt32(pos + 4*i, true),
-        response: dv.getInt32(pos + 32 + 4*i, true),
+        event: event,
+        response: response,
         data1: dv.getInt32(pos + 64 + 4*i, true),
         data2: dv.getInt32(pos + 96 + 4*i, true),
         points: dv.getInt16(pos + 132 + 2*i, true),
