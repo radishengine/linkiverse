@@ -367,16 +367,24 @@ function(inflate, GameView, RoomView, Runtime, midi) {
         })
         .then(function(files) {
           var fileSystem = {
-            loadAsBlob: function(name) {
-              if (name in files) return Promise.resolve(files[name]);
-              name = name.toUpperCase();
-              if (name in files) return Promise.resolve(files[name]);
-              for (var k in files) {
-                if (k.toUpperCase() === name) {
-                  return Promise.resolve(files[k]);
+            getName: function(name) {
+              if (name instanceof RegExp) {
+                for (var k in files) {
+                  if (name.test(k)) return k;
                 }
+                return null;
               }
-              return Promise.reject('file not found');
+              if (name in files) return name;
+              name = name.toUpperCase();
+              if (name in files) return name;
+              for (var k in files) {
+                if (k.toUpperCase() === name) return k;
+              }
+              return null;
+            },
+            loadAsBlob: function(name) {
+              name = this.getName(name);
+              return name ? Promise.resolve(files[name]) : Promise.reject('file not found');
             },
             loadAsArrayBuffer: function(name) {
               return this.loadAsBlob(name).then(function(blob) {
