@@ -112,7 +112,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
       }
     },
     onEnteringRoom: function() {
-      var pic = this.room.backgroundImage;
+      var pic = this.room.main.backgroundImage;
       var ctx = this.element.getContext('2d');
       var imageData = ctx.createImageData(pic.width, pic.height);
       pic.setImageData(imageData);
