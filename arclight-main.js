@@ -366,7 +366,20 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           });
         })
         .then(function(files) {
-          var runtime = new Runtime();
+          var fileSystem = {
+            getFile: function(name) {
+              if (name in files) return Promise.resolve(files[name]);
+              name = name.toUpperCase();
+              if (name in files) return Promise.resolve(files[name]);
+              for (var k in files) {
+                if (k.toUpperCase() === name) {
+                  return Promise.resolve(files[k]);
+                }
+              }
+              return Promise.reject('file not found');
+            },
+          };
+          var runtime = new Runtime(fileSystem);
           runtime.element.style.position = 'fixed';
           runtime.element.style.right = 0;
           runtime.element.style.top = 0;
