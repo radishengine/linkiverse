@@ -367,7 +367,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
         })
         .then(function(files) {
           var fileSystem = {
-            getFile: function(name) {
+            loadAsBlob: function(name) {
               if (name in files) return Promise.resolve(files[name]);
               name = name.toUpperCase();
               if (name in files) return Promise.resolve(files[name]);
@@ -377,6 +377,17 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                 }
               }
               return Promise.reject('file not found');
+            },
+            loadAsArrayBuffer: function(name) {
+              return this.loadAsBlob(name).then(function(blob) {
+                return new Promise(function(resolve, reject) {
+                  var fr = new FileReader();
+                  fr.addEventListener('load', function() {
+                    resolve(this.result);
+                  });
+                  fr.loadAsArrayBuffer(blob);
+                });
+              });
             },
           };
           var runtime = new Runtime(fileSystem);
