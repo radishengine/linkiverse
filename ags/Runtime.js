@@ -8,8 +8,8 @@ define(function() {
     this.element = document.createElement('CANVAS');
     this.element.width = 320;
     this.element.height = 200;
-    this.eventTarget.runtime = this;
     this.eventTarget = this.element;
+    this.eventTarget.runtime = this;
     this.update = this.update.bind(this);
   }
   Runtime.prototype = {
