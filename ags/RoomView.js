@@ -70,7 +70,10 @@ define(function() {
       if (!this.chunks) return null;
       for (var i = 0; i < this.chunks.length; i++) {
         if (this.chunks[i].type === 'script_source') {
-          return masked('+', 'Avis Durgan', this.chunks[i].data);
+          var bytes = this.chunks[i].data;
+          var len = new DataView(bytes.buffer, bytes.byteOffset, 4).getInt32(0, true);
+          bytes = bytes.subarray(4, 4 + len);
+          return masked('+', 'Avis Durgan', bytes);
         }
       }
       return null;
