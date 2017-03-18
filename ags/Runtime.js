@@ -74,7 +74,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
       runBlock(0);
     },
     onEnteringRoom: function() {
-      var interactions = this.room.interactions_v2 && this.room.interactions_v2.forRoom;
+      var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
       if (interactions) {
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'player_enters_screen') {
