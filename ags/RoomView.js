@@ -595,10 +595,11 @@ define(function() {
         if (number === -1) break;
         var len = this.dv.getInt32(offset, true);
         offset += 4;
-        list.push({
-          number: number,
-          code: this.bytes.subarray(offset, offset + len),
-        });
+        if (number >= list.length) list.length = number + 1;
+        list[number] = new GraphicalScriptView(
+          this.bytes.buffer,
+          this.bytes.byteOffset + offset,
+          len);
         offset += len;
       }
       this.endOffset = offset;
@@ -968,6 +969,92 @@ define(function() {
   };
   RoomAnimStageView.byteLength = 24;
   RoomAnimStageView.maxCount = 10;
+  
+  function GraphicalScriptView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  GraphicalScriptView.prototype = {
+    get formatVersion() {
+      return this.dv.getInt32(0, true);
+    },
+    get blockSize() {
+      return this.dv.getInt32(4, true);
+    },
+    get blocks() {
+      var list = new Array(this.dv.getInt32(8, true));
+      var pos = 12;
+      for (var i = 0; i < list.length; i++) {
+        var block = new Array(this.dv.getInt32(pos, true));
+        for (var j = 0; j < block.length; j++) {
+          block[j] = new GraphicalActionView(
+            this.dv.buffer,
+            this.dv.byteOffset + pos + 4 + 25 * j,
+            25);
+        }
+        list[i] = block;
+        pos += this.blockSize;
+      }
+      Object.defineProperty(this, 'blocks', {value:list});
+      return list;
+    },
+  };
+  
+  function GraphicalActionView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  GraphicalActionView.prototype = {
+    get actionType() {
+      var v = this.dv.getInt32(0, true);
+      switch (v) {
+        case 0: return 'do_nothing';
+        case 1: return 'go_to_screen';
+        case 2: return 'give_score';
+        case 3: return 'stop_character_walking';
+        case 4: return 'lose_game';
+        case 5: return 'run_animation';
+        case 6: return 'display_message';
+        case 7: return 'remove_object';
+        case 8: return 'run_dialog';
+        case 9: return 'add_inventory';
+        case 10: return 'run_text_script';
+        case 11: return 'set_flag';
+        case 12: return 'clear_flag';
+        case 13: return 'stop_script';
+        case 14: return 'if_flag_off';
+        case 15: return 'if_flag_on';
+        case 16: return 'play_sound';
+        case 17: return 'play_flic';
+        case 18: return 'show_object';
+        case 19: return 'if_player_has_inventory';
+        case 20: return 'lose_inventory';
+        case 21: return 'every_n_loops';
+        case 22: return 'random_chance_1_in_n';
+        case 23: return 'set_timer';
+        case 24: return 'if_timer_expired';
+        case 25: return 'move_character_to_object';
+        case 26: return 'if_inventory_used';
+        default: return v;
+      }
+    },
+    get unknown1() {
+      return this.dv.getUint8(4); // 1 for conditional, 2 for normal?
+    },
+    get data1() {
+      return this.dv.getInt32(5, true);
+    },
+    get data2() {
+      return this.dv.getInt32(9, true);
+    },
+    get unknown2() {
+      return this.dv.getInt32(13, true);
+    },
+    get thenGoToBlock() {
+      return this.dv.getInt32(17, true);
+    },
+    get unknown3() {
+      return this.dv.getInt32(21, true);
+    },    
+  };
   
   window.pic = function(pic) {
     var canvas = document.createElement('CANVAS');
