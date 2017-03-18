@@ -181,7 +181,7 @@ define(function() {
     },
   };
   PrefixView.uncompressedByteLength = 6;
-  PrefixView.compressedByteLength = 8;
+  PrefixView.compressedByteLength = 10;
   
   SpriteStore.get = function(blob) {
     var headerBlob = (blob.size > HeaderView.maxByteLength) ? blob.slice(0, HeaderView.maxByteLength) : blob;
