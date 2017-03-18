@@ -84,9 +84,11 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
           case 'set_timer':
             this.graphicalTimerRemaining = step.data1;
             if (!this.graphicalTimerUpdate) {
+              var self = this;
               this.eventTarget.addEventListener('update', this.graphicalTimerUpdate = function timer_update() {
-                if (--this.graphicalTimerRemaining <= 0) {
-                  this.eventTarget.removeEventListener('update', timer_update);
+                if (--self.graphicalTimerRemaining <= 0) {
+                  self.eventTarget.removeEventListener('update', timer_update);
+                  self.graphicalTimerUpdate = null;
                 }
               });
             }
