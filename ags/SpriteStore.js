@@ -3,7 +3,7 @@ define(function() {
   'use strict';
   
   function readBlob(blob) {
-    return new Promise(resolve, reject) {
+    return new Promise(function(resolve, reject) {
       var fr = new FileReader();
       fr.addEventListener('load', function() {
         resolve(this.result);
