@@ -196,7 +196,7 @@ define(function() {
         }
         return readBlob(blob.slice(pos, Math.min(blob.size, pos + prefixLen)))
         .then(function(buffer) {
-          var prefix = new PrefixView(buffer, 0, buffer.byteLength);
+          var prefix = new PrefixView(header.isCompressed, buffer, 0, buffer.byteLength);
           if (!prefix.isDeleted) {
             list[i] = blob.slice(pos + prefix.contentOffset, pos + prefix.contentOffset + prefix.contentLength);
             list[i].width = prefix.width;
