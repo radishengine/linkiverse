@@ -59,32 +59,80 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
         source.start();
       });
     },
+    graphicalTimerRemaining: 0,
+    graphicalTimerUpdate: null,
     runGraphicalScript: function(n) {
-      var script = this.room.main.graphicalScripts[n];
+      this.runGraphicalScriptBlock(this.room.main.graphicalScripts[n], 0);
+    },
+    goToRoom: function(n) {
+      this.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
       var self = this;
-      function runBlock(n) {
-        var block = script.blocks[n];
-        for (var i = 0; i < block.length; i++) {
-          var step = block[i];
-          switch (step.actionType) {
-            case 'play_sound':
-              self.playSound(step.data1);
-              break;
-          }
+      this.loadRoom(n)
+      .then(function(room) {
+        self.room = room;
+        self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
+      });
+    },
+    runGraphicalScriptBlock: function(script, n) {
+      var block = script.blocks[n];
+      for (var i = 0; i < block.length; i++) {
+        var step = block[i];
+        switch (step.actionType) {
+          case 'play_sound':
+            this.playSound(step.data1);
+            break;
+          case 'set_timer':
+            this.graphicalTimerRemaining = step.data1;
+            if (!this.graphicalTimerUpdate) {
+              this.eventTarget.addEventListener('update', this.graphicalTimerUpdate = function timer_update() {
+                if (--this.graphicalTimerRemaining <= 0) {
+                  this.eventTarget.removeEventListener('update', timer_update);
+                }
+              });
+            }
+            break;
+          case 'if_timer_expired':
+            if (this.graphicalTimerRemaining <= 0) {
+              this.runGraphicalScriptBlock(script, step.thenGoToBlock);
+            }
+            break;
+          case 'go_to_screen':
+            this.goToRoom(step.data1);
+            break;
         }
       }
-      runBlock(0);
+    },
+    performInteractionV2: function(interaction) {
+      switch (interaction.response) {
+        case 'run_graphical_script':
+          this.runGraphicalScript(interaction.data1);
+          break;
+      }
     },
     onEnteringRoom: function() {
+      var pic = this.room.backgroundImage;
+      var ctx = this.element.getContext('2d');
+      var imageData = ctx.createImageData(pic.width, pic.height);
+      pic.setImageData(imageData);
+      ctx.putImageData(imageData, 0, 0);
+      
       var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
       if (interactions) {
         for (var i = 0; i < interactions.length; i++) {
-          if (interactions[i].event === 'player_enters_screen') {
-            switch (interactions[i].response) {
-              case 'run_graphical_script':
-                this.runGraphicalScript(interactions[i].data1);
-                break;
-            }
+          switch (interactions[i].event) {
+            case 'player_enters_screen':
+              this.performInteractionV2(interactions[i]);
+              break;
+            case 'repeatedly_execute':
+              var tick = this.performInteractionV2.bind(this, interactions[i]);
+              this.eventTarget.addEventListener('update', tick);
+              this.eventTarget.addEventListener('leaving-room', (function(tick) {
+                return function onLeavingRoom() {
+                  this.removeEventListener('update', tick);
+                  this.removeEventListener('leaving-room', onLeavingRoom);
+                };
+              })(tick));
+              break;
           }
         }
       }
