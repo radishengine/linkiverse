@@ -64,7 +64,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
         var block = script.blocks[n];
         for (var i = 0; i < block.length; i++) {
           var step = block[i];
-          switch (step.action) {
+          switch (step.actionType) {
             case 'play_sound':
               self.playSound(step.data1);
               break;
