@@ -1,4 +1,6 @@
-require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function(inflate, GameView, RoomView, midi) {
+require(
+['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/midi'],
+function(inflate, GameView, RoomView, Runtime, midi) {
 
   'use strict';
   
@@ -364,6 +366,17 @@ require(['z/inflate', 'ags/GameView', 'ags/RoomView', 'playback/midi'], function
           });
         })
         .then(function(files) {
+          var runtime = new Runtime();
+          runtime.element.style.position = 'fixed';
+          runtime.element.style.right = 0;
+          runtime.element.style.top = 0;
+          var ctx = runtime.element.getContext('2d');
+          runtime.eventTarget.addEventListener('update', function() {
+            ctx.fillStyle = 'hsl(' + Math.random()*360 + ', 100%, 100%)';
+            ctx.fillRect(0, 0, runtime.element.width, runtime.element.height);
+          });
+          document.body.appendChild(runtime.element);
+          runtime.begin();
           console.dir(window.files = files);
           var mainData = files['ac2game.dta'] || files['AC2GAME.DTA'];
           if (!mainData) {
