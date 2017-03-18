@@ -385,7 +385,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                   fr.addEventListener('load', function() {
                     resolve(this.result);
                   });
-                  fr.loadAsArrayBuffer(blob);
+                  fr.readAsArrayBuffer(blob);
                 });
               });
             },
