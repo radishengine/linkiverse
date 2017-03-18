@@ -224,6 +224,11 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
               break;
           }
         }
+        for (var i = 0; i < interactions.length; i++) {
+          if (interactions[i].event === 'first_time_enters_screen') {
+            this.performInteractionV2(interactions[i]);
+          }
+        }
       }
     },
     begin: function() {
