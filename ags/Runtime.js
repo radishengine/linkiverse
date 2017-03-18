@@ -11,6 +11,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
     this.element.height = 200;
     this.eventTarget = this.element;
     this.eventTarget.runtime = this;
+    this.eventTarget.addEventListener('entering-room', this.onEnteringRoom.bind(this));
     this.update = this.update.bind(this);
   }
   Runtime.prototype = {
@@ -45,10 +46,52 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
           self.room = room;
         });
     },
+    playSound: function(n) {
+      var audioContext = this.audioContext;
+      this.fileSystem.getAsArrayBuffer('sound' + n + '.wav')
+      .then(this.audioContext.decodeAudioData.bind(this.audioContext))
+      .then(function(buffer) {
+        var source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start();
+      });
+    },
+    runGraphicalScript: function(n) {
+      var script = this.room.graphicalScripts[n];
+      var self = this;
+      function runBlock(n) {
+        var block = script.blocks[n];
+        for (var i = 0; i < block.length; i++) {
+          var step = block[i];
+          switch (step.action) {
+            case 'play_sound':
+              self.playSound(step.data1);
+              break;
+          }
+        }
+      }
+      runBlock(0);
+    },
+    onEnteringRoom: function() {
+      var interactions = this.room.interactions_v2 && this.room.interactions_v2.forRoom;
+      if (interactions) {
+        for (var i = 0; i < interactions.length; i++) {
+          if (interactions[i].event === 'player_enters_screen') {
+            switch (interactions[i].response) {
+              case 'run_graphical_script':
+                this.runGraphicalScript(interactions[i].data1);
+                break;
+            }
+          }
+        }
+      }
+    },
     begin: function() {
       //this.loadRoom(this.game.playerCharacter.room);
       var self = this;
       return this._begin = this._begin || this.init().then(function() {
+        self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
         self.nextTick = performance.now();
         requestAnimationFrame(self.update);
       });
