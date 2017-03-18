@@ -13,6 +13,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
     this.eventTarget.runtime = this;
     this.eventTarget.addEventListener('entering-room', this.onEnteringRoom.bind(this));
     this.update = this.update.bind(this);
+    this.audioContext = new AudioContext();
   }
   Runtime.prototype = {
     tickMillisecs: 1000/40,
