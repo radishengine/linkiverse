@@ -1,10 +1,11 @@
-define(function() {
+define(['./GameView'], function(GameView) {
 
   'use strict';
   
   const updateEvent = new CustomEvent('update');
   
-  function Runtime() {
+  function Runtime(fileSystem) {
+    this.fileSystem = fileSystem;
     this.element = document.createElement('CANVAS');
     this.element.width = 320;
     this.element.height = 200;
