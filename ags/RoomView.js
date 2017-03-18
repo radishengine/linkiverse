@@ -172,6 +172,8 @@ define(function() {
           'walk_off_bottom',
           'walk_off_top',
           'first_time_enters_screen',
+          'player_enters_screen',
+          'repeatedly_execute',
         ], [
           'go_to_screen',
           'do_nothing',
