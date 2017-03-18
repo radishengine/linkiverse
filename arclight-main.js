@@ -372,7 +372,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           runtime.element.style.top = 0;
           var ctx = runtime.element.getContext('2d');
           runtime.eventTarget.addEventListener('update', function() {
-            ctx.fillStyle = 'hsl(' + Math.random()*360 + ', 100%, 100%)';
+            ctx.fillStyle = 'hsl(' + Math.random()*360 + ', 100%, 50%)';
             ctx.fillRect(0, 0, runtime.element.width, runtime.element.height);
           });
           document.body.appendChild(runtime.element);
