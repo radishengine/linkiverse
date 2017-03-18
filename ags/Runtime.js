@@ -50,7 +50,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
     playSound: function(n) {
       var audioContext = this.audioContext;
       this.fileSystem.loadAsArrayBuffer('sound' + n + '.wav')
-      .then(this.audioContext.decodeAudioData.bind(this.audioContext))
+      .then(audioContext.decodeAudioData.bind(audioContext))
       .then(function(buffer) {
         var source = audioContext.createBufferSource();
         source.buffer = buffer;
