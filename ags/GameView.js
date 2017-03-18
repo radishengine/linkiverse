@@ -158,6 +158,9 @@ define(function() {
       Object.defineProperty(this, 'characters', {value:list});
       return list;
     },
+    get playerCharacter() {
+      return this.characters[this.header.playerCharacterId];
+    },
     get offsetof_globalMessages() {
       return this.characters.afterPos + (this.formatVersion >= 21 ? 50 * 20 : 0);
     },
