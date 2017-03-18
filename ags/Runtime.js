@@ -58,7 +58,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
       });
     },
     runGraphicalScript: function(n) {
-      var script = this.room.graphicalScripts[n];
+      var script = this.room.main.graphicalScripts[n];
       var self = this;
       function runBlock(n) {
         var block = script.blocks[n];
