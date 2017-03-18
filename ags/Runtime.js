@@ -26,7 +26,7 @@ define(['./GameView', './RoomView'], function(GameView, RoomView) {
       if (n === 0) {
         var self = this;
         promise = promise.then(null, function() {
-          return this.fileSystem.loadAsArrayBuffer('intro.crm');
+          return self.fileSystem.loadAsArrayBuffer('intro.crm');
         });
       }
       return promise.then(function(buffer) {
