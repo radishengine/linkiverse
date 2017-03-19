@@ -12,6 +12,22 @@ define(function() {
     });
   }
   
+  function readBlobBuffered(blob, pos, len) {
+    if (blob.buffer && blob.buffer.pos <= pos && (pos+len) >= (blob.buffer.pos + blob.buffer.length)) {
+      pos -= blob.buffer.pos;
+      return Promise.resolve(blob.buffer.subarray(pos, pos + len));
+    }
+    return new Promise(function(resolve, reject) {
+      var fr = new FileReader();
+      fr.addEventListener('load', function() {
+        blob.buffer = new Uint8Array(this.result);
+        blob.buffer.pos = pos;
+        resolve(blob.buffer.subarray(0, len));
+      });
+      fr.readAsArrayBuffer(blob.slice(pos, Math.min(blob.size, pos + 64 * 1024));
+    });
+  }
+  
   function SpriteStore(isCompressed, blobs) {
     this.isCompressed = isCompressed;
     this.blobs = blobs;
@@ -185,18 +201,17 @@ define(function() {
   PrefixView.compressedByteLength = 10;
   
   SpriteStore.get = function(blob) {
-    var headerBlob = (blob.size > HeaderView.maxByteLength) ? blob.slice(0, HeaderView.maxByteLength) : blob;
-    return readBlob(headerBlob).then(function(buffer) {
-      var header = new HeaderView(buffer, 0, buffer.byteLength);
+    return readBlobBuffered(blob, 0, HeaderView.maxByteLength).then(function(bytes) {
+      var header = new HeaderView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       var list = new Array(header.lastNumber + 1);
       var prefixLen = header.isCompressed ? PrefixView.compressedByteLength : PrefixView.uncompressedByteLength;
       function onPart(i, pos) {
         if (i >= list.length) {
           return new SpriteStore(header.isCompressed, list);
         }
-        return readBlob(blob.slice(pos, Math.min(blob.size, pos + prefixLen)))
-        .then(function(buffer) {
-          var prefix = new PrefixView(header.isCompressed, buffer, 0, buffer.byteLength);
+        return readBlobBuffered(blob, pos, prefixLen)
+        .then(function(bytes) {
+          var prefix = new PrefixView(header.isCompressed, bytes.buffer, bytes.byteOffset, bytes.byteLength);
           if (!prefix.isDeleted) {
             list[i] = blob.slice(pos + prefix.contentOffset, pos + prefix.contentOffset + prefix.contentLength);
             list[i].width = prefix.width;
