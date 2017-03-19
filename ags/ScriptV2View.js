@@ -75,7 +75,7 @@ define(function() {
       do { } while (bytes[++pos] !== 0);
       var name = String.fromCharCode.apply(null, bytes.subarray(nameStart, pos));
       do { } while ((++pos % 4) !== 0);
-      var ref = pos - exportBase;
+      var ref = pos - importBase;
       pos += 4;
       var argAllocation = dv.getInt32(pos, true);
       pos += 4;
