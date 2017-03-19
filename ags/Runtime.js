@@ -209,6 +209,9 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         case 'run_dialog_topic':
           this.runDialog(interaction.data1);
           break;
+        case 'run_script':
+          console.log(interaction.funcName);
+          break;
       }
     },
     onEnteringRoom: function() {
