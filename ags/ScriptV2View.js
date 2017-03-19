@@ -92,7 +92,7 @@ define(function() {
     }
     pos += 8;
     var suffixOffset = dv.getInt32(pos, true);
-    pos += suffixOffset;
+    pos += 4 + suffixOffset;
     if (dv.getInt32(pos, true) !== 0x3D373C3B
     ||  dv.getInt32(pos + 4, true) !== 0
     ||  dv.getInt32(pos + 8, true) !== 0) {
