@@ -99,7 +99,10 @@ define(function() {
       throw new Error('unexpected suffix');
     }
     pos += 12;
-    this.code = bytes.subarray(codeBase, pos);
+    this.code = new Int32Array((pos - codeBase) / 4);
+    for (var i = 0; i < this.code.length; i++) {
+      this.code[i] = dv.getInt32(codeBase + i * 4, true);
+    }
     this.strings = bytes.subarray(pos);
   }
   
