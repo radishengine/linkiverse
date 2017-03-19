@@ -24,7 +24,7 @@ define(function() {
     }
     var pos = 4;
     this.vcpu = [];
-    for (var cc = dv.getInt32(pos, true); cc !== END_4CC; dv.getInt32(pos, true)) {
+    for (var cc = dv.getInt32(pos, true); cc !== END_4CC; cc = dv.getInt32(pos, true)) {
       pos += 4;
       switch (cc) {
         case VCPU_4CC:
@@ -46,7 +46,6 @@ define(function() {
         default:
           throw new Error('unknown SeeR section: ' + String.fromCharCode.apply(null, bytes.subarray(pos-4, pos)));
       }
-      pos += 4;
     }
     pos += 4;
     var exportBase = pos;
