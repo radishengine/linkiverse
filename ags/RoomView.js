@@ -171,15 +171,15 @@ define(['./ScriptV2View'], function(ScriptV2View) {
         var pos = offset;
         obj.forHotspots = new Array(this.maxHotspots);
         for (var i = 0; i < obj.forHotspots.length; i++) {
-          obj.forHotspots[i] = readInteractionsV2(this.dv, pos);
+          obj.forHotspots[i] = readInteractionsV2(this.dv, pos, 'hotspot' + i + '_');
           pos += INTERACTIONS_V2_SIZE;
         }
         obj.forObjects = new Array(this.maxObjects);
         for (var i = 0; i < obj.forObjects.length; i++) {
-          obj.forObjects[i] = readInteractionsV2(this.dv, pos);
+          obj.forObjects[i] = readInteractionsV2(this.dv, pos, 'object' + i + '_');
           pos += INTERACTIONS_V2_SIZE;
         }
-        obj.forRoom = readInteractionsV2(this.dv, pos, [
+        obj.forRoom = readInteractionsV2(this.dv, pos, 'room_', [
           'walk_off_left',
           'walk_off_right',
           'walk_off_bottom',
@@ -958,7 +958,7 @@ define(['./ScriptV2View'], function(ScriptV2View) {
   };
   WallView.byteLength = 30*4 + 30*4 + 4;
   
-  function readInteractionsV2(dv, pos, eventNames, responseNames) {
+  function readInteractionsV2(dv, pos, funcPrefix, eventNames, responseNames) {
     var list = new Array(dv.getInt32(pos + 128, true));
     for (var i = 0; i < list.length; i++) {
       var event = dv.getInt32(pos + 4*i, true);
@@ -972,6 +972,9 @@ define(['./ScriptV2View'], function(ScriptV2View) {
         data2: dv.getInt32(pos + 96 + 4*i, true),
         points: dv.getInt16(pos + 132 + 2*i, true),
       };
+      if (response === 'run_script') {
+        list[i].funcName = funcPrefix + String.fromCharCode('a'.charCodeAt(0) + list[i].data1);
+      }
     }
     return list;
   }
