@@ -24,7 +24,7 @@ define(function() {
         blob.buffer.pos = pos;
         resolve(blob.buffer.subarray(0, len));
       });
-      fr.readAsArrayBuffer(blob.slice(pos, Math.min(blob.size, pos + 64 * 1024));
+      fr.readAsArrayBuffer(blob.slice(pos, Math.min(blob.size, pos + 64*1024)));
     });
   }
   
