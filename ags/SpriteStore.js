@@ -13,7 +13,7 @@ define(function() {
   }
   
   function readBlobBuffered(blob, pos, len) {
-    if (blob.buffer && blob.buffer.pos <= pos && (pos+len) >= (blob.buffer.pos + blob.buffer.length)) {
+    if (blob.buffer && blob.buffer.pos <= pos && (pos+len) <= (blob.buffer.pos + blob.buffer.length)) {
       pos -= blob.buffer.pos;
       return Promise.resolve(blob.buffer.subarray(pos, pos + len));
     }
