@@ -82,7 +82,7 @@ define(['./ScriptV2View'], function(ScriptV2View) {
       if (!this.chunks) return null;
       var view = null;
       for (var i = 0; i < this.chunks.length; i++) {
-        if (this.chunks[i].type === 'script_compiled_v2') {
+        if (this.chunks[i].type === 'compiled_script_v2') {
           var bytes = this.chunks[i].data;
           var len = new DataView(bytes.buffer, bytes.byteOffset, 4).getInt32(0, true);
           view = new ScriptV2View(bytes.buffer, bytes.byteOffset + 4, len);
