@@ -210,7 +210,85 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           this.runDialog(interaction.data1);
           break;
         case 'run_script':
-          console.log(interaction.funcName);
+          var script = this.room.scriptCompiled_v2;
+          var exported = script.exports[interaction.funcName];
+          var strings = script.strings;
+          var pos = exported.entryPoint/4;
+          var code = script.code;
+          if (code[pos++] !== 0x3D3D3D3B) {
+            console.log('unexpected prefix: ' + code[pos - 1].toString(16));
+            break;
+          }
+          var stack = [];
+          var op;
+          var calling;
+          codeLoop: while ((op = code[pos++]) !== 0x3D3D373C) {
+            if (op & 0xffff0000 === 0x00200000) {
+              var count = (op & 0xffff) / 4;
+              var args = stack.splice(-count);
+              console.log(calling, args);
+              continue;
+            }
+            switch (op) {
+              case 0x00000001:
+                stack.unshift(code[pos++]);
+                break;
+              case 0x0000000D:
+                calling = script.imports[code[pos++]];
+                break;
+              case 0x00000502:
+                var startPos = code[pos++];
+                var endPos = startPos;
+                while (strings[endPos] !== 0) endPos++;
+                stack.unshift(String.fromCharCode.apply(null, strings.subarray(startPos, endPos)));
+                break;
+              case 0x0002018B:
+                var imported = script.imports[code[pos++]];
+                // TODO
+                break;
+              case 0x0003010B:
+                var array_offset = code[pos++];
+                // TODO
+                break;
+              case 0x0003010F:
+                var field_offset = code[pos++];
+                // TODO
+                break;
+              case 0x0203110F:
+              case 0x0304118B:
+                // TODO: work out what this does?
+                break;
+              case 0x0003014B:
+                var store_value = code[pos++];
+                // TODO
+                break;
+              case 0x0002418B:
+              case 0x0003418B:
+                var script_var_offset = code[pos++];
+                // TODO
+                break;
+              case 0x0000044B:
+                var script_var_offset = code[pos++];
+                var store_value = code[pos++];
+                break;
+              case 0x00020113:
+              case 0x00030113:
+              case 0x00040113:
+                var value = code[pos++];
+                // TODO
+                break;
+              case 0x00020121:
+              case 0x00040121:
+              case 0x00000009:
+                var jump = code[pos++];
+                // TODO
+                pos += jump / 4;
+                break;
+              default:
+                console.log('unknown op: ' + op.toString(16));
+                break codeLoop;
+            }
+          }
           break;
       }
     },
