@@ -105,11 +105,11 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     runDialog: function(n) {
       var dialog = this.game.dialogs[n];
       var messages = this.game.dialogs.messages;
-      var code = dialog.script.compiled.subarray();
+      var code = dialog.script.compiled;
       var pos = dialog.entryPoint;
       function nextArg() {
         pos += 2;
-        return this[pos - 2] | (this[pos - 1] << 8);
+        return code[pos - 2] | (code[pos - 1] << 8);
       }
       var self = this;
       function next_step() {
@@ -117,16 +117,16 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           if (pos >= code.length) return;
           switch (code[pos++]) {
             case 1:
-              var speaker = code.nextArg();
-              var text = code.nextArg();
+              var speaker = nextArg();
+              var text = nextArg();
               text = messages[text];
               return self.display(text).then(next_step);
             case 2:
-              var option = code.nextArg();
+              var option = nextArg();
               console.log('option off', option);
               continue;
             case 3:
-              var option = code.nextArg();
+              var option = nextArg();
               console.log('option on', option);
               continue;
             case 4:
@@ -136,49 +136,49 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               console.log('stop dialog');
               return;
             case 6:
-              var option = code.nextArg();
+              var option = nextArg();
               console.log('option off forever', option);
               continue;
             case 7:
-              var arg = code.nextArg();
+              var arg = nextArg();
               console.log('run text script', arg);
               continue;
             case 8:
-              var dialog = code.nextArg();
+              var dialog = nextArg();
               console.log('go to dialog', dialog);
               return;
             case 9:
-              var sound = code.nextArg();
+              var sound = nextArg();
               console.log('play sound', option);
               self.playSound(sound);
               continue;
             case 10:
-              var item = code.nextArg();
+              var item = nextArg();
               console.log('add inventory', item);
               continue;
             case 11:
-              var character = code.nextArg();
-              var view = code.nextArg();
+              var character = nextArg();
+              var view = nextArg();
               console.log('set speech view', character, view);
               continue;
             case 12:
-              var room = code.nextArg();
+              var room = nextArg();
               console.log('go to room', room);
               return self.goToRoom(room).then(next_step);
             case 13:
-              var id = code.nextArg();
-              var value = code.nextArg();
+              var id = nextArg();
+              var value = nextArg();
               console.log('set global var', id, value);
               continue;
             case 14:
-              var points = code.nextArg();
+              var points = nextArg();
               console.log('add score', points);
               continue;
             case 15:
               console.log('go to previous');
               return;
             case 16:
-              var item = code.nextArg();
+              var item = nextArg();
               console.log('lose inventory', item);
               continue;
             case 0xff:
