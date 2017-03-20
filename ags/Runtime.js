@@ -143,6 +143,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           case 12:
             var room = code.nextArg();
             console.log('go to room', room);
+            this.goToRoom(room);
             continue dialogLoop;
           case 13:
             var id = code.nextArg();
