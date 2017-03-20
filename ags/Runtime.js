@@ -314,6 +314,9 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               var field_offset = code[pos++];
               // TODO
               continue;
+            case 0x030411AE:
+              // TODO: load int value from previously specified struct field into register?
+              continue;
             case 0x0203110F:
             case 0x0304118B:
               // TODO: work out what this does?
