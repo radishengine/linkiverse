@@ -247,6 +247,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
             case 0x00000001:
               stack.unshift(code[pos++]);
               continue;
+            case 0x00000D01:
+              var local_var_address = code[pos++];
+              // TODO
+              continue;
             case 0x0000000D:
               calling = script.imports[code[pos++]];
               var argSize = code[pos++];
@@ -332,7 +336,12 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               continue;
             case 0x0002110B:
               var unknown = code[pos++];
-              var script_var_offset = code[pos++];
+              if (unknown === 0x00020201) {
+                // TODO: work this out (local var vs. script var?)
+              }
+              else {
+                var script_var_offset = code[pos++];
+              }
               // TODO
               continue;
             case 0x00020113:
