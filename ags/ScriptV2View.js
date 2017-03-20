@@ -93,16 +93,18 @@ define(function() {
     pos += 8;
     var suffixOffset = dv.getInt32(pos, true);
     pos += 4 + suffixOffset;
-    if (dv.getInt32(pos, true) !== 0x3D373C3B
-    ||  dv.getInt32(pos + 4, true) !== 0
-    ||  dv.getInt32(pos + 8, true) !== 0) {
-      throw new Error('unexpected suffix');
-    }
-    pos += 12;
     this.code = new Int32Array((pos - codeBase) / 4);
     for (var i = 0; i < this.code.length; i++) {
       this.code[i] = dv.getInt32(codeBase + i * 4, true);
     }
+    if (dv.getInt32(pos, true) !== 0x3D373C3B) {
+      throw new Error('unexpected suffix');
+    }
+    pos += 8;
+    this.unknown1 = bytes.subarray(pos, pos + dv.getInt32(pos - 4, true));
+    pos += this.unknown1.length + 4;
+    this.unknown2 = bytes.subarray(pos, pos + dv.getInt32(pos - 4, true));
+    pos += this.unknown2.length;
     this.strings = bytes.subarray(pos);
   }
   
