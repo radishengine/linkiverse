@@ -267,10 +267,13 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
                   break;
                 case 'Wait':
                   promise = self.wait(args[0]);
+                  break;
                 case 'Display':
                   promise = self.display(args[0]);
+                  break;
                 case 'DisplaySpeech':
                   promise = self.display(args[1]);
+                  break;
                 case 'SetGameSpeed':
                   self.ticksPerSecond = args[0];
                   break;
