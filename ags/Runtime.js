@@ -244,8 +244,17 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           if ((op & 0xffff0000) === 0x00200000) {
             var count = (op & 0xffff) / 4;
             var args = stack.splice(-count);
-            if (calling.name === 'NewRoomEx') {
-              return self.goToRoom(args[0]).then(next_step);
+            switch (calling.name) {
+              case 'NewRoomEx':
+                return self.goToRoom(args[0]).then(next_step);
+              case 'NewRoom':
+                return self.goToRoom(args[0]).then(next_step);
+              case 'Wait':
+                return self.wait(args[0]).then(next_step);
+              case 'Display':
+                return self.display(args[0]).then(next_step);
+              case 'DisplaySpeech':
+                return self.display(args[1]).then(next_step);
             }
             console.log(calling, args);
             continue;
