@@ -339,6 +339,12 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           return this.runScriptV2(this.room.scriptCompiled_v2, interaction.funcName);
         case 'go_to_screen':
           return this.goToRoom(interaction.data1);
+        case 'display_message':
+          var number = interaction.data1;
+          if (number < 500) {
+            return this.display(this.room.main.messages[number]);
+          }
+          return this.display(this.game.globalMessages[number]);
       }
     },
     onEnteringRoom: function() {
