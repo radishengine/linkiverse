@@ -60,7 +60,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
     textSpeed: 15,
     getTextDisplayTicks: function(str) {
-      return Math.floor(str.length / this.textSpeed) + 1;
+      return (1 + Math.floor(str.length / this.textSpeed)) * this.ticksPerSecond;
     },
     playSound: function(n) {
       var audioContext = this.audioContext;
@@ -84,16 +84,31 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         });
       });
     },
+    busyCount: 0,
+    busyChain: Promise.resolve(),
+    get isBusy() {
+      return this.busyCount > 0;
+    },
+    busy: function(promise) {
+      if (++this.busyCount === 1) {
+        this.eventTarget.dispatchEvent(new CustomEvent('busy'));
+      }
+      var self = this;
+      return this.busyChain = this.busyChain.then(promise).then(function() {
+        if (--self.busyCount === 0) {
+          self.eventTarget.dispatchEvent(new CustomEvent('idle'));
+        }
+      });
+    },
     graphicalTimerRemaining: 0,
     graphicalTimerUpdate: null,
     runGraphicalScript: function(n) {
-      this.runGraphicalScriptBlock(this.room.main.graphicalScripts[n], 0);
+      return this.runGraphicalScriptBlock(this.room.main.graphicalScripts[n], 0);
     },
     goToRoom: function(n) {
       this.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
       var self = this;
-      this.loadRoom(n)
-      .then(function(room) {
+      return this.loadRoom(n).then(function(room) {
         self.room = room;
         self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
       });
@@ -108,80 +123,83 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         this.pos = pos + 2;
         return this[pos] | (this[pos+1] << 8);
       };
-      dialogLoop: while (code.pos < code.length) {
-        switch (code[code.pos++]) {
-          case 1:
-            var speaker = code.nextArg();
-            var text = code.nextArg();
-            text = messages[text];
-            console.log('say', speaker, text);
-            continue dialogLoop;
-          case 2:
-            var option = code.nextArg();
-            console.log('option off', option);
-            break dialogLoop;
-          case 3:
-            var option = code.nextArg();
-            console.log('option on', option);
-            break dialogLoop;
-          case 4:
-            console.log('return');
-            break dialogLoop;
-          case 5:
-            console.log('stop dialog');
-            break dialogLoop;
-          case 6:
-            var option = code.nextArg();
-            console.log('option off forever', option);
-            continue dialogLoop;
-          case 7:
-            var arg = code.nextArg();
-            console.log('run text script', arg);
-            continue dialogLoop;
-          case 8:
-            var dialog = code.nextArg();
-            console.log('go to dialog', dialog);
-            break dialogLoop;
-          case 9:
-            var sound = code.nextArg();
-            console.log('play sound', option);
-            continue dialogLoop;
-          case 10:
-            var item = code.nextArg();
-            console.log('add inventory', item);
-            continue dialogLoop;
-          case 11:
-            var character = code.nextArg();
-            var view = code.nextArg();
-            console.log('set speech view', character, view);
-            continue dialogLoop;
-          case 12:
-            var room = code.nextArg();
-            console.log('go to room', room);
-            this.goToRoom(room);
-            continue dialogLoop;
-          case 13:
-            var id = code.nextArg();
-            var value = code.nextArg();
-            console.log('set global var', id, value);
-            continue dialogLoop;
-          case 14:
-            var points = code.nextArg();
-            console.log('add score', points);
-            continue dialogLoop;
-          case 15:
-            console.log('go to previous');
-            break dialogLoop;
-          case 16:
-            var item = code.nextArg();
-            console.log('lose inventory', item);
-            continue dialogLoop;
-          case 0xff:
-            console.log('end script');
-            break dialogLoop;
-          default: throw new Error('unknown dialog opcode: ' + code[code.pos - 1]);
+      var self = this;
+      return this.busy(function next_step() {
+        dialogLoop: while (code.pos < code.length) {
+          switch (code[code.pos++]) {
+            case 1:
+              var speaker = code.nextArg();
+              var text = code.nextArg();
+              text = messages[text];
+              console.log('say', speaker, text);
+              return self.wait(self.getTextDisplayTicks(text)).then(next_step);
+            case 2:
+              var option = code.nextArg();
+              console.log('option off', option);
+              continue dialogLoop;
+            case 3:
+              var option = code.nextArg();
+              console.log('option on', option);
+              continue dialogLoop;
+            case 4:
+              console.log('return');
+              break dialogLoop;
+            case 5:
+              console.log('stop dialog');
+              break dialogLoop;
+            case 6:
+              var option = code.nextArg();
+              console.log('option off forever', option);
+              continue dialogLoop;
+            case 7:
+              var arg = code.nextArg();
+              console.log('run text script', arg);
+              continue dialogLoop;
+            case 8:
+              var dialog = code.nextArg();
+              console.log('go to dialog', dialog);
+              break dialogLoop;
+            case 9:
+              var sound = code.nextArg();
+              console.log('play sound', option);
+              self.playSound(sound);
+              continue dialogLoop;
+            case 10:
+              var item = code.nextArg();
+              console.log('add inventory', item);
+              continue dialogLoop;
+            case 11:
+              var character = code.nextArg();
+              var view = code.nextArg();
+              console.log('set speech view', character, view);
+              continue dialogLoop;
+            case 12:
+              var room = code.nextArg();
+              console.log('go to room', room);
+              return self.goToRoom(room);
+            case 13:
+              var id = code.nextArg();
+              var value = code.nextArg();
+              console.log('set global var', id, value);
+              continue dialogLoop;
+            case 14:
+              var points = code.nextArg();
+              console.log('add score', points);
+              continue dialogLoop;
+            case 15:
+              console.log('go to previous');
+              break dialogLoop;
+            case 16:
+              var item = code.nextArg();
+              console.log('lose inventory', item);
+              continue dialogLoop;
+            case 0xff:
+              console.log('end script');
+              break dialogLoop;
+            default: throw new Error('unknown dialog opcode: ' + code[code.pos - 1]);
+          }
         }
-      }
+      });
     },
     runGraphicalScriptBlock: function(script, n) {
       var block = script.blocks[n];
@@ -321,31 +339,39 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
       if (interactions) {
         for (var i = 0; i < interactions.length; i++) {
-          switch (interactions[i].event) {
-            case 'player_enters_screen':
-              this.performInteractionV2(interactions[i]);
-              break;
-            case 'repeatedly_execute':
-              var tick = this.performInteractionV2.bind(this, interactions[i]);
-              this.eventTarget.addEventListener('update', tick);
-              this.eventTarget.addEventListener('leaving-room', (function(tick) {
+          if (interactions[i].event === 'player_enters_screen')
+            this.busy(this.performInteractionV2.bind(this, interactions[i]));
+          }
+        }
+        for (var i = 0; i < interactions.length; i++) {
+          if (interactions[i].event === 'first_time_enters_screen') {
+            this.busy(this.performInteractionV2.bind(this, interactions[i]));
+          }
+        }
+        for (var i = 0; i < interactions.length; i++) {
+          if (interactions[i].event === 'enter_screen_after_fadein') {
+            this.busy(this.performInteractionV2.bind(this, interactions[i]));
+          }
+        }
+        for (var i = 0; i < interactions.length; i++) {
+          if (interactions[i].event === 'repeatedly_execute') {
+            // TODO: set up on idle, remove on busy, until leaving room
+            var tick = self.performInteractionV2.bind(this, interactions[i]);
+            var eventTarget = this.eventTarget;
+            this.busy(function() {
+              eventTarget.addEventListener('update', tick);
+              eventTarget.addEventListener('leaving-room', (function(tick) {
                 return function onLeavingRoom() {
                   this.removeEventListener('update', tick);
                   this.removeEventListener('leaving-room', onLeavingRoom);
                 };
               })(tick));
-              break;
-          }
-        }
-        for (var i = 0; i < interactions.length; i++) {
-          if (interactions[i].event === 'first_time_enters_screen') {
-            this.performInteractionV2(interactions[i]);
+            });
           }
         }
       }
     },
     begin: function() {
-      //this.loadRoom(this.game.playerCharacter.room);
       var self = this;
       return this._begin = this._begin || this.init().then(function() {
         self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
