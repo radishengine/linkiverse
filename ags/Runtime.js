@@ -241,29 +241,6 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       function next_step() {
         for (;;) {
           var op = code[pos++];
-          if ((op & 0xffff0000) === 0x00200000) {
-            var count = (op & 0xffff) / 4;
-            var args = stack.splice(-count);
-            switch (calling.name) {
-              case 'NewRoomEx':
-                return self.goToRoom(args[0]).then(next_step);
-              case 'NewRoom':
-                return self.goToRoom(args[0]).then(next_step);
-              case 'Wait':
-                return self.wait(args[0]).then(next_step);
-              case 'Display':
-                return self.display(args[0]).then(next_step);
-              case 'DisplaySpeech':
-                return self.display(args[1]).then(next_step);
-              case 'SetGameSpeed':
-                self.ticksPerSecond = args[0];
-                continue;
-              case 'RunDialog':
-                return self.runDialog(args[0]);
-            }
-            console.log(calling, args);
-            continue;
-          }
           switch (op) {
             case 0x3D3D373C:
               return;
@@ -272,6 +249,45 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               continue;
             case 0x0000000D:
               calling = script.imports[code[pos++]];
+              var argSize = code[pos++];
+              var flags = argSize & 0xffff0000;
+              argSize &= 0xffff;
+              var args = stack.splice(-argSize/4);
+              var promise;
+              switch (calling.name) {
+                case 'NewRoomEx':
+                  promise = self.goToRoom(args[0]);
+                  break;
+                case 'NewRoom':
+                  promise = self.goToRoom(args[0]);
+                  break;
+                case 'Wait':
+                  promise = self.wait(args[0]);
+                case 'Display':
+                  promise = self.display(args[0]);
+                case 'DisplaySpeech':
+                  promise = self.display(args[1]);
+                case 'SetGameSpeed':
+                  self.ticksPerSecond = args[0];
+                  break;
+                case 'RunDialog':
+                  promise = self.runDialog(args[0]);
+                default:
+                  console.log(calling, args);
+                  break;
+              }
+              if (promise) {
+                if (flags & 0x00200000) {
+                  // throw away result
+                }
+                else {
+                  promise = promise.then(function(value) {
+                    stack.unshift(value);
+                  });
+                }
+                promise = promise.then(next_step);
+                return promise;
+              }
               continue;
             case 0x00000502:
               var startPos = code[pos++];
@@ -307,8 +323,20 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
             case 0x0000044B:
               var script_var_offset = code[pos++];
               var store_value = code[pos++];
+              // TODO
+              continue;
+            case 0x0000044F:
+              var script_var_offset = code[pos++];
+              var increase_value = code[pos++];
+              // TODO
+              continue;
+            case 0x0002110B:
+              var unknown = code[pos++];
+              var script_var_offset = code[pos++];
+              // TODO
               continue;
             case 0x00020113:
+            case 0x00020117: // >=
             case 0x00030113:
             case 0x00040113:
               var value = code[pos++];
