@@ -78,7 +78,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       var eventTarget = this.eventTarget;
       return new Promise(function(resolve, reject) {
         eventTarget.addEventListener('update', function on_tick() {
-          if (--ticks === 0) {
+          if (--ticks < 1) {
             this.removeEventListener('update', on_tick);
             resolve();
           }
@@ -112,124 +112,120 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         return this[pos - 2] | (this[pos - 1] << 8);
       }
       var self = this;
-      return new Promise(function(resolve, reject) {
-        function next_step() {
-          for (;;) {
-            if (pos >= code.length) return resolve();
-            switch (code[pos++]) {
-              case 1:
-                var speaker = code.nextArg();
-                var text = code.nextArg();
-                text = messages[text];
-                return self.display(text).then(next_step);
-              case 2:
-                var option = code.nextArg();
-                console.log('option off', option);
-                continue;
-              case 3:
-                var option = code.nextArg();
-                console.log('option on', option);
-                continue;
-              case 4:
-                console.log('return');
-                return resolve();
-              case 5:
-                console.log('stop dialog');
-                return resolve();
-              case 6:
-                var option = code.nextArg();
-                console.log('option off forever', option);
-                continue;
-              case 7:
-                var arg = code.nextArg();
-                console.log('run text script', arg);
-                continue;
-              case 8:
-                var dialog = code.nextArg();
-                console.log('go to dialog', dialog);
-                return resolve();
-              case 9:
-                var sound = code.nextArg();
-                console.log('play sound', option);
-                self.playSound(sound);
-                continue;
-              case 10:
-                var item = code.nextArg();
-                console.log('add inventory', item);
-                continue;
-              case 11:
-                var character = code.nextArg();
-                var view = code.nextArg();
-                console.log('set speech view', character, view);
-                continue;
-              case 12:
-                var room = code.nextArg();
-                console.log('go to room', room);
-                return self.goToRoom(room).then(next_step);
-              case 13:
-                var id = code.nextArg();
-                var value = code.nextArg();
-                console.log('set global var', id, value);
-                continue;
-              case 14:
-                var points = code.nextArg();
-                console.log('add score', points);
-                continue;
-              case 15:
-                console.log('go to previous');
-                return resolve();
-              case 16:
-                var item = code.nextArg();
-                console.log('lose inventory', item);
-                continue;
-              case 0xff:
-                console.log('end script');
-                return resolve();
-              default: throw new Error('unknown dialog opcode: ' + code[pos - 1]);
-            }
+      function next_step() {
+        for (;;) {
+          if (pos >= code.length) return;
+          switch (code[pos++]) {
+            case 1:
+              var speaker = code.nextArg();
+              var text = code.nextArg();
+              text = messages[text];
+              return self.display(text).then(next_step);
+            case 2:
+              var option = code.nextArg();
+              console.log('option off', option);
+              continue;
+            case 3:
+              var option = code.nextArg();
+              console.log('option on', option);
+              continue;
+            case 4:
+              console.log('return');
+              return;
+            case 5:
+              console.log('stop dialog');
+              return;
+            case 6:
+              var option = code.nextArg();
+              console.log('option off forever', option);
+              continue;
+            case 7:
+              var arg = code.nextArg();
+              console.log('run text script', arg);
+              continue;
+            case 8:
+              var dialog = code.nextArg();
+              console.log('go to dialog', dialog);
+              return;
+            case 9:
+              var sound = code.nextArg();
+              console.log('play sound', option);
+              self.playSound(sound);
+              continue;
+            case 10:
+              var item = code.nextArg();
+              console.log('add inventory', item);
+              continue;
+            case 11:
+              var character = code.nextArg();
+              var view = code.nextArg();
+              console.log('set speech view', character, view);
+              continue;
+            case 12:
+              var room = code.nextArg();
+              console.log('go to room', room);
+              return self.goToRoom(room).then(next_step);
+            case 13:
+              var id = code.nextArg();
+              var value = code.nextArg();
+              console.log('set global var', id, value);
+              continue;
+            case 14:
+              var points = code.nextArg();
+              console.log('add score', points);
+              continue;
+            case 15:
+              console.log('go to previous');
+              return;
+            case 16:
+              var item = code.nextArg();
+              console.log('lose inventory', item);
+              continue;
+            case 0xff:
+              console.log('end script');
+              return;
+            default: throw new Error('unknown dialog opcode: ' + code[pos - 1]);
           }
         }
-        next_step();
-      });
+      }
+      return next_step();
     },
     runGraphicalScriptBlock: function(script, n) {
       var block = script.blocks[n];
       var self = this;
       var i = 0;
-      return new Promise(function(resolve, reject) {
-        function next_step() {
-          for (;;) {
-            if (i >= block.length) return resolve();
-            var step = block[i++];
-            switch (step.actionType) {
-              case 'play_sound':
-                self.playSound(step.data1);
-                continue;
-              case 'set_timer':
-                self.graphicalTimerRemaining = step.data1;
-                if (!self.graphicalTimerUpdate) {
-                  self.eventTarget.addEventListener('update', self.graphicalTimerUpdate = function timer_update() {
-                    if (--self.graphicalTimerRemaining <= 0) {
-                      self.eventTarget.removeEventListener('update', timer_update);
-                      self.graphicalTimerUpdate = null;
-                    }
-                  });
-                }
-                continue;
-              case 'if_timer_expired':
-                if (self.graphicalTimerRemaining <= 0) {
-                  return self.runGraphicalScriptBlock(script, step.thenGoToBlock).then(next_step);
-                }
-                continue;
-              case 'go_to_screen':
-                return self.goToRoom(step.data1).then(next_step);
-              case 'run_dialog_topic':
-                return self.runDialog(step.data1).then(next_step);
-            }
+      function next_step() {
+        for (;;) {
+          if (i >= block.length) return;
+          var step = block[i++];
+          switch (step.actionType) {
+            case 'play_sound':
+              self.playSound(step.data1);
+              continue;
+            case 'set_timer':
+              self.graphicalTimerRemaining = step.data1;
+              if (!self.graphicalTimerUpdate) {
+                self.eventTarget.addEventListener('update', self.graphicalTimerUpdate = function timer_update() {
+                  if (--self.graphicalTimerRemaining <= 0) {
+                    self.eventTarget.removeEventListener('update', timer_update);
+                    self.graphicalTimerUpdate = null;
+                  }
+                });
+              }
+              continue;
+            case 'if_timer_expired':
+              if (self.graphicalTimerRemaining <= 0) {
+                return self.runGraphicalScriptBlock(script, step.thenGoToBlock).then(next_step);
+              }
+              continue;
+            case 'go_to_screen':
+              return self.goToRoom(step.data1).then(next_step);
+            case 'run_dialog_topic':
+              return self.runDialog(step.data1).then(next_step);
           }
         }
-        next_step();
-      });
+      }
+      return next_step();
     },
     runScriptV2: function(script, funcName) {
       var exported = script.exports[funcName];
@@ -243,83 +239,82 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       var stack = [];
       var calling;
       var self = this;
-      return new Promise(function(resolve, reject) {
-        function next_step() {
-          codeLoop: for (;;) {
-            var op = code[pos++];
-            if ((op & 0xffff0000) === 0x00200000) {
-              var count = (op & 0xffff) / 4;
-              var args = stack.splice(-count);
-              console.log(calling, args);
-              if (calling.name === 'NewRoomEx') {
-                return self.goToRoom(args[0]).then(next_step);
-              }
+      function next_step() {
+        for (;;) {
+          var op = code[pos++];
+          if ((op & 0xffff0000) === 0x00200000) {
+            var count = (op & 0xffff) / 4;
+            var args = stack.splice(-count);
+            if (calling.name === 'NewRoomEx') {
+              return self.goToRoom(args[0]).then(next_step);
+            }
+            console.log(calling, args);
+            continue;
+          }
+          switch (op) {
+            case 0x3D3D373C:
+              return;
+            case 0x00000001:
+              stack.unshift(code[pos++]);
               continue;
-            }
-            switch (op) {
-              case 0x3D3D373C: return resolve();
-              case 0x00000001:
-                stack.unshift(code[pos++]);
-                break;
-              case 0x0000000D:
-                calling = script.imports[code[pos++]];
-                break;
-              case 0x00000502:
-                var startPos = code[pos++];
-                var endPos = startPos;
-                while (strings[endPos] !== 0) endPos++;
-                stack.unshift(String.fromCharCode.apply(null, strings.subarray(startPos, endPos)));
-                break;
-              case 0x0002018B:
-                var imported = script.imports[code[pos++]];
-                // TODO
-                break;
-              case 0x0003010B:
-                var array_offset = code[pos++];
-                // TODO
-                break;
-              case 0x0003010F:
-                var field_offset = code[pos++];
-                // TODO
-                break;
-              case 0x0203110F:
-              case 0x0304118B:
-                // TODO: work out what this does?
-                break;
-              case 0x0003014B:
-                var store_value = code[pos++];
-                // TODO
-                break;
-              case 0x0002418B:
-              case 0x0003418B:
-                var script_var_offset = code[pos++];
-                // TODO
-                break;
-              case 0x0000044B:
-                var script_var_offset = code[pos++];
-                var store_value = code[pos++];
-                break;
-              case 0x00020113:
-              case 0x00030113:
-              case 0x00040113:
-                var value = code[pos++];
-                // TODO
-                break;
-              case 0x00020121:
-              case 0x00040121:
-              case 0x00000009:
-                var jump = code[pos++];
-                // TODO
-                pos += jump / 4;
-                break;
-              default:
-                console.log('unknown op: ' + op.toString(16));
-                break codeLoop;
-            }
+            case 0x0000000D:
+              calling = script.imports[code[pos++]];
+              continue;
+            case 0x00000502:
+              var startPos = code[pos++];
+              var endPos = startPos;
+              while (strings[endPos] !== 0) endPos++;
+              stack.unshift(String.fromCharCode.apply(null, strings.subarray(startPos, endPos)));
+              continue;
+            case 0x0002018B:
+              var imported = script.imports[code[pos++]];
+              // TODO
+              continue;
+            case 0x0003010B:
+              var array_offset = code[pos++];
+              // TODO
+              continue;
+            case 0x0003010F:
+              var field_offset = code[pos++];
+              // TODO
+              continue;
+            case 0x0203110F:
+            case 0x0304118B:
+              // TODO: work out what this does?
+              continue;
+            case 0x0003014B:
+              var store_value = code[pos++];
+              // TODO
+              continue;
+            case 0x0002418B:
+            case 0x0003418B:
+              var script_var_offset = code[pos++];
+              // TODO
+              continue;
+            case 0x0000044B:
+              var script_var_offset = code[pos++];
+              var store_value = code[pos++];
+              continue;
+            case 0x00020113:
+            case 0x00030113:
+            case 0x00040113:
+              var value = code[pos++];
+              // TODO
+              continue;
+            case 0x00020121:
+            case 0x00040121:
+            case 0x00000009:
+              var jump = code[pos++];
+              // TODO
+              pos += jump / 4;
+              continue;
+            default:
+              console.error('unknown op: ' + op.toString(16));
+              return;
           }
         }
-        return next_step();
-      });
+      }
+      return next_step();
     },
     performInteractionV2: function(interaction) {
       switch (interaction.response) {
@@ -406,7 +401,17 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
     queueAction: function(nextAction) {
       if (++this.busyCount === 1) {
+        var promise = nextAction();
+        if (!promise) {
+          if (--this.busyCount > 0) {
+            // nextAction() called this.queueAction() itself
+            this.runtime.eventTarget.dispatchEvent(this.busyEvent);
+          }
+          return;
+        }
         this.runtime.eventTarget.dispatchEvent(this.busyEvent);
+        this.chain = nextAction;
+        return;
       }
       this.chain = this.chain.then(nextAction).then(this.decrementBusyCount);
     },
