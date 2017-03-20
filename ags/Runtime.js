@@ -223,7 +223,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           var op;
           var calling;
           codeLoop: while ((op = code[pos++]) !== 0x3D3D373C) {
-            if (op & 0xffff0000 === 0x00200000) {
+            if ((op & 0xffff0000) === 0x00200000) {
               var count = (op & 0xffff) / 4;
               var args = stack.splice(-count);
               console.log(calling, args);
