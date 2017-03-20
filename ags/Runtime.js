@@ -133,7 +133,6 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               console.log('return');
               return;
             case 5:
-              console.log('stop dialog');
               return;
             case 6:
               var option = nextArg();
@@ -324,6 +323,8 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           return this.runDialog(interaction.data1);
         case 'run_script':
           return this.runScriptV2(this.room.scriptCompiled_v2, interaction.funcName);
+        case 'go_to_screen':
+          return this.goToRoom(interaction.data1);
       }
     },
     onEnteringRoom: function() {
