@@ -73,6 +73,17 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         source.start();
       });
     },
+    wait: function(ticks) {
+      var eventTarget = this.eventTarget;
+      return new Promise(function(resolve, reject) {
+        eventTarget.addEventListener('update', function on_tick() {
+          if (--ticks === 0) {
+            this.removeEventListener('update', on_tick);
+            resolve();
+          }
+        });
+      });
+    },
     graphicalTimerRemaining: 0,
     graphicalTimerUpdate: null,
     runGraphicalScript: function(n) {
