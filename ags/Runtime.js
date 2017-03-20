@@ -410,7 +410,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
           return;
         }
         this.runtime.eventTarget.dispatchEvent(this.busyEvent);
-        this.chain = nextAction;
+        this.chain = promise;
         return;
       }
       this.chain = this.chain.then(nextAction).then(this.decrementBusyCount);
