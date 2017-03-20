@@ -339,7 +339,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
       if (interactions) {
         for (var i = 0; i < interactions.length; i++) {
-          if (interactions[i].event === 'player_enters_screen')
+          if (interactions[i].event === 'player_enters_screen') {
             this.busy(this.performInteractionV2.bind(this, interactions[i]));
           }
         }
