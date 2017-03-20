@@ -258,6 +258,8 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               case 'SetGameSpeed':
                 self.ticksPerSecond = args[0];
                 continue;
+              case 'RunDialog':
+                return self.runDialog(args[0]);
             }
             console.log(calling, args);
             continue;
