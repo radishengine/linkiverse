@@ -214,13 +214,20 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               continue;
             case 'if_timer_expired':
               if (self.graphicalTimerRemaining <= 0) {
-                return self.runGraphicalScriptBlock(script, step.thenGoToBlock).then(next_step);
+                var promise = self.runGraphicalScriptBlock(script, step.thenGoToBlock);
+                if (promise) {
+                  return promise.then(next_step);
+                }
               }
               continue;
             case 'go_to_screen':
               return self.goToRoom(step.data1).then(next_step);
             case 'run_dialog_topic':
-              return self.runDialog(step.data1).then(next_step);
+              var promise = self.runDialog(step.data1);
+              if (promise) {
+                return promise.then(next_step);
+              }
+              continue;
           }
         }
       }
