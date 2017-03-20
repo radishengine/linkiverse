@@ -98,162 +98,166 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
       });
     },
+    display: function(text) {
+      console.log(text);
+      return this.wait(this.getTextDisplayTicks(text));
+    },
     runDialog: function(n) {
       var dialog = this.game.dialogs[n];
       var messages = this.game.dialogs.messages;
       var code = dialog.script.compiled.subarray();
-      code.pos = dialog.entryPoint;
-      code.nextArg = function() {
-        var pos = this.pos;
-        this.pos = pos + 2;
-        return this[pos] | (this[pos+1] << 8);
-      };
+      var pos = dialog.entryPoint;
+      function nextArg() {
+        pos += 2;
+        return this[pos - 2] | (this[pos - 1] << 8);
+      }
       var self = this;
-      return Promise.resolve().then(function next_step() {
-        dialogLoop: while (code.pos < code.length) {
-          switch (code[code.pos++]) {
-            case 1:
-              var speaker = code.nextArg();
-              var text = code.nextArg();
-              text = messages[text];
-              console.log('say', speaker, text);
-              return self.wait(self.getTextDisplayTicks(text)).then(next_step);
-            case 2:
-              var option = code.nextArg();
-              console.log('option off', option);
-              continue dialogLoop;
-            case 3:
-              var option = code.nextArg();
-              console.log('option on', option);
-              continue dialogLoop;
-            case 4:
-              console.log('return');
-              break dialogLoop;
-            case 5:
-              console.log('stop dialog');
-              break dialogLoop;
-            case 6:
-              var option = code.nextArg();
-              console.log('option off forever', option);
-              continue dialogLoop;
-            case 7:
-              var arg = code.nextArg();
-              console.log('run text script', arg);
-              continue dialogLoop;
-            case 8:
-              var dialog = code.nextArg();
-              console.log('go to dialog', dialog);
-              break dialogLoop;
-            case 9:
-              var sound = code.nextArg();
-              console.log('play sound', option);
-              self.playSound(sound);
-              continue dialogLoop;
-            case 10:
-              var item = code.nextArg();
-              console.log('add inventory', item);
-              continue dialogLoop;
-            case 11:
-              var character = code.nextArg();
-              var view = code.nextArg();
-              console.log('set speech view', character, view);
-              continue dialogLoop;
-            case 12:
-              var room = code.nextArg();
-              console.log('go to room', room);
-              return self.goToRoom(room);
-            case 13:
-              var id = code.nextArg();
-              var value = code.nextArg();
-              console.log('set global var', id, value);
-              continue dialogLoop;
-            case 14:
-              var points = code.nextArg();
-              console.log('add score', points);
-              continue dialogLoop;
-            case 15:
-              console.log('go to previous');
-              break dialogLoop;
-            case 16:
-              var item = code.nextArg();
-              console.log('lose inventory', item);
-              continue dialogLoop;
-            case 0xff:
-              console.log('end script');
-              break dialogLoop;
-            default: throw new Error('unknown dialog opcode: ' + code[code.pos - 1]);
+      return new Promise(function(resolve, reject) {
+        function next_step() {
+          for (;;) {
+            if (pos >= code.length) return resolve();
+            switch (code[pos++]) {
+              case 1:
+                var speaker = code.nextArg();
+                var text = code.nextArg();
+                text = messages[text];
+                return self.display(text).then(next_step);
+              case 2:
+                var option = code.nextArg();
+                console.log('option off', option);
+                continue;
+              case 3:
+                var option = code.nextArg();
+                console.log('option on', option);
+                continue;
+              case 4:
+                console.log('return');
+                return resolve();
+              case 5:
+                console.log('stop dialog');
+                return resolve();
+              case 6:
+                var option = code.nextArg();
+                console.log('option off forever', option);
+                continue;
+              case 7:
+                var arg = code.nextArg();
+                console.log('run text script', arg);
+                continue;
+              case 8:
+                var dialog = code.nextArg();
+                console.log('go to dialog', dialog);
+                return resolve();
+              case 9:
+                var sound = code.nextArg();
+                console.log('play sound', option);
+                self.playSound(sound);
+                continue;
+              case 10:
+                var item = code.nextArg();
+                console.log('add inventory', item);
+                continue;
+              case 11:
+                var character = code.nextArg();
+                var view = code.nextArg();
+                console.log('set speech view', character, view);
+                continue;
+              case 12:
+                var room = code.nextArg();
+                console.log('go to room', room);
+                return self.goToRoom(room).then(next_step);
+              case 13:
+                var id = code.nextArg();
+                var value = code.nextArg();
+                console.log('set global var', id, value);
+                continue;
+              case 14:
+                var points = code.nextArg();
+                console.log('add score', points);
+                continue;
+              case 15:
+                console.log('go to previous');
+                return resolve();
+              case 16:
+                var item = code.nextArg();
+                console.log('lose inventory', item);
+                continue;
+              case 0xff:
+                console.log('end script');
+                return resolve();
+              default: throw new Error('unknown dialog opcode: ' + code[pos - 1]);
+            }
           }
         }
+        next_step();
       });
     },
     runGraphicalScriptBlock: function(script, n) {
       var block = script.blocks[n];
       var self = this;
       var i = 0;
-      return Promise.resolve().then(function next_step() {
-        while (i < block.length) {
-          var step = block[i++];
-          switch (step.actionType) {
-            case 'play_sound':
-              self.playSound(step.data1);
-              continue;
-            case 'set_timer':
-              self.graphicalTimerRemaining = step.data1;
-              if (!self.graphicalTimerUpdate) {
-                self.eventTarget.addEventListener('update', self.graphicalTimerUpdate = function timer_update() {
-                  if (--self.graphicalTimerRemaining <= 0) {
-                    self.eventTarget.removeEventListener('update', timer_update);
-                    self.graphicalTimerUpdate = null;
-                  }
-                });
-              }
-              break;
-            case 'if_timer_expired':
-              if (self.graphicalTimerRemaining <= 0) {
-                self.runGraphicalScriptBlock(script, step.thenGoToBlock);
-              }
-              break;
-            case 'go_to_screen':
-              return self.goToRoom(step.data1);
-            case 'run_dialog_topic':
-              this.runDialog(step.data1);
-              break;
+      return new Promise(function(resolve, reject) {
+        function next_step() {
+          for (;;) {
+            if (i >= block.length) return resolve();
+            var step = block[i++];
+            switch (step.actionType) {
+              case 'play_sound':
+                self.playSound(step.data1);
+                continue;
+              case 'set_timer':
+                self.graphicalTimerRemaining = step.data1;
+                if (!self.graphicalTimerUpdate) {
+                  self.eventTarget.addEventListener('update', self.graphicalTimerUpdate = function timer_update() {
+                    if (--self.graphicalTimerRemaining <= 0) {
+                      self.eventTarget.removeEventListener('update', timer_update);
+                      self.graphicalTimerUpdate = null;
+                    }
+                  });
+                }
+                continue;
+              case 'if_timer_expired':
+                if (self.graphicalTimerRemaining <= 0) {
+                  return self.runGraphicalScriptBlock(script, step.thenGoToBlock).then(next_step);
+                }
+                continue;
+              case 'go_to_screen':
+                return self.goToRoom(step.data1).then(next_step);
+              case 'run_dialog_topic':
+                return self.runDialog(step.data1).then(next_step);
+            }
           }
         }
+        next_step();
       });
     },
-    performInteractionV2: function(interaction) {
-      switch (interaction.response) {
-        case 'run_graphical_script':
-          return this.runGraphicalScript(interaction.data1);
-          break;
-        case 'run_dialog_topic':
-          return this.runDialog(interaction.data1);
-          break;
-        case 'run_script':
-          var script = this.room.scriptCompiled_v2;
-          var exported = script.exports[interaction.funcName];
-          var strings = script.strings;
-          var pos = exported.entryPoint/4;
-          var code = script.code;
-          if (code[pos++] !== 0x3D3D3D3B) {
-            console.log('unexpected prefix: ' + code[pos - 1].toString(16));
-            break;
-          }
-          var stack = [];
-          var op;
-          var calling;
-          codeLoop: while ((op = code[pos++]) !== 0x3D3D373C) {
+    runScriptV2: function(script, funcName) {
+      var exported = script.exports[funcName];
+      var strings = script.strings;
+      var pos = exported.entryPoint/4;
+      var code = script.code;
+      if (code[pos++] !== 0x3D3D3D3B) {
+        console.log('unexpected prefix: ' + code[pos - 1].toString(16));
+        return;
+      }
+      var stack = [];
+      var calling;
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        function next_step() {
+          codeLoop: for (;;) {
+            var op = code[pos++];
             if ((op & 0xffff0000) === 0x00200000) {
               var count = (op & 0xffff) / 4;
               var args = stack.splice(-count);
               console.log(calling, args);
               if (calling.name === 'NewRoomEx') {
-                this.goToRoom(args[0]);
+                return self.goToRoom(args[0]).then(next_step);
               }
               continue;
             }
             switch (op) {
+              case 0x3D3D373C: return resolve();
               case 0x00000001:
                 stack.unshift(code[pos++]);
                 break;
@@ -313,7 +317,18 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
                 break codeLoop;
             }
           }
-          break;
+        }
+        return next_step();
+      });
+    },
+    performInteractionV2: function(interaction) {
+      switch (interaction.response) {
+        case 'run_graphical_script':
+          return this.runGraphicalScript(interaction.data1);
+        case 'run_dialog_topic':
+          return this.runDialog(interaction.data1);
+        case 'run_script':
+          return this.runScriptV2(this.room.scriptCompiled_v2, interaction.funcName);
       }
     },
     onEnteringRoom: function() {
