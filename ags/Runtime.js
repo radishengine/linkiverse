@@ -363,6 +363,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
             case 0x00020117: // >=
             case 0x00030113:
             case 0x00040113:
+            case 0x00040115:
               var value = code[pos++];
               // TODO
               continue;
