@@ -14,6 +14,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     this.eventTarget.addEventListener('entering-room', this.onEnteringRoom.bind(this));
     this.update = this.update.bind(this);
     this.audioContext = new AudioContext();
+    this.mainExec = new ExecutionChannel(this);
   }
   Runtime.prototype = {
     tickMillisecs: 1000/40,
@@ -84,22 +85,6 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         });
       });
     },
-    busyCount: 0,
-    busyChain: Promise.resolve(),
-    get isBusy() {
-      return this.busyCount > 0;
-    },
-    busy: function(promise) {
-      if (++this.busyCount === 1) {
-        this.eventTarget.dispatchEvent(new CustomEvent('busy'));
-      }
-      var self = this;
-      return this.busyChain = this.busyChain.then(promise).then(function() {
-        if (--self.busyCount === 0) {
-          self.eventTarget.dispatchEvent(new CustomEvent('idle'));
-        }
-      });
-    },
     graphicalTimerRemaining: 0,
     graphicalTimerUpdate: null,
     runGraphicalScript: function(n) {
@@ -124,7 +109,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         return this[pos] | (this[pos+1] << 8);
       };
       var self = this;
-      return this.busy(function next_step() {
+      return Promise.resolve().then(function next_step() {
         dialogLoop: while (code.pos < code.length) {
           switch (code[code.pos++]) {
             case 1:
@@ -203,45 +188,47 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
     runGraphicalScriptBlock: function(script, n) {
       var block = script.blocks[n];
-      for (var i = 0; i < block.length; i++) {
-        var step = block[i];
-        switch (step.actionType) {
-          case 'play_sound':
-            this.playSound(step.data1);
-            break;
-          case 'set_timer':
-            this.graphicalTimerRemaining = step.data1;
-            if (!this.graphicalTimerUpdate) {
-              var self = this;
-              this.eventTarget.addEventListener('update', this.graphicalTimerUpdate = function timer_update() {
-                if (--self.graphicalTimerRemaining <= 0) {
-                  self.eventTarget.removeEventListener('update', timer_update);
-                  self.graphicalTimerUpdate = null;
-                }
-              });
-            }
-            break;
-          case 'if_timer_expired':
-            if (this.graphicalTimerRemaining <= 0) {
-              this.runGraphicalScriptBlock(script, step.thenGoToBlock);
-            }
-            break;
-          case 'go_to_screen':
-            this.goToRoom(step.data1);
-            break;
-          case 'run_dialog_topic':
-            this.runDialog(step.data1);
-            break;
+      var self = this;
+      var i = 0;
+      return Promise.resolve().then(function next_step() {
+        while (i < block.length) {
+          var step = block[i++];
+          switch (step.actionType) {
+            case 'play_sound':
+              self.playSound(step.data1);
+              continue;
+            case 'set_timer':
+              self.graphicalTimerRemaining = step.data1;
+              if (!self.graphicalTimerUpdate) {
+                self.eventTarget.addEventListener('update', self.graphicalTimerUpdate = function timer_update() {
+                  if (--self.graphicalTimerRemaining <= 0) {
+                    self.eventTarget.removeEventListener('update', timer_update);
+                    self.graphicalTimerUpdate = null;
+                  }
+                });
+              }
+              break;
+            case 'if_timer_expired':
+              if (self.graphicalTimerRemaining <= 0) {
+                self.runGraphicalScriptBlock(script, step.thenGoToBlock);
+              }
+              break;
+            case 'go_to_screen':
+              return self.goToRoom(step.data1);
+            case 'run_dialog_topic':
+              this.runDialog(step.data1);
+              break;
+          }
         }
-      }
+      });
     },
     performInteractionV2: function(interaction) {
       switch (interaction.response) {
         case 'run_graphical_script':
-          this.runGraphicalScript(interaction.data1);
+          return this.runGraphicalScript(interaction.data1);
           break;
         case 'run_dialog_topic':
-          this.runDialog(interaction.data1);
+          return this.runDialog(interaction.data1);
           break;
         case 'run_script':
           var script = this.room.scriptCompiled_v2;
@@ -340,17 +327,17 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       if (interactions) {
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'player_enters_screen') {
-            this.busy(this.performInteractionV2.bind(this, interactions[i]));
+            this.mainExec.queueAction(this.performInteractionV2.bind(this, interactions[i]));
           }
         }
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'first_time_enters_screen') {
-            this.busy(this.performInteractionV2.bind(this, interactions[i]));
+            this.mainExec.queueAction(this.performInteractionV2.bind(this, interactions[i]));
           }
         }
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'enter_screen_after_fadein') {
-            this.busy(this.performInteractionV2.bind(this, interactions[i]));
+            this.mainExec.queueAction(this.performInteractionV2.bind(this, interactions[i]));
           }
         }
         for (var i = 0; i < interactions.length; i++) {
@@ -358,7 +345,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
             // TODO: set up on idle, remove on busy, until leaving room
             var tick = self.performInteractionV2.bind(this, interactions[i]);
             var eventTarget = this.eventTarget;
-            this.busy(function() {
+            this.mainExec.queueAction(function() {
               eventTarget.addEventListener('update', tick);
               eventTarget.addEventListener('leaving-room', (function(tick) {
                 return function onLeavingRoom() {
@@ -387,6 +374,31 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         this.nextTick = now + this.tickMillisecs;
       }
       this.eventTarget.dispatchEvent(updateEvent);
+    },
+  };
+  
+  function ExecutionChannel(runtime) {
+    this.runtime = runtime;
+    this.busyEvent = new CustomEvent('busy', {detail:{channel:this}});
+    this.idleEvent = new CustomEvent('idle', {detail:{channel:this}});
+    this.decrementBusyCount = this.decrementBusyCount.bind(this);
+  }
+  ExecutionChannel.prototype = {
+    chain: Promise.resolve(),
+    busyCount: 0,
+    get isBusy() {
+      return this.busyCount > 0;
+    },
+    queueAction: function(nextAction) {
+      if (++this.busyCount === 1) {
+        this.runtime.eventTarget.dispatchEvent(this.busyEvent);
+      }
+      this.chain = this.chain.then(nextAction).then(this.decrementBusyCount);
+    },
+    decrementBusyCount: function() {
+      if (--this.busyCount === 0) {
+        this.runtime.eventTarget.dispatchEvent(this.idleEvent);
+      }
     },
   };
   
