@@ -358,7 +358,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'repeatedly_execute') {
             // TODO: set up on idle, remove on busy, until leaving room
-            var tick = self.performInteractionV2.bind(this, interactions[i]);
+            var tick = this.performInteractionV2.bind(this, interactions[i]);
             var eventTarget = this.eventTarget;
             this.mainExec.queueAction(function() {
               eventTarget.addEventListener('update', tick);
