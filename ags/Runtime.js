@@ -58,6 +58,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         
         ]);
     },
+    textSpeed: 15,
+    getTextDisplayTicks: function(str) {
+      return Math.floor(str.length / this.textSpeed) + 1;
+    },
     playSound: function(n) {
       var audioContext = this.audioContext;
       this.fileSystem.loadAsArrayBuffer('sound' + n + '.wav')
