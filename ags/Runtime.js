@@ -227,6 +227,9 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               var count = (op & 0xffff) / 4;
               var args = stack.splice(-count);
               console.log(calling, args);
+              if (calling.name === 'NewRoomEx') {
+                this.goToRoom(args[0]);
+              }
               continue;
             }
             switch (op) {
