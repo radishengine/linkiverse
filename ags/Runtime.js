@@ -239,7 +239,9 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       var pos = exported.entryPoint/4;
       var code = script.code;
       if (code[pos++] !== 0x3D3D3D3B) {
-        console.log('unexpected prefix: ' + code[pos - 1].toString(16));
+        if (code[pos-1] !== 0x3D373C3B) {
+          console.log('unexpected prefix: 0x' + code[pos - 1].toString(16));
+        }
         return;
       }
       var stack = [];
