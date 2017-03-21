@@ -4,7 +4,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
   
   const updateEvent = new CustomEvent('update');
   
-  function Runtime(fileSystem) {
+  function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
     this.element = document.createElement('CANVAS');
     this.element.width = 320;
@@ -13,7 +13,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     this.eventTarget.runtime = this;
     this.eventTarget.addEventListener('entering-room', this.onEnteringRoom.bind(this));
     this.update = this.update.bind(this);
-    this.audioContext = new AudioContext();
+    this.audioContext = audioContext;
     this.mainExec = new ExecutionChannel(this);
   }
   Runtime.prototype = {
