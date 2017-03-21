@@ -324,11 +324,12 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               var alloc_str_len = code[pos++];
               // TODO
               continue;
-            case 0xF602110F:
-              var unknown = code[pos++];
+            case 0x0002010B:
+              var str_buf_offset = code[pos++]; // negative for local
+              var unknown1 = code[pos++];
+              var unknown2 = code[pos++];
               // TODO: something to do with pushing string buffer as a func arg
               continue;
-            case 0x0002010B:
             case 0x0003010B:
               var array_offset = code[pos++];
               // TODO
