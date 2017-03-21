@@ -15,7 +15,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     this.update = this.update.bind(this);
     this.audioContext = audioContext;
     this.mainExec = new ExecutionChannel(this);
-    this.eventTarget.addEventListener('click', function(e) {
+    this.eventTarget.addEventListener('mousedown', function(e) {
       e.preventDefault();
       e.stopPropagation();
     });
@@ -95,7 +95,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         function on_tick() {
           if (--ticks < 1) {
             this.removeEventListener('update', on_tick);
-            this.removeEventListener('click', on_click);
+            this.removeEventListener('mousedown', on_click);
             this.removeEventListener('keydown', on_key);
             resolve();
           }
@@ -108,7 +108,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
             if (e.button === 2 && !('Right' in cancellers.mouseButtons)) return;
           }
           this.removeEventListener('update', on_tick);
-          this.removeEventListener('click', on_click);
+          this.removeEventListener('mousedown', on_click);
           this.removeEventListener('key', on_key);
           resolve();
         }
@@ -116,14 +116,14 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         function on_key(e) {
           if (typeof cancellers.keys === 'object' && !(e.key in cancellers.keys)) return;
           this.removeEventListener('update', on_tick);
-          this.removeEventListener('click', on_click);
+          this.removeEventListener('mousedown', on_click);
           this.removeEventListener('key', on_key);
           resolve();
         }
         
         eventTarget.addEventListener('update', on_tick);
         if (cancellers && 'mouseButtons' in cancellers) {
-          eventTarget.addEventListener('click', on_click);
+          eventTarget.addEventListener('mousedown', on_click);
         }
         if (cancellers && 'keys' in cancellers) {
           eventTarget.addEventListener('keydown', on_key);
