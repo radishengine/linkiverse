@@ -280,6 +280,11 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
                 case 'Display':
                   promise = self.display(args[0]);
                   break;
+                case 'DisplayMessage':
+                  var number = args[0];
+                  var text = number < 500 ? self.room.main.messages[number] : self.game.globalMessages[number];
+                  promise = self.display(text);
+                  break;
                 case 'DisplaySpeech':
                   promise = self.display(args[1]);
                   break;
