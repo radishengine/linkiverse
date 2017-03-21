@@ -1,4 +1,6 @@
-define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(GameView, RoomView, SpriteStore, midi) {
+define(
+['./GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/midi'],
+function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
 
   'use strict';
   
@@ -9,6 +11,7 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
     this.element = document.createElement('CANVAS');
     this.element.width = 320;
     this.element.height = 200;
+    this.ctx2d = this.element.getContext('2d');
     this.eventTarget = this.element;
     this.eventTarget.runtime = this;
     this.eventTarget.addEventListener('entering-room', this.onEnteringRoom.bind(this));
@@ -27,6 +30,7 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
       e.preventDefault();
       e.stopPropagation();
     });
+    this.fonts = [];
   }
   Runtime.prototype = {
     tickMillisecs: 1000/40,
@@ -71,12 +75,27 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
         .then(function(sprites) {
           self.sprites = sprites;
         }),
+        
+        Promise.all(
+          this.fileSystem.getNames(/^agsfnt\d+\.wfn$/i)
+          .map(function(fileName) {
+            return self.fileSystem.loadAsArrayBuffer(fileName)
+            .then(function(buffer) {
+              var num = +fileName.match(/\d+/)[0];
+              self.fonts.length = Math.max(self.fonts.length, num + 1);
+              self.fonts[num] = new WGTFontView(buffer, 0, buffer.byteLength);
+            });
+          })),
 
       ]);
     },
     textSpeed: 15,
     getTextDisplayTicks: function(str) {
       return (1 + Math.floor(str.length / this.textSpeed)) * this.ticksPerSecond;
+    },
+    renderText: function(str, fontNumber, px,py) {
+      var font = this.fonts[fontNumber];
+      font.put(this.ctx2d, str, px, py, 0xffffffff);
     },
     playSound: function(n) {
       var audioContext = this.audioContext;
@@ -144,7 +163,7 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
       });
     },
     display: function(text) {
-      console.log(text);
+      this.renderText(text, 1, 0,0);
       return this.wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true});
     },
     runDialog: function(n) {
