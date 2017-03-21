@@ -33,6 +33,9 @@ define(function() {
     this.blobs = blobs;
   }
   SpriteStore.prototype = {
+    getInfo: function(n) {
+      return this.blobs[n];
+    },
     getData: function(n) {
       var blob = this.blobs[n];
       if (!blob) {
