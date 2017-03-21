@@ -51,25 +51,28 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
     init: function() {
       var self = this;
-      return this._init = this._init ||
-        Promise.all([
+      return this._init = this._init || Promise.all([
         
-          this.fileSystem.loadAsArrayBuffer('ac2game.dta')
-          .then(function(buffer) {
-            self.game = new GameView(buffer, 0, buffer.byteLength);
-            return self.loadRoom(self.game.playerCharacter.room)
-          })
-          .then(function(room) {
-            self.room = room;
-          }),
-        
-          this.fileSystem.loadAsBlob('acsprset.spr')
-          .then(SpriteStore.get)
-          .then(function(sprites) {
-            self.sprites = sprites;
-          }),
-        
-        ]);
+        this.fileSystem.loadAsArrayBuffer('ac2game.dta')
+        .then(function(buffer) {
+          self.game = new GameView(buffer, 0, buffer.byteLength);
+          self.characters = new Array(self.game.characters.length);
+          for (var i = 0; i < self.characters.length; i++) {
+            self.characters[i] = new RuntimeCharacter(self, i);
+          }
+          return self.loadRoom(self.game.playerCharacter.room);
+        })
+        .then(function(room) {
+          self.room = room;
+        }),
+
+        this.fileSystem.loadAsBlob('acsprset.spr')
+        .then(SpriteStore.get)
+        .then(function(sprites) {
+          self.sprites = sprites;
+        }),
+
+      ]);
     },
     textSpeed: 15,
     getTextDisplayTicks: function(str) {
@@ -562,6 +565,154 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
   };
   
+  function RuntimeSprite(sprites, eventTarget, number, x, y) {
+    this.sprites = sprites;
+    this.eventTarget = eventTarget;
+    this._number = number;
+    this._x = x;
+    this._y = y;
+    this.updateEvent = new CustomEvent('update-sprite', {detail:{sprite:this}});
+  }
+  RuntimeSprite.prototype = {
+    _number: 0,
+    _x: 0,
+    _y: 0,
+    _offsetX: 0,
+    _offsetY: 0,
+    _offsetXRatio: 0,
+    _offsetYRatio: 0,
+    _visible: false,
+    get number() {
+      return this._number;
+    },
+    set number(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) return new TypeError('number must be a number');
+      if (v === this._number) return;
+      this._number = v;
+      this._info = this.sprites.getInfo(v);
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    get width() {
+      return this._info.width;
+    },
+    get height() {
+      return this._info.height;
+    },
+    get x() {
+      return this._x;
+    },
+    set x(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('x must be a number');
+      if (v === this._x) return;
+      this._x = v;
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    get y() {
+      return this._y;
+    },
+    set y(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('y must be a number');
+      if (v === this._y) return;
+      this._y = v;
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    get visible() {
+      return this._visible;
+    },
+    set visible(v) {
+      v = !!v;
+      if (v === this._visible) return;
+      this._visible = v;
+      this.eventTarget.dispatchEvent(new CustomEvent(
+        v ? 'add-sprite' : 'remove-sprite',
+        {detail:{sprite:this}}));
+    },
+    get offsetX() {
+      return this._offsetX;
+    },
+    set offsetX(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('offsetX must be a number');
+      if (v === this._offsetX) return;
+      this._offsetX = v;
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    set offsetY(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('offsetY must be a number');
+      if (v === this._offsetY) return;
+      this._offsetY = v;
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    set offsetXRatio(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('offsetXRatio must be a number');
+      if (v === this._offsetXRatio) return;
+      this._offsetXRatio = v;
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    set offsetYRatio(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('offsetYRatio must be a number');
+      if (v === this._offsetY) return;
+      this._offsetY = v;
+      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
+    },
+    get actualX() {
+      return this.x - this.offsetX - Math.ceil(this.offsetXRatio * this.width);
+    },
+    get actualY() {
+      return this.y - this.offsetY - Math.ceil(this.offsetYRatio * this.height);
+    },
+  };
+  
+  function RuntimeCharacter(runtime, n) {
+    this.runtime = runtime;
+    this.number = n;
+    this.def = runtime.game.characters[n];
+    RuntimeSprite.call(this, runtime.eventTarget, 0, this.def.x, this.def.y);
+    this._room = this.def.room;
+    var self = this;
+    runtime.eventTarget.addEventListener('entering-room', this.updateVisible.bind(this));
+  }
+  RuntimeCharacter.prototype = Object.assign(new RuntimeSprite(0, 0, 0), {
+    _on: true,
+    _offsetXRatio: 0.5,
+    _offsetYRatio: 1,
+    get on() {
+      return this._on;
+    },
+    set on(v) {
+      v = !!v;
+      if (v === this._on) return;
+      this._on = v;
+      this.updateVisible();
+    },
+    get room() {
+      return this._room;
+    },
+    set room(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('room must be a number');
+      if (v === this._room) return;
+      this._room = v;
+      this.updateVisible();
+    },
+    updateVisible: function() {
+      this.visible = (this._room === this.runtime.room.number) && this._on;
+    },
+    get z() {
+      return -this._offsetY;
+    },
+    set z(v) {
+      this.offsetY = -v;
+    },
+  });
+  
   return Runtime;
 
 });
+
