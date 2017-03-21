@@ -44,6 +44,7 @@ define(function() {
       for (var i = 0; i < this.glyphs.length; i++) {
         h = Math.max(h, this.glyphs[i].height);
       }
+      Object.defineProperty(this, 'lineHeight', {value:h});
       return h;
     },
     getAllImageData: function(ctx2d) {
@@ -58,7 +59,7 @@ define(function() {
     put: function(ctx2d, str, px, py, rgba) {
       var tw = this.getTextWidth(str), th = this.lineHeight;
       var pixels = ctx2d.getImageData(px, py, tw, th);
-      var asU32 = new Uint32Array(pixels.data.buffer, pixels.data.byteOffset, pixels.data.byteLength);
+      var asU32 = new Uint32Array(pixels.data.buffer, pixels.data.byteOffset, pixels.data.length/4);
       var tx = 0;
       for (var i = 0; i < str.length; i++) {
         var glyph = this.glyphs[str.charCodeAt(i)];
