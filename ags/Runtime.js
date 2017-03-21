@@ -6,6 +6,22 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   
   const updateEvent = new CustomEvent('update');
   
+  var littleEndian = (function() {
+    return new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
+  })();
+  
+  var getRGBA;
+  if (littleEndian) {
+    getRGBA = function(r,g,b,a) {
+      return (r | (g << 8) | (b << 16) | (a << 24)) >>> 0;
+    };
+  }
+  else {
+    getRGBA = function(r,g,b,a) {
+      return ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
+    };
+  }
+  
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
     this.element = document.createElement('CANVAS');
@@ -93,9 +109,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     getTextDisplayTicks: function(str) {
       return (1 + Math.floor(str.length / this.textSpeed)) * this.ticksPerSecond;
     },
-    renderText: function(str, fontNumber, px,py) {
+    renderText: function(str, fontNumber, px,py, rgba) {
       var font = this.fonts[fontNumber];
-      font.put(this.ctx2d, str, px, py, 0xffffffff);
+      font.put(this.ctx2d, str, px, py, rgba);
     },
     playSound: function(n) {
       var audioContext = this.audioContext;
@@ -163,7 +179,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       });
     },
     display: function(text) {
-      this.renderText(text, 1, 0,0);
+      this.renderText(text, 2, 0,0, getRGBA(0,0,0,255));
+      this.renderText(text, 1, 0,0, getRGBA(255,0,0,255));
       return this.wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true});
     },
     runDialog: function(n) {
