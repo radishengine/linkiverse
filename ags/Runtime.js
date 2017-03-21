@@ -674,7 +674,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     this.runtime = runtime;
     this.number = n;
     this.def = runtime.game.characters[n];
-    RuntimeSprite.call(this, runtime.eventTarget, 0, this.def.x, this.def.y);
+    RuntimeSprite.call(this, runtime.sprites, runtime.eventTarget, 0, this.def.x, this.def.y);
     this._room = this.def.room;
     runtime.eventTarget.addEventListener('entering-room', this.updateVisible.bind(this));
   }
