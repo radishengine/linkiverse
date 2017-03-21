@@ -23,6 +23,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       e.preventDefault();
       e.stopPropagation();
     });
+    this.eventTarget.addEventListener('keyup', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    });
   }
   Runtime.prototype = {
     tickMillisecs: 1000/40,
