@@ -334,6 +334,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               var array_offset = code[pos++];
               // TODO
               continue;
+            case 0x0002010F:
+              var add_value = code[pos++];
+              // TODO
+              continue;
             case 0x0003010F:
               var field_offset = code[pos++];
               // TODO
@@ -351,6 +355,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               continue;
             case 0x0002418B:
             case 0x0003418B:
+            case 0x0200144B:
               var script_var_offset = code[pos++];
               // TODO
               continue;
