@@ -113,10 +113,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         }
         
         eventTarget.addEventListener('update', on_tick);
-        if (cancellers && cancellers.mouseButtons) {
+        if (cancellers && 'mouseButtons' in cancellers) {
           eventTarget.addEventListener('click', on_click);
         }
-        if (cancellers && cancellers.keys) {
+        if (cancellers && 'keys' in cancellers) {
           eventTarget.addEventListener('keydown', on_key);
         }
       });
@@ -136,7 +136,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
     display: function(text) {
       console.log(text);
-      return this.wait(this.getTextDisplayTicks(text));
+      return this.wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true});
     },
     runDialog: function(n) {
       var dialog = this.game.dialogs[n];
