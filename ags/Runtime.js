@@ -293,6 +293,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
                   break;
                 case 'RunDialog':
                   promise = self.runDialog(args[0]);
+                  break;
+                case 'PlaySound':
+                  self.playSound(args[0]);
+                  break;
                 default:
                   console.log(calling, args);
                   break;
