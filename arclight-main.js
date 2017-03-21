@@ -4,6 +4,10 @@ function(inflate, GameView, RoomView, Runtime, midi) {
 
   'use strict';
   
+  if ('KeyboardEvent' in window && !('key' in KeyboardEvent.prototype)) {
+    require(['keyboardevent-key-polyfill'], function(lib){ lib.polyfill(); });
+  }
+  
   window.midi = midi;
   
   var audioContext = new AudioContext;
