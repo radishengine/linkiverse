@@ -324,6 +324,7 @@ define(['./note'], function(noteData) {
         foundTracks[i].remainingDelta = foundTracks[i].nextVarint();
       }
       activeTracks = foundTracks;
+      return Promise.resolve();
     },
     stop: function() {
       this.pause();
