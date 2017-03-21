@@ -111,7 +111,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         }
         
         function on_key(e) {
-          if (typeof cancellers === 'object' && !(e.key in cancellers)) return;
+          if (typeof cancellers.keys === 'object' && !(e.key in cancellers.keys)) return;
           this.removeEventListener('update', on_tick);
           this.removeEventListener('click', on_click);
           this.removeEventListener('key', on_key);
