@@ -411,10 +411,10 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           var ctx = runtime.element.getContext('2d');
           document.body.appendChild(runtime.element);
           document.addEventListener('keydown', function(e) {
-            runtime.element.dispatchEvent('keydown', e);
+            runtime.element.dispatchEvent(e);
           });
           document.addEventListener('keyup', function(e) {
-            runtime.element.dispatchEvent('keyup', e);
+            runtime.element.dispatchEvent(e);
           });
           runtime.begin();
           window.runtime = runtime;
