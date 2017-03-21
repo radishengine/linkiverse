@@ -565,16 +565,16 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
   };
   
-  function RuntimeSprite(sprites, eventTarget, number, x, y) {
+  function RuntimeSprite(sprites, eventTarget, spriteNumber, x, y) {
     this.sprites = sprites;
     this.eventTarget = eventTarget;
-    this._number = number;
+    this._spriteNumber = spriteNumber;
     this._x = x;
     this._y = y;
     this.updateEvent = new CustomEvent('update-sprite', {detail:{sprite:this}});
   }
   RuntimeSprite.prototype = {
-    _number: 0,
+    _spriteNumber: 0,
     _x: 0,
     _y: 0,
     _offsetX: 0,
@@ -582,14 +582,14 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     _offsetXRatio: 0,
     _offsetYRatio: 0,
     _visible: false,
-    get number() {
-      return this._number;
+    get spriteNumber() {
+      return this._spriteNumber;
     },
-    set number(v) {
+    set spriteNumber(v) {
       v = Math.floor(v);
-      if (isNaN(v)) return new TypeError('number must be a number');
-      if (v === this._number) return;
-      this._number = v;
+      if (isNaN(v)) return new TypeError('spriteNumber must be a number');
+      if (v === this._spriteNumber) return;
+      this._spriteNumber = v;
       this._info = this.sprites.getInfo(v);
       if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
     },
