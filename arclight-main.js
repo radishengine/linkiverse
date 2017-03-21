@@ -388,6 +388,13 @@ function(inflate, GameView, RoomView, Runtime, midi) {
               }
               return null;
             },
+            getNames: function(regex) {
+              var list = [];
+              for (var k in files) {
+                if (regex.test(k)) list.push(k);
+              }
+              return list;
+            },
             loadAsBlob: function(name) {
               name = this.getName(name);
               return name ? Promise.resolve(files[name]) : Promise.reject('file not found');
