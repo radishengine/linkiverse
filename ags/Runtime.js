@@ -15,6 +15,14 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     this.update = this.update.bind(this);
     this.audioContext = audioContext;
     this.mainExec = new ExecutionChannel(this);
+    this.eventTarget.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    this.eventTarget.addEventListener('keydown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    });
   }
   Runtime.prototype = {
     tickMillisecs: 1000/40,
@@ -74,15 +82,43 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         source.start();
       });
     },
-    wait: function(ticks) {
+    wait: function(ticks, cancellers) {
       var eventTarget = this.eventTarget;
       return new Promise(function(resolve, reject) {
-        eventTarget.addEventListener('update', function on_tick() {
+        function on_tick() {
           if (--ticks < 1) {
             this.removeEventListener('update', on_tick);
+            this.removeEventListener('click', on_click);
+            this.removeEventListener('keydown', on_key);
             resolve();
           }
-        });
+        }
+        
+        function on_click(e) {
+          if (e.which !== 0 && e.which !== 2) return;
+          if (e.which === 0 && (typeof cancellers === 'object' && !('Left' in cancellers))) return;
+          if (e.which === 2 && (typeof cancellers === 'object' && !('Right' in cancellers))) return;
+          this.removeEventListener('update', on_tick);
+          this.removeEventListener('click', on_click);
+          this.removeEventListener('key', on_key);
+          resolve();
+        }
+        
+        function on_key(e) {
+          if (typeof cancellers === 'object' && !(e.key in cancellers)) return;
+          this.removeEventListener('update', on_tick);
+          this.removeEventListener('click', on_click);
+          this.removeEventListener('key', on_key);
+          resolve();
+        }
+        
+        eventTarget.addEventListener('update', on_tick);
+        if (cancellers && cancellers.mouseButtons) {
+          eventTarget.addEventListener('click', on_click);
+        }
+        if (cancellers && cancellers.keys) {
+          eventTarget.addEventListener('keydown', on_key);
+        }
       });
     },
     graphicalTimerRemaining: 0,
