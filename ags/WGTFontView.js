@@ -16,11 +16,11 @@ define(function() {
     get addressesOffset() {
       return this.dv.getUint16(15, true);
     },
-    get characterCount() {
+    get glyphCount() {
       return (this.dv.byteLength - this.addressesOffset) / 2;
     },
-    get characters() {
-      var list = new Array(this.characterCount);
+    get glyphs() {
+      var list = new Array(this.glyphCount);
       var offset = this.addressesOffset;
       var buffer = this.dv.buffer;
       var byteLength = this.dv.byteLength;
@@ -28,21 +28,21 @@ define(function() {
         var glyphOffset = this.dv.getUint16(offset + i*2, true);
         list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset);
       }
-      Object.defineProperty(this, 'characters', {value:list});
+      Object.defineProperty(this, 'glyphs', {value:list});
       return list;
     },
     getTextWidth: function(str) {
       var w = 0;
       for (var i = 0; i < str.length; i++) {
-        var glyph = this.characters[str.charCodeAt(i)];
+        var glyph = this.glyphs[str.charCodeAt(i)];
         if (glyph) w += glyph.width;
       }
       return w;
     },
     get lineHeight() {
       var h = 0;
-      for (var i = 0; i < this.characters.length; i++) {
-        h = Math.max(h, this.characters[i].height);
+      for (var i = 0; i < this.glyphs.length; i++) {
+        h = Math.max(h, this.glyphs[i].height);
       }
       return h;
     },
@@ -50,10 +50,33 @@ define(function() {
       var chars = new Array(256);
       var empty = ctx.createImageData(1, 1);
       for (var i = 0; i < 256; i++) {
-        var glyph = this.characters[i];
+        var glyph = this.glyphs[i];
         chars[i] = glyph ? glyph.createImageData(ctx2d) : empty;
       }
       return chars;
+    },
+    put: function(ctx2d, str, px, py, rgba) {
+      var tw = this.getTextWidth(str), th = this.lineHeight;
+      var pixels = ctx2d.getImageData(px, py, tw, th);
+      var asU32 = new Uint32Array(pixels.data.buffer, pixels.data.byteOffset, pixels.data.byteLength);
+      var tx = 0;
+      for (var i = 0; i < str.length; i++) {
+        var glyph = this.glyphs[str.charCodeAt(i)];
+        if (!glyph) continue;
+        var gw = glyph.width, gh = glyph.height;
+        var gstride = Math.ceil(gw / 8);
+        var bitplanes = glyph.getBitplanes();
+        for (var gy = 0; gy < gh; gy++) {
+          for (var gx = 0; gx < gw; gx++) {
+            var byte = bitplanes[gy*gstride + (gx >> 3)];
+            if (byte & (0x80 >>> (gx & 7))) {
+              asU32[gy*tw + tx + gx] = rgba;
+            }
+          }
+        }
+        tx += gw;
+      }
+      ctx2d.putImageData(pixels, px, py);
     },
   };
   
