@@ -469,6 +469,7 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
           return this.display(this.game.globalMessages[number]);
       }
     },
+    playingMusic: -1,
     onEnteringRoom: function() {
       var pic = this.room.main.backgroundBitmap;
       var ctx = this.element.getContext('2d');
@@ -477,8 +478,9 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
       ctx.putImageData(imageData, 0, 0);
       
       var musicTrack = this.room.main.startupMusic;
-      if (musicTrack !== 0) {
+      if (musicTrack !== 0 && musicTrack !== this.playingMusic) {
         midi.stop();
+        this.playingMusic = musicTrack;
         this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
       }
       
