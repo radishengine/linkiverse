@@ -24,8 +24,9 @@ define(['./ScriptV2View'], function(ScriptV2View) {
     return String.fromCharCode.apply(null, bytes);
   }
   
-  function RoomView(game, buffer, byteOffset, byteLength) {
+  function RoomView(game, number, buffer, byteOffset, byteLength) {
     this.game = game;
+    this.number = number;
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
