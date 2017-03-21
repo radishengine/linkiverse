@@ -342,6 +342,9 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
                 case 'PlaySound':
                   self.playSound(args[0]);
                   break;
+                case 'PlayMusic':
+                  self.playMusic(args[0]);
+                  break;
                 default:
                   console.log(calling, args);
                   break;
@@ -470,6 +473,12 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
       }
     },
     playingMusic: -1,
+    playMusic: function(musicTrack) {
+      if (musicTrack === this.playingMusic) return;
+      midi.stop();
+      this.playingMusic = musicTrack;
+      this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
+    },
     onEnteringRoom: function() {
       var pic = this.room.main.backgroundBitmap;
       var ctx = this.element.getContext('2d');
@@ -478,10 +487,8 @@ define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(
       ctx.putImageData(imageData, 0, 0);
       
       var musicTrack = this.room.main.startupMusic;
-      if (musicTrack !== 0 && musicTrack !== this.playingMusic) {
-        midi.stop();
-        this.playingMusic = musicTrack;
-        this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
+      if (musicTrack !== 0) {
+        this.playMusic(musicTrack);
       }
       
       var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
