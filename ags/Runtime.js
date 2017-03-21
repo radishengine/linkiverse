@@ -46,7 +46,7 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       }
       var game = this.game;
       return promise.then(function(buffer) {
-        return new RoomView(game, buffer, 0, buffer.byteLength);
+        return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
     init: function() {
