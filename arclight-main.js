@@ -410,6 +410,12 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           runtime.element.style.top = 0;
           var ctx = runtime.element.getContext('2d');
           document.body.appendChild(runtime.element);
+          document.addEventListener('keydown', function(e) {
+            runtime.element.dispatchEvent('keydown', e);
+          });
+          document.addEventListener('keyup', function(e) {
+            runtime.element.dispatchEvent('keyup', e);
+          });
           runtime.begin();
           window.runtime = runtime;
           console.dir(window.files = files);
