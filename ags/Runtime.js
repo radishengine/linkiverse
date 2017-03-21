@@ -662,11 +662,12 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
     },
     get actualX() {
-      return this.x - this.offsetX - Math.ceil(this.offsetXRatio * this.width);
+      return this.x + this.offsetX + Math.ceil(this.offsetXRatio * this.width);
     },
     get actualY() {
-      return this.y - this.offsetY - Math.ceil(this.offsetYRatio * this.height);
+      return this.y + this.offsetY + Math.ceil(this.offsetYRatio * this.height);
     },
+    order: 0,
   };
   
   function RuntimeCharacter(runtime, n) {
@@ -675,13 +676,13 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     this.def = runtime.game.characters[n];
     RuntimeSprite.call(this, runtime.eventTarget, 0, this.def.x, this.def.y);
     this._room = this.def.room;
-    var self = this;
     runtime.eventTarget.addEventListener('entering-room', this.updateVisible.bind(this));
   }
   RuntimeCharacter.prototype = Object.assign(new RuntimeSprite(0, 0, 0), {
     _on: true,
-    _offsetXRatio: 0.5,
-    _offsetYRatio: 1,
+    _offsetXRatio: -0.5,
+    _offsetYRatio: -1,
+    _baseline: -1,
     get on() {
       return this._on;
     },
@@ -709,6 +710,17 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
     },
     set z(v) {
       this.offsetY = -v;
+    },
+    get baseline() {
+      return this._baseline;
+    },
+    set baseline(v) {
+      if (v === this._baseline) return;
+      this._baseline = v;
+    },
+    get order() {
+      var baseline = this._baseline;
+      return this._baseline === -1 ? this._y : this._baseline;
     },
   });
   
