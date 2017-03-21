@@ -6,6 +6,8 @@ function(inflate, GameView, RoomView, Runtime, midi) {
   
   window.midi = midi;
   
+  var audioContext = new AudioContext;
+  
   function IAItem(identifier) {
     this.identifier = identifier;
   }
@@ -398,7 +400,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
               });
             },
           };
-          var runtime = new Runtime(fileSystem);
+          var runtime = new Runtime(audioContext, fileSystem);
           runtime.element.style.position = 'fixed';
           runtime.element.style.right = 0;
           runtime.element.style.top = 0;
