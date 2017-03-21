@@ -320,6 +320,15 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
               var imported = script.imports[code[pos++]];
               // TODO
               continue;
+            case 0x00F50110:
+              var alloc_str_len = code[pos++];
+              // TODO
+              continue;
+            case 0xF602110F:
+              var unknown = code[pos++];
+              // TODO: something to do with pushing string buffer as a func arg
+              continue;
+            case 0x0002010B:
             case 0x0003010B:
               var array_offset = code[pos++];
               // TODO
