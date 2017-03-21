@@ -100,8 +100,10 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
         
         function on_click(e) {
           if (e.button !== 0 && e.button !== 2) return;
-          if (e.button === 0 && (typeof cancellers === 'object' && !('Left' in cancellers))) return;
-          if (e.button === 2 && (typeof cancellers === 'object' && !('Right' in cancellers))) return;
+          if (typeof cancellers.mouseButtons === 'object') {
+            if (e.button === 0 && !('Left' in cancellers.mouseButtons)) return;
+            if (e.button === 2 && !('Right' in cancellers.mouseButtons)) return;
+          }
           this.removeEventListener('update', on_tick);
           this.removeEventListener('click', on_click);
           this.removeEventListener('key', on_key);
