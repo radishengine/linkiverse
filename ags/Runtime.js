@@ -1,4 +1,4 @@
-define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomView, SpriteStore) {
+define(['./GameView', './RoomView', './SpriteStore', 'playback/midi'], function(GameView, RoomView, SpriteStore, midi) {
 
   'use strict';
   
@@ -475,6 +475,12 @@ define(['./GameView', './RoomView', './SpriteStore'], function(GameView, RoomVie
       var imageData = ctx.createImageData(pic.width, pic.height);
       pic.setImageData(imageData);
       ctx.putImageData(imageData, 0, 0);
+      
+      var musicTrack = this.room.main.startupMusic;
+      if (musicTrack !== 0) {
+        midi.stop();
+        this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
+      }
       
       var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
       if (interactions) {
