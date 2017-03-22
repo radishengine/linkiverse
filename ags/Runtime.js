@@ -378,7 +378,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                   promise = self.display(text);
                   break;
                 case 'DisplaySpeech':
-                  promise = self.display(args[1]);
+                  promise = self.characters[args[0]].say(args[1]);
                   break;
                 case 'SetGameSpeed':
                   self.ticksPerSecond = args[0];
@@ -833,6 +833,19 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     get order() {
       var baseline = this._baseline;
       return this._baseline === -1 ? this._y : this._baseline;
+    },
+    say: function(text) {
+      var runtime = this.runtime;
+      var y = Math.max(0, this.y - runtime.room.viewportY);
+      var t1 = new RuntimeTextOverlay(runtime, text, 2, 0,y, getRGBA(0,0,0,255));
+      var t2 = new RuntimeTextOverlay(runtime, text, 1, 0,y, getRGBA(255,0,0,255));
+      return this
+        .wait(this.runtime.getTextDisplayTicks(text), {mouseButtons:true, keys:true})
+        .then(function() {
+          t1.remove();
+          t2.remove();
+          return runtime.wait(1);
+        });
     },
   });
   
