@@ -182,11 +182,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     display: function(text) {
       var t1 = new RuntimeTextOverlay(this, text, 2, 0,0, getRGBA(0,0,0,255));
       var t2 = new RuntimeTextOverlay(this, text, 1, 0,0, getRGBA(255,0,0,255));
+      var self = this;
       return this
         .wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true})
         .then(function() {
           t1.remove();
           t2.remove();
+          return self.wait(1);
         });
     },
     runDialog: function(n) {
