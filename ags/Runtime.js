@@ -47,6 +47,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       e.stopPropagation();
     });
     this.fonts = [];
+    this.overlays = [];
   }
   Runtime.prototype = {
     tickMillisecs: 1000/40,
@@ -179,9 +180,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       });
     },
     display: function(text) {
-      this.renderText(text, 2, 0,0, getRGBA(0,0,0,255));
-      this.renderText(text, 1, 0,0, getRGBA(255,0,0,255));
-      return this.wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true});
+      var t1 = new RuntimeTextOverlay(this, text, 2, 0,0, getRGBA(0,0,0,255));
+      var t2 = new RuntimeTextOverlay(this, text, 1, 0,0, getRGBA(255,0,0,255));
+      return this
+        .wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true})
+        .then(function() {
+          t1.remove();
+          t2.remove();
+        });
     },
     runDialog: function(n) {
       var dialog = this.game.dialogs[n];
@@ -515,13 +521,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       this.playingMusic = musicTrack;
       this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
     },
+    redraw: function() {
+      this.ctx2d.putImageData(this.room.background, -this.room.viewportX, -this.room.viewportY);
+      for (var i = 0; i < this.overlays.length; i++) {
+        this.overlays[i].render();
+      }
+    },
     onEnteringRoom: function() {
-      var pic = this.room.backgroundBitmap;
-      var ctx = this.element.getContext('2d');
-      var imageData = ctx.createImageData(pic.width, pic.height);
-      pic.setImageData(imageData);
-      ctx.putImageData(imageData, 0, 0);
-      
       var musicTrack = this.room.startupMusic;
       if (musicTrack !== 0) {
         this.playMusic(musicTrack);
@@ -578,6 +584,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         this.nextTick = now + this.tickMillisecs;
       }
       this.eventTarget.dispatchEvent(updateEvent);
+      this.redraw();
     },
   };
   
@@ -616,11 +623,35 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
   };
   
+  function RuntimeOverlay(runtime) {
+    runtime.overlays.push(this);
+    this.runtime = runtime;
+  }
+  RuntimeOverlay.prototype = {
+    remove: function() {
+      var i = this.runtime.indexOf(this);
+      if (i === -1) return;
+      this.runtime.splice(i, 1);
+    },
+  };
+  
+  function RuntimeTextOverlay(runtime, str, fontNumber, x, y, rgba) {
+    this.render = runtime.render.bind(runtime, str, fontNumber, x, y, rgba);
+    runtime.overlays.push(this);
+  }
+  RuntimeTextOverlay.prototype = new RuntimeOverlay;
+  
   function RuntimeRoom(runtime, def) {
     this.runtime = runtime;
     this.def = def;
+    var pic = def.main.backgroundBitmap;
+    var imageData = runtime.ctx2d.createImageData(pic.width, pic.height);
+    pic.setImageData(imageData);
+    this.background = imageData;
   }
   RuntimeRoom.prototype = {
+    viewportX: 0,
+    viewportY: 0,
     get number() {
       return this.def.number;
     },
