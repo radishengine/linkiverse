@@ -256,8 +256,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
               continue;
             case 12:
               var room = nextArg();
-              console.log('go to room', room);
-              return self.goToRoom(room).then(next_step);
+              self.goToRoom(room);
+              continue;
             case 13:
               var id = nextArg();
               var value = nextArg();
@@ -315,7 +315,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
               }
               continue;
             case 'go_to_screen':
-              return self.goToRoom(step.data1).then(next_step);
+              self.goToRoom(step.data1);
+              continue;
             case 'run_dialog_topic':
               var promise = self.runDialog(step.data1);
               if (promise) {
@@ -366,10 +367,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
               var promise;
               switch (calling.name) {
                 case 'NewRoomEx':
-                  promise = self.goToRoom(args[0]);
+                  self.goToRoom(args[0]);
                   break;
                 case 'NewRoom':
-                  promise = self.goToRoom(args[0]);
+                  self.goToRoom(args[0]);
                   break;
                 case 'Wait':
                   promise = self.wait(args[0]);
@@ -515,7 +516,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         case 'run_script':
           return this.runScriptV2(this.room.scriptCompiled_v2, interaction.funcName);
         case 'go_to_screen':
-          return this.goToRoom(interaction.data1);
+          this.goToRoom(interaction.data1);
+          return;
         case 'display_message':
           var number = interaction.data1;
           return this.display(this.getMessage(number));
