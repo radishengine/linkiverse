@@ -209,7 +209,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
               var speaker = nextArg();
               var text = nextArg();
               text = messages[text];
-              return self.display(text).then(next_step);
+              return self.characters[speaker].say(text).then(next_step);
             case 2:
               var option = nextArg();
               console.log('option off', option);
