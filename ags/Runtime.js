@@ -174,9 +174,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     goToRoom: function(n) {
       this.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
       var self = this;
-      return this.loadRoom(n).then(function(roomDef) {
-        self.room = new RuntimeRoom(self, roomDef);
-        self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
+      var loading = self.loadRoom(n).then(function(roomDef) {
+        return new RuntimeRoom(self, roomDef);
+      });
+      this.mainExec.queueAction(function() {
+        return loading.then(function(room) {
+          self.room = room;
+          self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
+        });
       });
     },
     display: function(text) {
