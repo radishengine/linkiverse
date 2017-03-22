@@ -636,7 +636,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   };
   
   function RuntimeTextOverlay(runtime, str, fontNumber, x, y, rgba) {
-    this.render = runtime.render.bind(runtime, str, fontNumber, x, y, rgba);
+    this.render = runtime.renderText.bind(runtime, str, fontNumber, x, y, rgba);
     runtime.overlays.push(this);
   }
   RuntimeTextOverlay.prototype = new RuntimeOverlay;
