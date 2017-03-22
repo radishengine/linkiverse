@@ -650,7 +650,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     render: {
       value: function() {
         this.runtime.ctx2d.fillStyle = this.fillStyle;
-        this.runtime.ctx2d.strokeStyle = this.fillStyle;
+        this.runtime.ctx2d.strokeStyle = this.strokeStyle;
         this.runtime.ctx2d.fillRect(this.x, this.y, this.width, this.height);
         this.runtime.ctx2d.strokeRect(this.x, this.y, this.width, this.height);
       },
