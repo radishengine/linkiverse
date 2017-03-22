@@ -625,7 +625,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
           return;
         }
         this.runtime.eventTarget.dispatchEvent(this.busyEvent);
-        this.chain = promise;
+        this.chain = promise.then(this.decrementBusyCount);
         return;
       }
       this.chain = this.chain.then(nextAction).then(this.decrementBusyCount);
