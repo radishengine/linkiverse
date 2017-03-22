@@ -567,10 +567,11 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
             this.mainExec.queueAction(function() {
               eventTarget.addEventListener('update', tick);
               eventTarget.addEventListener('leaving-room', (function(tick) {
-                return function onLeavingRoom() {
+                function onLeavingRoom() {
                   this.removeEventListener('update', tick);
                   this.removeEventListener('leaving-room', onLeavingRoom);
-                };
+                }
+                return onLeavingRoom;
               })(tick));
             });
           }
