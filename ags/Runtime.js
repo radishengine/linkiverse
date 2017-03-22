@@ -643,8 +643,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a/255 + ')');
-    this.strokeStyle = 'rgba(' + br + ',' + bg + ',' + bb + ',' + ba/255 + ')');
+    this.fillStyle = 'rgba('+r+','+g+','+b+','+a/255+')';
+    this.strokeStyle = 'rgba('+br+','+bg+','+bb+','+ba/255+')';
   }
   RuntimeBoxOverlay.prototype = Object.create(RuntimeOverlay.prototype, {
     render: function() {
