@@ -561,19 +561,22 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         }
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'repeatedly_execute') {
-            // TODO: set up on idle, remove on busy, until leaving room
-            var tick = this.performInteractionV2.bind(this, interactions[i]);
-            var eventTarget = this.eventTarget;
-            this.mainExec.queueAction(function() {
-              eventTarget.addEventListener('update', tick);
-              eventTarget.addEventListener('leaving-room', (function(tick) {
-                function onLeavingRoom() {
-                  this.removeEventListener('update', tick);
-                  this.removeEventListener('leaving-room', onLeavingRoom);
-                }
-                return onLeavingRoom;
-              })(tick));
-            });
+            this.eventTarget.roomRepExec = this.performInteractionV2.bind(this, interactions[i]);
+            function onBusy() {
+              this.addEventListener('update', this.roomRepExec);
+            }
+            function onIdle() {
+              this.removeEventListener('update', this.roomRepExec);
+            }
+            function onLeavingRoom() {
+              this.removeEventListener('update', this.roomRepExec);
+              this.removeEventListener('busy', onBusy);
+              this.removeEventListener('idle', onIdle);
+              this.removeEventListener('leaving-room', onLeavingRoom);
+            }
+            this.eventTarget.addEventListener('busy', onBusy);
+            this.eventTarget.addEventListener('idle', onIdle);
+            this.eventTarget.addEventListener('leaving-room', onLeavingRoom);
           }
         }
       }
