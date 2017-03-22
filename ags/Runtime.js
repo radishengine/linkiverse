@@ -577,7 +577,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
             this.eventTarget.addEventListener('idle', onIdle);
             this.eventTarget.addEventListener('busy', onBusy);
             this.eventTarget.addEventListener('leaving-room', onLeavingRoom);
-            if (!this.mainExec.isBusy) onIdle();
+            if (!this.mainExec.isBusy) onIdle.apply(this.eventTarget);
           }
         }
       }
