@@ -82,8 +82,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
           }
           return self.loadRoom(self.game.playerCharacter.room);
         })
-        .then(function(room) {
-          self.room = room;
+        .then(function(roomDef) {
+          self.room = new RuntimeRoom(self, roomDef);
         }),
 
         this.fileSystem.loadAsBlob('acsprset.spr')
@@ -168,13 +168,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     graphicalTimerRemaining: 0,
     graphicalTimerUpdate: null,
     runGraphicalScript: function(n) {
-      return this.runGraphicalScriptBlock(this.room.main.graphicalScripts[n], 0);
+      return this.runGraphicalScriptBlock(this.room.graphicalScripts[n], 0);
     },
     goToRoom: function(n) {
       this.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
       var self = this;
-      return this.loadRoom(n).then(function(room) {
-        self.room = room;
+      return this.loadRoom(n).then(function(roomDef) {
+        self.room = new RuntimeRoom(self, roomDef);
         self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
       });
     },
@@ -314,6 +314,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       }
       return next_step();
     },
+    getMessage: function(number) {
+      return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
+    },
     runScriptV2: function(script, funcName) {
       var exported = script.exports[funcName];
       var strings = script.strings;
@@ -363,7 +366,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                   break;
                 case 'DisplayMessage':
                   var number = args[0];
-                  var text = number < 500 ? self.room.main.messages[number] : self.game.globalMessages[number];
+                  var text = self.getMessage(number);
                   promise = self.display(text);
                   break;
                 case 'DisplaySpeech':
@@ -502,10 +505,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
           return this.goToRoom(interaction.data1);
         case 'display_message':
           var number = interaction.data1;
-          if (number < 500) {
-            return this.display(this.room.main.messages[number]);
-          }
-          return this.display(this.game.globalMessages[number]);
+          return this.display(this.getMessage(number));
       }
     },
     playingMusic: -1,
@@ -516,18 +516,18 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
     },
     onEnteringRoom: function() {
-      var pic = this.room.main.backgroundBitmap;
+      var pic = this.room.backgroundBitmap;
       var ctx = this.element.getContext('2d');
       var imageData = ctx.createImageData(pic.width, pic.height);
       pic.setImageData(imageData);
       ctx.putImageData(imageData, 0, 0);
       
-      var musicTrack = this.room.main.startupMusic;
+      var musicTrack = this.room.startupMusic;
       if (musicTrack !== 0) {
         this.playMusic(musicTrack);
       }
       
-      var interactions = this.room.main.interactions_v2 && this.room.main.interactions_v2.forRoom;
+      var interactions = this.room.interactions_v2 && this.room.interactions_v2.forRoom;
       if (interactions) {
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'player_enters_screen') {
@@ -613,6 +613,34 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       if (--this.busyCount === 0) {
         this.runtime.eventTarget.dispatchEvent(this.idleEvent);
       }
+    },
+  };
+  
+  function RuntimeRoom(runtime, def) {
+    this.runtime = runtime;
+    this.def = def;
+  }
+  RuntimeRoom.prototype = {
+    get number() {
+      return this.def.number;
+    },
+    get graphicalScripts() {
+      return this.def.main.graphicalScripts;
+    },
+    get messages() {
+      return this.def.main.messages;
+    },
+    get backgroundBitmap() {
+      return this.def.main.backgroundBitmap;
+    },
+    get startupMusic() {
+      return this.def.main.startupMusic;
+    },
+    get interactions_v2() {
+      return this.def.main.interactions_v2;
+    },
+    get scriptCompiled_v2() {
+      return this.def.scriptCompiled_v2;
     },
   };
   
