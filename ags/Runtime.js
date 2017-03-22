@@ -637,6 +637,24 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
   };
   
+  function RuntimeBoxOverlay(runtime, x, y, width, height, r,g,b,a, br,bg,bb,ba) {
+    RuntimeOverlay.call(this, runtime);
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a/255 + ')');
+    this.strokeStyle = 'rgba(' + br + ',' + bg + ',' + bb + ',' + ba/255 + ')');
+  }
+  RuntimeBoxOverlay.prototype = Object.create(RuntimeOverlay.prototype, {
+    render: function() {
+      this.runtime.ctx2d.fillStyle = this.fillStyle;
+      this.runtime.ctx2d.strokeStyle = this.fillStyle;
+      this.runtime.ctx2d.fillRect(this.x, this.y, this.width, this.height);
+      this.runtime.ctx2d.strokeRect(this.x, this.y, this.width, this.height);
+    },
+  });
+  
   function RuntimeTextOverlay(runtime, str, fontNumber, x, y, rgba) {
     RuntimeOverlay.call(this, runtime);
     this.render = runtime.renderText.bind(runtime, str, fontNumber, x, y, rgba);
