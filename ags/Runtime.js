@@ -631,7 +631,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     remove: function() {
       var i = this.runtime.overlays.indexOf(this);
       if (i === -1) return;
-      this.runtime.splice(i, 1);
+      this.runtime.overlays.splice(i, 1);
     },
   };
   
