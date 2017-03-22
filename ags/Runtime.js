@@ -639,7 +639,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     this.render = runtime.renderText.bind(runtime, str, fontNumber, x, y, rgba);
     runtime.overlays.push(this);
   }
-  RuntimeTextOverlay.prototype = new RuntimeOverlay;
+  RuntimeTextOverlay.prototype = Object.create(RuntimeOverlay);
   
   function RuntimeRoom(runtime, def) {
     this.runtime = runtime;
