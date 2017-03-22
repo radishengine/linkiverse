@@ -629,7 +629,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   }
   RuntimeOverlay.prototype = {
     remove: function() {
-      var i = this.runtime.indexOf(this);
+      var i = this.runtime.overlays.indexOf(this);
       if (i === -1) return;
       this.runtime.splice(i, 1);
     },
