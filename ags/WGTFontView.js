@@ -79,6 +79,24 @@ define(function() {
       }
       ctx2d.putImageData(pixels, px, py);
     },
+    wrap: function(text, maxWidth) {
+      var i_space = text.indexOf(' ');
+      if (i_space === -1) return [text];
+      var lines = [];
+      var w_space = this.getTextWidth(' ');
+      var i_line = 0, i_word = 0, w_line = 0;
+      do {
+        var w_word = this.getTextWidth(text.substring(i_word, i_space));
+        if ((w_line += w_space + w_word) > maxWidth) {
+          lines.push(text.substring(i_line, i_space));
+          i_line = i_space + 1;
+          w_line = w_word;
+        }
+        i_word = i_space + 1;
+      } while ((i_space = text.indexOf(' ', i_space + 1)) !== -1);
+      lines.push(text.substring(i_line));
+      return lines;
+    },
   };
   
   function WGTGlyphView(buffer, byteOffset, byteLength) {
