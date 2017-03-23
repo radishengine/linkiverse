@@ -85,7 +85,7 @@ define(function() {
       var lines = [];
       var w_space = this.getTextWidth(' ');
       var i_line = 0, i_word = i_space + 1, w_line = this.getTextWidth(text.substring(0, i_space));
-      while (i_space = text.indexOf(' ', i_space + 1)) !== -1) {
+      while ((i_space = text.indexOf(' ', i_space + 1)) !== -1) {
         var w_word = this.getTextWidth(text.substring(i_word, i_space));
         if ((w_line += w_space + w_word) > maxWidth) {
           lines.push(text.substring(i_line, i_space));
