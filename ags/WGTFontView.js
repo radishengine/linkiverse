@@ -80,21 +80,26 @@ define(function() {
       ctx2d.putImageData(pixels, px, py);
     },
     wrap: function(text, maxWidth) {
-      var i_space = text.indexOf(' ');
-      if (i_space === -1) return [text];
+      var lineStart = 0, word1Start = 0, word1End = text.indexOf(' ');
+      if (word1End === -1) return [text];
+      var word2End = text.indexOf(' ', word1End + 1);
+      if (word2End === -1) word2End = text.width;
       var lines = [];
-      var w_space = this.getTextWidth(' ');
-      var i_line = 0, i_word = i_space + 1, w_line = this.getTextWidth(text.substring(0, i_space));
-      while ((i_space = text.indexOf(' ', i_space + 1)) !== -1) {
-        var w_word = this.getTextWidth(text.substring(i_word, i_space));
-        if ((w_line += w_space + w_word) > maxWidth) {
-          lines.push(text.substring(i_line, i_space));
-          i_line = i_space + 1;
-          w_line = w_word;
+      var spaceWidth = this.getTextWidth(' ');
+      var lineWidth = this.getTextWidth(text.substring(word1Start, word1End));
+      do {
+        var word2Width = this.getTextWidth(text.substring(word1End + 1, word2End));
+        if ((lineWidth += spaceWidth + word2Width) > maxWidth) {
+          lines.push(text.substring(lineStart, word1End));
+          lineStart = word1End + 1;
+          lineWidth = word2Width;
         }
-        i_word = i_space + 1;
-      }
-      lines.push(text.substring(i_line));
+        word1Start = word1End + 1;
+        word1End = word2End;
+        word2End = text.indexOf(' ', word2End + 1);
+        if (word2End === -1) word2End = text.length;
+      } while (word1End < text.length);
+      lines.push(text.subarray(word1Start));
       return lines;
     },
   };
