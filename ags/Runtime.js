@@ -185,14 +185,21 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       });
     },
     display: function(text) {
-      var t1 = new RuntimeBoxOverlay(this, 5,5,310,190, 255,255,255,255, 0,0,0,255);
-      var t2 = new RuntimeTextOverlay(this, text, 0, 10,10, getRGBA(0,0,0,255));
+      var overlays = [new RuntimeBoxOverlay(this, 5,5,310,190, 255,255,255,255, 0,0,0,255)];
+      var font = this.fonts[0];
+      var lines = font.wrap(text, 300);
+      var y = 10;
+      for (var i = 0; i < lines.length; i++) {
+        overlays.push(new RuntimeTextOverlay(this, lines[i], 0, 10,y, getRGBA(0,0,0,255)));
+        y += font.lineHeight;
+      }
       var self = this;
       return this
         .wait(Infinity, {mouseButtons:true, keys:true})
         .then(function() {
-          t1.remove();
-          t2.remove();
+          for (var i = 0; i < overlays.length; i++) {
+            overlays[i].remove();
+          }
           return self.wait(1);
         });
     },
