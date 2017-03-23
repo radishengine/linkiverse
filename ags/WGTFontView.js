@@ -99,7 +99,7 @@ define(function() {
         word2End = text.indexOf(' ', word2End + 1);
         if (word2End === -1) word2End = text.length;
       } while (word1End < text.length);
-      lines.push(text.substring(word1Start));
+      lines.push(text.substring(lineStart));
       return lines;
     },
   };
