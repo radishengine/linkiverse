@@ -243,7 +243,7 @@ define(['./util'], function(util) {
       return function() {
         var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
         var views = new Array(this.viewCount);
-        for (var i = 0; i < views.length) {
+        for (var i = 0; i < views.length; i++) {
           var viewOffset = offset + i * viewByteLength;
           var framesOffset = viewOffset + 2 + 2*maxLoopsPerView + 2;
           var loops = new Array(this.dv.getUint16(viewOffset, true));
