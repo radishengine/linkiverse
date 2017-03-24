@@ -113,9 +113,9 @@ define(['./util'], function(util) {
           return list;
         };
       });
-      this.endPos += 4; // globalScript pointer
+      this.endOffset += 4; // globalScript pointer
       this.member('characterCount', member_uint32);
-      this.endPos += 4; // chars pointer
+      this.endOffset += 4; // chars pointer
       function member_eventBlocks(count, identifier) {
         return function() {
           const offset = this.endOffset;
