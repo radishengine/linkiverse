@@ -35,7 +35,7 @@ define(['./util'], function(util) {
         return function() {
           return util.byteString(this.bytes, offset, len);
         };
-      }
+      };
     }
     
     function member_nullTerminated(bufferSize) {
