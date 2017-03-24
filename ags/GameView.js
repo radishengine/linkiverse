@@ -28,18 +28,21 @@ define(['./util'], function(util) {
     
     this.endOffset = 0;
     
-    function member_byteString(len) {
+    function member_byteString(len, nullTerminate) {
       return function() {
         const offset = this.endOffset;
         this.endOffset += len;
-        return function() {
-          return util.byteString(this.bytes, offset, len);
-        };
+        if (nullTerminate) {
+          return function() {
+            return util.byteString(this.bytes, offset, len).match(/^[^\0]*/)[0];
+          };
+        }
+        else {
+          return function() {
+            return util.byteString(this.bytes, offset, len);
+          };
+        }
       };
-    }
-    
-    function member_nullTerminated(bufferSize) {
-      return member_byteString(bufferSize).match(/^[^\0]*/)[0];
     }
     
     function member_uint32() {
@@ -80,7 +83,7 @@ define(['./util'], function(util) {
       throw new Error('NYI');
     }
     else {
-      this.member('title', member_nullTerminated(50));
+      this.member('title', member_byteString(50, true));
       this.member('palette_uses', member_bytes(256));
       this.member('palette', member_bytes(256 * 4));
       this.member('vintageGUIs', function() {
