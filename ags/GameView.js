@@ -53,6 +53,14 @@ define(['./util'], function(util) {
       };
     }
     
+    function member_int16() {
+      const offset = this.endOffset;
+      this.endOffset += 2;
+      return function() {
+        return this.dv.getInt16(offset, true);
+      };
+    }
+    
     function member_bool32() {
       const offset = this.endOffset;
       this.endOffset += 4;
@@ -158,17 +166,11 @@ define(['./util'], function(util) {
       this.member('colorDepth', member_uint32);
       this.member('target_win', member_uint32);
       this.member('dialog_bullet_sprite_idx', member_uint32);
-      this.member('hotdot', member_uint32);
-      this.member('hotdot_outer', member_uint32);
+      this.member('hotdot', member_int16);
+      this.member('hotdot_outer', member_int16);
       this.member('unique_int32', member_uint32);
       this.endOffset += 8; // reserved int[2]
-      this.member('languageCodeCount', function() {
-        const offset = this.endOffset;
-        this.endOffset += 2;
-        return function() {
-          return this.dv.getInt16(offset, true);
-        };
-      });
+      this.member('languageCodeCount', member_int16);
       this.member('languageCodes', function() {
         const offset = this.endOffset;
         this.endOffset += 3*5 + 3;
