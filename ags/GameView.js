@@ -132,6 +132,7 @@ define(['./util'], function(util) {
       }
       this.member('characterEventBlocks', member_eventBlocks(50, 'character<i>_'));
       this.member('inventoryItemEventBlocks', member_eventBlocks(100, 'inventory<i>_'));
+      this.endOffset += 4; // compiled script pointer
       this.member('playerCharacterId', member_uint32);
       this.member('spriteFlags', member_bytes(2100));
       this.member('totalScore', member_uint32);
