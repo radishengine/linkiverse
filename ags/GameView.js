@@ -338,7 +338,7 @@ define(['./util'], function(util) {
             endPos++;
           }
           if (endPos !== this.endOffset) {
-            list[i] = util.byteString(this.bytes, this.endOffset, endPos);
+            list[i] = util.byteString(this.bytes.subarray(this.endOffset, endPos));
           }
           this.endOffset = endPos + 1;
         }
@@ -373,7 +373,7 @@ define(['./util'], function(util) {
               endPos++;
             }
             if (endPos !== this.endOffset) {
-              list.messages[i] = util.byteString(this.bytes, this.endOffset, endPos);
+              list.messages[i] = util.byteString(this.bytes.subarray(this.endOffset, endPos));
             }
             this.endOffset = endPos + 1;
           }
@@ -381,6 +381,15 @@ define(['./util'], function(util) {
       }
       return list;
     });
+    this.member('guiSignature', member_uint32);
+    this.member('guiVersion', function() {
+      var version = this.dv.getInt32(this.endOffset, true);
+      if (version < 100) return 0;
+      this.endOffset += 4;
+      return version;
+    });
+    this.member('interfaceCount', member_uint32);
+    
   }
   GameView.prototype = {
     member: util.member,
@@ -389,6 +398,9 @@ define(['./util'], function(util) {
     },
     get playerCharacter() {
       return this.characters[this.playerCharacterId];
+    },
+    get hasValidGuiSignature() {
+      return this.guiSignature === 0xcafebeef;
     },
   };
     
