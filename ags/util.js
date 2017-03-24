@@ -15,7 +15,20 @@ define(function() {
     member: function(name, def) {
       var value = def.apply(this);
       if (typeof value === 'function') {
-        Object.defineProperty(this, name, {get:value, enumerable:true});
+        if (value.noCache) {
+          Object.defineProperty(this, name, {get:value, enumerable:true});
+        }
+        else {
+          Object.defineProperty(this, name, {
+            get: function() {
+              value = value.apply(this);
+              Object.defineProperty(this, name, {value:value, enumerable:true});
+              return value;
+            },
+            enumerable: true,
+            configurable: true,
+          });
+        }
       }
       else {
         Object.defineProperty(this, name, {value:value, enumerable:true});
