@@ -364,7 +364,7 @@ define(['./util'], function(util) {
               endPos++;
             }
             if (endPos !== this.endOffset) {
-a              list.messages[i] = util.byteString(this.bytes, this.endOffset, endPos);
+              list.messages[i] = util.byteString(this.bytes, this.endOffset, endPos);
             }
             this.endOffset = endPos + 1;
           }
