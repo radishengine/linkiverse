@@ -185,12 +185,19 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       });
     },
     display: function(text) {
-      var overlays = [new RuntimeBoxOverlay(this, 5,5,310,190, 255,255,255,255, 0,0,0,255)];
       var font = this.fonts[0];
-      var lines = font.wrap(text, 300);
-      var y = 10;
+      var lines = font.wrap(text, 220);
+      var boxWidth = 6;
       for (var i = 0; i < lines.length; i++) {
-        overlays.push(new RuntimeTextOverlay(this, lines[i], 0, 10,y, getRGBA(0,0,0,255)));
+        boxWidth = Math.max(boxWidth, 3 + font.getTextWidth(lines[i]) + 3);
+      }
+      var boxHeight + 3 + lines.length * font.lineHeight + 3;
+      var boxX = (320 - boxWidth) >> 1;
+      var boxY = (200 - boxHeight) >> 1;
+      var overlays = [new RuntimeBoxOverlay(this, boxX,boxY,boxWidth,boxHeight, 255,255,255,255, 0,0,0,255)];
+      var x = boxX + 3, y = boxY + 3;
+      for (var i = 0; i < lines.length; i++) {
+        overlays.push(new RuntimeTextOverlay(this, lines[i], 0, x,y, getRGBA(0,0,0,255)));
         y += font.lineHeight;
       }
       var self = this;
