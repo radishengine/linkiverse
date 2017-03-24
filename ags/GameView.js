@@ -86,6 +86,7 @@ define(['./util'], function(util) {
       this.member('title', member_byteString(50, true));
       this.member('palette_uses', member_bytes(256));
       this.member('palette', member_bytes(256 * 4));
+      this.endOffset += 2; // alignment
       this.member('vintageGUIs', function() {
         const offset = this.endOffset;
         const lengthOffset = offset + VintageGUI.byteLength * 10;
