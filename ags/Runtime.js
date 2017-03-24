@@ -191,7 +191,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       for (var i = 0; i < lines.length; i++) {
         boxWidth = Math.max(boxWidth, 3 + font.getTextWidth(lines[i]) + 3);
       }
-      var boxHeight + 3 + lines.length * font.lineHeight + 3;
+      var boxHeight = 3 + lines.length * font.lineHeight + 3;
       var boxX = (320 - boxWidth) >> 1;
       var boxY = (200 - boxHeight) >> 1;
       var overlays = [new RuntimeBoxOverlay(this, boxX,boxY,boxWidth,boxHeight, 255,255,255,255, 0,0,0,255)];
