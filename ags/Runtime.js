@@ -678,7 +678,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         this.runtime.ctx2d.fillStyle = this.fillStyle;
         this.runtime.ctx2d.strokeStyle = this.strokeStyle;
         this.runtime.ctx2d.fillRect(this.x, this.y, this.width, this.height);
-        this.runtime.ctx2d.strokeRect(this.x, this.y, this.width, this.height);
+        this.runtime.ctx2d.strokeRect(this.x+0.5, this.y+0.5, this.width, this.height);
       },
     },
   });
