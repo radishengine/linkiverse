@@ -1,6 +1,8 @@
-define(function() {
+define(['./util'], function(util) {
 
   'use strict';
+  
+  const EVENT_BLOCK_SIZE = 8*4 + 8*4 + 8*4 + 8*4 + 4 + 8*2;
   
   function lenPrefixString(bytes, offset) {
     return String.fromCharCode.apply(null, bytes.subarray(offset + 1, offset + 1 + bytes[offset]));
@@ -23,110 +25,246 @@ define(function() {
   function GameView(buffer, byteOffset, byteLength) {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
     this.dv = new DataView(buffer, byteOffset, byteLength);
-  }
-  GameView.prototype = {
-    get signature() {
-      return String.fromCharCode.apply(null, this.bytes.subarray(0, 30));
-    },
-    get hasValidSignature() {
-      return this.signature === 'Adventure Creator Game File v2';
-    },
-    get formatVersion() {
-      return this.dv.getUint32(30, true);
-    },
-    get engineVersion() {
-      return (this.formatVersion < 12) ? null : (function(){ throw new Error('NYI'); })(); // lenPrefixString(this.bytes, 34);
-    },
-    get offsetof_header() {
-      return (this.formatVersion < 12) ? 34 : (function(){ throw new Error('NYI'); })(); // 38 + this.getUint32(34, true);
-    },
-    get header() {
-      var header, offset = this.offsetof_header;
-      if (this.formatVersion <= 12) {
-        header = new VintageHeader(this.dv.buffer, this.dv.byteOffset + offset, this.dv.byteLength - offset);
-        header.formatVersion = this.formatVersion;
+    
+    this.endOffset = 0;
+    
+    function member_byteString(len) {
+      return function() {
+        const offset = this.endOffset;
+        this.endOffset += len;
+        return function() {
+          return util.byteString(this.bytes, offset, len);
+        };
       }
-      else {
-        header = new ModernHeader(this.dv.buffer, this.dv.byteOffset + offset, this.dv.byteLength - offset);
+    }
+    
+    function member_nullTerminated(bufferSize) {
+      return member_byteString(bufferSize).match(/^[^\0]*/)[0];
+    }
+    
+    function member_uint32() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getUint32(offset, true);
+      };
+    }
+    
+    function member_bool32() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return !!this.dv.getUint32(offset, true);
+      };
+    }
+    
+    function member_bytes(count) {
+      return function() {
+        const offset = this.endOffset;
+        this.endOffset += count;
+        return function() {
+          return this.bytes.subarray(offset, offset + count);
+        };
+      };
+    }
+    
+    this.member('signature', member_byteString('Adventure Creator Game File v2'.length));
+    this.member('formatVersion', member_uint32);
+    this.member('engineVersion', function() {
+      if (this.formatVersion < 12) return null;
+      throw new Error('NYI');
+      // lenPrefixString
+    });
+    
+    if (this.formatVersion >= 13) {
+      throw new Error('NYI');
+    }
+    else {
+      this.member('title', member_nullTerminated(50));
+      this.member('palette_uses', member_bytes(256));
+      this.member('palette', member_bytes(256 * 4));
+      this.member('vintageGUIs', function() {
+        const offset = this.endOffset;
+        const lengthOffset = offset + VintageGUI.byteLength * 10;
+        this.endOffset = lengthOffset + 4;
+        return function() {
+          var list = new Array(this.dv.getUint32(lengthOffset, true));
+          var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
+          for (var i = 0; i < list.length; i++) {
+            list[i] = new VintageGUI(buffer, byteOffset + offset + i * VintageGUI.byteLength, VintageGUI.byteLength);
+          }
+          return list;
+        };
+      });
+      this.member('viewCount', member_uint32);
+      this.member('cursors', function() {
+        const offset = this.endOffset;
+        this.endOffset += CursorView.byteLength * 10;
+        return function() {
+          var list = new Array(10);
+          var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
+          for (var i = 0; i < list.length; i++) {
+            list[i] = new CursorView(buffer, byteOffset + offset + CursorView.byteLength * i, CursorView.byteLength);
+          }
+          return list;
+        };
+      });
+      this.member('characterCount', member_uint32);
+      function member_eventBlocks(count, identifier) {
+        return function() {
+          const offset = this.endOffset;
+          this.endOffset += EVENT_BLOCK_SIZE * count;
+          return function() {
+            var list = new Array(count);
+            var dv = this.dv;
+            for (var i = 0; i < list.length; i++) {
+              list[i] = readEventBlock(dv, offset + EVENT_BLOCK_SIZE * i, identifier.replace(/<i>/g, i));
+            }
+            return list;
+          };
+        };
       }
-      Object.defineProperty(this, 'header', {value:header});
-      return header;
-    },
-    get dictionary() {
-      var pos = this.offsetof_header + this.header.byteLength;
+      this.member('characterEventBlocks', member_eventBlocks(50, 'character<i>_'));
+      this.member('inventoryItemEventBlocks', member_eventBlocks(100, 'inventory<i>_'));
+      this.member('playerCharacterId', member_uint32);
+      this.member('spriteFlags', member_bytes(2100));
+      this.member('totalScore', member_uint32);
+      this.member('inventoryCount', member_uint32);
+      this.member('inventoryItems', function() {
+        const offset = this.endOffset;
+        this.endOffset += InventoryItemView.byteLength * 100;
+        return function() {
+          var list = new Array(this.inventoryCount);
+          var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset + offset;
+          for (var i = 0; i < list.length; i++) {
+            list[i] = new InventoryItemView(
+              buffer,
+              byteOffset + i * InventoryItemView.byteLength,
+              InventoryItemView.byteLength);
+          }
+          return list;
+        };
+      });
+      this.member('dialogCount', member_uint32);
+      this.member('dialogMessageCount', member_uint32);
+      this.member('fontCount', member_uint32);
+      this.member('colorDepth', member_uint32);
+      this.member('target_win', member_uint32);
+      this.member('dialog_bullet_sprite_idx', member_uint32);
+      this.member('hotdot', member_uint32);
+      this.member('hotdot_outer', member_uint32);
+      this.member('unique_int32', member_uint32);
+      this.endOffset += 8; // reserved int[2]
+      this.member('languageCodeCount', function() {
+        const offset = this.endOffset;
+        this.endOffset += 2;
+        return function() {
+          return this.dv.getInt16(offset, true);
+        };
+      });
+      this.member('languageCodes', function() {
+        const offset = this.endOffset;
+        this.endOffset += 3*5 + 3;
+        return function() {
+          var list = new Array(this.languageCodeCount);
+          for (var i = 0; i < list.length; i++) {
+            list[i] = String.fromCharCode(
+              this.bytes[offset + i * 3],
+              this.bytes[offset + i * 3 + 1],
+              this.bytes[offset + i * 3 + 2]).match(/^[^\0]*/)[0];
+          }
+          return list;
+        };
+      });
+      this.member('isGlobalMessagePresent', function() {
+        const offset = this.endOffset;
+        this.endOffset += 500 * 4;
+        return function() {
+          return function isGlobalMessagePresent(idx) {
+            if (idx < 500 || idx > 999) throw new RangeError('global message ID out of range');
+            idx -= 500;
+            return this.dv.getInt32(offset + idx * 4, true) !== 0;
+          };
+        };
+      });
+      if (this.formatVersion >= 6) {
+        this.member('fontFlags', member_bytes(10));
+        this.member('fontOutline', member_bytes(10));
+        this.member('guiCount', member_uint32);
+        this.member('hasDictionary', member_bool32);
+        this.endOffset += 4 * 8; // reserved
+        if (this.formatVersion >= 10) {
+          this.member('spriteFlags', member_bytes(6000));
+        }
+      }
+    }
+    this.member('dictionary', function() {
+      if (!this.hasDictionary) return null;
+      const count = this.dv.getUint32(this.endOffset, true);
       var dict = {};
-      if (this.header.hasDictionary) {
-        var count = this.dv.getInt32(pos, true);
-        pos += 4;
-        dict.entries = {};
-        for (var i = 0; i < count; i++) {
-          var len = this.dv.getInt32(pos, true);
-          var word = masked('Avis Durgan', this.bytes, pos + 4, len);
-          var id = this.dv.getInt16(pos + 4 + len, true);
-          dict.entries[word] = id;
-          pos += 4 + len + 2;
-        }
+      this.endOffset += 4;
+      for (var i = 0; i < count; i++) {
+        var len = this.dv.getUint32(this.endOffset, true);
+        this.endOffset += 4;
+        var word = masked('Avis Durgan', this.bytes, this.endOffset, len);
+        this.endOffset += len;
+        var id = this.dv.getInt16(this.endOffset, true);
+        this.endOffset += 2;
+        dict[word] = id;
       }
-      dict.afterPos = pos;
-      Object.defineProperty(this, 'dictionary', {value:dict});
       return dict;
-    },
-    get globalScript() {
-      var script = {};
-      var pos = this.dictionary.afterPos;
-      if (this.formatVersion <= 12) {
-        script.source = masked('Avis Durgan', this.bytes, pos + 4, this.dv.getInt32(pos, true));
-        pos += 4 + script.source.length;
-      }
-      if (this.formatVersion <= 9) {
-        script.compiled = this.bytes.subarray(pos + 4, pos + 4 + this.dv.getInt32(pos, true));
-        pos += 4 + script.compiled.length;
-      }
-      else {
-        throw new Error('NYI');
-      }
-      script.afterPos = pos;
-      Object.defineProperty(this, 'globalScript', {value:script});
-      return script;
-    },
-    get views() {
-      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset;
-      var list = new Array(this.header.viewCount);
-      var pos = this.globalScript.afterPos;
-      if (this.formatVersion <= 12) {
-        for (var i = 0; i < list.length; i++) {
-          var view = list[i] = {};
-          view.loops = new Array(this.dv.getUint16(pos, true));
-          pos += 2;
-          for (var j = 0; j < 8; j++) {
-            if (j < view.loops.length) {
-              view.loops[j] = {frames: new Array(this.dv.getUint16(pos, true))};
+    });
+    this.member('globalScriptSource', function() {
+      if (this.formatVersion >= 13) return null;
+      const length = this.dv.getUint32(this.endOffset, true);
+      const offset = this.endOffset += 4;
+      this.endOffset += length;
+      return function() {
+        return util.byteString(this.bytes, offset, length);
+      };
+    });
+    this.member('globalScript', function() {
+      if (this.formatVersion >= 10) throw new Error('NYI');
+      const length = this.dv.getUint32(this.endOffset, true);
+      const offset = this.endOffset += 4;
+      this.endOffset += length;
+      return function() {
+        return this.bytes.subarray(offset, offset + length);
+      };
+    });
+    this.member('views', function() {
+      if (this.formatVersion >= 13) throw new Error('NYI');
+      const offset = this.endOffset;
+      const maxLoopsPerView = 8;
+      const maxFramesPerLoop = 10;
+      const loopByteLength = maxFramesPerLoop * AnimFrameView.byteLength;
+      const viewByteLength = 2 + 2*maxLoopsPerView + 2 + maxLoopsPerView*loopByteLength;
+      this.endOffset += viewByteLength * this.viewCount;
+      return function() {
+        var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
+        var views = new Array(this.viewCount);
+        for (var i = 0; i < views.length) {
+          var viewOffset = offset + i * viewByteLength;
+          var framesOffset = viewOffset + 2 + 2*maxLoopsPerView + 2;
+          var loops = new Array(this.dv.getUint16(viewOffset, true));
+          for (var j = 0; j < loops.length; j++) {
+            var frames = new Array(this.dv.getUint16(viewOffset + 2 + j*2, true));
+            for (var k = 0; k < frames.length; k++) {
+              frames[k] = new AnimFrameView(
+                buffer,
+                byteOffset + framesOffset + k * AnimFrameView.byteLength,
+                AnimFrameView.byteLength);
             }
-            pos += 2;
+            loops[j] = frames;
           }
-          pos += 2; // align to 4 byte boundary
-          for (var j = 0; j < 8; j++) {
-            for (var k = 0; k < 10; k++) {
-              if (j < view.loops.length && k < view.loops[j].frames.length) {
-                view.loops[j].frames[k] = new AnimFrameView(buffer, byteOffset + pos, AnimFrameView.byteLength);
-              }
-              pos += AnimFrameView.byteLength;
-            }
-          }
+          views[i] = loops;
         }
-      }
-      else {
-        throw new Error('NYI');
-      }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'views', {value:list});
-      return list;
-    },
-    get offsetof_characters() {
-      var pos = this.views.afterPos;
+      };
+    });
+    this.member('characters', function() {
       if (this.formatVersion <= 12) {
-        var count = this.dv.getInt32(pos, true);
-        pos += 4;
+        var count = this.dv.getInt32(this.endOffset, true);
+        this.endOffset += 4;
         var number_count, name_length;
         if (this.formatVersion >= 11) {
           number_count = 241;
@@ -136,113 +274,112 @@ define(function() {
           number_count = 121;
           name_length = 22;
         }
-        pos += count * (4 + 2 * number_count + name_length);
+        this.endOffset += count * (4 + 2 * number_count + name_length);
       }
       else if (this.formatVersion <= 19) {
-        pos += 4 * 0x204;
+        this.endOffset += 4 * 0x204;
       }
-      Object.defineProperty(this, 'offsetof_characters', {value:pos});
-      return pos;
-    },
-    get characters() {
-      var list = new Array(this.header.characterCount);
-      var pos = this.offsetof_characters;
-      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength - pos;
+      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength - this.endOffset;
+      var list = new Array(this.characterCount);
       for (var i = 0; i < list.length; i++) {
-        var c = list[i] = new CharacterView(buffer, byteOffset + pos, byteLength);
+        var c = list[i] = new CharacterView(buffer, byteOffset + this.endOffset, byteLength);
         c.formatVersion = this.formatVersion;
-        pos += c.byteLength;
+        this.endOffset += c.byteLength;
         byteLength -= c.byteLength;
       }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'characters', {value:list});
       return list;
-    },
-    get playerCharacter() {
-      return this.characters[this.header.playerCharacterId];
-    },
-    get offsetof_globalMessages() {
-      return this.characters.afterPos + (this.formatVersion >= 21 ? 50 * 20 : 0);
-    },
-    get globalMessages() {
+    });
+    this.member('lipSyncFrames', function() {
+      if (this.formatVersion < 21) return null;
+      const offset = this.endOffset;
+      this.endOffset += 50 * 20;
+      return function() {
+        throw new Error('NYI');
+      };
+    });
+    this.member('globalMessages', function() {
       var list = new Array(1000);
-      var pos = this.offsetof_globalMessages;
+      list[983] = "Sorry, not now.";
+      list[984] = "Restore";
+      list[985] = "Cancel";
+      list[986] = "Select a game to restore:";
+      list[987] = "Save";
+      list[988] = "Type a name to save as:";
+      list[989] = "Replace";
+      list[990] = "The save directory is full. You must replace an existing game:";
+      list[991] = "Replace:";
+      list[992] = "With:";
+      list[993] = "Quit";
+      list[994] = "Play";
+      list[995] = "Are you sure you want to quit?";
       var isMasked = this.formatVersion >= 26;
       for (var i = 500; i < 1000; i++) {
-        if (!this.header.isGlobalMessagePresent(i)) continue;
+        if (!this.isGlobalMessagePresent(i)) continue;
         else if (isMasked) {
-          var len = this.dv.getInt32(pos, true);
+          var len = this.dv.getInt32(this.endOffset, true);
+          this.endOffset += 4;
           if (len > 0) {
-            list[i] = masked('Avis Durgan', this.bytes, pos + 4, len);
+            list[i] = masked('Avis Durgan', this.bytes, this.endOffset, len);
           }
-          pos += 4 + len;
+          this.endOffset += len;
         }
         else {
-          var endPos = pos;
+          var endPos = this.endOffset;
           while (this.bytes[endPos] !== 0) {
             endPos++;
           }
-          if (endPos !== pos) {
-            list[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+          if (endPos !== this.endOffset) {
+            list[i] = util.byteString(this.bytes, this.endOffset, endPos);
           }
-          pos = endPos + 1;
+          this.endOffset = endPos + 1;
         }
       }
-      list[983] = list[983] || "Sorry, not now.";
-      list[984] = list[984] || "Restore";
-      list[985] = list[985] || "Cancel";
-      list[986] = list[986] || "Select a game to restore:";
-      list[987] = list[987] || "Save";
-      list[988] = list[988] || "Type a name to save as:";
-      list[989] = list[989] || "Replace";
-      list[990] = list[990] || "The save directory is full. You must replace an existing game:";
-      list[991] = list[991] || "Replace:";
-      list[992] = list[992] || "With:";
-      list[993] = list[993] || "Quit";
-      list[994] = list[994] || "Play";
-      list[995] = list[995] || "Are you sure you want to quit?";
-      list.afterPos = pos;
-      Object.defineProperty(this, 'globalMessages', {value:list});
       return list;
-    },
-    get dialogs() {
-      var list = new Array(this.header.dialogCount);
-      var pos = this.globalMessages.afterPos;
+    });
+    this.member('dialogs', function() {
+      var list = new Array(this.dialogCount);
       var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset, byteLength = this.bytes.byteLength;
       for (var i = 0; i < list.length; i++) {
-        var dialog = list[i] = new DialogView(buffer, byteOffset + pos, byteLength - pos);
+        var dialog = list[i] = new DialogView(buffer, byteOffset + this.endOffset, byteLength - this.endOffset);
         dialog.formatVersion = this.formatVersion;
-        pos += dialog.byteLength;
+        this.endOffset += dialog.byteLength;
       }
       if (this.formatVersion <= 37) {
         for (var i = 0; i < list.length; i++) {
           list[i].script = {};
-          list[i].script.compiled = this.bytes.subarray(pos, pos + list[i].codeSize);
-          pos += list[i].codeSize;
-          var compiledLen = this.dv.getInt32(pos, true);
-          list[i].script.source = masked('Avis Durgan', this.bytes, pos + 4, compiledLen);
-          pos += 4 + compiledLen;
+          list[i].script.compiled = this.bytes.subarray(this.endOffset, this.endOffset + list[i].codeSize);
+          this.endOffset += list[i].codeSize;
+          var compiledLen = this.dv.getInt32(this.endOffset, true);
+          list[i].script.source = masked('Avis Durgan', this.bytes, this.endOffset + 4, compiledLen);
+          this.endOffset += 4 + compiledLen;
         }
-        list.messages = new Array(this.header.dialogMessageCount);
+        list.messages = new Array(this.dialogMessageCount);
         if (this.formatVersion > 25) {
           throw new Error('NYI');
         }
         else {
           for (var i = 0; i < list.messages.length; i++) {
-            var endPos = pos;
+            var endPos = this.endOffset;
             while (this.bytes[endPos] !== 0) {
               endPos++;
             }
-            if (endPos !== pos) {
-              list.messages[i] = String.fromCharCode.apply(null, this.bytes.subarray(pos, endPos));
+            if (endPos !== this.endOffset) {
+a              list.messages[i] = util.byteString(this.bytes, this.endOffset, endPos);
             }
-            pos = endPos + 1;
+            this.endOffset = endPos + 1;
           }
         }
       }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'dialogs', {value:list});
       return list;
+    });
+  }
+  GameView.prototype = {
+    member: util.member,
+    get hasValidSignature() {
+      return this.signature === 'Adventure Creator Game File v2';
+    },
+    get playerCharacter() {
+      return this.characters[this.playerCharacterId];
     },
   };
     
@@ -270,162 +407,6 @@ define(function() {
     },
   };
   AnimFrameView.byteLength = 28;
-  
-  const EVENT_BLOCK_SIZE = 8*4 + 8*4 + 8*4 + 8*4 + 4 + 8*2;
-  
-  function VintageHeader(buffer, byteOffset, byteLength) {
-    this.dv = new DataView(buffer, byteOffset, byteLength);
-    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
-  }
-  VintageHeader.prototype = {
-    get title() {
-      return nullTerminated(this.bytes, 0, 50);
-    },
-    get palette_uses() {
-      return this.bytes.subarray(50, 50 + 256);
-    },
-    get palette() {
-      return this.bytes.subarray(50 + 256, 50 + 256 + 256*4);
-    },
-    get vintageGUIs() {
-      var list = new Array(10);
-      var pos = 50 + 256 + 256*4 + 2; // extra 2 bytes for 32-bit align
-      var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = new VintageGUI(buffer, byteOffset + pos, VintageGUI.byteLength);
-        pos += VintageGUI.byteLength;
-      }
-      list.afterPos = pos;
-      list.length = this.dv.getInt32(pos, true);
-      Object.defineProperty(this, 'vintageGUIs', {value:list});
-      return list;
-    },
-    get viewCount() {
-      return this.dv.getInt32(this.vintageGUIs.afterPos + 4, true);
-    },
-    get cursors() {
-      var list = new Array(10), pos = this.vintageGUIs.afterPos + 8;
-      var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = new CursorView(buffer, byteOffset + pos, CursorView.byteLength);
-        pos += CursorView.byteLength;
-      }
-      list.afterPos = pos;
-      Object.defineProperty(this, 'cursors', {value:list});
-      return list;
-    },
-    get characterCount() {
-      return this.dv.getInt32(this.cursors.afterPos + 4, true);
-    },
-    get characterEventBlocks() {
-      var list = new Array(50);
-      var dv = this.dv;
-      var pos = this.cursors.afterPos + 12;
-      list.afterPos = pos + EVENT_BLOCK_SIZE * list.length;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'character' + i + '_');
-      }
-      Object.defineProperty(this, 'characterEventBlocks', {value:list});
-      return list;
-    },
-    get inventoryItemEventBlocks() {
-      var list = new Array(100);
-      var dv = this.dv;
-      var pos = this.characterEventBlocks.afterPos;
-      list.afterPos = pos + EVENT_BLOCK_SIZE * list.length;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = readEventBlock(dv, pos + i * EVENT_BLOCK_SIZE, 'inventory' + i + '_');
-      }
-      Object.defineProperty(this, 'inventoryItemEventBlocks', {value:list});
-      return list;
-    },
-    get playerCharacterId() {
-      return this.dv.getUint8(this.inventoryItemEventBlocks.afterPos + 4, true);
-    },
-    get spriteFlags() {
-      var pos = this.inventoryItemEventBlocks.afterPos + 8;
-      var flags = this.bytes.subarray(pos, pos + 2100);
-      flags.afterPos = pos + flags.byteLength;
-      Object.defineProperty(this, 'spriteFlags', {value:flags});
-      return flags;
-    },
-    get totalScore() {
-      return this.dv.getInt32(this.spriteFlags.afterPos, true);
-    },
-    get inventoryItemCount() {
-      return this.dv.getInt32(this.spriteFlags.afterPos + 4, true);
-    },
-    get inventoryItems() {
-      var list = new Array(this.inventoryItemCount);
-      var buffer = this.bytes.buffer, byteOffset = this.bytes.byteOffset;
-      var pos = this.spriteFlags.afterPos + 8;
-      list.afterPos = pos + InventoryItemView.byteLength * 100;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = new InventoryItemView(buffer, byteOffset + pos, InventoryItemView.byteLength);
-        list[i].eventBlock = this.inventoryItemEventBlocks[i];
-        pos += InventoryItemView.byteLength;
-      }
-      Object.defineProperty(this, 'inventoryItems', {value:list});
-      return list;
-    },
-    get dialogCount() {
-      return this.dv.getInt32(this.inventoryItems.afterPos, true);
-    },
-    get dialogMessageCount() {
-      return this.dv.getInt32(this.inventoryItems.afterPos + 4, true);
-    },
-    get fontCount() {
-      return this.dv.getInt32(this.inventoryItems.afterPos + 8, true);
-    },
-    get colorDepth() {
-      return this.dv.getInt32(this.inventoryItems.afterPos + 12, true);
-    },
-    get target_win() {
-      return this.dv.getInt32(this.inventoryItems.afterPos + 16, true);
-    },
-    get dialog_bullet_sprite_idx() {
-      return this.dv.getInt32(this.inventoryItems.afterPos + 20, true);
-    },
-    get hotdot() {
-      return this.dv.getInt16(this.inventoryItems.afterPos + 24, true);
-    },
-    get hotdot_outer() {
-      return this.dv.getInt16(this.inventoryItems.afterPos + 26, true);
-    },
-    get unique_int32() {
-      return this.dv.getInt32(this.inventoryItems.afterPos + 28, true);
-    },
-    // reserved int[2]
-    get languageCodes() {
-      var pos = this.inventoryItems.afterPos + 40;
-      var list = new Array(this.dv.getInt16(pos, true));
-      list.afterPos = pos + 2 + 3 * 5 + 3;
-      pos += 2;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = nullTerminated(this.bytes, pos, 3);
-        pos += 3;
-      }
-      Object.defineProperty(this, 'languageCodes', {value:list});
-      return list;
-    },
-    isGlobalMessagePresent: function(idx) {
-      if (idx < 500 || idx > 999) throw new RangeError('global message ID out of range');
-      idx -= 500;
-      return this.dv.getInt32(this.languageCodes.afterPos + idx * 4, true) !== 0;
-    },
-    get afterPos_globalMessageFlags() {
-      return this.languageCodes.afterPos + 4 * 500;
-    },
-    // TODO: ...more here...
-    get hasDictionary() {
-      return this.dv.getInt32(this.afterPos_globalMessageFlags + 10 + 10 + 4, true) !== 0;
-    },
-    get byteLength() {
-      return this.afterPos_globalMessageFlags +
-        (this.formatVersion >= 6 ? 10 + 10 + 4 + 4 + 4*8 : 0) +
-        (this.formatVersion > 9 ? 6000 : 0);
-    },
-  };
   
   function InventoryItemView(buffer, byteOffset, byteLength) {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -641,10 +622,6 @@ define(function() {
     // unused: 3 bytes
   };
   VintageGUIButton.byteLength = 36;  
-  
-  function ModernHeader() {
-    throw new Error('NYI');
-  }
   
   function CharacterView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
