@@ -292,7 +292,7 @@ define(function() {
       var pos = 50 + 256 + 256*4 + 2; // extra 2 bytes for 32-bit align
       var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
       for (var i = 0; i < list.length; i++) {
-        list[i] = new VintageGUI(i, buffer, byteOffset + pos, VintageGUI.byteLength);
+        list[i] = new VintageGUI(buffer, byteOffset + pos, VintageGUI.byteLength);
         pos += VintageGUI.byteLength;
       }
       list.afterPos = pos;
