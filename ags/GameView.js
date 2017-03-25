@@ -1043,7 +1043,7 @@ define(['./util'], function(util) {
   
   function ButtonView(guiVersion, buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
-    this.bytes = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
     
     init_control(guiVersion, this);
     
