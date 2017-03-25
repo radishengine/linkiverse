@@ -394,7 +394,7 @@ define(['./util'], function(util) {
       this.endOffset += this.interfaceCount * InterfaceView.byteLength;
       return function() {
         var list = new Array(this.interfaceCount);
-        var buffer = this.dv.buffer, this.byteOffset = this.dv.byteOffset + offset;
+        var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset + offset;
         for (var i = 0; i < list.length; i++) {
           list[i] = new InterfaceView(
             buffer,
