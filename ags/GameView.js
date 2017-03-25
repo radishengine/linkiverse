@@ -928,7 +928,6 @@ define(['./util'], function(util) {
       };
     });
     this.member('popup_mouse_y', member_int32);
-    this.member('is_always_shown', member_int32);
     this.member('background_color', member_int32);
     this.member('background_sprite', member_int32);
     this.member('border_color', member_int32);
