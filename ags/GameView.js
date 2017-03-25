@@ -983,6 +983,116 @@ define(['./util'], function(util) {
   };
   InterfaceView.byteLength = 4 + 16 + 20 + 4*8 + 4*12 + 4*6 + 4 + 4*30 + 4*30;
   
+  var controlProperties = {
+    isEnabled: {get:function(){ return !(this.flags & 4);}},
+    isVisible: {get:function(){ return !(this.flags & 0x10);}},
+    isClickable: {get:function(){ return !(this.flags & 0x40);}},
+    isTranslated: {get:function(){ return !!(this.flags & 0x80);}, configurable:true},
+    isDeleted: {get:function(){ return !!(this.flags & 0x8000);}},
+  };
+  
+  function init_control(guiVersion, control) {
+    function member_int32() {
+      const offset = control.endOffset;
+      control.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    }
+    
+    control.member('flags', member_int32);
+    control.member('x', member_int32);
+    control.member('y', member_int32);
+    control.member('width', member_int32);
+    control.member('height', member_int32);
+    control.member('zOrder', member_int32);
+    control.member('activated', member_int32);
+    
+    if (guiVersion >= 106) {
+      control.member('scriptName', function() {
+        const startPos = this.endOffset;
+        while (this.bytes[this.endOffset] !== 0) this.endOffset++;
+        const endPos = this.endOffset;
+        this.endOffset++;
+        return function() {
+          return util.byteString(this.bytes.subarray(startPos, endPos));
+        };
+      });
+      
+      if (guiVersion >= 108) {
+        throw new Error('NYI'); // event handlers
+      }
+    }
+    
+    Object.defineProperties(control, controlProperties);
+  }
+  
+  function ButtonView(guiVersion, buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new DataView(buffer, byteOffset, byteLength);
+    
+    init_control(guiVersion, this);
+    
+    // event_handlers[0]: on_click
+    
+    function member_int32() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    }
+    
+    function member_byteString(len, nullTerminate) {
+      return function() {
+        const offset = this.endOffset;
+        this.endOffset += len;
+        if (nullTerminate) {
+          return function() {
+            return util.byteString(this.bytes, offset, len).match(/^[^\0]*/)[0];
+          };
+        }
+        else {
+          return function() {
+            return util.byteString(this.bytes, offset, len);
+          };
+        }
+      };
+    }
+    
+    
+    this.member('normalSprite', member_int32);
+    this.member('mouseOverSprite', member_int32);
+    this.member('pushedSprite', member_int32);
+    this.endOffset += 4; // usepic: just copies sprite
+    this.member('isPushed', member_int32);
+    this.member('isOver', member_int32);
+    this.member('font', member_int32);
+    this.member('textColor', member_int32);
+    this.member('leftClick', member_int32);
+    this.member('rightClick', member_int32);
+    this.member('leftClickData', member_int32);
+    this.member('rightClickData', member_int32);
+    this.member('text', member_byteString(50));
+    if (guiVersion >= 111) {
+      this.member('alignment', member_int32);
+      this.endOffset += 4;
+    }
+    else {
+      this.alignment = 0; // top middle
+    }
+    
+    Object.defineProperties(this, {
+      isDefault: {get:function(){ return !!(this.flags & 1);}},
+      clipsBackground: {get:function(){ return !!(this.flags & 0x20);}},
+      isTranslated: {value:true},
+    });
+  }
+  ButtonView.prototype = {
+    member: util.member,
+    endOffset: 0,
+  };
+  
   window.download = function download(b) {
     if (!(b instanceof Blob)) b = new Blob([b]);
     var link = document.createElement('A');
