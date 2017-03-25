@@ -2,17 +2,9 @@ define(function() {
 
   'use strict';
   
-  function StructView(buffer, byteOffset, byteLength) {
-    buffer = buffer || new ArrayBuffer(0);
-    if (isNaN(byteOffset)) byteOffset = 0;
-    if (isNaN(byteLength)) byteLength = buffer.byteLength - byteOffset;
-    Object.defineProperties(this, {
-      buffer: {value: buffer},
-      byteOffset: {value: byteOffset},
-      byteLength: {value: byteLength, configurable: true},
-    });
+  function StructViewFactory() {
   }
-  StructView.prototype = {
+  StructViewFactory.prototype = {
     endOffset: 0,
     get bytes() {
       var bytes = new Uint8Array(this.buffer, this.byteOffset, this.byteLength);
@@ -25,11 +17,18 @@ define(function() {
       return dv;
     },
     createType: function() {
-      function CustomStructView() {
-        StructView.apply(this, arguments);
+      function StructView(buffer, byteOffset, byteLength) {
+        buffer = buffer || new ArrayBuffer(0);
+        if (isNaN(byteOffset)) byteOffset = 0;
+        if (isNaN(byteLength)) byteLength = buffer.byteLength - byteOffset;
+        Object.defineProperties(this, {
+          buffer: {value: buffer},
+          byteOffset: {value: byteOffset},
+          byteLength: {value: byteLength, configurable: true},
+        });
       }
-      CustomStructView.prototype = Object.create(this);
-      return CustomStructView;
+      StructView.prototype = Object.create(this);
+      return StructView;
     },
     $: function(name, def) {
       if (typeof name === 'number') {
@@ -43,6 +42,6 @@ define(function() {
     },
   };
   
-  return StructView;
+  return StructViewFactory;
 
 });
