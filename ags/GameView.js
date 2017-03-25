@@ -853,6 +853,123 @@ define(['./util'], function(util) {
     },
   };
   
+  function InterfaceView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+    
+    this.endOffset = 0;
+    
+    function member_byteString(len, nullTerminate) {
+      return function() {
+        const offset = this.endOffset;
+        this.endOffset += len;
+        if (nullTerminate) {
+          return function() {
+            return util.byteString(this.bytes, offset, len).match(/^[^\0]*/)[0];
+          };
+        }
+        else {
+          return function() {
+            return util.byteString(this.bytes, offset, len);
+          };
+        }
+      };
+    }
+    
+    function member_int32() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    }
+    
+    this.member('vtext', member_byteString(4, true));
+    this.member('script_name', member_byteString(16, true));
+    this.member('on_click', member_byteString(20, true));
+    this.member('x', member_int32);
+    this.member('y', member_int32);
+    this.member('width', member_int32);
+    this.member('height', function() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return Math.max(this.dv.getInt32(offset, true), 2);
+      };
+    });
+    this.member('focus', member_int32);
+    this.member('controlCount', member_int32);
+    this.member('popup', function() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        var value = this.dv.getInt32(offset, true);
+        switch (value) {
+          default: return value;
+          case 0: return 'none';
+          case 1: return 'mouseY';
+          case 2: return 'script';
+          case 3: return 'noAutoRem';
+          case 4: return 'noneInitiallyOff';
+        }
+      };
+    });
+    this.member('popup_mouse_y', member_int32);
+    this.member('is_always_shown', member_int32);
+    this.member('background_color', member_int32);
+    this.member('background_sprite', member_int32);
+    this.member('border_color', member_int32);
+    this.member('mouseover', member_int32);
+    this.member('mousewasx', member_int32);
+    this.member('mousewasy', member_int32);
+    this.member('mousedownon', member_int32);
+    this.member('highlightobj', member_int32);
+    this.member('flags', member_int32);
+    this.member('transparency', member_int32);
+    this.member('z_order', member_int32);
+    this.endOffset += 4; // gui_id: overridden
+    this.endOffset += 6 * 4; // reserved int[4]
+    this.member('on', member_int32);
+    this.endOffset += 30 * 4; // unused
+    this.member('getControlInfo', function() {
+      const offset = this.endOffset;
+      this.endOffset += 30 * 4;
+      return function() {
+        return function getControlInfo(i) {
+          var info = this.dv.getInt32(offset + i*4, true);
+          var type = info >>> 16;
+          switch (type) {
+            case 1: type = 'button'; break;
+            case 2: type = 'label'; break;
+            case 3: type = 'inventory'; break;
+            case 4: type = 'slider'; break;
+            case 5: type = 'textBox'; break;
+            case 6: type = 'listBox'; break;
+          }
+          return {
+            type: type,
+            id: info & 0xffff,
+          };
+        };
+      };
+    });
+  }
+  InterfaceView.prototype = {
+    member: util.member,
+    get isAlwaysShown() {
+      return this.popup === 'noAutoRem';
+    },
+    get isInitiallyShown() {
+      return this.popup === 'none' || this.isAlwaysShown;
+    },
+    get pausesGameWhileShown() {
+      return this.popup === 'script';
+    },
+    get isClickable() {
+      return !(this.flags & 1);
+    },
+  };
+  InterfaceView.byteLength = 4 + 16 + 20 + 4*8 + 4*12 + 4*6 + 4 + 4*30 + 4*30;
+  
   window.download = function download(b) {
     if (!(b instanceof Blob)) b = new Blob([b]);
     var link = document.createElement('A');
