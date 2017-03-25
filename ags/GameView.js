@@ -389,7 +389,21 @@ define(['./util'], function(util) {
       return version;
     });
     this.member('interfaceCount', member_uint32);
-    
+    this.member('interfaces', function() {
+      const offset = this.endOffset;
+      this.endOffset += this.interfaceCount * InterfaceView.byteLength;
+      return function() {
+        var list = new Array(this.interfaceCount);
+        var buffer = this.dv.buffer, this.byteOffset = this.dv.byteOffset + offset;
+        for (var i = 0; i < list.length; i++) {
+          list[i] = new InterfaceView(
+            buffer,
+            byteOffset + i * InterfaceView.byteLength,
+            InterfaceView.byteLength);
+        }
+        return list;
+      };
+    });
   }
   GameView.prototype = {
     member: util.member,
