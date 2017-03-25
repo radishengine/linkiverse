@@ -404,6 +404,20 @@ define(['./util'], function(util) {
         return list;
       };
     });
+    this.member('buttonCount', member_uint32);
+    this.member('buttons', function() {
+      var list = new Array(this.buttonCount);
+      var buffer = this.dv.buffer;
+      var byteOffset = this.dv.byteOffset + this.endOffset;
+      var byteLength = this.dv.byteLength - this.endOffset;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = new ButtonView(this.guiVersion, buffer, byteOffset, byteLength);
+        byteOffset += list[i].endOffset;
+        byteLength -= list[i].endOffset;
+        this.endOffset += list[i].endOffset;
+      }
+      return list;
+    });
   }
   GameView.prototype = {
     member: util.member,
