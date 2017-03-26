@@ -788,15 +788,17 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   
   function RuntimeTextOverlay(runtime, x, y, width, height, font, colorCode, alignmentX, alignmentY, text) {
     RuntimeOverlay.call(this, runtime);
+    this.x = x;
+    this.y = y;
     this.canvas = document.createElement('CANVAS');
     this.canvas.width = width;
     this.canvas.height = height;
-    this.lines = font.wrap(text, width);
-    this.x = x;
-    this.y = y;
+    this.font = font;
+    this.colorCode = colorCode;
     this.alignmentX = alignmentX;
     this.alignmentY = alignmentY;
-    this.colorCode = colorCode;
+    this.text = text;
+    this.lines = font.wrap(text, width);
     this.redraw();
   }
   RuntimeTextOverlay.prototype = Object.assign(Object.create(RuntimeOverlay.prototype), {
