@@ -1024,7 +1024,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       var height = font.lineHeight * lines.length;
       var x = Math.min(320 - width, Math.max(0, Math.floor(this.x - runtime.room.viewportX - width/2)));
       var y = Math.min(200 - height, Math.max(0, this.y - runtime.room.viewportY - this.height - height));
-      var t1 = new RuntimeTextOverlay(runtime, x, y, width, height, font, 0, 0.5, 0, text);
+      var t1 = new RuntimeTextOverlay(runtime, x, y, width, height, outlineFont, 0, 0.5, 0, text);
       var t2 = new RuntimeTextOverlay(runtime, x, y, width, height, font, this.def.speechColor, 0.5, 0, text);
       return runtime.wait(runtime.getTextDisplayTicks(text), {mouseButtons:true, keys:true})
         .then(function() {
