@@ -616,6 +616,25 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
   };
   
+  function addEventfulGlobal(name, initialValue) {
+    const internalName = '_' + name;
+    const changeEvent = new CustomEvent('global-changed', {detail:name});
+    Runtime.prototype[internalName] = initialValue;
+    Object.defineProperty(name, {
+      get: function(){ return this[internalName]; },
+      set: function(value) {
+        if (value === this[internalName]) return;
+        this[internalName] = value;
+        this.eventTarget.dispatchEvent(changeEvent);
+      },
+      enumerable: true,
+    });
+  }
+
+  addEventfulGlobal('score', 0);
+  addEventfulGlobal('totalScore', 0);
+  addEventfulGlobal('title', '');
+  
   function ExecutionChannel(runtime) {
     this.runtime = runtime;
     this.busyEvent = new CustomEvent('busy', {detail:{channel:this}});
