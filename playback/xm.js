@@ -248,7 +248,7 @@ define(function() {
       return this._header = this._header
       || getBuffered(this.blob, 0, 336)
       .then(function(bytes) {
-        return new XMHeaderView(bytes, bytes.byteOffset, bytes.byteLength));
+        return new XMHeaderView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       });
     },
     getPatterns: function() {
