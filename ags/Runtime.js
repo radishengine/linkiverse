@@ -78,14 +78,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         .then(function(buffer) {
           self.game = new GameView(buffer, 0, buffer.byteLength);
           for (var i = 0; i < self.game.interfaces.length; i++) {
-            var interface = self.game.interfaces[i];
-            if (interface.isInitiallyShown) {
-              var bgColor = self.game.palette.subarray(interface.background_color * 4, interface.background_color * 4 + 3);
-              var borderColor = self.game.palette.subarray(interface.border_color * 4, interface.border_color * 4 + 3);
+            var gui = self.game.interfaces[i];
+            if (gui.isInitiallyShown) {
+              var bgColor = self.game.palette.subarray(gui.background_color * 4, gui.background_color * 4 + 3);
+              var borderColor = self.game.palette.subarray(gui.border_color * 4, gui.border_color * 4 + 3);
               new BoxOverlay(
                 this,
-                interface.x, interface.y,
-                interface.width, interface.height,
+                gui.x, gui.y,
+                gui.width, gui.height,
                 bgColor[0], bgColor[1], bgColor[2], 255,
                 borderColor[0], borderColor[1], borderColor[2], 255);
             }
