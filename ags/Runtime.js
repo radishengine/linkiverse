@@ -1,8 +1,10 @@
 define(
-['./GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/midi'],
-function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
+['./GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/midi', 'playback/xm'],
+function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
 
   'use strict';
+  
+  window.xm = xm;
   
   const updateEvent = new CustomEvent('update');
   
