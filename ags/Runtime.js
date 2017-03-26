@@ -150,6 +150,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                           case '@SCORETEXT@': return runtime.scoreText;
                         }
                       });
+                      this.lines = this.font.wrap(this.text);
                       this.redraw();
                     };
                     overlay.update();
@@ -787,9 +788,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   
   function RuntimeTextOverlay(runtime, x, y, width, height, font, colorCode, alignmentX, alignmentY, text) {
     RuntimeOverlay.call(this, runtime);
-    var canvas = document.createElement('CANVAS');
-    canvas.width = width;
-    canvas.height = height;
+    this.canvas = document.createElement('CANVAS');
+    this.canvas.width = width;
+    this.canvas.height = height;
     this.lines = font.wrap(text, width);
     this.x = x;
     this.y = y;
