@@ -85,14 +85,6 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
           self.title = self.game.title;
           self.totalScore = self.game.totalScore;
           self.palette = self.game.palette.subarray();
-          self.characters = new Array(self.game.characters.length);
-          for (var i = 0; i < self.characters.length; i++) {
-            self.characters[i] = new RuntimeCharacter(self, i);
-          }
-          return self.loadRoom(self.game.playerCharacter.room);
-        })
-        .then(function(roomDef) {
-          self.room = new RuntimeRoom(self, roomDef);
         }),
 
         this.fileSystem.loadAsBlob('acsprset.spr')
@@ -114,6 +106,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
 
       ])
       .then(function() {
+        self.characters = new Array(self.game.characters.length);
+        for (var i = 0; i < self.characters.length; i++) {
+          self.characters[i] = new RuntimeCharacter(self, i);
+        }
         for (var i = 0; i < self.game.interfaces.length; i++) {
           var gui = self.game.interfaces[i];
           if (gui.isInitiallyShown) {
@@ -160,6 +156,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
             }
           }
         }
+        return self.loadRoom(self.game.playerCharacter.room);
+      })
+      .then(function(roomDef) {
+        self.room = new RuntimeRoom(self, roomDef);
       });
     },
     textSpeed: 15,
