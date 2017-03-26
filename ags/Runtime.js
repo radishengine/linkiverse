@@ -77,6 +77,19 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         this.fileSystem.loadAsArrayBuffer('ac2game.dta')
         .then(function(buffer) {
           self.game = new GameView(buffer, 0, buffer.byteLength);
+          for (var i = 0; i < self.game.interfaces.length; i++) {
+            var interface = self.game.interfaces[i];
+            if (interface.isInitiallyShown) {
+              var bgColor = self.game.palette.subarray(interface.background_color * 4, interface.background_color * 4 + 3);
+              var borderColor = self.game.palette.subarray(interface.border_color * 4, interface.border_color * 4 + 3);
+              new BoxOverlay(
+                this,
+                interface.x, interface.y,
+                interface.width, interface.height,
+                bgColor[0], bgColor[1], bgColor[2], 255,
+                borderColor[0], borderColor[1], borderColor[2], 255);
+            }
+          }
           self.characters = new Array(self.game.characters.length);
           for (var i = 0; i < self.characters.length; i++) {
             self.characters[i] = new RuntimeCharacter(self, i);
@@ -614,26 +627,25 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       this.eventTarget.dispatchEvent(updateEvent);
       this.redraw();
     },
+    addEventfulGlobal: function(name, initialValue) {
+      const internalName = '_' + name;
+      const changeEvent = new CustomEvent('global-changed', {detail:name});
+      this[internalName] = initialValue;
+      Object.defineProperty(this, name, {
+        get: function(){ return this[internalName]; },
+        set: function(value) {
+          if (value === this[internalName]) return;
+          this[internalName] = value;
+          this.eventTarget.dispatchEvent(changeEvent);
+        },
+        enumerable: true,
+      });
+    },
   };
   
-  function addEventfulGlobal(name, initialValue) {
-    const internalName = '_' + name;
-    const changeEvent = new CustomEvent('global-changed', {detail:name});
-    Runtime.prototype[internalName] = initialValue;
-    Object.defineProperty(name, {
-      get: function(){ return this[internalName]; },
-      set: function(value) {
-        if (value === this[internalName]) return;
-        this[internalName] = value;
-        this.eventTarget.dispatchEvent(changeEvent);
-      },
-      enumerable: true,
-    });
-  }
-
-  addEventfulGlobal('score', 0);
-  addEventfulGlobal('totalScore', 0);
-  addEventfulGlobal('title', '');
+  Runtime.prototype.addEventfulGlobal('score', 0);
+  Runtime.prototype.addEventfulGlobal('totalScore', 0);
+  Runtime.prototype.addEventfulGlobal('title', '');
   
   function ExecutionChannel(runtime) {
     this.runtime = runtime;
