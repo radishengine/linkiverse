@@ -70,6 +70,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
+    get scoreString() {
+      return 'Score: ' + this.score + ' of ' + this.totalScore;
+    },
     init: function() {
       var self = this;
       return this._init = this._init || Promise.all([
@@ -77,6 +80,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         this.fileSystem.loadAsArrayBuffer('ac2game.dta')
         .then(function(buffer) {
           self.game = new GameView(buffer, 0, buffer.byteLength);
+          self.title = self.game.title;
+          self.totalScore = self.game.totalScore;
           self.palette = self.game.palette.subarray();
           for (var i = 0; i < self.game.interfaces.length; i++) {
             var gui = self.game.interfaces[i];
@@ -86,6 +91,20 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                 gui.x, gui.y,
                 gui.width, gui.height,
                 gui.background_color, gui.border_color);
+              for (var j = 0; j < gui.controlCount; j++) {
+                var info = gui.getControlInfo(j);
+                switch (info.type) {
+                  case 'label':
+                    var label = self.game.labels[info.id];
+                    new RuntimeTextOverlay(
+                      self,
+                      label.text,
+                      label.font,
+                      gui.x + label.x, gui.y + label.y,
+                      self.getColorRGBA(label.textColor));
+                    break;
+                }
+              }
             }
           }
           self.characters = new Array(self.game.characters.length);
@@ -363,6 +382,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       var g = palette[colorCode * 4 + 1];
       var b = palette[colorCode * 4 + 2];
       return 'rgb('+r+','+g+','+b+')';
+    },
+    getColorRGBA: function(colorCode) {
+      var palette = this.palette;
+      return getRGBA(
+        palette[colorCode * 4],
+        palette[colorCode * 4 + 1],
+        palette[colorCode * 4 + 2],
+        0xff);
     },
     runScriptV2: function(script, funcName) {
       var exported = script.exports[funcName];
