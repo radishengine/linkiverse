@@ -191,7 +191,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       this.mainExec.queueAction(function() {
         return loading.then(function(room) {
           self.room = room;
-          self.palette = room.backgroundImage.palette;
+          self.palette = room.backgroundBitmap.palette;
           self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
         });
       });
