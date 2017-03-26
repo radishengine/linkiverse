@@ -418,6 +418,20 @@ define(['./util'], function(util) {
       }
       return list;
     });
+    this.member('labelCount', member_uint32);
+    this.member('labels', function() {
+      var list = new Array(this.labelCount);
+      var buffer = this.dv.buffer;
+      var byteOffset = this.dv.byteOffset + this.endOffset;
+      var byteLength = this.dv.byteLength - this.endOffset;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = new LabelView(this.guiVersion, buffer, byteOffset, byteLength);
+        byteOffset += list[i].endOffset;
+        byteLength -= list[i].endOffset;
+        this.endOffset += list[i].endOffset;
+      }
+      return list;
+    });
   }
   GameView.prototype = {
     member: util.member,
@@ -1103,6 +1117,65 @@ define(['./util'], function(util) {
     });
   }
   ButtonView.prototype = {
+    member: util.member,
+    endOffset: 0,
+  };
+  
+  function LabelView(guiVersion, buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+    
+    init_control(guiVersion, this);
+    
+    function member_int32() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        return this.dv.getInt32(offset, true);
+      };
+    }
+    
+    function member_byteString(len, nullTerminate) {
+      if (len === true) {
+        return function() {
+          const startPos = this.endOffset;
+          while (this.bytes[this.endOffset] === 0) ++this.endOffset;
+          const endPos = this.endOffset;
+          this.endOffset = endPos + 1;
+          return function() {
+            return util.byteString(this.bytes.subarray(startPos, endPos));
+          };
+        };
+      }
+      return function() {
+        const offset = this.endOffset;
+        this.endOffset += len;
+        if (nullTerminate) {
+          return function() {
+            return util.byteString(this.bytes, offset, len).match(/^[^\0]*/)[0];
+          };
+        }
+        else {
+          return function() {
+            return util.byteString(this.bytes, offset, len);
+          };
+        }
+      };
+    }
+    
+    if (guiVersion >= 113) {
+      this.member('text', this.member_byteString(true));
+    }
+    else {
+      this.member('text', this.member_byteString(200, true));
+    }
+    this.member('font', member_int32);
+    this.member('textColor', member_int32);
+    this.member('alignment', member_int32);
+    
+    Object.defineProperty(this, 'isTranslated', {value:true});
+  }
+  LabelView.prototype = {
     member: util.member,
     endOffset: 0,
   };
