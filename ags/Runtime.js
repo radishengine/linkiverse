@@ -818,7 +818,6 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
     render: function() {
       this.runtime.ctx2d.drawImage(this.canvas, this.x, this.y);
-      this.runtime.renderText(this.text, this.fontNumber, this.x, this.y, this.rgba);
     },
   });
   
