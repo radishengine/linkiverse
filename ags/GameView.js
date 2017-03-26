@@ -1116,11 +1116,58 @@ define(['./util'], function(util) {
     this.member('rightClickData', member_int32);
     this.member('text', member_byteString(50));
     if (guiVersion >= 111) {
-      this.member('alignment', member_int32);
+      this.member('xAlignment', function() {
+        const offset = this.endOffset;
+        // yAlignment will increase endOffset
+        return function() {
+          switch (this.dv.getInt32(offset, true)) {
+            case 1:
+            case 3:
+            case 6:
+              return 0;
+            case 2:
+            case 5:
+            case 8:
+              return 1;
+            case 0:
+            case 4:
+            case 7:
+              return 0.5;
+            default:
+              console.error('unknown button alignment');
+              return 0.5;
+          }
+        };
+      });
+      this.member('yAlignment', function() {
+        const offset = this.endOffset;
+        this.endOffset += 4;
+        return function() {
+          switch (this.dv.getInt32(offset, true)) {
+            case 0:
+            case 1:
+            case 2:
+              return 0;
+            case 6:
+            case 7:
+            case 8:
+              return 1;
+            case 3:
+            case 4:
+            case 5:
+              return 0.5;
+            default:
+              console.error('unknown button alignment');
+              return 0;
+          }
+        };
+      });
       this.endOffset += 4;
     }
     else {
-      this.alignment = 0; // top middle
+      // top middle
+      this.xAlignment = 0.5;
+      this.yAlignment = 0;
     }
     
     Object.defineProperties(this, {
@@ -1184,13 +1231,27 @@ define(['./util'], function(util) {
     }
     this.member('font', member_int32);
     this.member('textColor', member_int32);
-    this.member('alignment', member_int32);
+    this.member('xAlignment', function() {
+      const offset = this.endOffset;
+      this.endOffset += 4;
+      return function() {
+        switch (this.dv.getInt32(offset, true)) {
+          case 0: return 0;
+          case 1: return 1;
+          case 2: return 0.5;
+          default:
+            console.error('unknown label alignment value');
+            return 0;
+        }
+      };
+    });
     
     Object.defineProperty(this, 'isTranslated', {value:true});
   }
   LabelView.prototype = {
     member: util.member,
     endOffset: 0,
+    yAlignment: 0,
   };
   
   window.download = function download(b) {
