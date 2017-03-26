@@ -85,51 +85,6 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
           self.title = self.game.title;
           self.totalScore = self.game.totalScore;
           self.palette = self.game.palette.subarray();
-          for (var i = 0; i < self.game.interfaces.length; i++) {
-            var gui = self.game.interfaces[i];
-            if (gui.isInitiallyShown) {
-              new RuntimeBoxOverlay(
-                self,
-                gui.x, gui.y,
-                gui.width, gui.height,
-                gui.background_color, gui.border_color);
-              for (var j = 0; j < gui.controlCount; j++) {
-                var info = gui.getControlInfo(j);
-                switch (info.type) {
-                  case 'label':
-                    var label = self.game.labels[info.id];
-                    var text = label.text;
-                    var overlay = new RuntimeTextOverlay(
-                      self,
-                      gui.x + label.x, gui.y + label.y,
-                      label.width, label.height,
-                      self.fonts[label.font],
-                      label.textColor,
-                      label.xAlignment,
-                      label.yAlignment,
-                      text);
-                    if (interfaceSubstitutions.test(text)) {
-                      overlay.rawText = text;
-                      overlay.update = function() {
-                        var runtime = this.runtime;
-                        this.text = this.rawText.replace(interfaceSubstitutions, function(sub) {
-                          switch (sub) {
-                            case '@OVERHOTSPOT@': return runtime.overHotspot || '';
-                            case '@GAMENAME@': return runtime.title || '';
-                            case '@SCORE@': return runtime.score || 0;
-                            case '@TOTALSCORE@': return runtime.totalScore || 0;
-                            case '@SCORETEXT@': return runtime.scoreText;
-                          }
-                        });
-                        this.redraw();
-                      };
-                      overlay.update();
-                    }
-                    break;
-                }
-              }
-            }
-          }
           self.characters = new Array(self.game.characters.length);
           for (var i = 0; i < self.characters.length; i++) {
             self.characters[i] = new RuntimeCharacter(self, i);
@@ -157,7 +112,54 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
             });
           })),
 
-      ]);
+      ])
+      .then(function() {
+        for (var i = 0; i < self.game.interfaces.length; i++) {
+          var gui = self.game.interfaces[i];
+          if (gui.isInitiallyShown) {
+            new RuntimeBoxOverlay(
+              self,
+              gui.x, gui.y,
+              gui.width, gui.height,
+              gui.background_color, gui.border_color);
+            for (var j = 0; j < gui.controlCount; j++) {
+              var info = gui.getControlInfo(j);
+              switch (info.type) {
+                case 'label':
+                  var label = self.game.labels[info.id];
+                  var text = label.text;
+                  var overlay = new RuntimeTextOverlay(
+                    self,
+                    gui.x + label.x, gui.y + label.y,
+                    label.width, label.height,
+                    self.fonts[label.font],
+                    label.textColor,
+                    label.xAlignment,
+                    label.yAlignment,
+                    text);
+                  if (interfaceSubstitutions.test(text)) {
+                    overlay.rawText = text;
+                    overlay.update = function() {
+                      var runtime = this.runtime;
+                      this.text = this.rawText.replace(interfaceSubstitutions, function(sub) {
+                        switch (sub) {
+                          case '@OVERHOTSPOT@': return runtime.overHotspot || '';
+                          case '@GAMENAME@': return runtime.title || '';
+                          case '@SCORE@': return runtime.score || 0;
+                          case '@TOTALSCORE@': return runtime.totalScore || 0;
+                          case '@SCORETEXT@': return runtime.scoreText;
+                        }
+                      });
+                      this.redraw();
+                    };
+                    overlay.update();
+                  }
+                  break;
+              }
+            }
+          }
+        }
+      });
     },
     textSpeed: 15,
     getTextDisplayTicks: function(str) {
