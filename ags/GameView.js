@@ -394,57 +394,59 @@ define(['./util'], function(util) {
       }
       return list;
     });
-    this.member('guiSignature', member_uint32);
-    this.member('guiVersion', function() {
-      var version = this.dv.getInt32(this.endOffset, true);
-      if (version < 100) return 0;
-      this.endOffset += 4;
-      return version;
-    });
-    this.member('interfaceCount', member_uint32);
-    this.member('interfaces', function() {
-      const offset = this.endOffset;
-      this.endOffset += this.interfaceCount * InterfaceView.byteLength;
-      return function() {
-        var list = new Array(this.interfaceCount);
-        var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset + offset;
+    if (this.formatVersion >= 9) {
+      this.member('guiSignature', member_uint32);
+      this.member('guiVersion', function() {
+        var version = this.dv.getInt32(this.endOffset, true);
+        if (version < 100) return 0;
+        this.endOffset += 4;
+        return version;
+      });
+      this.member('interfaceCount', member_uint32);
+      this.member('interfaces', function() {
+        const offset = this.endOffset;
+        this.endOffset += this.interfaceCount * InterfaceView.byteLength;
+        return function() {
+          var list = new Array(this.interfaceCount);
+          var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset + offset;
+          for (var i = 0; i < list.length; i++) {
+            list[i] = new InterfaceView(
+              buffer,
+              byteOffset + i * InterfaceView.byteLength,
+              InterfaceView.byteLength);
+          }
+          return list;
+        };
+      });
+      this.member('buttonCount', member_uint32);
+      this.member('buttons', function() {
+        var list = new Array(this.buttonCount);
+        var buffer = this.dv.buffer;
+        var byteOffset = this.dv.byteOffset + this.endOffset;
+        var byteLength = this.dv.byteLength - this.endOffset;
         for (var i = 0; i < list.length; i++) {
-          list[i] = new InterfaceView(
-            buffer,
-            byteOffset + i * InterfaceView.byteLength,
-            InterfaceView.byteLength);
+          list[i] = new ButtonView(this.guiVersion, buffer, byteOffset, byteLength);
+          byteOffset += list[i].endOffset;
+          byteLength -= list[i].endOffset;
+          this.endOffset += list[i].endOffset;
         }
         return list;
-      };
-    });
-    this.member('buttonCount', member_uint32);
-    this.member('buttons', function() {
-      var list = new Array(this.buttonCount);
-      var buffer = this.dv.buffer;
-      var byteOffset = this.dv.byteOffset + this.endOffset;
-      var byteLength = this.dv.byteLength - this.endOffset;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = new ButtonView(this.guiVersion, buffer, byteOffset, byteLength);
-        byteOffset += list[i].endOffset;
-        byteLength -= list[i].endOffset;
-        this.endOffset += list[i].endOffset;
-      }
-      return list;
-    });
-    this.member('labelCount', member_uint32);
-    this.member('labels', function() {
-      var list = new Array(this.labelCount);
-      var buffer = this.dv.buffer;
-      var byteOffset = this.dv.byteOffset + this.endOffset;
-      var byteLength = this.dv.byteLength - this.endOffset;
-      for (var i = 0; i < list.length; i++) {
-        list[i] = new LabelView(this.guiVersion, buffer, byteOffset, byteLength);
-        byteOffset += list[i].endOffset;
-        byteLength -= list[i].endOffset;
-        this.endOffset += list[i].endOffset;
-      }
-      return list;
-    });
+      });
+      this.member('labelCount', member_uint32);
+      this.member('labels', function() {
+        var list = new Array(this.labelCount);
+        var buffer = this.dv.buffer;
+        var byteOffset = this.dv.byteOffset + this.endOffset;
+        var byteLength = this.dv.byteLength - this.endOffset;
+        for (var i = 0; i < list.length; i++) {
+          list[i] = new LabelView(this.guiVersion, buffer, byteOffset, byteLength);
+          byteOffset += list[i].endOffset;
+          byteLength -= list[i].endOffset;
+          this.endOffset += list[i].endOffset;
+        }
+        return list;
+      });
+    }
   }
   GameView.prototype = {
     member: util.member,
