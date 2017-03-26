@@ -108,19 +108,24 @@ define(['./util'], function(util) {
         };
       });
       this.endOffset += 2; // alignment
-      this.member('vintageGUIs', function() {
-        const offset = this.endOffset;
-        const lengthOffset = offset + VintageGUI.byteLength * 10;
-        this.endOffset = lengthOffset + 4;
-        return function() {
-          var list = new Array(this.dv.getUint32(lengthOffset, true));
-          var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
-          for (var i = 0; i < list.length; i++) {
-            list[i] = new VintageGUI(buffer, byteOffset + offset + i * VintageGUI.byteLength, VintageGUI.byteLength);
-          }
-          return list;
-        };
-      });
+      if (this.formatVersion >= 9) {
+        this.endOffset += VintageGUI.byteLength * 10 + 4;
+      }
+      else {
+        this.member('interfaces', function() {
+          const offset = this.endOffset;
+          this.endOffset += VintageGUI.byteLength * 10;
+          return function() {
+            var list = new Array(this.interfaceCount);
+            var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
+            for (var i = 0; i < list.length; i++) {
+              list[i] = new VintageGUI(buffer, byteOffset + offset + i * VintageGUI.byteLength, VintageGUI.byteLength);
+            }
+            return list;
+          };
+        });
+        this.member('interfaceCount', member_uint32);
+      }
       this.member('viewCount', member_uint32);
       this.member('cursors', function() {
         const offset = this.endOffset;
@@ -649,16 +654,18 @@ define(['./util'], function(util) {
     get y() { return this.dv.getInt32(4, true); },
     get x2() { return this.dv.getInt32(8, true); },
     get y2() { return this.dv.getInt32(12, true); },
-    get bgcol() { return this.dv.getInt32(16, true); },
-    get fgcol() { return this.dv.getInt32(20, true); },
-    get bordercol() { return this.dv.getInt32(24, true); },
+    get width() { return this.x2 - this.x1; },
+    get height() { return this.y2 - this.y1; },
+    get background_color() { return this.dv.getInt32(16, true); },
+    get text_color() { return this.dv.getInt32(20, true); },
+    get border_color() { return this.dv.getInt32(24, true); },
     get vtextxp() { return this.dv.getInt32(28, true); },
     get vtextyp() { return this.dv.getInt32(32, true); },
     get vtextalign() { return this.dv.getInt32(36, true); },
     get vtext() { return nullTerminated(this.bytes, 40, 40); },
-    get numbuttons() { return this.dv.getInt32(80, true); },
+    get buttonCount() { return this.dv.getInt32(80, true); },
     get buttons() {
-      var list = new Array(20);
+      var list = new Array(this.buttonCount);
       var buffer = this.dv.buffer, byteOffset = this.dv.byteOffset;
       for (var i = 0; i < list.length; i++) {
         list[i] = new VintageGUIButton(buffer, byteOffset + 84 + i*36, 36);
@@ -677,7 +684,7 @@ define(['./util'], function(util) {
       return this.dv.getUint8(816);
     },
     get on() {
-      return this.dv.getUint8(817);
+      return !!this.dv.getUint8(817);
     },
   };
   VintageGUI.byteLength = 820;
