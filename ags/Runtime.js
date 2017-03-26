@@ -22,7 +22,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     };
   }
   
-  const interfaceSubstitutions = /@(GAMENAME|OVERHOTSPOT|SCORE(TEXT)?|TOTALSCORE)@/g;
+  const interfaceSubstitutions = /@(GAMENAME|OVERHOTSPOT|SCORE(TEXT)?|TOTALSCORE)@/gi;
   
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
