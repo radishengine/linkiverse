@@ -93,7 +93,20 @@ define(['./util'], function(util) {
     else {
       this.member('title', member_byteString(50, true));
       this.member('palette_uses', member_bytes(256));
-      this.member('palette', member_bytes(256 * 4));
+      this.member('palette', function() {
+        const offset = this.endOffset;
+        this.endOffset += 256 * 4;
+        return function() {
+          var palette = new Uint8Array(this.bytes.subarray(offset, offset + 256 * 4));
+          for (var i = 0; i < 256; i++) {
+            palette[i*4] = (palette[i*4] << 2) | (palette[i*4] >> 4);
+            palette[i*4 + 1] = (palette[i*4 + 1] << 2) | (palette[i*4 + 1] >> 4);
+            palette[i*4 + 2] = (palette[i*4 + 2] << 2) | (palette[i*4 + 2] >> 4);
+            palette[i*4 + 3] = 0xFF;
+          }
+          return palette;
+        };
+      });
       this.endOffset += 2; // alignment
       this.member('vintageGUIs', function() {
         const offset = this.endOffset;
