@@ -101,10 +101,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                     var text = label.text;
                     var overlay = new RuntimeTextOverlay(
                       self,
-                      text,
-                      label.font,
                       gui.x + label.x, gui.y + label.y,
-                      self.getColorRGBA(label.textColor));
+                      label.width, label.height,
+                      self.fonts[label.font],
+                      label.textColor,
+                      label.xAlignment,
+                      label.yAlignment,
+                      text);
                     if (interfaceSubstitutions.test(text)) {
                       overlay.rawText = text;
                       overlay.update = function() {
@@ -118,6 +121,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                             case '@SCORETEXT@': return runtime.scoreText;
                           }
                         });
+                        this.redraw();
                       };
                       overlay.update();
                     }
@@ -245,11 +249,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       var boxX = (320 - boxWidth) >> 1;
       var boxY = (200 - boxHeight) >> 1;
       var overlays = [new RuntimeBoxOverlay(this, boxX,boxY,boxWidth,boxHeight, 255,255,255,255, 0,0,0,255)];
-      var x = boxX + 3, y = boxY + 3;
-      for (var i = 0; i < lines.length; i++) {
-        overlays.push(new RuntimeTextOverlay(this, lines[i], 0, x,y, getRGBA(0,0,0,255)));
-        y += font.lineHeight;
-      }
+      overlays.push(new RuntimeTextOverlay(this, boxX + 3, boxY + 3, boxWidth - 6, boxHeight - 6, this.fonts[0], 0, 0, text));
       var self = this;
       return this
         .wait(Infinity, {mouseButtons:true, keys:true})
@@ -783,19 +783,36 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
   });
   
-  function RuntimeTextOverlay(runtime, str, fontNumber, x, y, rgba) {
+  function RuntimeTextOverlay(runtime, x, y, width, height, font, colorCode, alignmentX, alignmentY, text) {
     RuntimeOverlay.call(this, runtime);
-    this.text = str;
-    this.fontNumber = fontNumber;
+    var canvas = document.createElement('CANVAS');
+    canvas.width = width;
+    canvas.height = height;
+    this.lines = font.wrap(text, width);
     this.x = x;
     this.y = y;
-    this.rgba = rgba;
+    this.alignmentX = alignmentX;
+    this.alignmentY = alignmentY;
+    this.colorCode = colorCode;
+    this.redraw();
   }
-  RuntimeTextOverlay.prototype = Object.create(RuntimeOverlay.prototype, {
-    render: {
-      value: function() {
-        this.runtime.renderText(this.text, this.fontNumber, this.x, this.y, this.rgba);
-      },
+  RuntimeTextOverlay.prototype = Object.assign(Object.create(RuntimeOverlay.prototype), {
+    redraw: function() {
+      var ctx2d = this.canvas.getContext('2d');
+      var imageData = ctx2d.createImageData(this.width, this.height);
+      var asU32 = new Uint32Array(imageData.data.buffer, imageData.data.byteOffset, imageData.data.byteLength/4);
+      var rgba = this.runtime.getColorRGBA(this.colorCode);
+      var y = Math.floor((this.height - this.font.lineHeight * this.lines.length) * this.alignmentY);
+      for (var i = 0; i < this.lines.length; i++) {
+        var x = Math.floor((this.width - this.font.getTextWidth(this.lines[i])) * this.alignmentX);
+        this.font.putRawPixels(asU32, x, y, this.width, this.lines[i], rgba);
+        y += this.font.lineHeight;
+      }
+      ctx2d.putImageData(imageData, 0, 0);
+    },
+    render: function() {
+      this.runtime.ctx2d.drawImage(this.canvas, this.x, this.y);
+      this.runtime.renderText(this.text, this.fontNumber, this.x, this.y, this.rgba);
     },
   });
   
@@ -992,9 +1009,18 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
     say: function(text) {
       var runtime = this.runtime;
-      var y = Math.max(0, this.y - runtime.room.viewportY);
-      var t1 = new RuntimeTextOverlay(runtime, text, 2, 0,y, getRGBA(0,0,0,255));
-      var t2 = new RuntimeTextOverlay(runtime, text, 1, 0,y, getRGBA(255,0,0,255));
+      var font = runtime.fonts[1];
+      var outlineFont = runtime.fonts[2];
+      var lines = font.lines(text, 200);
+      var width = 0;
+      for (var i = 0; i < lines.length; i++) {
+        width = Math.max(width, font.getTextWidth(lines[i]));
+      }
+      var height = font.lineHeight * lines.count;
+      var x = Math.min(320 - width, Math.max(0, Math.floor(this.x - runtime.room.viewportX - width/2)));
+      var y = Math.min(200 - height, Math.max(0, this.y - runtime.room.viewportY - this.height - height));
+      var t1 = new RuntimeTextOverlay(runtime, x, y, width, height, font, 0, 0.5, 0, text);
+      var t2 = new RuntimeTextOverlay(runtime, x, y, width, height, font, this.def.speechColor, 0.5, 0, text);
       return runtime.wait(runtime.getTextDisplayTicks(text), {mouseButtons:true, keys:true})
         .then(function() {
           t1.remove();
