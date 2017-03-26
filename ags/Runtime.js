@@ -1016,7 +1016,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       var runtime = this.runtime;
       var font = runtime.fonts[1];
       var outlineFont = runtime.fonts[2];
-      var lines = font.wrap(text, 200);
+      var lines = font.wrap(text, 240);
       var width = 0;
       for (var i = 0; i < lines.length; i++) {
         width = Math.max(width, font.getTextWidth(lines[i]));
