@@ -82,7 +82,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
             if (gui.isInitiallyShown) {
               var bgColor = self.game.palette.subarray(gui.background_color * 4, gui.background_color * 4 + 3);
               var borderColor = self.game.palette.subarray(gui.border_color * 4, gui.border_color * 4 + 3);
-              new BoxOverlay(
+              new RuntimeBoxOverlay(
                 this,
                 gui.x, gui.y,
                 gui.width, gui.height,
