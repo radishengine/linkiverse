@@ -696,23 +696,15 @@ define(['./ScriptV2View'], function(ScriptV2View) {
       const paletteOffset = this.endOffset;
       this.endOffset += 256 * 3;
       return function() {
-        var palette = new Uint8Array(256 * 4);
+        var palette = new Uint8Array(this.game.palette);
         for (var i = 0; i < 256; i++) {
-          var r, g, b;
-          if (this.game.palette_uses[i] & 1) {
-            r = this.game.palette[i*4];
-            g = this.game.palette[i*4 + 1];
-            b = this.game.palette[i*4 + 2];
-          }
-          else {
-            r = this.bytes[paletteOffset + i*3];
-            g = this.bytes[paletteOffset + i*3 + 1];
-            b = this.bytes[paletteOffset + i*3 + 2];
-          }
+          if (this.game.palette_uses[i] & 1) continue;
+          var r = this.bytes[paletteOffset + i*3];
+          var g = this.bytes[paletteOffset + i*3 + 1];
+          var b = this.bytes[paletteOffset + i*3 + 2];
           palette[i*4] = (r << 2) | (r >> 4);
           palette[i*4 + 1] = (g << 2) | (g >> 4);
           palette[i*4 + 2] = (b << 2) | (b >> 4);
-          palette[i*4 + 3] = 0xFF;
         }
         return {
           width: w,
