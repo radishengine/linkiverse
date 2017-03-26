@@ -79,6 +79,23 @@ define(function() {
       }
       ctx2d.putImageData(pixels, px, py);
     },
+    putRawPixels: function(asU32, x, y, stride, text, rgba) {
+      for (var i = 0; i < text.length; i++) {
+        var glyph = this.glyphs[text.charCodeAt(i)];
+        if (!glyph) continue;
+        var gw = glyph.width, gh = glyph.height;
+        var gstride = Math.ceil(gw / 8);
+        var bitplanes = glyph.getBitplanes();
+        for (var gy = 0; gy < gh; gy++) {
+          for (var gx = 0; gx < gw; gx++) {
+            var byte = bitplanes[gy*gstride + (gx >> 3)];
+            if (byte & (0x80 >>> (gx & 7))) {
+              asU32[stride * (y + gy) + x + gx] = rgba;
+            }
+          }
+        }
+      }
+    },
     wrap: function(text, maxWidth) {
       var lineStart = 0, word1Start = 0, word1End = text.indexOf(' ');
       if (word1End === -1) return [text];
