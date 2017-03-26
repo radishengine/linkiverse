@@ -77,17 +77,15 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         this.fileSystem.loadAsArrayBuffer('ac2game.dta')
         .then(function(buffer) {
           self.game = new GameView(buffer, 0, buffer.byteLength);
+          self.palette = self.game.palette.subarray();
           for (var i = 0; i < self.game.interfaces.length; i++) {
             var gui = self.game.interfaces[i];
             if (gui.isInitiallyShown) {
-              var bgColor = self.game.palette.subarray(gui.background_color * 4, gui.background_color * 4 + 3);
-              var borderColor = self.game.palette.subarray(gui.border_color * 4, gui.border_color * 4 + 3);
               new RuntimeBoxOverlay(
                 self,
                 gui.x, gui.y,
                 gui.width, gui.height,
-                bgColor[0], bgColor[1], bgColor[2], 255,
-                borderColor[0], borderColor[1], borderColor[2], 255);
+                gui.background_color, gui.border_color);
             }
           }
           self.characters = new Array(self.game.characters.length);
@@ -193,6 +191,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       this.mainExec.queueAction(function() {
         return loading.then(function(room) {
           self.room = room;
+          self.palette = room.backgroundImage.palette;
           self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
         });
       });
@@ -357,6 +356,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     },
     getMessage: function(number) {
       return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
+    },
+    getColorStyle: function(colorCode) {
+      var palette = this.palette;
+      var r = palette[colorCode * 4];
+      var g = palette[colorCode * 4 + 1];
+      var b = palette[colorCode * 4 + 2];
+      return 'rgb('+r+','+g+','+b+')';
     },
     runScriptV2: function(script, funcName) {
       var exported = script.exports[funcName];
@@ -700,8 +706,25 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.fillStyle = 'rgba('+r+','+g+','+b+','+a/255+')';
-    this.strokeStyle = 'rgba('+br+','+bg+','+bb+','+ba/255+')';
+    if (arguments.length === 7) {
+      const fillColorCode = arguments[5], borderColorCode = arguments[6];
+      Object.defineProperties(this, {
+        fillStyle: {
+          get: function() {
+            return runtime.getColorStyle(fillColorCode);
+          },
+        },
+        borderStyle: {
+          get: function() {
+            return runtime.getColorStyle(borderColorCode);
+          },
+        },
+      });
+    }
+    else {
+      this.fillStyle = 'rgba('+r+','+g+','+b+','+a/255+')';
+      this.strokeStyle = 'rgba('+br+','+bg+','+bb+','+ba/255+')';
+    }
   }
   RuntimeBoxOverlay.prototype = Object.create(RuntimeOverlay.prototype, {
     render: {
