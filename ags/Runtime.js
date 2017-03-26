@@ -252,7 +252,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
       var boxX = (320 - boxWidth) >> 1;
       var boxY = (200 - boxHeight) >> 1;
       var overlays = [new RuntimeBoxOverlay(this, boxX,boxY,boxWidth,boxHeight, 255,255,255,255, 0,0,0,255)];
-      overlays.push(new RuntimeTextOverlay(this, boxX + 3, boxY + 3, boxWidth - 6, boxHeight - 6, this.fonts[0], 0, 0, text));
+      overlays.push(new RuntimeTextOverlay(this, boxX + 3, boxY + 3, boxWidth - 6, boxHeight - 6, this.fonts[0], 0, 0, 0, text));
       var self = this;
       return this
         .wait(Infinity, {mouseButtons:true, keys:true})
