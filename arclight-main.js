@@ -18,8 +18,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
 
   IAItem.prototype = {
     getFileRequestUrl: function(filename) {
-      // return '//cors.archive.org/cors/' + this.identifier + '/' + filename;
-      return '//s3.us.archive.org/' + this.identifier + '/' + filename;
+      return '//cors.archive.org/cors/' + this.identifier + '/' + filename;
     },
     pullXml: function(filename) {
       return fetch(this.getFileRequestUrl(filename), {cache:'force-cache'})
