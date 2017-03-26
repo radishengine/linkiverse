@@ -22,6 +22,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
     };
   }
   
+  const interfaceSubstitutions = /@(GAMENAME|OVERHOTSPOT|SCORE(TEXT)?|TOTALSCORE)@/g;
+  
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
     this.element = document.createElement('CANVAS');
@@ -70,7 +72,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
         return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
-    get scoreString() {
+    get scoreText() {
       return 'Score: ' + this.score + ' of ' + this.totalScore;
     },
     init: function() {
@@ -96,12 +98,29 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
                 switch (info.type) {
                   case 'label':
                     var label = self.game.labels[info.id];
-                    new RuntimeTextOverlay(
+                    var text = label.text;
+                    var overlay = new RuntimeTextOverlay(
                       self,
-                      label.text,
+                      text,
                       label.font,
                       gui.x + label.x, gui.y + label.y,
                       self.getColorRGBA(label.textColor));
+                    if (interfaceSubstitutions.test(text)) {
+                      overlay.rawText = text;
+                      overlay.update = function() {
+                        var runtime = this.runtime;
+                        this.text = this.rawText.replace(interfaceSubstitutions, function(sub) {
+                          switch (sub) {
+                            case '@OVERHOTSPOT@': return runtime.overHotspot || '';
+                            case '@GAMENAME@': return runtime.title || '';
+                            case '@SCORE@': return runtime.score || 0;
+                            case '@TOTALSCORE@': return runtime.totalScore || 0;
+                            case '@SCORETEXT@': return runtime.scoreText;
+                          }
+                        });
+                      };
+                      overlay.update();
+                    }
                     break;
                 }
               }
@@ -766,9 +785,19 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   
   function RuntimeTextOverlay(runtime, str, fontNumber, x, y, rgba) {
     RuntimeOverlay.call(this, runtime);
-    this.render = runtime.renderText.bind(runtime, str, fontNumber, x, y, rgba);
+    this.text = str;
+    this.fontNumber = fontNumber;
+    this.x = x;
+    this.y = y;
+    this.rgba = rgba;
   }
-  RuntimeTextOverlay.prototype = Object.create(RuntimeOverlay.prototype);
+  RuntimeTextOverlay.prototype = Object.create(RuntimeOverlay.prototype, {
+    render: {
+      value: function() {
+        this.runtime.renderText(this.text, this.fontNumber, this.x, this.y, this.rgba);
+      },
+    },
+  });
   
   function RuntimeRoom(runtime, def) {
     this.runtime = runtime;
