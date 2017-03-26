@@ -1164,10 +1164,10 @@ define(['./util'], function(util) {
     }
     
     if (guiVersion >= 113) {
-      this.member('text', this.member_byteString(true));
+      this.member('text', member_byteString(true));
     }
     else {
-      this.member('text', this.member_byteString(200, true));
+      this.member('text', member_byteString(200, true));
     }
     this.member('font', member_int32);
     this.member('textColor', member_int32);
