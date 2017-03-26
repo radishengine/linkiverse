@@ -83,7 +83,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
               var bgColor = self.game.palette.subarray(gui.background_color * 4, gui.background_color * 4 + 3);
               var borderColor = self.game.palette.subarray(gui.border_color * 4, gui.border_color * 4 + 3);
               new RuntimeBoxOverlay(
-                this,
+                self,
                 gui.x, gui.y,
                 gui.width, gui.height,
                 bgColor[0], bgColor[1], bgColor[2], 255,
