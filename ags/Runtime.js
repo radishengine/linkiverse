@@ -858,13 +858,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi) {
   function RuntimeSprite(sprites, eventTarget, spriteNumber, x, y) {
     this.sprites = sprites;
     this.eventTarget = eventTarget;
-    this._spriteNumber = spriteNumber;
+    this.spriteNumber = spriteNumber;
     this._x = x;
     this._y = y;
     this.updateEvent = new CustomEvent('update-sprite', {detail:{sprite:this}});
   }
   RuntimeSprite.prototype = {
-    _spriteNumber: 0,
+    _spriteNumber: -1,
     _x: 0,
     _y: 0,
     _offsetX: 0,
