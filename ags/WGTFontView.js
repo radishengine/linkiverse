@@ -94,6 +94,7 @@ define(function() {
             }
           }
         }
+        x += gw;
       }
     },
     wrap: function(text, maxWidth) {
