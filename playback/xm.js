@@ -246,15 +246,15 @@ define(function() {
   XM.prototype = {
     getHeader: function() {
       return this._header = this._header
-      || this._header = getBuffered(this.blob, 0, 336)
+      || getBuffered(this.blob, 0, 336)
       .then(function(bytes) {
         return new XMHeaderView(bytes, bytes.byteOffset, bytes.byteLength));
       });
     },
     getPatterns: function() {
       var blob = this.blob;
-      return this._patterns
-      || this._patterns = this.getHeader().then(function(header) {
+      return this._patterns = this._patterns
+      || this.getHeader().then(function(header) {
         var list = new Array(header.patternCount);
         function addPattern(i, offset) {
           if (i >= list.length) {
@@ -279,8 +279,8 @@ define(function() {
     },
     getInstruments: function() {
       var blob = this.blob;
-      return this._instruments
-      || this._instruments = Promise.all([this.getHeader(), this.getPatterns()])
+      return this._instruments = this._instruments
+      || Promise.all([this.getHeader(), this.getPatterns()])
       .then(function(values) {
         var header = values[0], patterns = values[1];
         var list = new Array(header.instrumentCount);
