@@ -16,7 +16,7 @@ define(function() {
           blob.buffer = this.result;
           blob.buffer.byteOffset = offset;
         }
-        resolve(new Uint8Array(blob.buffer, 0, length));
+        resolve(new Uint8Array(this.result, 0, length));
       });
       fr.readAsArrayBuffer(blob.slice(offset, Math.min(blob.size, offset + Math.max(BUFFER_SIZE, length))));
     });
