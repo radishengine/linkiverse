@@ -334,6 +334,7 @@ define(function() {
       var buffer = audioContext.createBuffer(1, raw.length, 8363);
       var samples = buffer.getChannelData(0);
       var div = 1 << (((raw.byteLength / raw.length) * 8) - 1);
+      div /= this.volume / 64;
       for (var i = 0; i < samples.length; i++) {
         samples[i] = raw[i] / div;
       }
