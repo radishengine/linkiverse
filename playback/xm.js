@@ -223,7 +223,7 @@ define(function() {
     // reserved uint16
     createSourceNode: function(audioContext, noteNumber) {
       if (this.samples.length === 0) return null;
-      return this.samples[this.noteSamples[noteNumber]].createSourceNode(audioContext);
+      return this.samples[this.noteSamples[noteNumber]].createSourceNode(audioContext, noteNumber);
     },
   };
   
