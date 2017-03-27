@@ -225,7 +225,7 @@ define(function() {
       }
     },
     get bytesPerSample() {
-      return this.bytes[14] & 4 ? 16 : 8;
+      return (this.bytes[14] & 4) ? 2 : 1;
     },
     get panning() {
       return this.bytes[15];
@@ -321,16 +321,27 @@ define(function() {
                   rawSampleHeaders.buffer,
                   rawSampleHeaders.byteOffset + XMSampleHeaderView.byteLength * j,
                   XMSampleHeaderView.byteLength);
-                samples[j] = Promise.all([sample, getBuffered(blob, offset, sample.sampleLength)])
+                samples[j] = Promise.all([sample, getBuffered(blob, offset, sample.sampleLength * sample.bytesPerSample)])
                 .then(function(values) {
                   var sample = values[0], data = values[1];
-                  if (sample.bytesPerSample === 16) {
-                    throw new Error('NYI');
+                  if (sample.bytesPerSample === 2) {
+                    sample.data = new Int16Array(data.length / 2);
+                    var dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+                    var old = 0;
+                    for (var i = 0; i < sample.data.length; i++) {
+                      sample.data[i] = old += dv.getUint16(i * 2, true);
+                    }
                   }
-                  sample.data = new Int8Array(data.buffer, data.byteOffset, data.byteLength);
+                  else {
+                    sample.data = new Int8Array(data.length);
+                    var old = 0;
+                    for (var i = 0; i < sample.data.length; i++) {
+                      sample.data[i] = old += data[i];
+                    }
+                  }
                   return sample;
                 });
-                offset += sample.sampleLength;
+                offset += sample.sampleLength * sample.bytesPerSample;
               }
               list[i] = Promise.all(samples).then(function(samples) {
                 instrument.samples = samples;
