@@ -243,9 +243,9 @@ define(function() {
       var val = 0;
       for (var i = 0; i < samples.length; i++) {
         var s = (val += raw[i]) << 24 >> 24;
-        samples[i] = s < 0 ? s / 128 : s / 127;
+        samples[i] = s / 128;
       }
-      var buffer = audioContext.createBuffer(1, samples.length, 22050);
+      var buffer = audioContext.createBuffer(1, samples.length, 8363);
       buffer.copyToChannel(samples, 0);
       return buffer;
     },
