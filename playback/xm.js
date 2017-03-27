@@ -491,6 +491,7 @@ define(function() {
         var tempo = header.defaultTempo, beatsPerMinute = header.defaultBeatsPerMinute;
         var rowDuration = getRowDuration(tempo, beatsPerMinute);
         var rowData = xm.createRowData(header.channelCount);
+        var rowData2 = xm.createRowData(header.channelCount);
         function getReadRow(patternNumber, pos) {
           if (patternNumber >= patterns.length) {
             return function(){ return false; };
@@ -527,6 +528,29 @@ define(function() {
               return new Promise(function(resolve, reject) {
                 window.setTimeout(resolve, (cuedToTime - audioContext.currentTime) * 1000);
               });
+            }
+            for (var i = 0; i < rowData.channels.length; i++) {
+              var channel = rowData.channels[i];
+              if (channel.instrument >= 1 && channel.instrument <= 128
+                  && channel.note >= 1 && channel.note <= 96
+                  && channel.effect !== 20) {
+                var instrument = instruments[channel.instrument-1];
+                var notePlay = instrument.createSourceNode(audioContext, channel.note - 1);
+                notePlay.start(cuedToTime);
+                if (notePlay.loop) {
+                  rowData2.set(rowData);
+                  var readRow2 = getReadRow(readRow.patternNumber, readRow.pos);
+                  var rowDuration2 = rowDuration;
+                  var cuedToTime2 = cuedToTime + rowDuration2;
+                  while (readRow2(rowData2)
+                        && rowData2.channels[i].instrument === channel.instrument
+                        && rowData2.channels[i].note === channel.note
+                        && rowData2.effect !== 20) {
+                    cuedToTime2 += rowDuration2;
+                  }
+                  notePlay.stop(cuedToTime2);
+                }
+              }
             }
             cuedToTime += rowDuration;
           }
