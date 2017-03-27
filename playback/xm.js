@@ -242,8 +242,8 @@ define(function() {
       var samples = new Float32Array(raw.length);
       var val = 0;
       for (var i = 0; i < samples.length; i++) {
-        val = (val + raw[i]) << 24 >> 24;
-        samples[i] = val < 0 ? val / 128 : val / 127;
+        var s = (val += raw[i]) << 24 >> 24;
+        samples[i] = s < 0 ? s / 128 : s / 127;
       }
       var buffer = audioContext.createBuffer(1, samples.length, 22050);
       buffer.copyToChannel(samples, 0);
