@@ -71,7 +71,7 @@ define(function() {
       return (this.flags & 1) ? 'amiga' : 'linear';
     },
     get defaultTempo() {
-      return this.dv.getUint16(76, true);      
+      return this.dv.getUint16(76, true);
     },
     get defaultBeatsPerMinute() {
       return this.dv.getUint16(78, true);      
@@ -259,7 +259,7 @@ define(function() {
     get panning() {
       return this.bytes[15];
     },
-    get relativeNoteNumber() {
+    get noteOffset() {
       return this.dv.getInt8(16);
     },
     // reserved byte
@@ -276,7 +276,12 @@ define(function() {
       }
       return buffer;
     },
-    initSourceNode: function(sourceNode) {
+    initSourceNode: function(sourceNode, noteNumber) {
+      noteNumber += this.noteOffset;
+      // TODO: support Amiga frequency table
+      var period = 10*12*16*4 - noteNumber * 16 * 4;
+      sourceNode.playbackRate.value = Math.pow(2, (6*12*16*4 - period) / (12*16*4));
+      sourceNode.detune.value = this.finetuneCents;
       switch (this.loopMode) {
         case 'none': break;
         case 'forward':
@@ -284,8 +289,9 @@ define(function() {
           sourceNode.loopEnd = (this.loopStart + this.loopLength) / 8363;
           sourceNode.loop = true;
           break;
+        case 'ping-pong':
+          throw new Error('NYI');
       }
-      sourceNode.detune.value = this.finetuneCents;
     },
   };
   XMSampleHeaderView.byteLength = 18 + 22;
