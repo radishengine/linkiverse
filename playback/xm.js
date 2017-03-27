@@ -7,7 +7,7 @@ define(function() {
   function getBuffered(blob, offset, length) {
     var buffer = blob.buffer;
     if (buffer && offset >= buffer.byteOffset && (offset + length) <= (buffer.byteOffset + buffer.byteLength)) {
-      return Promise.resolve(new Uint8Array(buffer, offset, length));
+      return Promise.resolve(new Uint8Array(buffer, offset - buffer.byteOffset, length));
     }
     return new Promise(function(resolve, reject) {
       var fr = new FileReader();
