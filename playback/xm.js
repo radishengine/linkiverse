@@ -539,7 +539,7 @@ define(function() {
               var channel = rowData.channels[i];
               if (channel.effectType === 16) {
                 var volume = channel.effectParameter/64;
-                globalVolume.volume.setValueAtTime(volume, cuedToTime);
+                globalVolume.gain.setValueAtTime(volume, cuedToTime);
                 lastGlobalVolume = volume;
               }
               if (channel.instrument >= 1 && channel.instrument <= 128
@@ -551,7 +551,7 @@ define(function() {
                 notePlay.connect(noteVol);
                 noteVol.connect(globalVolume);
                 if (channel.volumeColumn >= 0x10 && channel.volumeColumn <= 0x50) {
-                  noteVol.volume.value = (channel.volumeColumn - 0x10) / 0x40;
+                  noteVol.gain.value = (channel.volumeColumn - 0x10) / 0x40;
                 }
                 notePlay.start(cuedToTime);
                 if (notePlay.loop) {
@@ -565,7 +565,7 @@ define(function() {
                         && rowData2.effectType !== 20) {
                     var channel2 = rowData2.channels[i];
                     if (channel2.volumeColumn >= 0x10 && channel2.volumeColumn <= 0x50) {
-                      noteVol.volume.setValueAtTime((channel2.volumeColumn - 0x10) / 0x40, cuedToTime2);
+                      noteVol.gain.setValueAtTime((channel2.volumeColumn - 0x10) / 0x40, cuedToTime2);
                     }
                     cuedToTime2 += rowDuration2;
                   }
