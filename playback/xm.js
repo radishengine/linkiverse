@@ -486,6 +486,8 @@ define(function() {
     },
     play: function(destinationNode, fromRestartPoint) {
       var audioContext = destinationNode.context;
+      var globalVolume = audioContext.createGain();
+      globalVolume.connect(destinationNode);
       return Promise.all([ this.getHeader(), this.getPatterns(), this.getInstruments() ])
       .then(function(values) {
         var header = values[0], patterns = values[1].order, instruments = values[2];
@@ -523,6 +525,7 @@ define(function() {
         }
         var readRow = getReadRow(fromRestartPoint ? header.restartPosition : 0, 0);
         var cuedToTime = audioContext.currentTime;
+        var lastGlobalVolume = 1;
         function nextStep() {
           var frontierTime = audioContext.currentTime + 3;
           while (cuedToTime < frontierTime) {
@@ -534,12 +537,22 @@ define(function() {
             }
             for (var i = 0; i < rowData.channels.length; i++) {
               var channel = rowData.channels[i];
+              if (channel.effectType === 16) {
+                var volume = channel.effectParameter/64;
+                globalVolume.volume.setValueAtTime(volume, cuedToTime);
+                lastGlobalVolume = volume;
+              }
               if (channel.instrument >= 1 && channel.instrument <= 128
                   && channel.note >= 1 && channel.note <= 96
-                  && channel.effect !== 20) {
+                  && channel.effectType !== 20) {
                 var instrument = instruments[channel.instrument-1];
                 var notePlay = instrument.createSourceNode(audioContext, channel.note - 1);
-                notePlay.connect(destinationNode);
+                var noteVol = audioContext.createGain();
+                notePlay.connect(noteVol);
+                noteVol.connect(globalVolume);
+                if (channel.volumeColumn >= 0x10 && channel.volumeColumn <= 0x50) {
+                  noteVol.volume.value = (channel.volumeChannel - 0x10) / 0x40;
+                }
                 notePlay.start(cuedToTime);
                 if (notePlay.loop) {
                   rowData2.set(rowData);
@@ -549,7 +562,7 @@ define(function() {
                   while (readRow2(rowData2)
                         && rowData2.channels[i].instrument === channel.instrument
                         && rowData2.channels[i].note === channel.note
-                        && rowData2.effect !== 20) {
+                        && rowData2.effectType !== 20) {
                     cuedToTime2 += rowDuration2;
                   }
                   notePlay.stop(cuedToTime2);
