@@ -76,6 +76,9 @@ define(function() {
     get defaultBeatsPerMinute() {
       return this.dv.getUint16(78, true);      
     },
+    get defaultRowSeconds() {
+      return (2500 * this.defaultTempo) / this.defaultBeatsPerMinute;
+    },
     get patternOrder() {
       var data = this.bytes.subarray(80, 80 + this.patternOrderSize);
       Object.defineProperty(this, 'patternOrder', {value:data});
