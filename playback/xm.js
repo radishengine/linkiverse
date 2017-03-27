@@ -99,6 +99,32 @@ define(function() {
     get dataByteLength() {
       return this.dv.getUint16(7, true);
     },
+    createRowDataReader: function() {
+      const data = this.data;
+      var pos = 0;
+      return function readRow(rowData) {
+        if (pos >= data.length) return false;
+        var i = 0;
+        while (i < rowData.length) {
+          var b = data[pos++];
+          if (b & 0x80) {
+            if (b & 0x01) { rowData[i] = data[pos++]; } i++;
+            if (b & 0x02) { rowData[i] = data[pos++]; } i++;
+            if (b & 0x04) { rowData[i] = data[pos++]; } i++;
+            if (b & 0x08) { rowData[i] = data[pos++]; } i++;
+            if (b & 0x10) { rowData[i] = data[pos++]; } i++;
+          }
+          else {
+            rowData[i++] = b;
+            rowData[i++] = data[pos++];
+            rowData[i++] = data[pos++];
+            rowData[i++] = data[pos++];
+            rowData[i++] = data[pos++];
+          }
+        }
+        return true;
+      };
+    },
   };
   
   function XMInstrumentHeaderView(buffer, byteOffset, byteLength) {
@@ -370,6 +396,53 @@ define(function() {
   
   var xm = {
     Module: XModule,
+    createRowData: function(channelCount) {
+      return Object.defineProperties(new Uint8Array(channelCount * 5), {
+        channels: {
+          get: function() {
+            var channels = new Array(this.length / 5);
+            for (var i = 0; i < channels.length; i++) {
+              channels[i] = Object.defineProperties(this.subarray(i * 5, (i + 1) * 5), {
+                note: {
+                  get: function() {
+                    return this[0]; // 1-96, 97=off
+                  },
+                  enumerable: true,
+                },
+                instrument: {
+                  get: function() {
+                    return this[1]; // 1-128
+                  },
+                  enumerable: true,
+                },
+                volumeColumn: {
+                  get: function() {
+                    return this[2];
+                  },
+                  enumerable: true,                  
+                },
+                effectType: {
+                  get: function() {
+                    return this[3];
+                  },
+                  enumerable: true,
+                },
+                effectParameter: {
+                  get: function() {
+                    return this[4];
+                  },
+                  enumerable: true,
+                },
+              });
+            }
+            Object.defineProperty(this, 'channels', {value:channels, enumerable:true});
+            return channels;
+          },
+          enumerable: true,
+          configurable: true,
+        },
+      });
+    },
   };
   
   return xm;
