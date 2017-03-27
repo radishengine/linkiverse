@@ -292,9 +292,9 @@ define(function() {
             var instrument = list[i] = new XMInstrumentHeaderView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             if (instrument.sampleCount === 0) {
               instrument.samples = [];
-              return addInstrument(i + 1, offset + list[i].headerByteLength);
+              return addInstrument(i + 1, offset + instrument.headerByteLength);
             }
-            offset += list[i].headerByteLength;
+            offset += instrument.headerByteLength;
             return getBuffered(blob, offset, XMSampleHeaderView.byteLength * instrument.samples.length)
             .then(function(rawSampleHeaders) {
               offset += rawSampleHeaders.length;
