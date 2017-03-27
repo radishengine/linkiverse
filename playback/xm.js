@@ -22,6 +22,58 @@ define(function() {
     });
   }
   
+  function getRowDuration(tempo, beatsPerMinute) {
+    return (2.5 * tempo) / beatsPerMinute;
+  }
+  
+  function createRowData(channelCount) {
+    return Object.defineProperties(new Uint8Array(channelCount * 5), {
+      channels: {
+        get: function() {
+          var channels = new Array(this.length / 5);
+          for (var i = 0; i < channels.length; i++) {
+            channels[i] = Object.defineProperties(this.subarray(i * 5, (i + 1) * 5), {
+              note: {
+                get: function() {
+                  return this[0]; // 1-96, 97=off
+                },
+                enumerable: true,
+              },
+              instrument: {
+                get: function() {
+                  return this[1]; // 1-128
+                },
+                enumerable: true,
+              },
+              volumeColumn: {
+                get: function() {
+                  return this[2];
+                },
+                enumerable: true,                  
+              },
+              effectType: {
+                get: function() {
+                  return this[3];
+                },
+                enumerable: true,
+              },
+              effectParameter: {
+                get: function() {
+                  return this[4];
+                },
+                enumerable: true,
+              },
+            });
+          }
+          Object.defineProperty(this, 'channels', {value:channels, enumerable:true});
+          return channels;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+    });
+  }
+  
   function XMHeaderView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -75,9 +127,6 @@ define(function() {
     },
     get defaultBeatsPerMinute() {
       return this.dv.getUint16(78, true);      
-    },
-    get defaultRowSeconds() {
-      return (2.5 * this.defaultTempo) / this.defaultBeatsPerMinute;
     },
     get patternOrder() {
       var data = this.bytes.subarray(80, 80 + this.patternOrderSize);
@@ -429,57 +478,47 @@ define(function() {
         return addInstrument(0, patterns.endOffset);
       });
     },
+    play: function(destinationNode, fromRestartPoint) {
+      var audioContext = destinationNode.context;
+      return Promise.all([ this.getHeader(), this.getPatterns(), this.getInstruments() ])
+      .then(function(values) {
+        var header = values[0], patterns = values[1].order, instruments = values[2];
+        var tempo = header.defaultTempo, beatsPerMinute = header.defaultBeatsPerMinute;
+        var rowDuration = getRowDuration(tempo, beatsPerMinute);
+        var rowData = xm.createRowData(header.channelCount);
+        var i_pattern = fromRestartPoint ? header.restartPosition : 0;
+        if (i_pattern >= patterns.length) return;
+        var readRow = patterns[i_pattern].createRowDataReader();
+        var cuedToTime = audioContext.currentTime;
+        function nextStep() {
+          var frontierTime = audioContext.currentTime + 3;
+          var rowCount = 0;
+          while (cuedToTime < frontierTime) {
+            while (!readRow(rowData)) {
+              if (++i_pattern >= patterns.length) {
+                // TODO: support optional looping from restart point
+                return;
+              }
+              console.log('pattern ' + i_pattern);
+              readRow = patterns[i_pattern].createRowDataReader();
+            }
+            cuedToTime += rowDuration;
+            rowCount++;
+          }
+          console.log(rowCount + ' rows');
+          return new Promise(function(resume, reject) {
+            window.setTimeout(resume, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
+          })
+          .then(nextStep);
+        }
+        return nextStep();
+      });
+    },
   };
   
   var xm = {
     Module: XModule,
-    createRowData: function(channelCount) {
-      return Object.defineProperties(new Uint8Array(channelCount * 5), {
-        channels: {
-          get: function() {
-            var channels = new Array(this.length / 5);
-            for (var i = 0; i < channels.length; i++) {
-              channels[i] = Object.defineProperties(this.subarray(i * 5, (i + 1) * 5), {
-                note: {
-                  get: function() {
-                    return this[0]; // 1-96, 97=off
-                  },
-                  enumerable: true,
-                },
-                instrument: {
-                  get: function() {
-                    return this[1]; // 1-128
-                  },
-                  enumerable: true,
-                },
-                volumeColumn: {
-                  get: function() {
-                    return this[2];
-                  },
-                  enumerable: true,                  
-                },
-                effectType: {
-                  get: function() {
-                    return this[3];
-                  },
-                  enumerable: true,
-                },
-                effectParameter: {
-                  get: function() {
-                    return this[4];
-                  },
-                  enumerable: true,
-                },
-              });
-            }
-            Object.defineProperty(this, 'channels', {value:channels, enumerable:true});
-            return channels;
-          },
-          enumerable: true,
-          configurable: true,
-        },
-      });
-    },
+    createRowData: createRowData,
   };
   
   return xm;
