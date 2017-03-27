@@ -221,6 +221,10 @@ define(function() {
       return this.dv.getUint16(239, true);
     },
     // reserved uint16
+    createSourceNode: function(audioContext, noteNumber) {
+      if (this.samples.length === 0) return null;
+      return this.samples[this.noteSamples[noteNumber]].createSourceNode(audioContext);
+    },
   };
   
   function XMSampleHeaderView(buffer, byteOffset, byteLength) {
@@ -275,6 +279,23 @@ define(function() {
         samples[i] = raw[i] / div;
       }
       return buffer;
+    },
+    getBuffer: function(audioContext) {
+      if (!('xmSamples' in audioContext)) {
+        audioContext.xmSamples = new WeakMap();
+      }
+      else if (audioContext.xmSamples.has(this)) {
+        return audioContext.xmSamples.get(this);
+      }
+      var buffer = this.createBuffer(audioContext);
+      audioContext.xmSamples.set(this, buffer);
+      return buffer;
+    },
+    createSourceNode: function(audioContext, noteNumber) {
+      var sourceNode = audioContext.createBufferSource();
+      sourceNode.buffer = this.getBuffer(audioContext);
+      this.initSourceNode(sourceNode, noteNumber);
+      return sourceNode;
     },
     initSourceNode: function(sourceNode, noteNumber) {
       noteNumber += this.noteOffset;
