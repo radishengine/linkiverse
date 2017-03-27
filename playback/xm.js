@@ -254,8 +254,8 @@ define(function() {
       switch (this.loopMode) {
         case 'none': break;
         case 'forward':
-          sourceNode.loopStart = this.loopStart;
-          sourceNode.loopEnd = this.loopStart + this.loopLength;
+          sourceNode.loopStart = this.loopStart / 8363;
+          sourceNode.loopEnd = (this.loopStart + this.loopLength) / 8363;
           sourceNode.loop = true;
           break;
       }
