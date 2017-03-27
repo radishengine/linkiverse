@@ -491,24 +491,46 @@ define(function() {
         var tempo = header.defaultTempo, beatsPerMinute = header.defaultBeatsPerMinute;
         var rowDuration = getRowDuration(tempo, beatsPerMinute);
         var rowData = xm.createRowData(header.channelCount);
-        var i_pattern = fromRestartPoint ? header.restartPosition : 0;
-        if (i_pattern >= patterns.length) return;
-        var readRow = patterns[i_pattern].createRowDataReader();
+        function getReadRow(patternNumber, pos) {
+          if (patternNumber >= patterns.length) {
+            return function(){ return false; };
+          }
+          var readRow = patterns[patternNumber].createRowDataReader(pos);
+          function myReadRow(rowData) {
+            while (!readRow(rowData)) {
+              if (++patternNumber >= patterns.length) {
+                return false;
+              }
+              readRow = patterns[patternNumber].createRowDataReader();
+            }
+            return true;
+          }
+          myReadRow.clone = function() {
+            return getReadRow(patternNumber, readRow.pos);
+          };
+          Object.defineProperties(myReadRow, {
+            patternNumber: {
+              get: function(){ return patternNumber; },
+            },
+            pos: {
+              get: function(){ return readRow.pos; },
+            },
+          });
+          return myReadRow;
+        }
+        var readRow = getReadRow(fromRestartPoint ? header.restartPosition : 0, 0);
         var cuedToTime = audioContext.currentTime;
         function nextStep() {
           var frontierTime = audioContext.currentTime + 3;
           while (cuedToTime < frontierTime) {
-            while (!readRow(rowData)) {
-              if (++i_pattern >= patterns.length) {
-                return new Promise(function(resolve, reject) {
-                  window.setTimeout(resolve, (cuedToTime - audioContext.currentTime) * 1000);
-                });
-              }
-              readRow = patterns[i_pattern].createRowDataReader();
+            if (!readRow(rowData)) {
+              return new Promise(function(resolve, reject) {
+                window.setTimeout(resolve, (cuedToTime - audioContext.currentTime) * 1000);
+              });
             }
             cuedToTime += rowDuration;
           }
-          console.log('pattern ' + i_pattern + ', pos ' + readRow.pos);
+          console.log('pattern ' + readRow.patternNumber + ', pos ' + readRow.pos);
           return new Promise(function(resolve, reject) {
             window.setTimeout(resolve, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
           })
