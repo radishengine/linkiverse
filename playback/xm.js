@@ -259,7 +259,7 @@ define(function() {
           sourceNode.loop = true;
           break;
       }
-      sourceNode.detune = this.finetuneCents;
+      sourceNode.detune.value = this.finetuneCents;
     },
   };
   XMSampleHeaderView.byteLength = 18 + 22;
