@@ -83,8 +83,12 @@ define(['./util'], function(util) {
     this.member('formatVersion', member_uint32);
     this.member('engineVersion', function() {
       if (this.formatVersion < 12) return null;
-      throw new Error('NYI');
-      // lenPrefixString
+      const len = this.dv.getUint32(this.endOffset, true);
+      const offset = this.endOffset + 4;
+      this.endOffset = offset + len;
+      return function() {
+        return util.byteString(this.bytes, offset, len);
+      };
     });
     
     if (this.formatVersion >= 13) {
