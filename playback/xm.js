@@ -208,7 +208,7 @@ define(function() {
     get loopStart() {
       return this.dv.getUint32(4, true);
     },
-    get loopEnd() {
+    get loopLength() {
       return this.dv.getUint32(8, true);
     },
     get volume() {
@@ -255,7 +255,7 @@ define(function() {
         case 'none': break;
         case 'forward':
           sourceNode.loopStart = this.loopStart;
-          sourceNode.loopEnd = this.loopEnd;
+          sourceNode.loopEnd = this.loopStart + this.loopLength;
           sourceNode.loop = true;
           break;
       }
