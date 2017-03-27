@@ -610,9 +610,12 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     playingMusic: -1,
     playMusic: function(musicTrack) {
       if (musicTrack === this.playingMusic) return;
-      midi.stop();
       this.playingMusic = musicTrack;
-      this.fileSystem.loadAsArrayBuffer('music' + musicTrack + '.mid').then(midi.play);
+      var fileName = this.fileSystem.getName('music' + musicTrack + '.mid');
+      if (fileName) {
+        midi.stop();
+        this.fileSystem.loadAsArrayBuffer(fileName).then(midi.play);
+      }
     },
     redraw: function() {
       this.ctx2d.putImageData(this.room.background, -this.room.viewportX, -this.room.viewportY);
