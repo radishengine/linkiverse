@@ -551,7 +551,7 @@ define(function() {
                 notePlay.connect(noteVol);
                 noteVol.connect(globalVolume);
                 if (channel.volumeColumn >= 0x10 && channel.volumeColumn <= 0x50) {
-                  noteVol.volume.value = (channel.volumeChannel - 0x10) / 0x40;
+                  noteVol.volume.value = (channel.volumeColumn - 0x10) / 0x40;
                 }
                 notePlay.start(cuedToTime);
                 if (notePlay.loop) {
@@ -563,6 +563,10 @@ define(function() {
                         && rowData2.channels[i].instrument === channel.instrument
                         && rowData2.channels[i].note === channel.note
                         && rowData2.effectType !== 20) {
+                    var channel2 = rowData2.channels[i];
+                    if (channel2.volumeColumn >= 0x10 && channel2.volumeColumn <= 0x50) {
+                      noteVol.volume.setValueAtTime((channel2.volumeColumn - 0x10) / 0x40, cuedToTime2);
+                    }
                     cuedToTime2 += rowDuration2;
                   }
                   notePlay.stop(cuedToTime2);
