@@ -307,7 +307,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                 }
                 var fileMap = {};
                 for (var i = 0; i < files.length; i++) {
-                  if (files[i].container === 'ac2game.dat') {
+                  if (/^ac2game\.(dat|ags)$/i.test(files[i].container)) {
                     fileMap[files[i].name] = mainBlob.slice(files[i].offset, files[i].offset + files[i].length);
                   }
                 }
