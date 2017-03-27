@@ -492,6 +492,7 @@ define(function() {
         var rowDuration = getRowDuration(tempo, beatsPerMinute);
         var rowData = xm.createRowData(header.channelCount);
         var rowData2 = xm.createRowData(header.channelCount);
+        var emptyRowData = new Uint8Array(rowData.length);
         function getReadRow(patternNumber, pos) {
           if (patternNumber >= patterns.length) {
             return function(){ return false; };
@@ -524,6 +525,7 @@ define(function() {
         function nextStep() {
           var frontierTime = audioContext.currentTime + 3;
           while (cuedToTime < frontierTime) {
+            rowData.set(emptyRowData);
             if (!readRow(rowData)) {
               return new Promise(function(resolve, reject) {
                 window.setTimeout(resolve, (cuedToTime - audioContext.currentTime) * 1000);
