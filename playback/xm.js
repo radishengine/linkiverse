@@ -222,7 +222,9 @@ define(function() {
     },
     // reserved uint16
     createSourceNode: function(audioContext, noteNumber) {
-      if (this.samples.length === 0) return null;
+      if (this.samples.length === 0) {
+        return audioContext.createBufferSource();
+      }
       return this.samples[this.noteSamples[noteNumber]].createSourceNode(audioContext, noteNumber);
     },
   };
