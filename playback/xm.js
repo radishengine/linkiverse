@@ -7,7 +7,7 @@ define(function() {
   function getBuffered(blob, offset, length) {
     var buffer = blob.buffer;
     if (buffer && offset >= buffer.byteOffset && (offset + length) <= (buffer.byteOffset + buffer.byteLength)) {
-      return Promise.resolve(new Uint8Array(buffer, offset, offset + length));
+      return Promise.resolve(new Uint8Array(buffer, offset, length));
     }
     return new Promise(function(resolve, reject) {
       var fr = new FileReader();
@@ -18,7 +18,7 @@ define(function() {
         }
         resolve(new Uint8Array(blob.buffer, 0, length));
       });
-      fr.readAsArrayBuffer(blob.slice(offset, Math.max(BUFFER_SIZE, length)));
+      fr.readAsArrayBuffer(blob.slice(offset, offset + Math.max(BUFFER_SIZE, length)));
     });
   }
   
