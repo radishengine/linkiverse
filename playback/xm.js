@@ -266,11 +266,16 @@ define(function() {
           }
           return getBuffered(blob, offset, 9).then(function(bytes) {
             var pattern = new XMPatternHeaderView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-            list[i] = getBuffered(blob, offset + pattern.headerByteLength, pattern.dataByteLength)
-            .then(function(data) {
-              pattern.data = data;
-              return pattern;
-            });
+            if (pattern.dataByteLength === 0) {
+              list[i] = pattern;
+            }
+            else {
+              list[i] = getBuffered(blob, offset + pattern.headerByteLength, pattern.dataByteLength)
+              .then(function(data) {
+                pattern.data = data;
+                return pattern;
+              });
+            }
             return addPattern(i + 1, offset + pattern.headerByteLength + pattern.dataByteLength);
           });
         }
