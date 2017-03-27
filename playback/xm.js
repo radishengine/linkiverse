@@ -18,7 +18,7 @@ define(function() {
         }
         resolve(new Uint8Array(blob.buffer, 0, length));
       });
-      fr.readAsArrayBuffer(blob.slice(offset, offset + Math.max(BUFFER_SIZE, length)));
+      fr.readAsArrayBuffer(blob.slice(offset, Math.min(blob.size, offset + Math.max(BUFFER_SIZE, length))));
     });
   }
   
