@@ -237,6 +237,18 @@ define(function() {
     get sampleName() {
       return String.fromCharCode.apply(null, this.bytes.subarray(18, 18 + 22));
     },
+    createBuffer: function(audioContext) {
+      var raw = this.data;
+      var samples = new Float32Array(raw.length);
+      var val = 0;
+      for (var i = 0; i < samples.length; i++) {
+        val += raw[i];
+        samples[i] = val < 0 ? val / 128 : val / 127;
+      }
+      var buffer = audioContext.createBuffer(1, samples.length, 22050);
+      buffer.copyToChannel(samples, 0);
+      return buffer;
+    },
   };
   XMSampleHeaderView.byteLength = 18 + 22;
   
@@ -312,7 +324,10 @@ define(function() {
                 samples[j] = Promise.all([sample, getBuffered(blob, offset, sample.sampleLength)])
                 .then(function(values) {
                   var sample = values[0], data = values[1];
-                  sample.data = data;
+                  if (sample.bytesPerSample === 16) {
+                    throw new Error('NYI');
+                  }
+                  sample.data = new Int8Array(data.buffer, data.byteOffset, data.byteLength);
                   return sample;
                 });
                 offset += sample.sampleLength;
