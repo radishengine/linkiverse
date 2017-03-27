@@ -295,7 +295,7 @@ define(function() {
               return addInstrument(i + 1, offset + instrument.headerByteLength);
             }
             offset += instrument.headerByteLength;
-            return getBuffered(blob, offset, XMSampleHeaderView.byteLength * instrument.samples.length)
+            return getBuffered(blob, offset, XMSampleHeaderView.byteLength * instrument.sampleCount)
             .then(function(rawSampleHeaders) {
               offset += rawSampleHeaders.length;
               var samples = new Array(instrument.sampleCount);
