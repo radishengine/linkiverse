@@ -536,6 +536,7 @@ define(function() {
                   && channel.effect !== 20) {
                 var instrument = instruments[channel.instrument-1];
                 var notePlay = instrument.createSourceNode(audioContext, channel.note - 1);
+                notePlay.connect(destinationNode);
                 notePlay.start(cuedToTime);
                 if (notePlay.loop) {
                   rowData2.set(rowData);
