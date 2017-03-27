@@ -238,7 +238,7 @@ define(function() {
       return String.fromCharCode.apply(null, this.bytes.subarray(18, 18 + 22));
     },
   };
-  XMSampleHeaderView.byteLength = 18 * 22;
+  XMSampleHeaderView.byteLength = 18 + 22;
   
   function XModule(blob) {
     this.blob = blob;
