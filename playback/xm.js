@@ -151,10 +151,10 @@ define(function() {
     get dataByteLength() {
       return this.dv.getUint16(7, true);
     },
-    createRowDataReader: function() {
+    createRowDataReader: function(pos) {
       const data = this.data;
-      var pos = 0;
-      return function readRow(rowData) {
+      if (isNaN(pos)) pos = 0;
+      function readRow(rowData) {
         if (pos >= data.length) return false;
         var i = 0;
         while (i < rowData.length) {
@@ -175,7 +175,12 @@ define(function() {
           }
         }
         return true;
-      };
+      }
+      Object.defineProperty('pos', {
+        get: function(){ return pos; },
+        enumerable: true,
+      });
+      return readRow;
     },
   };
   
