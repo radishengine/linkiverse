@@ -176,7 +176,7 @@ define(function() {
         }
         return true;
       }
-      Object.defineProperty('pos', {
+      Object.defineProperty(readRow, 'pos', {
         get: function(){ return pos; },
         enumerable: true,
       });
@@ -504,13 +504,12 @@ define(function() {
                 // TODO: support optional looping from restart point
                 return;
               }
-              console.log('pattern ' + i_pattern);
               readRow = patterns[i_pattern].createRowDataReader();
             }
             cuedToTime += rowDuration;
             rowCount++;
           }
-          console.log(rowCount + ' rows');
+          console.log('pattern ' + i_pattern + ', pos ' + readRow.pos);
           return new Promise(function(resume, reject) {
             window.setTimeout(resume, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
           })
