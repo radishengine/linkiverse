@@ -497,21 +497,20 @@ define(function() {
         var cuedToTime = audioContext.currentTime;
         function nextStep() {
           var frontierTime = audioContext.currentTime + 3;
-          var rowCount = 0;
           while (cuedToTime < frontierTime) {
             while (!readRow(rowData)) {
               if (++i_pattern >= patterns.length) {
-                // TODO: support optional looping from restart point
-                return;
+                return new Promise(function(resolve, reject) {
+                  window.setTimeout(resolve, (cuedToTime - audioContext.currentTime) * 1000);
+                });
               }
               readRow = patterns[i_pattern].createRowDataReader();
             }
             cuedToTime += rowDuration;
-            rowCount++;
           }
           console.log('pattern ' + i_pattern + ', pos ' + readRow.pos);
-          return new Promise(function(resume, reject) {
-            window.setTimeout(resume, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
+          return new Promise(function(resolve, reject) {
+            window.setTimeout(resolve, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
           })
           .then(nextStep);
         }
