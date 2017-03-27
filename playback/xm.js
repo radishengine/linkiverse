@@ -217,7 +217,7 @@ define(function() {
     get finetune() {
       return this.dv.getInt8(13);
     },
-    get loopType() {
+    get loopMode() {
       switch (this.bytes[14] & 3) {
         case 0: return 'none';
         case 1: return 'forward';
@@ -246,6 +246,17 @@ define(function() {
         samples[i] = raw[i] / div;
       }
       return buffer;
+    },
+    initSourceNode: function(sourceNode) {
+      switch (this.loopMode) {
+        case 'none': break;
+        case 'forward':
+          sourceNode.loopStart = this.loopStart;
+          sourceNode.loopEnd = this.loopEnd;
+          sourceNode.loop = true;
+          break;
+      }
+      sourceNode.detune = this.finetune;
     },
   };
   XMSampleHeaderView.byteLength = 18 + 22;
