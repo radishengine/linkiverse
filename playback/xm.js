@@ -217,6 +217,9 @@ define(function() {
     get finetune() {
       return this.dv.getInt8(13);
     },
+    get finetuneCents() {
+      return (this.finetune * 100) / 128;
+    },
     get loopMode() {
       switch (this.bytes[14] & 3) {
         case 0: return 'none';
@@ -256,7 +259,7 @@ define(function() {
           sourceNode.loop = true;
           break;
       }
-      sourceNode.detune = this.finetune;
+      sourceNode.detune = this.finetuneCents;
     },
   };
   XMSampleHeaderView.byteLength = 18 + 22;
