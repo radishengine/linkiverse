@@ -243,7 +243,7 @@ define(function() {
   function XModule(blob) {
     this.blob = blob;
   }
-  XM.prototype = {
+  XModule.prototype = {
     getHeader: function() {
       return this._header = this._header
       || getBuffered(this.blob, 0, 336)
