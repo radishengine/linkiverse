@@ -239,11 +239,10 @@ define(function() {
     },
     createBuffer: function(audioContext) {
       var raw = this.data;
+      var div = 1 << (((raw.byteLength / raw.length) * 8) - 1);
       var samples = new Float32Array(raw.length);
-      var val = 0;
       for (var i = 0; i < samples.length; i++) {
-        var s = (val += raw[i]) << 24 >> 24;
-        samples[i] = s / 128;
+        samples[i] = raw[i] / div;
       }
       var buffer = audioContext.createBuffer(1, samples.length, 8363);
       buffer.copyToChannel(samples, 0);
