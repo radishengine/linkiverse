@@ -311,6 +311,11 @@ define(function() {
             return Promise.all(list)
             .then(function(list) {
               list.endOffset = offset;
+              list.order = new Array(header.patternOrderSize);
+              for (var i = 0; i < list.order.length; i++) {
+                list.order[i] = list[header.patternOrder[i]];
+              }
+              list.order.restartAt = header.restartPosition;
               return list;
             });
           }
