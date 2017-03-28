@@ -787,7 +787,7 @@ define(function() {
   }
   
   function getCharacterByteFieldName(offset) {
-    return (offset === 318) ? 'visible' : null;
+    return (offset === 318) ? 'on' : null;
   }
   
   return ScomScript;
