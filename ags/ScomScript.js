@@ -94,22 +94,22 @@ define(function() {
       var list = new Array(this.dv.getUint32(pos, true));
       pos += 4;
       for (var i = 0; i < list.length; i++) {
-        var export = list[i] = {};
+        var xport = list[i] = {};
         var startPos = pos;
         while (this.bytes[pos] !== 0) pos++;
-        export.name = String.fromCharCode.apply(this.bytes.subarray(startPos, pos));
+        xport.name = String.fromCharCode.apply(this.bytes.subarray(startPos, pos));
         pos++;
-        export.offset = this.dv.getUint32(pos, true);
+        xport.offset = this.dv.getUint32(pos, true);
         pos += 4;
-        var mangled = export.name.match(/^([^\$]+)\$(\d+)$/);
+        var mangled = xport.name.match(/^([^\$]+)\$(\d+)$/);
         if (mangled) {
-          export.name = mangled[1];
-          export.argCount = +mangled[2];
+          xport.name = mangled[1];
+          xport.argCount = +mangled[2];
         }
-        export.type = export.offset >>> 24;
-        if (export.type === 1) export.type = 'function';
-        else if (export.type === 2) export.type = 'data';
-        export.offset &= 0xffffff;
+        xport.type = xport.offset >>> 24;
+        if (xport.type === 1) xport.type = 'function';
+        else if (xport.type === 2) xport.type = 'data';
+        xport.offset &= 0xffffff;
       }
       list.afterPos = pos;
       Object.defineProperty(this, 'exports', {value:list, enumerable:true});
