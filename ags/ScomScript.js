@@ -136,6 +136,290 @@ define(function() {
     get endOffset() {
       return this.sections.afterPos + 4;
     },
+    instantiate: function(runtime) {
+      return new ScomInstance(runtime, this);
+    },
+  };
+  
+  function ScomInstance(runtime, def) {
+    this.runtime = runtime;
+    this.def = def;
+    this.code = this.def.code;
+    this.codeFloat = new Float32Array(this.code.buffer, this.code.byteOffset, this.code.byteLength);
+    this.bytes = new Uint8Array(def.data);
+    this.dv = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength);
+    this.exports = {};
+    for (var i = 0; i < def.exports.length; i++) {
+      var xport = def.exports[i];
+      if (xport.type === 'function') {
+        this.exports[xport.name] = this.runFrom.bind(this, xport.offset);
+      }
+    }
+  }
+  ScomInstance.prototype = {
+    runFrom: function(offset) {
+      var code = this.code, codeFloat = this.codeFloat;
+      function nextStep() {
+        codeLoop: for (;;) switch (code[offset++]) {
+          case 0: // NULL
+            continue codeLoop;
+          case 1: // ADD
+            var register = code[offset++];
+            var value = code[offset++];
+            continue codeLoop;
+          case 2: // SUB
+            var register = code[offset++];
+            var value = code[offset++];
+            continue codeLoop;
+          case 3: // REGTOREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 4: // WRITELIT
+            var value1 = code[offset++];
+            var value2 = code[offset++];
+            continue codeLoop;
+          case 5: // RET
+            // TODO: return actual value
+            return;
+          case 6: // LITTOREG
+            var register = code[offset++];
+            var value = code[offset++];
+            continue codeLoop;
+          case 7: // MEMREAD
+            var register = code[offset++];
+            continue codeLoop;
+          case 8: // MEMWRITE
+            var register = code[offset++];
+            continue codeLoop;
+          case 9: // MULREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 10: // DIVREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 11: // ADDREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 12: // ADDREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 13: // BITAND
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 14: // BITOR
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 15: // ISEQUAL
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 16: // NOTEQUAL
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 17: // GREATER
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 18: // LESSTHAN
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 19: // GTE
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 20: // LTE
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 21: // AND
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 22: // OR
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 23: // CALL
+            var register = code[offset++];
+            continue codeLoop;
+          case 24: // MEMREADB
+            var register = code[offset++];
+            continue codeLoop;
+          case 25: // MEMREADW
+            var register = code[offset++];
+            continue codeLoop;
+          case 26: // MEMWRITEB
+            var register = code[offset++];
+            continue codeLoop;
+          case 27: // MEMWRITEW
+            var register = code[offset++];
+            continue codeLoop;
+          case 28: // JZ
+            var label = code[offset++];
+            continue codeLoop;
+          case 29: // PUSHREG
+            var register = code[offset++];
+            continue codeLoop;
+          case 30: // POPREG
+            var register = code[offset++];
+            continue codeLoop;
+          case 31: // JMP
+            var label = code[offset++];
+            continue codeLoop;
+          case 32: // MUL
+            var register = code[offset++];
+            var value = code[offset++];
+            continue codeLoop;
+          case 33: // CALLEXT
+            var register = code[offset++];
+            continue codeLoop;
+          case 34: // PUSHREAL
+            var register = code[offset++];
+            continue codeLoop;
+          case 35: // SUBREALSTACK
+            var value = code[offset++];
+            continue codeLoop;
+          case 36: // LINENUM
+            var value = code[offset++];
+            continue codeLoop;
+          case 37: // CALLAS
+            var register = code[offset++];
+            continue codeLoop;
+          case 38: // THISBASE
+            var value = code[offset++];
+            continue codeLoop;
+          case 39: // NUMFUNCARGS
+            var value = code[offset++];
+            continue codeLoop;
+          case 40: // MODREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 41: // XORREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 42: // NOTREG
+            var register = code[offset++];
+            continue codeLoop;
+          case 43: // SHIFTLEFT
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 44: // SHIFTRIGHT
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 45: // CALLOBJ
+            var register = code[offset++];
+            continue codeLoop;
+          case 46: // CHECKBOUNDS
+            var register = code[offset++];
+            var value = code[offset++];
+            continue codeLoop;
+          case 47: // MEMWRITEPTR
+            var register = code[offset++];
+            continue codeLoop;
+          case 48: // MEMREADPTR
+            var register = code[offset++];
+            continue codeLoop;
+          case 49: // MEMZEROPTR
+            continue codeLoop;
+          case 50: // MEMINITPTR
+            var register = code[offset++];
+            continue codeLoop;
+          case 51: // LOADSPOFFS
+            var value = code[offset++];
+            continue codeLoop;
+          case 52: // CHECKNULL
+            continue codeLoop;
+          case 53: // FADD
+            var register = code[offset++];
+            var value = codeFloat[offset++];
+            continue codeLoop;
+          case 54: // FSUB
+            var register = code[offset++];
+            var value = codeFloat[offset++];
+            continue codeLoop;
+          case 55: // FMULREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 56: // FDIVREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 57: // FADDREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 58: // FSUBREG
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 59: // FGREATER
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 60: // FLESSTHAN
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 61: // FGTE
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 62: // FLTE
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 63: // ZEROMEMORY
+            var value = code[offset++];
+            continue codeLoop;
+          case 64: // CREATESTRING
+            var register = code[offset++];
+            continue codeLoop;
+          case 65: // STRINGSEQUAL
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 66: // STRINGSNOTEQ
+            var register1 = code[offset++];
+            var register2 = code[offset++];
+            continue codeLoop;
+          case 67: // CHECKNULLREG
+            var register = code[offset++];
+            continue codeLoop;
+          case 68: // LOOPCHECKOFF
+            continue codeLoop;
+          case 69: // MEMZEROPTRND
+            continue codeLoop;
+          case 70: // JNZ
+            var register = code[offset++];
+            continue codeLoop;
+          case 71: // DYNAMICBOUNDS
+            var register = code[offset++];
+            continue codeLoop;
+          case 72: // NEWARRAY
+            var register = code[offset++];
+            var value1 = code[offset++];
+            var value2 = code[offset++];
+            continue codeLoop;
+          default:
+            throw new Error('unknown opcode: 0x' + code[--offset].toString(16));
+        }
+      }
+      return nextStep();
+    },
   };
   
   return ScomScript;
