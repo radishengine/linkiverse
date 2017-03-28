@@ -671,23 +671,17 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         }
         for (var i = 0; i < interactions.length; i++) {
           if (interactions[i].event === 'repeatedly_execute') {
-            this.eventTarget.roomRepExec = this.performInteractionV2.bind(this, interactions[i]);
-            function onIdle() {
-              this.addEventListener('update', this.roomRepExec);
-            }
-            function onBusy() {
-              this.removeEventListener('update', this.roomRepExec);
-            }
+            this.eventTarget.roomRepExec = this.mainExec.tryImmediateAction.bind(
+              this.mainExec,
+              this.performInteractionV2.bind(
+                this,
+                interactions[i]));
+            this.eventTarget.addEventListener('update', this.eventTarget.roomRepExec);
             function onLeavingRoom() {
               this.removeEventListener('update', this.roomRepExec);
-              this.removeEventListener('idle', onIdle);
-              this.removeEventListener('busy', onBusy);
+              this.roomRepExec = null;
               this.removeEventListener('leaving-room', onLeavingRoom);
             }
-            this.eventTarget.addEventListener('idle', onIdle);
-            this.eventTarget.addEventListener('busy', onBusy);
-            this.eventTarget.addEventListener('leaving-room', onLeavingRoom);
-            if (!this.mainExec.isBusy) onIdle.apply(this.eventTarget);
           }
         }
       }
@@ -741,6 +735,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     busyCount: 0,
     get isBusy() {
       return this.busyCount > 0;
+    },
+    tryImmediateAction: function(nextAction) {
+      if (this.isBusy) return;
+      return this.queueAction(nextAction);
     },
     queueAction: function(nextAction) {
       if (++this.busyCount === 1) {
