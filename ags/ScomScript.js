@@ -157,6 +157,7 @@ define(function() {
       var pos = this.importsOffset;
       var offsetCount = this.dv.getUint32(pos, true);
       var list = [];
+      list.byOffset = {};
       pos += 4;
       for (var i = 0; i < offsetCount; i++) {
         if (this.bytes[pos] === 0) {
@@ -167,7 +168,7 @@ define(function() {
         do { } while (this.bytes[++pos] !== 0);
         var name = String.fromCharCode.apply(null, this.bytes.subarray(startPos, pos));
         pos++;
-        list.push({name:name, offset:i});
+        list.push(list.byOffset[i] = {name:name, offset:i});
       }
       list.afterPos = pos;
       Object.defineProperty(this, 'imports', {value:list, enumerable:true});
@@ -242,11 +243,6 @@ define(function() {
     }
     this.bytes = new Uint8Array(def.data);
     this.dv = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength);
-    this.imports = {};
-    for (var i = 0; i < def.imports.length; i++) {
-      var external = def.imports[i];
-      this.imports[external.offset] = external.name;
-    }
     this.exports = {};
     for (var i = 0; i < def.exports.length; i++) {
       var xport = def.exports[i];
@@ -265,7 +261,7 @@ define(function() {
             realStack = [],
             dv = this.dv,
             runtime = this.runtime,
-            imports = this.imports,
+            imports = this.def.imports,
             stack = new Int32Array(250),
             stackTypes = new Uint8Array(250);
       var lineNumber = NaN, checkLoops = true;
@@ -309,6 +305,35 @@ define(function() {
               case 1:
                 registers[register] = dv.getInt32(registers.mar, true);
                 registers.types[register] = 0; // TODO: in-data fixups?
+                break;
+              case 4:
+                var i;
+                for (i = imports.length-1; i >= 0; i--) {
+                  if (registers.mar >= imports[i].offset) {
+                    break;
+                  }
+                }
+                if (i < 0) {
+                  throw new Error('bad data access');
+                }
+                var dataObject = imports[i];
+                var offset = registers.mar - dataObject.offset;
+                var value = 0;
+                if (dataObject.name === 'character') {
+                   // TODO: check if character struct is ever not 320 bytes?
+                  var fieldOffset = offset % 320;
+                  var index = (offset - fieldOffset) / 320;
+                  if (index >= runtime.characters.length) {
+                    throw new Error('bad data access');
+                  }
+                  var character = runtime.characters[index];
+                  var fieldName = getCharacterIntFieldName(fieldOffset);
+                  if (!fieldName) {
+                    throw new Error('bad data access');
+                  }
+                  registers[register] = character[fieldName];
+                  registers.types[register] = 0;
+                }
                 break;
               default:
                 console.error('NYI: read memory type ' + registers.types.mar);
@@ -489,7 +514,7 @@ define(function() {
             continue codeLoop;
           case 33: // CALLEXT
             var register = code[offset++];
-            var funcName = imports[registers[register]];
+            var funcName = imports.byOffset[registers[register]].name;
             if (typeof runtime[funcName] === 'function') {
               var result = runtime[funcName].apply(runtime, realStack);
               if (result instanceof Promise) {
@@ -707,6 +732,24 @@ define(function() {
       return nextStep();
     },
   };
+  
+  function getCharacterIntFieldName(offset) {
+    if (offset & 3) return null;
+    switch (offset >> 2) {
+      case 0: return 'normalView';
+      case 1: return 'speechView';
+      case 2: return 'view';
+      case 3: return 'room';
+      case 4: return 'previousRoom';
+      case 5: return 'x';
+      case 6: return 'y';
+      case 7: return 'wait';
+      case 8: return 'flags';
+      case 10: return 'idleView';
+      case 13: return 'activeInventoryItem';
+      default: return null;
+    }
+  }
   
   return ScomScript;
 
