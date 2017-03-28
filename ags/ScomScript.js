@@ -317,12 +317,12 @@ define(function() {
                   throw new Error('bad data access');
                 }
                 var dataObject = imports[i];
-                var offset = registers.mar - dataObject.offset;
+                var dataOffset = registers.mar - dataObject.offset;
                 var value = 0;
                 if (dataObject.name === 'character') {
                    // TODO: check if character struct is ever not 320 bytes?
-                  var fieldOffset = offset % 320;
-                  var index = (offset - fieldOffset) / 320;
+                  var fieldOffset = dataOffset % 320;
+                  var index = (dataOffset - fieldOffset) / 320;
                   if (index >= runtime.characters.length) {
                     throw new Error('bad data access');
                   }
