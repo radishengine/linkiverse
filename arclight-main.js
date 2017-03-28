@@ -371,7 +371,8 @@ function(inflate, GameView, RoomView, Runtime, midi) {
         console.log(gameFiles[0]);
         var gameFile = zipRecords[gameFiles[0]];
         gameFile.getUncompressedBlob().then(function(uncompressed) {
-          var folder = gameFiles[0].replace(/\/?[^\/]*$/, '/');
+          var folder = gameFiles[0].replace(/\/[^\/]*$/, '/');
+          if (folder.indexOf('/') === -1) folder = '';
           return loadGame(uncompressed, function getRelativeBlob(path) {
             path = folder + path;
             var record = zipRecords[path];
