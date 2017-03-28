@@ -321,7 +321,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                 }
                 return Promise.all(promises).then(function() {
                   return fileMap;
-                }));
+                });
               });
             });
           });
