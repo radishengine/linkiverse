@@ -235,6 +235,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     NewRoom: function(n) {
       this.goToRoom(n);
     },
+    NewRoomEx: function(n, x, y) {
+      // TODO: support player co-ords
+      this.goToRoom(n);
+    },
     goToRoom: function(n) {
       var self = this;
       var loading = self.loadRoom(n).then(function(roomDef) {
