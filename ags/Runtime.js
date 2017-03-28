@@ -1065,44 +1065,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     _offsetXRatio: -0.5,
     _offsetYRatio: -1,
     _baseline: -1,
-    get on() {
-      return this._on;
-    },
-    set on(v) {
-      v = !!v;
-      if (v === this._on) return;
-      this._on = v;
-      this.updateVisible();
-    },
-    get room() {
-      return this._room;
-    },
-    set room(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('room must be a number');
-      if (v === this._room) return;
-      this._room = v;
-      this.updateVisible();
-    },
     updateVisible: function() {
       this.visible = (this._room === this.runtime.room.number) && this._on;
-    },
-    get z() {
-      return -this._offsetY;
-    },
-    set z(v) {
-      this.offsetY = -v;
-    },
-    get baseline() {
-      return this._baseline;
-    },
-    set baseline(v) {
-      if (v === this._baseline) return;
-      this._baseline = v;
-    },
-    get order() {
-      var baseline = this._baseline;
-      return this._baseline === -1 ? this._y : this._baseline;
     },
     say: function(text, background) {
       var runtime = this.runtime;
@@ -1132,6 +1096,59 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           t2.remove();
           return runtime.wait(1);
         });
+    },
+  });
+  Object.defineProperties(RuntimeCharacter.prototype, {
+    on: {
+      get: function() {
+        return this._on;
+      },
+      set: function(v) {
+        v = !!v;
+        if (v === this._on) return;
+        this._on = v;
+        this.updateVisible();
+      },
+      enumerable: true,
+    },
+    room: {
+      get: function() {
+        return this._room;
+      },
+      set: function(v) {
+        v = Math.floor(v);
+        if (isNaN(v)) throw new TypeError('room must be a number');
+        if (v === this._room) return;
+        this._room = v;
+        this.updateVisible();
+      },
+      enumerable: true,
+    },
+    z: {
+      get: function() {
+        return -this._offsetY;
+      },
+      set: function(v) {
+        this.offsetY = -v;
+      },
+      enumerable: true,
+    },
+    baseline: {
+      get: function() {
+        return this._baseline;
+      },
+      set: function(v) {
+        if (v === this._baseline) return;
+        this._baseline = v;
+      },
+      enumerable: true,
+    },
+    order: {
+      get: function() {
+        var baseline = this._baseline;
+        return this._baseline === -1 ? this._y : this._baseline;
+      },
+      enumerable: true,
     },
   });
   
