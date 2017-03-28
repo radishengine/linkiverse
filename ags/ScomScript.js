@@ -263,6 +263,7 @@ define(function() {
             stringTable = this.def.stringTable,
             registers = allocateRegisters(),
             realStack = [],
+            dv = this.dv,
             runtime = this.runtime,
             imports = this.imports;
       function nextStep() {
@@ -303,7 +304,7 @@ define(function() {
             var valueRegister = code[offset++];
             switch (registers.types.mar) {
               case 1:
-                registers[valueRegister] = this.dv.getInt32(registers.mar, true);
+                registers[valueRegister] = dv.getInt32(registers.mar, true);
                 registers.types[valueRegister] = 0; // TODO: in-data fixups?
                 break;
             }
@@ -312,7 +313,7 @@ define(function() {
             var valueRegister = code[offset++];
             switch (registers.types.mar) {
               case 1:
-                this.dv.setInt32(registers.mar, registers[valueRegister], true);
+                dv.setInt32(registers.mar, registers[valueRegister], true);
                 break;
             }
             continue codeLoop;
