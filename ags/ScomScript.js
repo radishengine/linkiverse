@@ -2,6 +2,63 @@ define(function() {
 
   'use strict';
   
+  var regProperties = {
+    sp: {
+      get: function(){ return this[0]; },
+      set: function(v){ this[0] = v; },
+      enumerable: true,
+    },
+    mar: {
+      get: function(){ return this[1]; },
+      set: function(v){ this[1] = v; },
+      enumerable: true,
+    },
+    ax: {
+      get: function(){ return this[2]; },
+      set: function(v){ this[2] = v; },
+      enumerable: true,
+    },
+    bx: {
+      get: function(){ return this[3]; },
+      set: function(v){ this[3] = v; },
+      enumerable: true,
+    },
+    cx: {
+      get: function(){ return this[4]; },
+      set: function(v){ this[4] = v; },
+      enumerable: true,
+    },
+    op: {
+      get: function(){ return this[5]; },
+      set: function(v){ this[5] = v; },
+      enumerable: true,
+    },
+    dx: {
+      get: function(){ return this[6]; },
+      set: function(v){ this[6] = v; },
+      enumerable: true,
+    },
+  };
+  
+  var regFloatProperties = regProperties;
+  
+  var regIntProperties = Object.assign({
+    asFloat: {
+      get: function() {
+        var asFloat = Object.defineProperties(
+          new Float32Array(this.buffer, this.byteOffset, this.length),
+          regFloatProperties);
+        Object.defineProperty(this, 'asFloat', {value:asFloat, enumerable:true});
+        return asFloat;
+      },
+      enumerable: true,
+    },
+  }, regProperties);
+  
+  function allocateRegisters() {
+    return Object.defineProperties(new Int32Array(7), regIntProperties);
+  }
+  
   function ScomScript(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -148,6 +205,11 @@ define(function() {
     this.codeFloat = new Float32Array(this.code.buffer, this.code.byteOffset, this.code.length);
     this.bytes = new Uint8Array(def.data);
     this.dv = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength);
+    this.imports = {};
+    for (var i = 0; i < def.imports.length; i++) {
+      var external = def.imports[i];
+      this.imports[external.offset] = external.name;
+    }
     this.exports = {};
     for (var i = 0; i < def.exports.length; i++) {
       var xport = def.exports[i];
@@ -158,22 +220,29 @@ define(function() {
   }
   ScomInstance.prototype = {
     runFrom: function(offset) {
-      var code = this.code, codeFloat = this.codeFloat;
+      const code = this.code,
+            codeFloat = this.codeFloat,
+            registers = allocateRegisters(),
+            realStack = [],
+            imports = this.imports;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
-          case 0: // NULL
+          case 0: // no-op
             continue codeLoop;
           case 1: // ADD
             var register = code[offset++];
             var value = code[offset++];
+            registers[register] += value;
             continue codeLoop;
           case 2: // SUB
             var register = code[offset++];
             var value = code[offset++];
+            registers[register] -= value;
             continue codeLoop;
           case 3: // REGTOREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register2] = registers[register1];
             continue codeLoop;
           case 4: // WRITELIT
             var value1 = code[offset++];
@@ -185,6 +254,7 @@ define(function() {
           case 6: // LITTOREG
             var register = code[offset++];
             var value = code[offset++];
+            registers[register] = value;
             continue codeLoop;
           case 7: // MEMREAD
             var register = code[offset++];
@@ -195,58 +265,72 @@ define(function() {
           case 9: // MULREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] *= registers[register2];
             continue codeLoop;
           case 10: // DIVREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] /= registers[register2];
             continue codeLoop;
           case 11: // ADDREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] += registers[register2];
             continue codeLoop;
-          case 12: // ADDREG
+          case 12: // SUBREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] -= registers[register2];
             continue codeLoop;
           case 13: // BITAND
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] &= registers[register2];
             continue codeLoop;
           case 14: // BITOR
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] |= registers[register2];
             continue codeLoop;
           case 15: // ISEQUAL
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] === registers[register2];
             continue codeLoop;
           case 16: // NOTEQUAL
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] !== registers[register2];
             continue codeLoop;
           case 17: // GREATER
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] > registers[register2];
             continue codeLoop;
           case 18: // LESSTHAN
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] < registers[register2];
             continue codeLoop;
           case 19: // GTE
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] >= registers[register2];
             continue codeLoop;
           case 20: // LTE
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] <= registers[register2];
             continue codeLoop;
           case 21: // AND
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = !!(registers[register1] && registers[register2]);
             continue codeLoop;
           case 22: // OR
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = !!(registers[register1] || registers[register2]);
             continue codeLoop;
           case 23: // CALL
             var register = code[offset++];
@@ -265,6 +349,7 @@ define(function() {
             continue codeLoop;
           case 28: // JZ
             var label = code[offset++];
+            if (registers.ax === 0) offset = label;
             continue codeLoop;
           case 29: // PUSHREG
             var register = code[offset++];
@@ -274,19 +359,25 @@ define(function() {
             continue codeLoop;
           case 31: // JMP
             var label = code[offset++];
+            offset = label;
             continue codeLoop;
           case 32: // MUL
             var register = code[offset++];
             var value = code[offset++];
+            registers[register] *= value;
             continue codeLoop;
           case 33: // CALLEXT
             var register = code[offset++];
+            var funcName = imports[registers[register]];
+            console.log(funcName, realStack);
             continue codeLoop;
           case 34: // PUSHREAL
             var register = code[offset++];
+            realStack.push(registers[register]);
             continue codeLoop;
           case 35: // SUBREALSTACK
             var value = code[offset++];
+            realStack.splice(-value, value);
             continue codeLoop;
           case 36: // LINENUM
             var value = code[offset++];
@@ -303,21 +394,26 @@ define(function() {
           case 40: // MODREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] % registers[register2];
             continue codeLoop;
           case 41: // XORREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers[register1] ^ registers[register2];
             continue codeLoop;
           case 42: // NOTREG
             var register = code[offset++];
+            registers[register1] = !registers[register1];
             continue codeLoop;
           case 43: // SHIFTLEFT
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] <<= registers[register2];
             continue codeLoop;
           case 44: // SHIFTRIGHT
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] >>= registers[register2]; // TODO: check shift type
             continue codeLoop;
           case 45: // CALLOBJ
             var register = code[offset++];
@@ -325,6 +421,9 @@ define(function() {
           case 46: // CHECKBOUNDS
             var register = code[offset++];
             var value = code[offset++];
+            if (registers[register] < 0 || registers[register] > value) {
+              throw new RangeError(registers[register] + ' out of bounds (must be in range 0..' + value + ')');
+            }
             continue codeLoop;
           case 47: // MEMWRITEPTR
             var register = code[offset++];
@@ -341,46 +440,59 @@ define(function() {
             var value = code[offset++];
             continue codeLoop;
           case 52: // CHECKNULL
+            if (!registers.mar) {
+              throw new Error('null reference');
+            }
             continue codeLoop;
           case 53: // FADD
             var register = code[offset++];
-            var value = codeFloat[offset++];
+            var value = code[offset++]; // correct that arg is int, not float
+            registers.asFloat[register] += value;
             continue codeLoop;
           case 54: // FSUB
             var register = code[offset++];
-            var value = codeFloat[offset++];
+            var value = code[offset++]; // correct that arg is int, not float
+            registers.asFloat[register] -= value;
             continue codeLoop;
           case 55: // FMULREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers.asFloat[register1] *= registers.asFloat[register2];
             continue codeLoop;
           case 56: // FDIVREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers.asFloat[register1] /= registers.asFloat[register2];
             continue codeLoop;
           case 57: // FADDREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers.asFloat[register1] += registers.asFloat[register2];
             continue codeLoop;
           case 58: // FSUBREG
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers.asFloat[register1] -= registers.asFloat[register2];
             continue codeLoop;
           case 59: // FGREATER
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers.asFloat[register1] > registers.asFloat[register2];
             continue codeLoop;
           case 60: // FLESSTHAN
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers.asFloat[register1] < registers.asFloat[register2];
             continue codeLoop;
           case 61: // FGTE
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers.asFloat[register1] >= registers.asFloat[register2];
             continue codeLoop;
           case 62: // FLTE
             var register1 = code[offset++];
             var register2 = code[offset++];
+            registers[register1] = registers.asFloat[register1] <= registers.asFloat[register2];
             continue codeLoop;
           case 63: // ZEROMEMORY
             var value = code[offset++];
@@ -398,13 +510,19 @@ define(function() {
             continue codeLoop;
           case 67: // CHECKNULLREG
             var register = code[offset++];
+            if (!registers[register]) {
+              throw new Error('null reference');
+            }
             continue codeLoop;
           case 68: // LOOPCHECKOFF
             continue codeLoop;
           case 69: // MEMZEROPTRND
             continue codeLoop;
           case 70: // JNZ
-            var register = code[offset++];
+            var label = code[offset++];
+            if (registers.ax !== 0) {
+              offset = label;
+            }
             continue codeLoop;
           case 71: // DYNAMICBOUNDS
             var register = code[offset++];
