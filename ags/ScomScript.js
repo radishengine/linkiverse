@@ -263,6 +263,7 @@ define(function() {
             runtime = this.runtime,
             imports = this.def.imports,
             stack = new Int32Array(250),
+            subCalls = [],
             stackTypes = new Uint8Array(250);
       var lineNumber = NaN, checkLoops = true;
       function nextStep() {
@@ -291,6 +292,10 @@ define(function() {
             continue codeLoop;
           case 5: // RET
             // TODO: return actual value
+            if (subCalls.length > 0) {
+              offset = subCalls.pop();
+              continue codeLoop;
+            }
             return;
           case 6: // LITTOREG
             var register = code[offset++];
@@ -459,9 +464,8 @@ define(function() {
             continue codeLoop;
           case 23: // CALL
             var register = code[offset++];
-            console.error('NYI: local call');
-            registers[register] = 0;
-            registers.types[register] = 0;
+            subCalls.push(offset);
+            offset = registers[register];
             continue codeLoop;
           case 24: // MEMREADB
             var register = code[offset++];
