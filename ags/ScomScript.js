@@ -265,7 +265,9 @@ define(function() {
             realStack = [],
             dv = this.dv,
             runtime = this.runtime,
-            imports = this.imports;
+            imports = this.imports,
+            lineNumber = NaN,
+            checkLoops = true;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
           case 0: // no-op
@@ -301,19 +303,27 @@ define(function() {
             registers.types[register] = type;
             continue codeLoop;
           case 7: // MEMREAD
-            var valueRegister = code[offset++];
+            var register = code[offset++];
             switch (registers.types.mar) {
               case 1:
-                registers[valueRegister] = dv.getInt32(registers.mar, true);
-                registers.types[valueRegister] = 0; // TODO: in-data fixups?
+                registers[register] = dv.getInt32(registers.mar, true);
+                registers.types[register] = 0; // TODO: in-data fixups?
+                break;
+              default:
+                console.error('NYI: read memory type ' + registers.types.mar);
+                registers[register] = 0;
+                registers.types[register] = 0;
                 break;
             }
             continue codeLoop;
           case 8: // MEMWRITE
-            var valueRegister = code[offset++];
+            var register = code[offset++];
             switch (registers.types.mar) {
               case 1:
-                dv.setInt32(registers.mar, registers[valueRegister], true);
+                dv.setInt32(registers.mar, registers[register], true);
+                break;
+              default:
+                console.error('NYI: write memory type ' + registers.types.mar);
                 break;
             }
             continue codeLoop;
@@ -389,18 +399,59 @@ define(function() {
             continue codeLoop;
           case 23: // CALL
             var register = code[offset++];
+            console.error('NYI: local call');
+            registers[register] = 0;
+            registers.types[register] = 0;
             continue codeLoop;
           case 24: // MEMREADB
             var register = code[offset++];
+            switch (registers.types.mar) {
+              case 1:
+                registers[register] = dv.getUint8(registers.mar, true);
+                registers.types[register] = 0; // TODO: in-data fixups?
+                break;
+              default:
+                console.error('NYI: read memory type ' + registers.types.mar);
+                registers[register] = 0;
+                registers.types[register] = 0;
+                break;
+            }
             continue codeLoop;
           case 25: // MEMREADW
             var register = code[offset++];
+            switch (registers.types.mar) {
+              case 1:
+                registers[register] = dv.getInt16(registers.mar, true);
+                registers.types[register] = 0; // TODO: in-data fixups?
+                break;
+              default:
+                console.error('NYI: read memory type ' + registers.types.mar);
+                registers[register] = 0;
+                registers.types[register] = 0;
+                break;
+            }
             continue codeLoop;
           case 26: // MEMWRITEB
             var register = code[offset++];
+            switch (registers.types.mar) {
+              case 1:
+                dv.setUint8(registers.mar, registers[register], true);
+                break;
+              default:
+                console.error('NYI: write memory type ' + registers.types.mar);
+                break;
+            }
             continue codeLoop;
           case 27: // MEMWRITEW
             var register = code[offset++];
+            switch (registers.types.mar) {
+              case 1:
+                dv.setInt16(registers.mar, registers[register], true);
+                break;
+              default:
+                console.error('NYI: write memory type ' + registers.types.mar);
+                break;
+            }
             continue codeLoop;
           case 28: // JZ
             var label = code[offset++];
@@ -408,9 +459,11 @@ define(function() {
             continue codeLoop;
           case 29: // PUSHREG
             var register = code[offset++];
+            console.error('NYI: PUSHREG');
             continue codeLoop;
           case 30: // POPREG
             var register = code[offset++];
+            console.error('NYI: POPREG');
             continue codeLoop;
           case 31: // JMP
             var label = code[offset++];
@@ -466,16 +519,19 @@ define(function() {
             realStack.splice(-value, value);
             continue codeLoop;
           case 36: // LINENUM
-            var value = code[offset++];
+            lineNumber = code[offset++];
             continue codeLoop;
           case 37: // CALLAS
             var register = code[offset++];
+            console.error('NYI: CALLAS');
             continue codeLoop;
           case 38: // THISBASE
             var value = code[offset++];
+            console.error('NYI: THISBASE');
             continue codeLoop;
           case 39: // NUMFUNCARGS
             var value = code[offset++];
+            console.error('NYI: NUMFUNCARGS');
             continue codeLoop;
           case 40: // MODREG
             var register1 = code[offset++];
@@ -503,6 +559,7 @@ define(function() {
             continue codeLoop;
           case 45: // CALLOBJ
             var register = code[offset++];
+            console.error('NYI: CALLOBJ');
             continue codeLoop;
           case 46: // CHECKBOUNDS
             var register = code[offset++];
@@ -513,17 +570,22 @@ define(function() {
             continue codeLoop;
           case 47: // MEMWRITEPTR
             var register = code[offset++];
+            console.error('NYI: MEMWRITEPTR');
             continue codeLoop;
           case 48: // MEMREADPTR
             var register = code[offset++];
+            console.error('NYI: MEMREADPTR');
             continue codeLoop;
           case 49: // MEMZEROPTR
+            console.error('NYI: MEMZEROPTR');
             continue codeLoop;
           case 50: // MEMINITPTR
             var register = code[offset++];
+            console.error('NYI: MEMINITPTR');
             continue codeLoop;
           case 51: // LOADSPOFFS
             var value = code[offset++];
+            console.error('NYI: LOADSPOFFS');
             continue codeLoop;
           case 52: // CHECKNULL
             if (!registers.mar) {
@@ -582,17 +644,21 @@ define(function() {
             continue codeLoop;
           case 63: // ZEROMEMORY
             var value = code[offset++];
+            console.error('NYI: ZEROMEMORY');
             continue codeLoop;
           case 64: // CREATESTRING
             var register = code[offset++];
+            console.error('NYI: CREATESTRING');
             continue codeLoop;
           case 65: // STRINGSEQUAL
             var register1 = code[offset++];
             var register2 = code[offset++];
+            console.error('NYI: STRINGSEQUAL');
             continue codeLoop;
           case 66: // STRINGSNOTEQ
             var register1 = code[offset++];
             var register2 = code[offset++];
+            console.error('NYI: STRINGSNOTEQ');
             continue codeLoop;
           case 67: // CHECKNULLREG
             var register = code[offset++];
@@ -601,6 +667,7 @@ define(function() {
             }
             continue codeLoop;
           case 68: // LOOPCHECKOFF
+            checkLoops = false;
             continue codeLoop;
           case 69: // MEMZEROPTRND
             continue codeLoop;
@@ -612,11 +679,13 @@ define(function() {
             continue codeLoop;
           case 71: // DYNAMICBOUNDS
             var register = code[offset++];
+            console.error('NYI: DYNAMICBOUNDS');
             continue codeLoop;
           case 72: // NEWARRAY
             var register = code[offset++];
             var value1 = code[offset++];
             var value2 = code[offset++];
+            console.error('NYI: NEWARRAY');
             continue codeLoop;
           default:
             throw new Error('unknown opcode: 0x' + code[--offset].toString(16));
