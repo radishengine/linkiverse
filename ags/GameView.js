@@ -1,4 +1,4 @@
-define(['./util'], function(util) {
+define(['./util', './ScomScript'], function(util, ScomScript) {
 
   'use strict';
   
@@ -255,7 +255,14 @@ define(['./util'], function(util) {
       };
     });
     this.member('globalScript', function() {
-      if (this.formatVersion >= 10) throw new Error('NYI');
+      if (this.formatVersion >= 11) {
+        var scom = new ScomScript(
+          this.dv.buffer,
+          this.dv.byteOffset + this.endOffset,
+          this.dv.byteLength - this.endOffset);
+        this.endOffset += scom.endOffset;
+        return scom;
+      }
       const length = this.dv.getUint32(this.endOffset, true);
       const offset = this.endOffset += 4;
       this.endOffset += length;
@@ -263,6 +270,30 @@ define(['./util'], function(util) {
         return this.bytes.subarray(offset, offset + length);
       };
     });
+    if (this.formatVersion >= 31) {
+      if (this.formatVersion > 37) {
+        this.member('dialogScript', function() {
+          var scom = new ScomScript(
+            this.dv.buffer,
+            this.dv.byteOffset + this.endOffset,
+            this.dv.byteLength - this.endOffset);
+          this.endOffset += scom.endOffset;
+          return scom;
+        });
+      }
+      this.member('moduleScripts', function() {
+        var list = new Array(this.dv.getUint32(this.endOffset, true));
+        this.endOffset += 4;
+        for (var i = 0; i < list.length; i++) {
+          list[i] = new ScomScript(
+            this.dv.buffer,
+            this.dv.byteOffset + this.endOffset,
+            this.dv.byteLength - this.endOffset);
+          this.endOffset += list[i].endOffset;
+        }
+        return list;
+      });
+    }
     this.member('views', function() {
       if (this.formatVersion >= 13) throw new Error('NYI');
       const offset = this.endOffset;
