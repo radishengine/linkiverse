@@ -381,7 +381,7 @@ define(function() {
                 else {
                   throw new Error('bad data access');
                 }
-                breakl
+                break;
               default:
                 console.error('NYI: write memory type ' + registers.types.mar);
                 break;
