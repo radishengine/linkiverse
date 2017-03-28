@@ -373,7 +373,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           }
         }
       }
-      return next_step();
+      this.mainExec.queueAction(next_step);
     },
     runGraphicalScriptBlock: function(script, n) {
       var block = script.blocks[n];
@@ -410,15 +410,19 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
               self.goToRoom(step.data1);
               continue;
             case 'run_dialog_topic':
-              var promise = self.runDialog(step.data1);
-              if (promise) {
-                return promise.then(next_step);
-              }
+              self.runDialog(step.data1);
               continue;
           }
         }
       }
       return next_step();
+    },
+    DisplayMessage: function(number) {
+      var text = this.getMessage(number);
+      return this.display(text);
+    },
+    RunDialog: function(number) {
+      return this.runDialog(number);
     },
     getMessage: function(number) {
       return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
@@ -497,7 +501,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
                   self.ticksPerSecond = args[0];
                   break;
                 case 'RunDialog':
-                  promise = self.runDialog(args[0]);
+                  self.runDialog(args[0]);
                   break;
                 case 'PlaySound':
                   self.playSound(args[0]);
