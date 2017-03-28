@@ -1,4 +1,4 @@
-define(['./ScriptV2View'], function(ScriptV2View) {
+define(['./ScriptV2View', './ScomScript'], function(ScriptV2View, ScomScript) {
 
   'use strict';
   
@@ -90,6 +90,18 @@ define(['./ScriptV2View'], function(ScriptV2View) {
         }
       }
       Object.defineProperty(this, 'scriptCompiled_v2', {value:view});
+      return view;
+    },
+    get scriptCompiled_v3() {
+      if (!this.chunks) return null;
+      var view = null;
+      for (var i = 0; i < this.chunks.length; i++) {
+        if (this.chunks[i].type === 'compiled_script_v3') {
+          var bytes = this.chunks[i].data;
+          view = new ScomScript(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        }
+      }
+      Object.defineProperty(this, 'scriptCompiled_v3', {value:view});
       return view;
     },
     get main() {
