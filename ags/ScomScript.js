@@ -265,7 +265,9 @@ define(function() {
             realStack = [],
             dv = this.dv,
             runtime = this.runtime,
-            imports = this.imports;
+            imports = this.imports,
+            stack = new Int32Array(250),
+            stackTypes = new Uint8Array(250);
       var lineNumber = NaN, checkLoops = true;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
@@ -458,11 +460,23 @@ define(function() {
             continue codeLoop;
           case 29: // PUSHREG
             var register = code[offset++];
-            console.error('NYI: PUSHREG');
+            if (code[offset] === 30) {
+              // immediate POPREG
+              var register2 = code[offset + 1];
+              offset += 2;
+              registers[register2] = registers[register];
+              registers.types[register2] = registers[register];
+              continue codeLoop;
+            }
+            stack[registers.sp] = registers[register];
+            stackTypes[registers.sp] = registers.types[register];
+            registers.sp++;
             continue codeLoop;
           case 30: // POPREG
             var register = code[offset++];
-            console.error('NYI: POPREG');
+            --registers.sp;
+            registers[register] = stack[registers.sp];
+            registers.types[register] = stackTypes[registers.sp];
             continue codeLoop;
           case 31: // JMP
             var label = code[offset++];
