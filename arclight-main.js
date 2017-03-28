@@ -319,7 +319,9 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                 for (var i = 0; i < files.length; i++) {
                   promises.push(files[i].container.then(addFile.bind(null, files[i])));
                 }
-                return Promise.all(promises).then(Promise.resolve(fileMap));
+                return Promise.all(promises).then(function() {
+                  return fileMap;
+                }));
               });
             });
           });
