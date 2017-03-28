@@ -334,6 +334,9 @@ define(function() {
                   registers[register] = character[fieldName];
                   registers.types[register] = 0;
                 }
+                else {
+                  throw new Error('bad data access');
+                }
                 break;
               default:
                 console.error('NYI: read memory type ' + registers.types.mar);
@@ -462,6 +465,38 @@ define(function() {
             switch (registers.types.mar) {
               case 1:
                 dv.setUint8(registers.mar, registers[register], true);
+                break;
+              case 4:
+                var i;
+                for (i = imports.length-1; i >= 0; i--) {
+                  if (registers.mar >= imports[i].offset) {
+                    break;
+                  }
+                }
+                if (i < 0) {
+                  throw new Error('bad data access');
+                }
+                var dataObject = imports[i];
+                var dataOffset = registers.mar - dataObject.offset;
+                var value = 0;
+                if (dataObject.name === 'character') {
+                   // TODO: check if character struct is ever not 320 bytes?
+                  var fieldOffset = dataOffset % 320;
+                  var index = (dataOffset - fieldOffset) / 320;
+                  if (index >= runtime.characters.length) {
+                    throw new Error('bad data access');
+                  }
+                  var character = runtime.characters[index];
+                  var fieldName = getCharacterByteFieldName(fieldOffset);
+                  if (!fieldName) {
+                    throw new Error('bad data access');
+                  }
+                  registers[register] = character[fieldName];
+                  registers.types[register] = 0;
+                }
+                else {
+                  throw new Error('bad data access');
+                }
                 break;
               default:
                 console.error('NYI: write memory type ' + registers.types.mar);
@@ -749,6 +784,10 @@ define(function() {
       case 13: return 'activeInventoryItem';
       default: return null;
     }
+  }
+  
+  function getCharacterByteFieldName(offset) {
+    return (offset === 318) ? 'visible' : null;
   }
   
   return ScomScript;
