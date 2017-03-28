@@ -109,6 +109,21 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         overlay.remove();
       }
     },
+    SetTextOverlay: function(id, x, y, width, fontNumber, color, text) {
+      this.RemoveOverlay(id);
+      var font = this.fonts[fontNumber];
+      var height = font.wrap(text, width).length * font.lineHeight;
+      this.idMap[id] = new RuntimeTextOverlay(
+        this,
+        x, y,
+        width, height,
+        font,
+        color,
+        0,
+        0,
+        text);
+      return id;
+    },
     init: function() {
       var self = this;
       return this._init = this._init || Promise.all([
