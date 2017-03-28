@@ -78,7 +78,7 @@ define(function() {
         }
         var startPos = pos;
         do { } while (this.bytes[++pos] !== 0);
-        var name = String.fromCharCode.apply(this.bytes.subarray(startPos, pos));
+        var name = String.fromCharCode.apply(null, this.bytes.subarray(startPos, pos));
         pos++;
         list.push({name:name, offset:i});
       }
@@ -97,7 +97,7 @@ define(function() {
         var xport = list[i] = {};
         var startPos = pos;
         while (this.bytes[pos] !== 0) pos++;
-        xport.name = String.fromCharCode.apply(this.bytes.subarray(startPos, pos));
+        xport.name = String.fromCharCode.apply(null, this.bytes.subarray(startPos, pos));
         pos++;
         xport.offset = this.dv.getUint32(pos, true);
         pos += 4;
