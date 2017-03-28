@@ -345,8 +345,8 @@ define(function() {
                 }
                 break;
               case 6:
-                registers[register] = stack[registers.sp + registers.mar/4];
-                registers.types[register] = stackTypes[registers.sp + registers.mar/4];
+                registers[register] = stack[(registers.sp + registers.mar)/4];
+                registers.types[register] = stackTypes[(registers.sp + registers.mar)/4];
                 break;
               default:
                 console.error('NYI: read memory type ' + registers.types.mar);
@@ -567,15 +567,15 @@ define(function() {
               registers.types[register2] = registers[register];
               continue codeLoop;
             }
-            stack[registers.sp] = registers[register];
-            stackTypes[registers.sp] = registers.types[register];
-            registers.sp++;
+            stack[registers.sp/4] = registers[register];
+            stackTypes[registers.sp/4] = registers.types[register];
+            registers.sp += 4;
             continue codeLoop;
           case 30: // POPREG
             var register = code[offset++];
-            --registers.sp;
-            registers[register] = stack[registers.sp];
-            registers.types[register] = stackTypes[registers.sp];
+            registers.sp -= 4;
+            registers[register] = stack[registers.sp/4];
+            registers.types[register] = stackTypes[registers.sp/4];
             continue codeLoop;
           case 31: // JMP
             var label = code[offset++];
