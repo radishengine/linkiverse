@@ -491,7 +491,7 @@ define(function() {
                   if (!fieldName) {
                     throw new Error('bad data access');
                   }
-                  registers[register] = character[fieldName];
+                  character[fieldName] = registers[register];
                   registers.types[register] = 0;
                 }
                 else {
