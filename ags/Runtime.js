@@ -890,6 +890,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     redraw: function() {
       var ctx2d = this.canvas.getContext('2d');
       var w = this.canvas.width, h = this.canvas.height;
+      if (w === 0 || h === 0) return;
       var imageData = ctx2d.createImageData(w, h);
       var asU32 = new Uint32Array(imageData.data.buffer, imageData.data.byteOffset, imageData.data.byteLength/4);
       var rgba = this.runtime.getColorRGBA(this.colorCode);
