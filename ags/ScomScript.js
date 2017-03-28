@@ -265,9 +265,8 @@ define(function() {
             realStack = [],
             dv = this.dv,
             runtime = this.runtime,
-            imports = this.imports,
-            lineNumber = NaN,
-            checkLoops = true;
+            imports = this.imports;
+      var lineNumber = NaN, checkLoops = true;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
           case 0: // no-op
