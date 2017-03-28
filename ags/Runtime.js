@@ -598,6 +598,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         case 'run_dialog_topic':
           return this.runDialog(interaction.data1);
         case 'run_script':
+          if (this.game.formatVersion >= 11) {
+            // TODO: SCOM script
+            return;
+          }
           return this.runScriptV2(this.room.scriptCompiled_v2, interaction.funcName);
         case 'go_to_screen':
           this.goToRoom(interaction.data1);
