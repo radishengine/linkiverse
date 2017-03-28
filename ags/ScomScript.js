@@ -53,6 +53,16 @@ define(function() {
       },
       enumerable: true,
     },
+    types: {
+      get: function() {
+        var types = Object.defineProperties(
+          new Uint8Array(this.buffer, this.byteOffset, this.length),
+          regProperties);
+        Object.defineProperty(this, 'types', {value:types, enumerable:true});
+        return types;
+      },
+      enumerable: true,
+    },
   }, regProperties);
   
   function allocateRegisters() {
@@ -119,6 +129,24 @@ define(function() {
     },
     get fixupCount() {
       return this.dv.getUint32(this.fixupsOffset, true);
+    },
+    get fixups() {
+      var list = new Array(this.fixupCount);
+      var typesBase = this.fixupsOffset + 4;
+      var offsetBase = typesBase + list.length;
+      for (var i = 0; i < list.length; i++) {
+        var fixup = list[i] = {offset: this.dv.getUint32(offsetBase + i * 4, true)};
+        switch (fixup.typeCode = this.bytes[typesBase + i]) {
+          case 1: fixup.context = 'code'; fixup.type = 'data'; break;
+          case 2: fixup.context = 'code'; fixup.type = 'code'; break;
+          case 3: fixup.context = 'code'; fixup.type = 'strings'; break;
+          case 4: fixup.context = 'code'; fixup.type = 'import'; break;
+          case 5: fixup.context = 'data'; fixup.type = 'data'; break;
+          case 6: fixup.context = 'code'; fixup.type = 'stack'; break;
+        }
+      }
+      Object.defineProperty(this, 'fixups', {value:list, enumerable:true});
+      return list;
     },
     get importsOffset() {
       return this.fixupsOffset + 4 + this.fixupCount * (1 + 4);
@@ -203,6 +231,13 @@ define(function() {
     this.def = def;
     this.code = this.def.code;
     this.codeFloat = new Float32Array(this.code.buffer, this.code.byteOffset, this.code.length);
+    this.codeType = new Uint8Array(this.code.length);
+    for (var i = 0; i < def.fixups.length; i++) {
+      var fixup = def.fixups[i];
+      if (fixup.context === 'code') {
+        this.codeType[fixup.offset] = fixup.typeCode;
+      }
+    }
     this.bytes = new Uint8Array(def.data);
     this.dv = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength);
     this.imports = {};
@@ -221,7 +256,9 @@ define(function() {
   ScomInstance.prototype = {
     runFrom: function(offset) {
       const code = this.code,
+            codeType = this.codeType,
             codeFloat = this.codeFloat,
+            strings = this.def.strings,
             registers = allocateRegisters(),
             realStack = [],
             imports = this.imports;
@@ -243,6 +280,7 @@ define(function() {
             var register1 = code[offset++];
             var register2 = code[offset++];
             registers[register2] = registers[register1];
+            registers.types[register2] = registers.types[register1];
             continue codeLoop;
           case 4: // WRITELIT
             var value1 = code[offset++];
@@ -253,8 +291,10 @@ define(function() {
             return;
           case 6: // LITTOREG
             var register = code[offset++];
+            var type = codeType[offset];
             var value = code[offset++];
             registers[register] = value;
+            registers.types[register] = type;
             continue codeLoop;
           case 7: // MEMREAD
             var register = code[offset++];
@@ -373,7 +413,18 @@ define(function() {
             continue codeLoop;
           case 34: // PUSHREAL
             var register = code[offset++];
-            realStack.unshift(registers[register]);
+            switch (registers.types[register]) {
+              case 3: // strings
+                var startPos = registers[register];
+                var endPos = startPos;
+                while (endPos < strings.length && strings[endPos] !== 0) endPos++;
+                var str = String.fromCharCode.apply(null, strings.subarray(startPos, endPos));
+                realStack.unshift(str);
+                break;
+              default:
+                realStack.unshift(registers[register]);
+                break;
+            }
             continue codeLoop;
           case 35: // SUBREALSTACK
             var value = code[offset++];
