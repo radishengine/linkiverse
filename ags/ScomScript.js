@@ -300,10 +300,23 @@ define(function() {
             registers.types[register] = type;
             continue codeLoop;
           case 7: // MEMREAD
-            var register = code[offset++];
+            var valueRegister = code[offset++];
+            var addressRegister = 'mar';
+            switch (registers.types[addressRegister]) {
+              case 1:
+                registers[valueRegister] = this.dv.getInt32(registers[addressRegister], true);
+                registers.types[valueRegister] = 0; // TODO: in-data fixups?
+                break;
+            }
             continue codeLoop;
           case 8: // MEMWRITE
-            var register = code[offset++];
+            var valueRegister = code[offset++];
+            var addressRegister = 'mar';
+            switch (registers.types[addressRegister]) {
+              case 1:
+                this.dv.setInt32(registers[addressRegister], registers[valueRegister], true);
+                break;
+            }
             continue codeLoop;
           case 9: // MULREG
             var register1 = code[offset++];
@@ -415,11 +428,23 @@ define(function() {
             if (typeof runtime[funcName] === 'function') {
               var result = runtime[funcName].apply(runtime, realStack);
               if (result instanceof Promise) {
-                return result.then(nextStep); // TODO: get the return value
+                return result.then(function(result) {
+                  // TODO: handle non-int return types
+                  registers[register] = result;
+                  registers.types[register] = 0;
+                  return nextStep();
+                });
+              }
+              else {
+                 // TODO: handle non-int return types
+                registers[register] = result;
+                registers.types[register] = 0;
               }
             }
             else {
               console.log(funcName, realStack);
+              registers[register] = 0;
+              registers.types[register] = 0;
             }
             continue codeLoop;
           case 34: // PUSHREAL
