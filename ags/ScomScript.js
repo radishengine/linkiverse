@@ -263,6 +263,7 @@ define(function() {
             stringTable = this.def.stringTable,
             registers = allocateRegisters(),
             realStack = [],
+            runtime = this.runtime,
             imports = this.imports;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
@@ -411,7 +412,15 @@ define(function() {
           case 33: // CALLEXT
             var register = code[offset++];
             var funcName = imports[registers[register]];
-            console.log(funcName, realStack);
+            if (typeof runtime[funcName] === 'function') {
+              var result = runtime[funcName].apply(runtime, realStack);
+              if (result instanceof Promise) {
+                return result.then(nextStep); // TODO: get the return value
+              }
+            }
+            else {
+              console.log(funcName, realStack);
+            }
             continue codeLoop;
           case 34: // PUSHREAL
             var register = code[offset++];
