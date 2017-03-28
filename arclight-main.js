@@ -285,6 +285,12 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                 var pos = 0;
                 for (var i = 0; i < containers.length; i++) {
                   containers[i] = String.fromCharCode.apply(null, listData.subarray(pos, pos + 20)).match(/^[^\0]*/)[0];
+                  if (/^ac2game\.(dat|ags)$/i.test(containers[i])) {
+                    containers[i] = Promise.resolve(mainBlob);
+                  }
+                  else {
+                    containers[i] = getRelativeBlob(containers[i]);
+                  }
                   pos += 20;
                 }
                 pos += 4;
@@ -305,13 +311,15 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                 for (var i = 0; i < files.length; i++) {
                   files[i].container = containers[listData[pos++]];
                 }
+                var promises = [];
                 var fileMap = {};
-                for (var i = 0; i < files.length; i++) {
-                  if (/^ac2game\.(dat|ags)$/i.test(files[i].container)) {
-                    fileMap[files[i].name] = mainBlob.slice(files[i].offset, files[i].offset + files[i].length);
-                  }
+                function addFile(file, blob) {
+                  fileMap[file.name] = blob.slice(file.offset, file.offset + file.length);
                 }
-                return fileMap;
+                for (var i = 0; i < files.length; i++) {
+                  promises.push(files[i].container.then(addFile.bind(null, files[i])));
+                }
+                return Promise.all(promises).then(Promise.resolve(fileMap));
               });
             });
           });
@@ -362,13 +370,24 @@ function(inflate, GameView, RoomView, Runtime, midi) {
         }
         console.log(gameFiles[0]);
         var gameFile = zipRecords[gameFiles[0]];
-        gameFile.getCompressedBlob().then(function(compressed) {
-          return gameFile.getUncompressedBlob();
-        })
-        .then(function(uncompressed) {
+        gameFile.getUncompressedBlob().then(function(uncompressed) {
           var folder = gameFiles[0].replace(/\/[^\/]*$/, '/');
           return loadGame(uncompressed, function getRelativeBlob(path) {
-            return zipRecords[folder + path];
+            path = folder + path;
+            var record = zipRecords[path];
+            if (!record) {
+              path = path.toUpperCase();
+              for (var k in zipRecords) {
+                if (k.toUpperCase() === path) {
+                  record = zipRecords[path];
+                  break;
+                }
+              }
+              if (!record) {
+                return Promise.reject('file not found');
+              }
+            }
+            return record.getUncompressedBlob();
           });
         })
         .then(function(files) {
