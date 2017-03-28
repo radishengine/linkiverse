@@ -77,6 +77,38 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     get scoreText() {
       return 'Score: ' + this.score + ' of ' + this.totalScore;
     },
+    get idMap() {
+      var map = {};
+      Object.defineProperty(this, 'idMap', {value:map, enumerable:true});
+      return map;
+    },
+    generateId: function(object) {
+      var id;
+      do { id = (Math.random() * 0x7fffffff) | 0; } while (id in this.idMap);
+      this.idMap[id] = object;
+      return id;
+    },
+    CreateTextOverlay: function(x, y, width, fontNumber, color, text) {
+      var font = this.fonts[fontNumber];
+      var height = font.wrap(text, width).length * font.lineHeight;
+      var overlay = new RuntimeTextOverlay(
+        this,
+        x, y,
+        width, height,
+        font,
+        color,
+        0,
+        0,
+        text);
+      return this.generateId(overlay);
+    },
+    RemoveTextOverlay: function(id) {
+      var overlay = this.idMap[id];
+      if (overlay instanceof RuntimeTextOverlay) {
+        delete this.idMap[id];
+        overlay.remove();
+      }
+    },
     init: function() {
       var self = this;
       return this._init = this._init || Promise.all([
