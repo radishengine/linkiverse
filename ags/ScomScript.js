@@ -52,6 +52,7 @@ define(function() {
         return asFloat;
       },
       enumerable: true,
+      configurable: true,
     },
     types: {
       get: function() {
@@ -62,6 +63,7 @@ define(function() {
         return types;
       },
       enumerable: true,
+      configurable: true,
     },
   }, regProperties);
   
