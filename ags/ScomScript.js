@@ -344,6 +344,10 @@ define(function() {
                   throw new Error('bad data access');
                 }
                 break;
+              case 6:
+                registers[register] = stack[registers.sp + registers.mar/4];
+                registers.types[register] = stackTypes[registers.sp + registers.mar/4];
+                break;
               default:
                 console.error('NYI: read memory type ' + registers.types.mar);
                 registers[register] = 0;
