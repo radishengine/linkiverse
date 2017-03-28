@@ -4,38 +4,38 @@ define(function() {
   
   var regProperties = {
     sp: {
-      get: function(){ return this[0]; },
-      set: function(v){ this[0] = v; },
-      enumerable: true,
-    },
-    mar: {
       get: function(){ return this[1]; },
       set: function(v){ this[1] = v; },
       enumerable: true,
     },
-    ax: {
+    mar: {
       get: function(){ return this[2]; },
       set: function(v){ this[2] = v; },
       enumerable: true,
     },
-    bx: {
+    ax: {
       get: function(){ return this[3]; },
       set: function(v){ this[3] = v; },
       enumerable: true,
     },
-    cx: {
+    bx: {
       get: function(){ return this[4]; },
       set: function(v){ this[4] = v; },
       enumerable: true,
     },
-    op: {
+    cx: {
       get: function(){ return this[5]; },
       set: function(v){ this[5] = v; },
       enumerable: true,
     },
-    dx: {
+    op: {
       get: function(){ return this[6]; },
       set: function(v){ this[6] = v; },
+      enumerable: true,
+    },
+    dx: {
+      get: function(){ return this[7]; },
+      set: function(v){ this[7] = v; },
       enumerable: true,
     },
   };
@@ -68,7 +68,7 @@ define(function() {
   }, regProperties);
   
   function allocateRegisters() {
-    return Object.defineProperties(new Int32Array(7), regIntProperties);
+    return Object.defineProperties(new Int32Array(8), regIntProperties);
   }
   
   function ScomScript(buffer, byteOffset, byteLength) {
@@ -301,20 +301,18 @@ define(function() {
             continue codeLoop;
           case 7: // MEMREAD
             var valueRegister = code[offset++];
-            var addressRegister = 'mar';
-            switch (registers.types[addressRegister]) {
+            switch (registers.types.mar) {
               case 1:
-                registers[valueRegister] = this.dv.getInt32(registers[addressRegister], true);
+                registers[valueRegister] = this.dv.getInt32(registers.mar, true);
                 registers.types[valueRegister] = 0; // TODO: in-data fixups?
                 break;
             }
             continue codeLoop;
           case 8: // MEMWRITE
             var valueRegister = code[offset++];
-            var addressRegister = 'mar';
-            switch (registers.types[addressRegister]) {
+            switch (registers.types.mar) {
               case 1:
-                this.dv.setInt32(registers[addressRegister], registers[valueRegister], true);
+                this.dv.setInt32(registers.mar, registers[valueRegister], true);
                 break;
             }
             continue codeLoop;
