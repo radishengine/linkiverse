@@ -260,7 +260,7 @@ define(function() {
       const code = this.code,
             codeType = this.codeType,
             codeFloat = this.codeFloat,
-            strings = this.def.strings,
+            stringTable = this.def.stringTable,
             registers = allocateRegisters(),
             realStack = [],
             imports = this.imports;
@@ -419,8 +419,8 @@ define(function() {
               case 3: // strings
                 var startPos = registers[register];
                 var endPos = startPos;
-                while (endPos < strings.length && strings[endPos] !== 0) endPos++;
-                var str = String.fromCharCode.apply(null, strings.subarray(startPos, endPos));
+                while (endPos < stringTable.length && stringTable[endPos] !== 0) endPos++;
+                var str = String.fromCharCode.apply(null, stringTable.subarray(startPos, endPos));
                 realStack.unshift(str);
                 break;
               default:
