@@ -373,7 +373,7 @@ define(function() {
             continue codeLoop;
           case 34: // PUSHREAL
             var register = code[offset++];
-            realStack.push(registers[register]);
+            realStack.unshift(registers[register]);
             continue codeLoop;
           case 35: // SUBREALSTACK
             var value = code[offset++];
