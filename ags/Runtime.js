@@ -676,12 +676,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
               this.performInteractionV2.bind(
                 this,
                 interactions[i]));
-            this.eventTarget.addEventListener('update', this.eventTarget.roomRepExec);
             function onLeavingRoom() {
               this.removeEventListener('update', this.roomRepExec);
               this.roomRepExec = null;
               this.removeEventListener('leaving-room', onLeavingRoom);
             }
+            this.eventTarget.addEventListener('update', this.eventTarget.roomRepExec);
+            this.eventTarget.addEventListener('leaving-room', onLeavingRoom);
           }
         }
       }
