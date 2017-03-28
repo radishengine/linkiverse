@@ -837,6 +837,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     var imageData = runtime.ctx2d.createImageData(pic.width, pic.height);
     pic.setImageData(imageData);
     this.background = imageData;
+    if (def.scriptCompiled_v3) {
+      this.script = def.scriptCompiled_v3.instantiate(runtime);
+    }
   }
   RuntimeRoom.prototype = {
     viewportX: 0,
