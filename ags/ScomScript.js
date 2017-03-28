@@ -60,6 +60,7 @@ define(function() {
           new Uint8Array(this.buffer, this.byteOffset, this.length),
           regProperties);
         Object.defineProperty(this, 'types', {value:types, enumerable:true});
+        types.sp = 6;
         return types;
       },
       enumerable: true,
