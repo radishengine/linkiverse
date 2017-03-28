@@ -186,6 +186,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     Wait: function(ticks) {
       return this.wait(ticks);
     },
+    WaitKey: function(ticks) {
+      return this.wait(ticks, {keys:true});
+    },
     wait: function(ticks, cancellers) {
       var eventTarget = this.eventTarget;
       return new Promise(function(resolve, reject) {
