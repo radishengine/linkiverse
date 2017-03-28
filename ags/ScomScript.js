@@ -145,7 +145,7 @@ define(function() {
     this.runtime = runtime;
     this.def = def;
     this.code = this.def.code;
-    this.codeFloat = new Float32Array(this.code.buffer, this.code.byteOffset, this.code.byteLength);
+    this.codeFloat = new Float32Array(this.code.buffer, this.code.byteOffset, this.code.length);
     this.bytes = new Uint8Array(def.data);
     this.dv = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength);
     this.exports = {};
