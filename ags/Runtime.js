@@ -310,6 +310,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     DisplaySpeech: function(characterId, text) {
       return this.characters[characterId].say(text);
     },
+    DisplaySpeechBackground: function(characterId, text) {
+      return this.characters[characterId].say(text, true);
+    },
     PlaySound: function(number) {
       return this.playSound(number);
     },
@@ -1101,7 +1104,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var baseline = this._baseline;
       return this._baseline === -1 ? this._y : this._baseline;
     },
-    say: function(text) {
+    say: function(text, background) {
       var runtime = this.runtime;
       var font = runtime.fonts[1];
       var outlineFont = runtime.fonts[2];
@@ -1115,6 +1118,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var y = Math.min(200 - height, Math.max(0, this.y - runtime.room.viewportY - this.height - height));
       var t1 = new RuntimeTextOverlay(runtime, x, y, width, height, outlineFont, 0, 0.5, 0, text);
       var t2 = new RuntimeTextOverlay(runtime, x, y, width, height, font, this.def.speechColor, 0.5, 0, text);
+      if (background) {
+        runtime.wait(runtime.getTextDisplayTicks(text))
+          .then(function() {
+            t1.remove();
+            t2.remove();
+          });
+        return;
+      }
       return runtime.wait(runtime.getTextDisplayTicks(text), {mouseButtons:true, keys:true})
         .then(function() {
           t1.remove();
