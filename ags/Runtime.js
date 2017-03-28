@@ -102,9 +102,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         text);
       return this.generateId(overlay);
     },
-    RemoveTextOverlay: function(id) {
+    RemoveOverlay: function(id) {
       var overlay = this.idMap[id];
-      if (overlay instanceof RuntimeTextOverlay) {
+      if (overlay instanceof RuntimeOverlay) {
         delete this.idMap[id];
         overlay.remove();
       }
