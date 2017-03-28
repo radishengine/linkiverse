@@ -183,6 +183,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         source.start();
       });
     },
+    Wait: function(ticks) {
+      return this.wait(ticks);
+    },
     wait: function(ticks, cancellers) {
       var eventTarget = this.eventTarget;
       return new Promise(function(resolve, reject) {
@@ -229,19 +232,35 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     runGraphicalScript: function(n) {
       return this.runGraphicalScriptBlock(this.room.graphicalScripts[n], 0);
     },
+    NewRoom: function(n) {
+      this.goToRoom(n);
+    },
     goToRoom: function(n) {
-      this.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
       var self = this;
       var loading = self.loadRoom(n).then(function(roomDef) {
         return new RuntimeRoom(self, roomDef);
       });
       this.mainExec.queueAction(function() {
+        self.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
         return loading.then(function(room) {
           self.room = room;
           self.palette = room.backgroundBitmap.palette;
           self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
         });
       });
+    },
+    Display: function(text) {
+      // TODO: string interpolation
+      return this.display(text);
+    },
+    DisplaySpeech: function(characterId, text) {
+      return this.characters[characterId].say(text);
+    },
+    PlaySound: function(number) {
+      return this.playSound(number);
+    },
+    PlayMusic: function(number) {
+      return this.playMusic(number);
     },
     display: function(text) {
       var font = this.fonts[0];
