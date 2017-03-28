@@ -303,7 +303,7 @@ define(['./note'], function(noteData) {
         timing.ticksPerBeat = deltaTimeValue;
       }
       var foundTracks = [];
-      for (var pos = 14; pos < bytes.length - 8; ) {
+      for (var pos = 14; pos < bytes.length - 7; ) {
         if (String.fromCharCode(bytes[pos], bytes[pos+1], bytes[pos+2], bytes[pos+3]) !== 'MTrk') {
           if (foundTracks.length === trackCount) {
             // ignore trailing garbage
