@@ -263,9 +263,9 @@ define(function() {
             dv = this.dv,
             runtime = this.runtime,
             imports = this.def.imports,
-            stack = new Int32Array(250),
-            subCalls = [],
+            stack = new DataView(250 * 4),
             stackTypes = new Uint8Array(250);
+      registers.sp = 4; // slot 0 is for RET to check to know when to return completely
       var lineNumber = NaN, checkLoops = true;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
@@ -292,12 +292,12 @@ define(function() {
             var value2 = code[offset++];
             continue codeLoop;
           case 5: // RET
-            // TODO: return actual value
-            if (subCalls.length > 0) {
-              offset = subCalls.pop();
-              continue codeLoop;
+            registers.sp -= 4;
+            offset = stack.getInt32(registers.sp, true);
+            if (offset === 0) {
+              return registers.ax;
             }
-            return;
+            continue codeLoop;
           case 6: // LITTOREG
             var register = code[offset++];
             var type = codeType[offset];
@@ -345,7 +345,7 @@ define(function() {
                 }
                 break;
               case 6:
-                registers[register] = stack[registers.mar/4];
+                registers[register] = stack.getInt32(registers.mar, true);
                 registers.types[register] = stackTypes[registers.mar/4];
                 break;
               default:
@@ -469,7 +469,8 @@ define(function() {
             continue codeLoop;
           case 23: // CALL
             var register = code[offset++];
-            subCalls.push(offset);
+            stack.setInt32(registers.sp, offset, true);
+            registers.sp += 4;
             offset = registers[register];
             continue codeLoop;
           case 24: // MEMREADB
@@ -567,14 +568,14 @@ define(function() {
               registers.types[register2] = registers[register];
               continue codeLoop;
             }
-            stack[registers.sp/4] = registers[register];
+            stack.setInt32(registers.sp, registers[register], true);
             stackTypes[registers.sp/4] = registers.types[register];
             registers.sp += 4;
             continue codeLoop;
           case 30: // POPREG
             var register = code[offset++];
             registers.sp -= 4;
-            registers[register] = stack[registers.sp/4];
+            registers[register] = stack.getInt32(registers.sp, true);
             registers.types[register] = stackTypes[registers.sp/4];
             continue codeLoop;
           case 31: // JMP
