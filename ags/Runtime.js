@@ -134,6 +134,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           self.title = self.game.title;
           self.totalScore = self.game.totalScore;
           self.palette = self.game.palette.subarray();
+          self.script = self.game.globalScript.instantiate(self);
+          for (var k in self.script.exports) {
+            self[k] = self.script.exports[k];
+          }
         }),
 
         this.fileSystem.loadAsBlob('acsprset.spr')
