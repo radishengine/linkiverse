@@ -531,13 +531,14 @@ function(inflate, GameView, RoomView, Runtime, midi) {
             promises.push(
               readBlob(parts.sections[i]).then(function(data) {
                 var dv = new DataView(data);
-                for (var i = 0; i < data.byteLength; i++) {
+                for (var i = 0; i < data.byteLength - 6; i++) {
                   if (dv.getUint32(i, true) === 0x54677777 && dv.getUint16(i + 4, true) === 0x4829) {
                     var chunkHeader = new DataView(data, i + 6, 12);
                     var chunkType = chunkHeader.getUint16(0, true);
                     var chunkFlags = chunkHeader.getUint16(2, true);
                     var packedSize = chunkHeader.getUint32(4, true);
                     var unpackedSize = chunkHeader.getUint32(8, true);
+                    break;
                   }
                 }
               }));
