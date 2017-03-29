@@ -818,7 +818,7 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       if (this.formatVersion <= 11) {
         return this.dv.getInt32(32, true) >>> 24;
       }
-      throw new Error('NYI');
+      return this.dv.getInt32(56, true);
     },
     get following() {
       return this.dv.getInt16(36, true);
@@ -844,9 +844,70 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
     get active_inv() {
       return this.dv.getInt32(52, true);
     },
+    get thinkingView() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt32(60, true);
+    },
+    get blinkingView() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(64, true);
+    },
+    get blinkInterval() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(66, true);
+    },
+    get blinkTimer() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(68, true);
+    },
+    get blinkFrame() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(70, true);
+    },
+    get walkSpeedY() {
+      if (this.formatVersion < 12) return this.walk_speed_x;
+      return this.dv.getInt16(72, true);
+    },
+    get picYOffset() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(74, true);
+    },
+    get z() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt32(76, true);
+    },
+    get walkAnimDelay() {
+      if (this.formatVersion < 12) return this.anim_delay;
+      return this.dv.getInt32(80, true);
+    },
+    get speechAnimDelay() {
+      if (this.formatVersion < 12) return this.anim_delay;
+      return this.dv.getInt16(84, true);
+    },
+    // reserved short
+    get blockingWidth() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(88, true);
+    },
+    get blockingHeight() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(90, true);
+    },
+    get indexId() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt32(92, true);
+    },
+    get picXOffset() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(96, true);
+    },
+    get walkWaitCounter() {
+      if (this.formatVersion < 12) return 0;
+      return this.dv.getInt16(98, true);
+    },
     get offsetof_loop() {
-      if (this.formatVersion > 12) {
-        throw new Error('NYI');
+      if (this.formatVersion >= 12) {
+        return 100;
       }
       return 56;
     },
