@@ -89,7 +89,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return id;
     },
     get gs_globals() {
-      var dv = new DataView(100 * 4);
+      var dv = new DataView(new ArrayBuffer(100 * 4));
       Object.defineProperty(this, 'gs_globals', {value:dv, enumerable:true});
       return dv;
     },
