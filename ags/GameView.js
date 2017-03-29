@@ -773,10 +773,10 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       return this.dv.getInt32(28, true);
     },
     get flags() {
-      if (this.formatVersion <= 11) {
-        return this.dv.getInt32(32, true) & 0xffffff;
+      if (this.formatVersion >= 12) {
+        return this.dv.getInt32(32, true);
       }
-      return this.dv.getInt32(32, true);
+      return this.dv.getInt32(32, true) & 0xffffff;
     },
     get ignoresScaling() {
       return !!(this.dv.getInt32(32, true) & 1);
@@ -815,10 +815,10 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       throw new Error('NYI');
     },
     get speechColor() {
-      if (this.formatVersion <= 11) {
-        return this.dv.getInt32(32, true) >>> 24;
+      if (this.formatVersion >= 12) {
+        return this.dv.getInt32(56, true);
       }
-      return this.dv.getInt32(56, true);
+      return this.dv.getInt32(32, true) >>> 24;
     },
     get following() {
       return this.dv.getInt16(36, true);
