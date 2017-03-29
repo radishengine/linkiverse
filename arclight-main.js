@@ -268,6 +268,8 @@ function(inflate, GameView, RoomView, Runtime, midi) {
             });
           });
         case 10:
+        case 11:
+        case 15:
           return readBlob(mainBlob.slice(6, 11))
           .then(function(bytes) {
             bytes = new Uint8Array(bytes);
@@ -294,11 +296,28 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                   pos += 20;
                 }
                 pos += 4;
-                for (var i = 0; i < files.length; i++) {
-                  files[i] = {
-                    name: String.fromCharCode.apply(null, listData.subarray(pos, pos + 25)).match(/^[^\0]*/)[0],
-                  };
-                  pos += 25;
+                if (version === 10) {
+                  for (var i = 0; i < files.length; i++) {
+                    files[i] = {
+                      name: String.fromCharCode.apply(null, listData.subarray(pos, pos + 25)).match(/^[^\0]*/)[0],
+                    };
+                    pos += 25;
+                  }
+                }
+                else {
+                  var maskbuf = new Uint8Array(25);
+                  const mask = 'My\x01\xDE\x04Jibzle';
+                  for (var i = 0; i < files.length; i++) {
+                    for (var j = 0; j < maskbuf.length; j++) {
+                      if ((maskbuf[j] = 0xFF & (listData[pos + j] - mask.charCodeAt(i % mask.length))) === 0) {
+                        break;
+                      }
+                    }
+                    files[i] = {
+                      name: String.fromCharCode.apply(null, maskbuf.subarray(0, j)),
+                    };
+                    pos += 25;
+                  }
                 }
                 for (var i = 0; i < files.length; i++) {
                   files[i].offset = dv.getInt32(pos, true);
