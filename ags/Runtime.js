@@ -181,7 +181,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
                     self,
                     gui.x + label.x, gui.y + label.y,
                     label.width, label.height,
-                    self.fonts[label.font],
+                    self.fonts[label.font] || self.fonts[0],
                     label.textColor,
                     label.xAlignment,
                     label.yAlignment,
