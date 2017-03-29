@@ -477,7 +477,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
       }
       var _lastDirEnd = readBlob(blob.slice(optionalHeaderOffset + 92, optionalHeaderOffset + optionalHeaderSize))
       .then(function(raw) {
-        var rvaAndSizes = new DataView(raw, 4, new DataView(raw).getUint32(0) * 8);
+        var rvaAndSizes = new DataView(raw, 4, new DataView(raw, 0, 4).getUint32(0) * 8);
         var lastEnd = 0;
         for (var offset = 0; offset < rvaAndSizes.byteLength; offset += 8) {
           lastEnd = Math.max(
