@@ -459,9 +459,9 @@ function(inflate, GameView, RoomView, Runtime, midi) {
       }
       var optionalHeaderOffset = peOffset + peHeader.byteLength;
       var optionalHeaderSize = peHeader.getUint16(20, true);
-      var sectionOffset = optionalHeaderOffset + optionalHeaderSize;
+      var sectionsOffset = optionalHeaderOffset + optionalHeaderSize;
       var sectionCount = peHeader.getUint16(6, true);
-      var _lastSectionEnd = readBlob(blob.slice(sectionOffset, sectionOffset + sectionCount*40))
+      var _lastSectionEnd = readBlob(blob.slice(sectionsOffset, sectionsOffset + sectionCount*40))
         .then(function(raw) {
           var sections = new DataView(raw);
           var lastEnd = 0;
