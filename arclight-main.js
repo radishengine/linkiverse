@@ -504,6 +504,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           }
         }
         parts.overlay = blob.slice(endPos);
+        parts.overlay.offset = endPos;
         return parts;
       });
     });
