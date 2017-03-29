@@ -554,7 +554,7 @@ define(function() {
             continue codeLoop;
           case 28: // JZ
             var label = code[offset++];
-            if (registers.ax === 0) offset = label;
+            if (registers.ax === 0) offset += label;
             continue codeLoop;
           case 29: // PUSHREG
             var register = code[offset++];
@@ -578,7 +578,7 @@ define(function() {
             continue codeLoop;
           case 31: // JMP
             var label = code[offset++];
-            offset = label;
+            offset += label;
             continue codeLoop;
           case 32: // MUL
             var register = code[offset++];
@@ -785,7 +785,7 @@ define(function() {
           case 70: // JNZ
             var label = code[offset++];
             if (registers.ax !== 0) {
-              offset = label;
+              offset += label;
             }
             continue codeLoop;
           case 71: // DYNAMICBOUNDS
