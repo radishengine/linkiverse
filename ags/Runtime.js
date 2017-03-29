@@ -484,6 +484,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     getMessage: function(number) {
       return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
     },
+    Random: function(max) {
+      return (Math.random() * (max + 1)) | 0;
+    },
     getColorStyle: function(colorCode) {
       var palette = this.palette;
       var r = palette[colorCode * 4];
