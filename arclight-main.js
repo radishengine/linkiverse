@@ -350,6 +350,14 @@ function(inflate, GameView, RoomView, Runtime, midi) {
       gameFiles = gameFiles.filter(function(path) {
         return !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?|startup|launch(er)?)\.exe$/i.test(path);
       });
+      if (gameFiles.length > 1) {
+        for (var i = 1; i < gameFiles.length; i++) {
+          if (/(^|\/)ac2game.dat$/i.test(gameFiles[i])) {
+            gameFiles.splice(0, 0, gameFiles.splice(i, 1)[0]);
+            break;
+          }
+        }
+      }
     }
     if (gameFiles.length > 1) {
       console.warn('more than one game file found');
