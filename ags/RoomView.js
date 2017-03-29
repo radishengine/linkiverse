@@ -424,7 +424,7 @@ define(['./ScriptV2View', './ScomScript'], function(ScriptV2View, ScomScript) {
       this.endOffset += 4;
       return function() {
         var count = this.dv.getInt32(offset, true);
-        return count === 0 ? this.maxWalkZones : count;
+        return count === 0 ? this.maxWalkZones : count + 1;
       };
     });
     
