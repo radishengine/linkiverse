@@ -88,6 +88,17 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       this.idMap[id] = object;
       return id;
     },
+    get gs_globals() {
+      var dv = new DataView(100 * 4);
+      Object.defineProperty(this, 'gs_globals', {value:dv, enumerable:true});
+      return dv;
+    },
+    GetGlobalInt: function(n) {
+      return this.gs_globals.getInt32((n-1) * 4, true);
+    },
+    SetGlobalInt: function(n, v) {
+      this.gs_globals.setInt32((n-1) * 4, v, true);
+    },
     CreateTextOverlay: function(x, y, width, fontNumber, color, text) {
       var font = this.fonts[fontNumber];
       var height = font.wrap(text, width).length * font.lineHeight;
