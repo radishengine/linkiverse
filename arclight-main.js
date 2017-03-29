@@ -347,11 +347,9 @@ function(inflate, GameView, RoomView, Runtime, midi) {
       return Promise.reject('no game file found');
     }
     if (gameFiles.length > 1) {
-      for (var i = gameFiles.length-1; i >= 0; i--) {
-        if (/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?|startup|launch(er)?)\.exe$/i.test(filenames[i])) {
-          gameFiles.splice(i, 1);
-        }
-      }
+      gameFiles = gameFiles.filter(function(path) {
+        return !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?|startup|launch(er)?)\.exe$/i.test(path);
+      });
     }
     if (gameFiles.length > 1) {
       console.warn('more than one game file found');
