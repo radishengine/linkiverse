@@ -339,13 +339,19 @@ function(inflate, GameView, RoomView, Runtime, midi) {
     var filenames = Object.keys(zipRecords);
     var gameFiles = [];
     for (var i = 0; i < filenames.length; i++) {
-      if (/(^|\/)ac2game.dat$/i.test(filenames[i])
-          || (/\.exe$/i.test(filenames[i]) && !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?)\.exe$/i.test(filenames[i]))) {
+      if (/(^|\/)ac2game.dat$/i.test(filenames[i]) || /\.exe$/i.test(filenames[i])) {
         gameFiles.push(filenames[i]);
       }
     }
     if (gameFiles.length === 0) {
       return Promise.reject('no game file found');
+    }
+    if (gameFiles.length > 1) {
+      for (var i = gameFiles.length-1; i >= 0; i--) {
+        if (/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?|startup|launch(er)?)\.exe$/i.test(filenames[i])) {
+          gameFiles.splice(i, 1);
+        }
+      }
     }
     if (gameFiles.length > 1) {
       console.warn('more than one game file found');
