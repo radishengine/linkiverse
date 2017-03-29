@@ -466,9 +466,10 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           var sections = new DataView(raw);
           var lastEnd = 0;
           for (var offset = 0; offset < sections.byteLength; offset += 40) {
-            lastEnd = Math.max(
-              lastEnd,
-              sections.getUint32(20, true) + sections.getUint32(16, true));
+            var sectionEnd = sections.getUint32(20, true) + sections.getUint32(16, true);
+            if (sectionEnd <= blob.size) {
+              lastEnd = Math.max(lastEnd, sectionEnd);
+            }
           }
           return lastEnd;
         });
@@ -480,9 +481,10 @@ function(inflate, GameView, RoomView, Runtime, midi) {
         var rvaAndSizes = new DataView(raw, 4, new DataView(raw, 0, 4).getUint32(0, true) * 8);
         var lastEnd = 0;
         for (var offset = 0; offset < rvaAndSizes.byteLength; offset += 8) {
-          lastEnd = Math.max(
-            lastEnd,
-            rvaAndSizes.getUint32(offset, true) + rvaAndSizes.getUint32(offset, true));
+          var dirEnd = rvaAndSizes.getUint32(offset, true) + rvaAndSizes.getUint32(offset + 4, true);
+          if (dirEnd <= blob.size) {
+            lastEnd = Math.max(lastEnd, dirEnd);
+          }
         }
         return lastEnd;
       });
