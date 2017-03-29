@@ -594,6 +594,9 @@ define(['./ScriptV2View', './ScomScript'], function(ScriptV2View, ScomScript) {
     
     this.member('graphicalVarCount', function() {
       if (this.formatVersion < 4 || this.formatVersion > 15) return 0;
+      if (this.graphicalScriptVersion !== 1) {
+        throw new Error('invalid graphical script version');
+      }
       const offset = this.endOffset;
       this.endOffset += 4;
       return function() {
