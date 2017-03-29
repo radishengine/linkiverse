@@ -263,7 +263,7 @@ define(function() {
             dv = this.dv,
             runtime = this.runtime,
             imports = this.def.imports,
-            stack = new DataView(250 * 4),
+            stack = new DataView(new ArrayBuffer(250 * 4)),
             stackTypes = new Uint8Array(250);
       registers.sp = 4; // slot 0 is for RET to check to know when to return completely
       var lineNumber = NaN, checkLoops = true;
