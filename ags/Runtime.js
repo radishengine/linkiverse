@@ -394,8 +394,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
               continue;
             case 7:
               var arg = nextArg();
-              if (typeof this.dialog_request === 'function') {
-                var result = this.dialog_request(arg);
+              if (typeof self.dialog_request === 'function') {
+                var result = self.dialog_request(arg);
                 if (result instanceof Promise) {
                   return result.then(next_step);
                 }
