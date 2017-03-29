@@ -309,7 +309,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
                   const mask = 'My\x01\xDE\x04Jibzle';
                   for (var i = 0; i < files.length; i++) {
                     for (var j = 0; j < maskbuf.length; j++) {
-                      if ((maskbuf[j] = 0xFF & (listData[pos + j] - mask.charCodeAt(i % mask.length))) === 0) {
+                      if ((maskbuf[j] = 0xFF & (listData[pos + j] - mask.charCodeAt(j % mask.length))) === 0) {
                         break;
                       }
                     }
