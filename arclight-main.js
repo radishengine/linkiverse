@@ -443,6 +443,58 @@ function(inflate, GameView, RoomView, Runtime, midi) {
     });
   }
   
+  function getWindowsExeOverlay(blob) {
+    var peOffset;
+    return readBlob(blob.slice(60, 64)).then(function(raw) {
+      var peOffset = new DataView(raw).getUint32(0, true);
+      if (peOffset < 64 || peOffset > blob.size - 4) {
+        return Promise.reject('not a valid windows exe');
+      }
+      return readBlob(blob.slice(peOffset, peOffset + 24));
+    })
+    .then(function(raw) {
+      var peHeader = new DataView(raw);
+      if (peHeader.getUint32(0, true) !== 0x4550) {
+        return Promise.reject('not a valid windows exe');
+      }
+      var optionalHeaderOffset = peOffset + peHeader.byteLength;
+      var optionalHeaderSize = peHeader.getUint16(20, true);
+      var sectionOffset = optionalHeaderOffset + optionalHeaderSize;
+      var sectionCount = peHeader.getUint16(6, true);
+      var _lastSectionEnd = readBlob(blob.slice(sectionOffset, sectionOffset + sectionCount*40))
+        .then(function(raw) {
+          var sections = new DataView(raw);
+          var lastEnd = 0;
+          for (var offset = 0; offset < sections.byteLength; offset += 40) {
+            lastEnd = Math.max(
+              lastEnd,
+              sections.getUint32(20, true) + sections.getUint32(16, true));
+          }
+          return lastEnd;
+        });
+      if (optionalHeaderSize <= 96) {
+        return Promise.all([_lastSectionEnd]);
+      }
+      var _lastDirEnd = readBlob(blob.slice(optionalHeaderOffset + 92, optionalHeaderOffset + optionalHeaderSize))
+      .then(function(raw) {
+        var rvaAndSizes = new DataView(raw, 4, new DataView(raw).getUint32(0) * 8);
+        var lastEnd = 0;
+        for (var offset = 0; offset < rvaAndSizes.byteLength; offset += 8) {
+          lastEnd = Math.max(
+            lastEnd,
+            rvaAndSizes.getUint32(offset, true) + rvaAndSizes.getUint32(offset, true));
+        }
+        return lastEnd;
+      });
+      return Promise.all([_lastSectionEnd, _lastDirEnd])
+    })
+    .then(function(endOffsets) {
+      var overlayOffset = Math.max.apply(null, endOffsets);
+      if (overlayOffset >= blob.size) return null;
+      return blob.slice(overlayOffset);
+    });    
+  }
+  
   function fromExe(blob) {
     return readBlob(blob.slice(blob.size - 256 - 22)).then(function(suffix) {
       if (String.fromCharCode.apply(null, new Uint8Array(suffix, suffix.byteLength - 12, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
@@ -457,7 +509,23 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           return ZipRecord.getAll(blob).then(fromZip);
         }
       }
-      return Promise.reject('exe container format not recognized');
+      return getWindowsExeOverlay(blob).then(function(overlay) {
+        if (overlay === null || overlay.size < 18) {
+          return Promise.reject('exe container format not recognized');
+        }
+        return readBlob(overlay.slice(0, 18)).then(function(raw) {
+          if (String.fromCharCode.apply(null, new Uint8Array(raw, 0, 6)) !== '\x77\x77\x67\x54\x29\x48') {
+            return Promise.reject('exe container format not recognized');
+          }
+          var chunkHeader = new DataView(raw, 6);
+          var chunkType = chunkHeader.getUint16(0, true);
+          var chunkFlags = chunkHeader.getUint16(2, true);
+          var packedSize = chunkHeader.getUint32(4, true);
+          var unpackedSize = chunkHeader.getUint32(8, true);
+          console.log(chunkType, chunkFlags, packedSize, unpackedSize);
+          throw new Error('NYI');
+        });
+      });
     });
   }
 
