@@ -458,6 +458,9 @@ function(inflate, GameView, RoomView, Runtime, midi) {
         if (/\.zip$/i.test(filenames[i])) {
           zips.push(filenames[i]);
         }
+        else if (/\.exe$/i.test(filenames[i])) {
+          exes.push(filenames[i]);
+        }
       }
       if (zips.length === 0) {
         if (exes.length === 0) {
