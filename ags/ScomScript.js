@@ -56,9 +56,7 @@ define(function() {
     },
     types: {
       get: function() {
-        var types = Object.defineProperties(
-          new Uint8Array(this.buffer, this.byteOffset, this.length),
-          regProperties);
+        var types = Object.defineProperties(new Uint8Array(this.length), regProperties);
         Object.defineProperty(this, 'types', {value:types, enumerable:true});
         types.sp = 6;
         return types;
