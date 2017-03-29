@@ -443,7 +443,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
     });
   }
   
-  function getWindowsExeOverlay(blob) {
+  function getWindowsExeParts(blob) {
     var peOffset;
     return readBlob(blob.slice(60, 64)).then(function(raw) {
       peOffset = new DataView(raw).getUint32(0, true);
@@ -461,44 +461,52 @@ function(inflate, GameView, RoomView, Runtime, midi) {
       var optionalHeaderSize = peHeader.getUint16(20, true);
       var sectionsOffset = optionalHeaderOffset + optionalHeaderSize;
       var sectionCount = peHeader.getUint16(6, true);
-      var _lastSectionEnd = readBlob(blob.slice(sectionsOffset, sectionsOffset + sectionCount*40))
+      var parts = {sections:[], dataDirs:[], overlay:null};
+      var promises = [];
+      promises.push(readBlob(blob.slice(sectionsOffset, sectionsOffset + sectionCount*40))
         .then(function(raw) {
           var sections = new DataView(raw);
-          var lastEnd = 0;
           for (var offset = 0; offset < sections.byteLength; offset += 40) {
             var sectionOffset = sections.getUint32(offset + 20, true);
             var sectionLength = sections.getUint32(offset + 16, true);
             var sectionEnd = sectionOffset + sectionLength;
-            if (sectionEnd <= blob.size) {
-              lastEnd = Math.max(lastEnd, sectionEnd);
-            }
+            var sectionBlob = blob.slice(sectionOffset, sectionOffset + sectionLength);
+            sectionBlob.offset = sectionOffset;
+            sectionBlob.name = String.fromCharCode.apply(null, new Uint8Array(raw, offset, 8)).match(/^[^\0]*/)[0];
+            parts.sections.push(sectionBlob);
           }
-          return lastEnd;
-        });
-      if (optionalHeaderSize <= 96) {
-        return Promise.all([_lastSectionEnd]);
+        }));
+      if (optionalHeaderSize > 96) {
+        promises.push(readBlob(blob.slice(optionalHeaderOffset + 92, optionalHeaderOffset + optionalHeaderSize))
+          .then(function(raw) {
+            var rvaAndSizes = new DataView(raw, 4, new DataView(raw, 0, 4).getUint32(0, true) * 8);
+            for (var offset = 0; offset < rvaAndSizes.byteLength; offset += 8) {
+              var dirOffset = rvaAndSizes.getUint32(offset, true);
+              var dirLength = rvaAndSizes.getUint32(offset + 4, true);
+              var dirBlob = blob.slice(dirOffset, dirOffset + dirLength);
+              dirBlob.offset = dirOffset;
+              parts.dataDirs.push(dirBlob);
+            }
+          }));
       }
-      var _lastDirEnd = readBlob(blob.slice(optionalHeaderOffset + 92, optionalHeaderOffset + optionalHeaderSize))
-      .then(function(raw) {
-        var rvaAndSizes = new DataView(raw, 4, new DataView(raw, 0, 4).getUint32(0, true) * 8);
-        var lastEnd = 0;
-        for (var offset = 0; offset < rvaAndSizes.byteLength; offset += 8) {
-          var dirOffset = rvaAndSizes.getUint32(offset, true);
-          var dirLength = rvaAndSizes.getUint32(offset + 4, true);
-          var dirEnd = dirOffset + dirLength;
-          if (dirEnd <= blob.size) {
-            lastEnd = Math.max(lastEnd, dirEnd);
+      return Promise.all(promises).then(function() {
+        var endPos = 0;
+        for (var i = 0; i < parts.sections.length; i++) {
+          var sectionEnd = parts.sections[i].offset + parts.sections[i].size;
+          if (sectionEnd <= blob.size) {
+            endPos = Math.max(endPos, sectionEnd);
           }
         }
-        return lastEnd;
+        for (var i = 0; i < parts.dataDirs.length; i++) {
+          var dirEnd = parts.dataDirs[i].offset + parts.dataDirs[i].size;
+          if (dirEnd <= blob.size) {
+            endPos = Math.max(endPos, dirEnd);
+          }
+        }
+        parts.overlay = blob.slice(endPos);
+        return parts;
       });
-      return Promise.all([_lastSectionEnd, _lastDirEnd])
-    })
-    .then(function(endOffsets) {
-      var overlayOffset = Math.max.apply(null, endOffsets);
-      if (overlayOffset >= blob.size) return null;
-      return blob.slice(overlayOffset);
-    });    
+    });
   }
   
   function fromExe(blob) {
@@ -515,22 +523,26 @@ function(inflate, GameView, RoomView, Runtime, midi) {
           return ZipRecord.getAll(blob).then(fromZip);
         }
       }
-      return getWindowsExeOverlay(blob).then(function(overlay) {
-        if (overlay === null || overlay.size < 18) {
-          return Promise.reject('exe container format not recognized');
-        }
-        return readBlob(overlay.slice(0, 18)).then(function(raw) {
-          if (String.fromCharCode.apply(null, new Uint8Array(raw, 0, 6)) !== '\x77\x77\x67\x54\x29\x48') {
-            return Promise.reject('exe container format not recognized');
+      return getWindowsExeParts(blob).then(function(parts) {
+        var promises = [];
+        for (var i = 0; i < parts.sections.length; i++) {
+          if (parts.sections[i].name === '.data') {
+            promises.push(
+              readBlob(parts.sections[i]).then(function(data) {
+                var dv = new DataView(data);
+                for (var i = 0; i < data.byteLength; i++) {
+                  if (dv.getUint32(i, true) === 0x54677777 && dv.getUint16(i + 4, true) === 0x4829) {
+                    var chunkHeader = new DataView(data, i + 6, 12);
+                    var chunkType = chunkHeader.getUint16(0, true);
+                    var chunkFlags = chunkHeader.getUint16(2, true);
+                    var packedSize = chunkHeader.getUint32(4, true);
+                    var unpackedSize = chunkHeader.getUint32(8, true);
+                  }
+                }
+              }));
           }
-          var chunkHeader = new DataView(raw, 6);
-          var chunkType = chunkHeader.getUint16(0, true);
-          var chunkFlags = chunkHeader.getUint16(2, true);
-          var packedSize = chunkHeader.getUint32(4, true);
-          var unpackedSize = chunkHeader.getUint32(8, true);
-          console.log(chunkType, chunkFlags, packedSize, unpackedSize);
-          throw new Error('NYI');
-        });
+        }
+        return Promise.all(promises);
       });
     });
   }
