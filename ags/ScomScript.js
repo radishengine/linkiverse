@@ -286,8 +286,32 @@ define(function() {
             registers.types[register2] = registers.types[register1];
             continue codeLoop;
           case 4: // WRITELIT
-            var value1 = code[offset++];
-            var value2 = code[offset++];
+            var writeSize = code[offset++];
+            var writeType = (writeSize === 4) ? codeType[offset] : 0;
+            var writeValue = code[offset++];
+            switch (registers.types.mar) {
+              case 6:
+                switch (writeSize) {
+                  case 1:
+                    stack.setUint8(registers.mar, writeValue);
+                    stackTypes[registers.mar/4] = 0;
+                    break;
+                  case 2:
+                    stack.setInt16(registers.mar, writeValue, true);
+                    stackTypes[registers.mar/4] = 0;
+                    break;
+                  case 4:
+                    stack.setInt32(registers.mar, writeValue, true);
+                    stackTypes[registers.mar/4] = writeType;
+                    break;
+                  default:
+                    throw new Error('unsupported WRITELIT value size: ' + writeSize);
+                }
+                break;
+              default:
+                console.error('unsupported WRITELIT target: ' + registers.types.mar);
+                break;
+            }
             continue codeLoop;
           case 5: // RET
             registers.sp -= 4;
@@ -652,7 +676,7 @@ define(function() {
           case 41: // XORREG
             var register1 = code[offset++];
             var register2 = code[offset++];
-            registers[register1] = registers[register1] ^ registers[register2];
+            registers[register1] ^= registers[register2];
             continue codeLoop;
           case 42: // NOTREG
             var register = code[offset++];
@@ -666,7 +690,7 @@ define(function() {
           case 44: // SHIFTRIGHT
             var register1 = code[offset++];
             var register2 = code[offset++];
-            registers[register1] >>= registers[register2]; // TODO: check shift type
+            registers[register1] >>= registers[register2];
             continue codeLoop;
           case 45: // CALLOBJ
             var register = code[offset++];
