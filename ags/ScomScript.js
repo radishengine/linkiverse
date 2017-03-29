@@ -414,6 +414,10 @@ define(function() {
                   throw new Error('bad data access');
                 }
                 break;
+              case 6:
+                stack.setInt32(registers.mar, registers[register], true);
+                stackTypes[registers.mar/4] = registers.types[register];
+                break;
               default:
                 console.error('NYI: write memory type ' + registers.types.mar);
                 break;
