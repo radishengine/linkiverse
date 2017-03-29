@@ -644,6 +644,9 @@ define(function() {
                 var str = String.fromCharCode.apply(null, stringTable.subarray(startPos, endPos));
                 realStack.unshift(str);
                 break;
+              case 6: // stack addresses
+                realStack.unshift(new Uint8Array(stack.buffer, registers[register]));
+                break;
               default:
                 realStack.unshift(registers[register]);
                 break;
