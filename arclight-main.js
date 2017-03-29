@@ -446,7 +446,7 @@ function(inflate, GameView, RoomView, Runtime, midi) {
   function getWindowsExeOverlay(blob) {
     var peOffset;
     return readBlob(blob.slice(60, 64)).then(function(raw) {
-      var peOffset = new DataView(raw).getUint32(0, true);
+      peOffset = new DataView(raw).getUint32(0, true);
       if (peOffset < 64 || peOffset > blob.size - 4) {
         return Promise.reject('not a valid windows exe');
       }
