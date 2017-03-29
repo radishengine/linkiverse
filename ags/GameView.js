@@ -251,7 +251,12 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       const offset = this.endOffset += 4;
       this.endOffset += length;
       return function() {
-        return util.byteString(this.bytes, offset, length);
+        var buf = new Uint8Array(length);
+        const mask = 'Avis Durgan';
+        for (var i = 0; i < length; i++) {
+          buf[i] = 0xFF & (this.bytes[offset + i] - mask.charCodeAt(i % mask.length));
+        }
+        return util.byteString(buf);
       };
     });
     this.member('globalScript', function() {
