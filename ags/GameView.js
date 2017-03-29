@@ -773,7 +773,7 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       return this.dv.getInt32(28, true);
     },
     get flags() {
-      if (this.formatVersion >= 12) {
+      if (this.formatVersion >= 13) {
         return this.dv.getInt32(32, true);
       }
       return this.dv.getInt32(32, true) & 0xffffff;
@@ -809,13 +809,13 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       return !!(this.dv.getInt32(32, true) & 0x1000);
     },
     get linksMovementToAnimation() {
-      if (this.formatVersion <= 12) {
-        return false;
+      if (this.formatVersion >= 13) {
+        throw new Error('NYI');
       }
-      throw new Error('NYI');
+      return false;
     },
     get speechColor() {
-      if (this.formatVersion >= 12) {
+      if (this.formatVersion >= 13) {
         return this.dv.getInt32(56, true);
       }
       return this.dv.getInt32(32, true) >>> 24;
@@ -845,68 +845,68 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       return this.dv.getInt32(52, true);
     },
     get thinkingView() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt32(60, true);
     },
     get blinkingView() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(64, true);
     },
     get blinkInterval() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(66, true);
     },
     get blinkTimer() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(68, true);
     },
     get blinkFrame() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(70, true);
     },
     get walkSpeedY() {
-      if (this.formatVersion < 12) return this.walk_speed_x;
+      if (this.formatVersion < 13) return this.walk_speed_x;
       return this.dv.getInt16(72, true);
     },
     get picYOffset() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(74, true);
     },
     get z() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt32(76, true);
     },
     get walkAnimDelay() {
-      if (this.formatVersion < 12) return this.anim_delay;
+      if (this.formatVersion < 13) return this.anim_delay;
       return this.dv.getInt32(80, true);
     },
     get speechAnimDelay() {
-      if (this.formatVersion < 12) return this.anim_delay;
+      if (this.formatVersion < 13) return this.anim_delay;
       return this.dv.getInt16(84, true);
     },
     // reserved short
     get blockingWidth() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(88, true);
     },
     get blockingHeight() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(90, true);
     },
     get indexId() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt32(92, true);
     },
     get picXOffset() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(96, true);
     },
     get walkWaitCounter() {
-      if (this.formatVersion < 12) return 0;
+      if (this.formatVersion < 13) return 0;
       return this.dv.getInt16(98, true);
     },
     get offsetof_loop() {
-      if (this.formatVersion >= 12) {
+      if (this.formatVersion >= 13) {
         return 100;
       }
       return 56;
@@ -933,7 +933,7 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       return this.offsetof_loop + 12;
     },
     get offsetof_act_x() {
-      return this.offsetof_inventoryCounts + 2 * (this.formatVersion <= 12 ? 100 : 301);
+      return this.offsetof_inventoryCounts + 2 * (this.formatVersion >= 13 ? 301 : 100);
     },
     get act_x() {
       return this.dv.getInt16(this.offsetof_act_x, true);
@@ -942,10 +942,10 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       return this.dv.getInt16(this.offsetof_act_x + 2, true);
     },
     get nameBufferSize() {
-      return this.formatVersion <= 12 ? 30 : 40;
+      return this.formatVersion >= 13 ? 40 : 30;
     },
     get scriptNameBufferSize() {
-      return this.formatVersion <= 12 ? 16 : 20;
+      return this.formatVersion >= 13 ? 20 : 16;
     },
     get name() {
       return nullTerminated(this.bytes, this.offsetof_act_x + 4, this.nameBufferSize);
