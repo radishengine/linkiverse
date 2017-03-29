@@ -394,7 +394,12 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
               continue;
             case 7:
               var arg = nextArg();
-              console.log('run text script', arg);
+              if (typeof this.dialog_request === 'function') {
+                var result = this.dialog_request(arg);
+                if (result instanceof Promise) {
+                  return result.then(next_step);
+                }
+              }
               continue;
             case 8:
               var dialog = nextArg();
