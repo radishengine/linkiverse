@@ -263,7 +263,11 @@ define(function() {
             imports = this.def.imports,
             stack = new DataView(new ArrayBuffer(250 * 4)),
             stackTypes = new Uint8Array(250);
-      registers.sp = 4; // slot 0 is for RET to check to know when to return completely
+      for (var i = 1; i < arguments.length; i++) {
+        stack.setInt32(registers.sp, arguments[i], true);
+        registers.sp += 4;
+      }
+      registers.sp += 4; // slot for RET to check to know when to return completely
       var lineNumber = NaN, checkLoops = true;
       function nextStep() {
         codeLoop: for (;;) switch (code[offset++]) {
