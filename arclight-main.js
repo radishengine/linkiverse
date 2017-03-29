@@ -334,122 +334,144 @@ function(inflate, GameView, RoomView, Runtime, midi) {
       return readBlob(mainBlob.slice(0, 6)).then(onPrefix);
     });
   }
+  
+  function fromZip(zipRecords) {
+    var filenames = Object.keys(zipRecords);
+    var gameFiles = [];
+    for (var i = 0; i < filenames.length; i++) {
+      if (/(^|\/)ac2game.dat$/i.test(filenames[i])
+          || (/\.exe$/i.test(filenames[i]) && !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?)\.exe$/i.test(filenames[i]))) {
+        gameFiles.push(filenames[i]);
+      }
+    }
+    if (gameFiles.length === 0) {
+      return Promise.reject('no game file found');
+    }
+    if (gameFiles.length > 1) {
+      console.warn('more than one game file found');
+    }
+    console.log(gameFiles[0]);
+    var gameFile = zipRecords[gameFiles[0]];
+    gameFile.getUncompressedBlob().then(function(uncompressed) {
+      var folder = gameFiles[0].replace(/\/[^\/]*$/, '/');
+      if (folder.indexOf('/') === -1) folder = '';
+      return loadGame(uncompressed, function getRelativeBlob(path) {
+        path = folder + path;
+        var record = zipRecords[path];
+        if (!record) {
+          path = path.toUpperCase();
+          for (var k in zipRecords) {
+            if (k.toUpperCase() === path) {
+              record = zipRecords[path];
+              break;
+            }
+          }
+          if (!record) {
+            return Promise.reject('file not found');
+          }
+        }
+        return record.getUncompressedBlob();
+      });
+    })
+    .then(function(files) {
+      var fileSystem = {
+        getName: function(name) {
+          if (name instanceof RegExp) {
+            for (var k in files) {
+              if (name.test(k)) return k;
+            }
+            return null;
+          }
+          if (name in files) return name;
+          name = name.toUpperCase();
+          if (name in files) return name;
+          for (var k in files) {
+            if (k.toUpperCase() === name) return k;
+          }
+          return null;
+        },
+        getNames: function(regex) {
+          var list = [];
+          for (var k in files) {
+            if (regex.test(k)) list.push(k);
+          }
+          return list;
+        },
+        loadAsBlob: function(name) {
+          name = this.getName(name);
+          return name ? Promise.resolve(files[name]) : Promise.reject('file not found');
+        },
+        loadAsArrayBuffer: function(name) {
+          return this.loadAsBlob(name).then(function(blob) {
+            return new Promise(function(resolve, reject) {
+              var fr = new FileReader();
+              fr.addEventListener('load', function() {
+                resolve(this.result);
+              });
+              fr.readAsArrayBuffer(blob);
+            });
+          });
+        },
+      };
+      var runtime = new Runtime(audioContext, fileSystem);
+      runtime.element.style.position = 'fixed';
+      runtime.element.style.right = 0;
+      runtime.element.style.top = 0;
+      var ctx = runtime.element.getContext('2d');
+      document.body.appendChild(runtime.element);
+      document.addEventListener('keydown', function(e) {
+        runtime.element.dispatchEvent(new KeyboardEvent('keydown', {key:e.key, which:e.which, keyCode:e.keyCode}));
+      });
+      document.addEventListener('keyup', function(e) {
+        runtime.element.dispatchEvent(new KeyboardEvent('keyup', {key:e.key, which:e.which, keyCode:e.keyCode}));
+      });
+      runtime.begin();
+      window.runtime = runtime;
+      console.dir(window.files = files);
+    });
+  }
+  
+  function fromExe(blob) {
+    return readBlob(blob.slice(blob.size - 256 - 22)).then(function(suffix) {
+      if (String.fromCharCode.apply(null, new Uint8Array(suffix, suffix.byteLength - 12, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
+        return loadGame(blob, function getRelativeBlob() {
+          return Promise.reject('file not found');
+        });
+      }
+      suffix = new DataView(suffix);
+      for (var i = suffix.byteLength - 4; i >= 0; i--) {
+        if (suffix.getUint32(i, true) === 0x06054B50) {
+          blob = blob.slice(0, (blob.size - suffix.byteLength) + i + 22 + suffix.getUint16(i + 20, true));
+          return ZipRecord.getAll(blob).then(fromZip);
+        }
+      }
+      return Promise.reject('exe container format not recognized');
+    });
+  }
 
   function clickItem() {
     var item = this.item;
     item.getFiles().then(function(files) {
       var filenames = Object.keys(files);
-      var zips = [];
+      var zips = [], exes = [];
       for (var i = 0; i < filenames.length; i++) {
         if (/\.zip$/i.test(filenames[i])) {
           zips.push(filenames[i]);
         }
       }
       if (zips.length === 0) {
-        return Promise.reject('no zip found');
+        if (exes.length === 0) {
+          return Promise.reject('no zip found');
+        }
+        if (exes.length > 1) {
+          return Promise.reject('more than one exe found');
+        }
+        return item.pullBlob(exes[0]).then(fromExe);
       }
       if (zips.length > 1) {
         return Promise.reject('more than one zip found');
       }
-      return item.pullBlob(zips[0]);
-    })
-    .then(function(blob) {
-      ZipRecord.getAll(blob)
-      .then(function(zipRecords) {
-        var filenames = Object.keys(zipRecords);
-        var gameFiles = [];
-        for (var i = 0; i < filenames.length; i++) {
-          if (/(^|\/)ac2game.dat$/i.test(filenames[i])
-              || (/\.exe$/i.test(filenames[i]) && !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?)\.exe$/i.test(filenames[i]))) {
-            gameFiles.push(filenames[i]);
-          }
-        }
-        if (gameFiles.length === 0) {
-          return Promise.reject('no game file found');
-        }
-        if (gameFiles.length > 1) {
-          console.warn('more than one game file found');
-        }
-        console.log(gameFiles[0]);
-        var gameFile = zipRecords[gameFiles[0]];
-        gameFile.getUncompressedBlob().then(function(uncompressed) {
-          var folder = gameFiles[0].replace(/\/[^\/]*$/, '/');
-          if (folder.indexOf('/') === -1) folder = '';
-          return loadGame(uncompressed, function getRelativeBlob(path) {
-            path = folder + path;
-            var record = zipRecords[path];
-            if (!record) {
-              path = path.toUpperCase();
-              for (var k in zipRecords) {
-                if (k.toUpperCase() === path) {
-                  record = zipRecords[path];
-                  break;
-                }
-              }
-              if (!record) {
-                return Promise.reject('file not found');
-              }
-            }
-            return record.getUncompressedBlob();
-          });
-        })
-        .then(function(files) {
-          var fileSystem = {
-            getName: function(name) {
-              if (name instanceof RegExp) {
-                for (var k in files) {
-                  if (name.test(k)) return k;
-                }
-                return null;
-              }
-              if (name in files) return name;
-              name = name.toUpperCase();
-              if (name in files) return name;
-              for (var k in files) {
-                if (k.toUpperCase() === name) return k;
-              }
-              return null;
-            },
-            getNames: function(regex) {
-              var list = [];
-              for (var k in files) {
-                if (regex.test(k)) list.push(k);
-              }
-              return list;
-            },
-            loadAsBlob: function(name) {
-              name = this.getName(name);
-              return name ? Promise.resolve(files[name]) : Promise.reject('file not found');
-            },
-            loadAsArrayBuffer: function(name) {
-              return this.loadAsBlob(name).then(function(blob) {
-                return new Promise(function(resolve, reject) {
-                  var fr = new FileReader();
-                  fr.addEventListener('load', function() {
-                    resolve(this.result);
-                  });
-                  fr.readAsArrayBuffer(blob);
-                });
-              });
-            },
-          };
-          var runtime = new Runtime(audioContext, fileSystem);
-          runtime.element.style.position = 'fixed';
-          runtime.element.style.right = 0;
-          runtime.element.style.top = 0;
-          var ctx = runtime.element.getContext('2d');
-          document.body.appendChild(runtime.element);
-          document.addEventListener('keydown', function(e) {
-            runtime.element.dispatchEvent(new KeyboardEvent('keydown', {key:e.key, which:e.which, keyCode:e.keyCode}));
-          });
-          document.addEventListener('keyup', function(e) {
-            runtime.element.dispatchEvent(new KeyboardEvent('keyup', {key:e.key, which:e.which, keyCode:e.keyCode}));
-          });
-          runtime.begin();
-          window.runtime = runtime;
-          console.dir(window.files = files);
-        });
-      });
+      return item.pullBlob(zips[0]).then(ZipRecord.getAll).then(fromZip);
     });
   }
 
