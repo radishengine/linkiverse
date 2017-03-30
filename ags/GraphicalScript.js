@@ -4,7 +4,7 @@ define(['./util'], function(util) {
   
   function GraphicalScript(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
-    this.bytes = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   GraphicalScript.prototype = {
     get formatVersion() {
