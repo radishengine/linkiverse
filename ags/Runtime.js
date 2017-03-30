@@ -559,15 +559,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     },
     queueAction: function(nextAction) {
       if (++this.busyCount === 1) {
+        this.runtime.eventTarget.dispatchEvent(this.busyEvent);
         var promise = nextAction();
         if (!promise) {
-          if (--this.busyCount > 0) {
-            // nextAction() called this.queueAction() itself
-            this.runtime.eventTarget.dispatchEvent(this.busyEvent);
+          if (--this.busyCount === 0) {
+            this.runtime.eventTarget.dispatchEvent(this.idleEvent);
           }
           return;
         }
-        this.runtime.eventTarget.dispatchEvent(this.busyEvent);
         this.chain = promise.then(this.decrementBusyCount);
         return;
       }
