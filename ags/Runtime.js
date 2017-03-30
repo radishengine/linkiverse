@@ -563,13 +563,17 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         return;
       }
       this.runtime.eventTarget.dispatchEvent(this.busyEvent);
-      var result = nextAction();
-      if (result instanceof Promise) {
-        this.chain = result.then(this.decrementBusyCount);
-      }
-      else {
-        this.decrementBusyCount();
-      }
+      var self = this;
+      this.chain = new Promise(function(resolve, reject) {
+        var result = nextAction();
+        if (result instanceof Promise) {
+          result.then(self.decrementBusyCount).then(resolve);
+        }
+        else {
+          self.decrementBusyCount();
+          resolve();
+        }
+      });
     },
     decrementBusyCount: function() {
       if (--this.busyCount === 0) {
