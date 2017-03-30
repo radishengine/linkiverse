@@ -398,6 +398,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           return self.wait(1);
         });
     },
+    SetDialogOption: function(i_dialog, i_option, state) {
+      console.error('NYI: SetDialogOption');
+    },
     runDialog: function(n) {
       var dialog = this.game.dialogs[n];
       var messages = this.game.dialogs.messages;
