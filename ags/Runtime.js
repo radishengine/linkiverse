@@ -352,7 +352,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var loading = self.loadRoom(n).then(function(roomDef) {
         return new RuntimeRoom(self, roomDef);
       });
-      this.mainExec.queueAction(function() {
+      this.mainExec.onNextIdle(function() {
         self.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
         return loading.then(function(room) {
           self.room = room;
@@ -577,6 +577,14 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       if (--this.busyCount === 0) {
         this.runtime.eventTarget.dispatchEvent(this.idleEvent);
       }
+    },
+    onNextIdle: function(callback) {
+      var self = this;
+      this.runtime.addEventListener('idle', function on_idle(e) {
+        if (e.detail.channel !== self) return;
+        this.removeEventListener('idle', on_idle);
+        callback();
+      });
     },
   };
   
