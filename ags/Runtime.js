@@ -521,7 +521,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     performInteractionV2: function(interaction) {
       switch (interaction.response) {
         case 'run_graphical_script':
-          return this.room.graphicalScript.exports['$' + interaction.data1];
+          return this.room.graphicalScript.exports['$' + interaction.data1]();
         case 'run_dialog_topic':
           return this.runDialog(interaction.data1);
         case 'run_script':
