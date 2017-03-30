@@ -579,6 +579,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
     },
     onNextIdle: function(callback) {
+      if (!this.isBusy) return callback();
       var self = this;
       this.runtime.eventTarget.addEventListener('idle', function on_idle(e) {
         if (e.detail.channel !== self) return;
