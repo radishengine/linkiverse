@@ -446,7 +446,7 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
             var sourceLen = this.dv.getInt32(pos, true);
             pos += 4;
             sources[i] = this.bytes.subarray(pos, pos + sourceLen);
-            pos += 4 + sourceLen;
+            pos += sourceLen;
           }
           return new DialogScript(this.dialogs, codes, sources, messages);
         };
