@@ -121,6 +121,7 @@ define(['./util'], function(util) {
   }
   GraphicalScriptInstance.prototype = {
     run: function(funcNumber) {
+      var runtime = this.runtime;
       var func = this[funcNumber];
       var block = func.blocks[0];
       var blockStack = [];
@@ -193,7 +194,7 @@ define(['./util'], function(util) {
               }
               continue codeLoop;
             case 23:
-              runtime.graphicalTimerRemaining = step.data1;
+              runtime.graphicalTimerRemaining = action.data1;
               if (!runtime.graphicalTimerUpdate) {
                 runtime.eventTarget.addEventListener('update', runtime.graphicalTimerUpdate = function timer_update() {
                   if (--runtime.graphicalTimerRemaining <= 0) {
