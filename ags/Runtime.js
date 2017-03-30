@@ -558,19 +558,18 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return this.queueAction(nextAction);
     },
     queueAction: function(nextAction) {
-      if (++this.busyCount === 1) {
-        this.runtime.eventTarget.dispatchEvent(this.busyEvent);
-        var promise = nextAction();
-        if (!promise) {
-          if (--this.busyCount === 0) {
-            this.runtime.eventTarget.dispatchEvent(this.idleEvent);
-          }
-          return;
-        }
-        this.chain = promise.then(this.decrementBusyCount);
+      if (++this.busyCount > 1) {
+        this.chain = this.chain.then(nextAction).then(this.decrementBusyCount);
         return;
       }
-      this.chain = this.chain.then(nextAction).then(this.decrementBusyCount);
+      this.runtime.eventTarget.dispatchEvent(this.busyEvent);
+      var result = nextAction();
+      if (result instanceof Promise) {
+        this.chain = result.then(this.decrementBusyCount);
+      }
+      else {
+        this.decrementBusyCount();
+      }
     },
     decrementBusyCount: function() {
       if (--this.busyCount === 0) {
