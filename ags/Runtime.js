@@ -579,12 +579,16 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
     },
     onNextIdle: function(callback) {
-      if (!this.isBusy) return callback();
+      if (!this.isBusy) {
+        this.queueAction(callback);
+        return;
+      }
       var self = this;
       this.runtime.eventTarget.addEventListener('idle', function on_idle(e) {
-        if (e.detail.channel !== self) return;
+        if (e.detail.channel !== self || self.isBusy) return;
         this.removeEventListener('idle', on_idle);
-        callback();
+        self.queueAction(callback);
+        if (self.isBusy) e.stopImmediatePropagation();
       });
     },
   };
