@@ -596,8 +596,8 @@ define(['./ScriptV2View', './ScomScript', './GraphicalScript'], function(ScriptV
         var number = this.dv.getInt32(this.endOffset, true);
         this.endOffset += 4;
         if (number === -1) break;
-        var len = this.dv.getInt32(offset, true);
-        offset += 4 + len;
+        var len = this.dv.getInt32(this.endOffset, true);
+        this.endOffset += 4 + len;
       }
       const endOffset = this.endOffset;
       return function() {
