@@ -441,15 +441,12 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
           var sources = new Array(this.dialogs.length);
           var pos = offset;
           for (var i = 0; i < this.dialogs.length; i++) {
-            codes[i] = new DialogScript(
-              this.bytes.buffer,
-              this.bytes.byteOffset + pos,
-              this.dialogs[i].codeSize);
-            pos += this.dialogs[i].codeSize;
-            sources[i] = this.bytes.subarray(
-              pos + 4,
-              pos + 4 + this.dv.getInt32(pos, true));
-            pos += 4 + sources[i].length;
+            codes[i] = this.bytes.subarray(pos, pos + this.dialogs[i].codeSize);
+            pos += codes[i].length;
+            var sourceLen = this.dv.getInt32(pos, true);
+            pos += 4;
+            sources[i] = this.bytes.subarray(pos, pos + sourceLen);
+            pos += 4 + sourceLen;
           }
           return new DialogScript(this.dialogs, codes, sources, messages);
         };
