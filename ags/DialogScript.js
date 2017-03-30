@@ -18,6 +18,8 @@ define(['./util'], function(util) {
         Object.defineProperty(this, 'sources', {value:sources, enumerable:true});
         return sources;
       },
+      configurable: true,
+      enumerable: true,
     });
     this.messages = messages;
   }
