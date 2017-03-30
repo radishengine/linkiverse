@@ -1091,6 +1091,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     updateVisible: function() {
       this.visible = (this._room === this.runtime.room.number) && this._on;
     },
+    getInventoryCount: function(itemNumber) {
+      // TODO
+      return 0;
+    },
     say: function(text, background) {
       var runtime = this.runtime;
       var font = runtime.fonts[1];
