@@ -518,182 +518,6 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         palette[colorCode * 4 + 2],
         0xff);
     },
-    runScriptV2: function(script, funcName) {
-      var exported = script.exports[funcName];
-      var strings = script.strings;
-      var pos = exported.entryPoint/4;
-      var code = script.code;
-      if (code[pos++] !== 0x3D3D3D3B) {
-        if (code[pos-1] !== 0x3D373C3B) {
-          console.log('unexpected prefix: 0x' + code[pos - 1].toString(16));
-        }
-        return;
-      }
-      var stack = [];
-      var calling;
-      var self = this;
-      function next_step() {
-        for (;;) {
-          var op = code[pos++];
-          switch (op) {
-            case 0x3D3D373C:
-              return;
-            case 0x00000001:
-              stack.unshift(code[pos++]);
-              continue;
-            case 0x00000D01:
-              var local_var_address = code[pos++];
-              // TODO
-              continue;
-            case 0x0000000D:
-              calling = script.imports[code[pos++]];
-              var argSize = code[pos++];
-              var flags = argSize & 0xffff0000;
-              argSize &= 0xffff;
-              var args = stack.splice(-argSize/4);
-              var promise;
-              switch (calling.name) {
-                case 'NewRoomEx':
-                  self.goToRoom(args[0]);
-                  break;
-                case 'NewRoom':
-                  self.goToRoom(args[0]);
-                  break;
-                case 'Wait':
-                  promise = self.wait(args[0]);
-                  break;
-                case 'Display':
-                  promise = self.display(args[0]);
-                  break;
-                case 'DisplayMessage':
-                  var number = args[0];
-                  var text = self.getMessage(number);
-                  promise = self.display(text);
-                  break;
-                case 'DisplaySpeech':
-                  promise = self.characters[args[0]].say(args[1]);
-                  break;
-                case 'SetGameSpeed':
-                  self.ticksPerSecond = args[0];
-                  break;
-                case 'RunDialog':
-                  self.runDialog(args[0]);
-                  break;
-                case 'PlaySound':
-                  self.playSound(args[0]);
-                  break;
-                case 'PlayMusic':
-                  self.playMusic(args[0]);
-                  break;
-                default:
-                  console.log(calling, args);
-                  break;
-              }
-              if (promise) {
-                if (flags & 0x00200000) {
-                  // throw away result
-                }
-                else {
-                  promise = promise.then(function(value) {
-                    stack.unshift(value);
-                  });
-                }
-                promise = promise.then(next_step);
-                return promise;
-              }
-              continue;
-            case 0x00000502:
-              var startPos = code[pos++];
-              var endPos = startPos;
-              while (strings[endPos] !== 0) endPos++;
-              stack.unshift(String.fromCharCode.apply(null, strings.subarray(startPos, endPos)));
-              continue;
-            case 0x0002018B:
-              var imported = script.imports[code[pos++]];
-              // TODO
-              continue;
-            case 0x00F50110:
-              var alloc_str_len = code[pos++];
-              // TODO
-              continue;
-            case 0x0002010B:
-              var str_buf_offset = code[pos++]; // negative for local
-              var unknown1 = code[pos++];
-              var unknown2 = code[pos++];
-              // TODO: something to do with pushing string buffer as a func arg
-              continue;
-            case 0x0003010B:
-              var array_offset = code[pos++];
-              // TODO
-              continue;
-            case 0x0002010F:
-              var add_value = code[pos++];
-              // TODO
-              continue;
-            case 0x0003010F:
-              var field_offset = code[pos++];
-              // TODO
-              continue;
-            case 0x030411AE:
-              // TODO: load int value from previously specified struct field into register?
-              continue;
-            case 0x0203110F:
-            case 0x0304118B:
-              // TODO: work out what this does?
-              continue;
-            case 0x0003014B:
-              var store_value = code[pos++];
-              // TODO
-              continue;
-            case 0x0002418B:
-            case 0x0003418B:
-            case 0x0200144B:
-              var script_var_offset = code[pos++];
-              // TODO
-              continue;
-            case 0x0000044B:
-              var script_var_offset = code[pos++];
-              var store_value = code[pos++];
-              // TODO
-              continue;
-            case 0x0000044F:
-              var script_var_offset = code[pos++];
-              var increase_value = code[pos++];
-              // TODO
-              continue;
-            case 0x0002110B:
-              var unknown = code[pos++];
-              if (unknown === 0x00020201) {
-                // TODO: work this out (local var vs. script var?)
-              }
-              else {
-                var script_var_offset = code[pos++];
-              }
-              // TODO
-              continue;
-            case 0x00020113:
-            case 0x00020117: // >=
-            case 0x00030113:
-            case 0x00040113:
-            case 0x00040115:
-              var value = code[pos++];
-              // TODO
-              continue;
-            case 0x00020121:
-            case 0x00040121:
-            case 0x00000009:
-              var jump = code[pos++];
-              // TODO
-              pos += jump / 4;
-              continue;
-            default:
-              console.error('unknown op: ' + op.toString(16));
-              return;
-          }
-        }
-      }
-      return next_step();
-    },
     performInteractionV2: function(interaction) {
       switch (interaction.response) {
         case 'run_graphical_script':
@@ -701,11 +525,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         case 'run_dialog_topic':
           return this.runDialog(interaction.data1);
         case 'run_script':
-          if (this.game.formatVersion >= 11) {
-            // TODO: SCOM script
-            return this.room.script.exports[interaction.funcName]();
-          }
-          return this.runScriptV2(this.room.scriptCompiled_v2, interaction.funcName);
+          return this.room.script.exports[interaction.funcName]();
         case 'go_to_screen':
           this.goToRoom(interaction.data1);
           return;
@@ -942,6 +762,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.background = imageData;
     if (def.scriptCompiled_v3) {
       this.script = def.scriptCompiled_v3.instantiate(runtime);
+    }
+    else if (def.scriptCompiled_v2) {
+      this.script = def.scriptCompiled_v2.instantiate(runtime);
     }
   }
   RuntimeRoom.prototype = {
