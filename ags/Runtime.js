@@ -61,6 +61,12 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     set ticksPerSecond(v) {
       this.tickMillisecs = 1000/v;
     },
+    SetGameSpeed: function(v) {
+      this.ticksPerSecond = v;
+    },
+    GetGameSpeed: function() {
+      return this.ticksPerSecond;
+    },
     loadRoom: function(n) {
       var promise;
       if (n === 0 && this.fileSystem.getName('intro.crm')) {
