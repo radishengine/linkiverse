@@ -87,6 +87,26 @@ define(function() {
     }
     pos++;
     var codeBase = pos;
+    if (dv.getInt32(pos, true) === 0x3D3D3D37) {
+      // empty script
+      pos += 4;
+      if (dv.getInt32(pos, true) !== 0x3D373C3B) {
+        throw new Error('unexpected suffix');
+      }
+      pos += 4;
+      if (dv.getInt32(pos, true) !== 0) {
+        throw new Error('unexpected suffix');
+      }
+      pos += 4;
+      if (dv.getInt32(pos, true) !== 0) {
+        throw new Error('unexpected suffix');
+      }
+      pos += 4;
+      if (pos !== dv.byteLength) {
+        throw new Error('unexpected suffix');
+      }
+      return;
+    }
     if (dv.getInt32(pos, true) !== 0x3D3D3D3B || dv.getInt32(pos+4, true) !== 0x3D3D373C) {
       throw new Error('unexpected code');
     }
