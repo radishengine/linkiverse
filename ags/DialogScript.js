@@ -39,10 +39,10 @@ define(['./util'], function(util) {
   }
   DialogScriptInstance.prototype = {
     runEntryPoint: function(i_dialog, resumePrevious) {
-      return this.runFrom(i_dialog, this.dialogs[i_dialog].entryPoint);
+      return this.runFrom(i_dialog, this.def.dialogs[i_dialog].entryPoint);
     },
     runOption: function(i_dialog, i_option, resumePrevious) {
-      return this.runFrom(i_dialog, this.dialogs[i_dialog].options[i_option].entryPoint);
+      return this.runFrom(i_dialog, this.def.dialogs[i_dialog].options[i_option].entryPoint);
     },
     runFrom: function(i_dialog, pos) {
       var code = this.def.codes[i_dialog];
