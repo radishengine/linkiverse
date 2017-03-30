@@ -1,4 +1,6 @@
-define(['./util', './ScomScript', './ScriptV2View'], function(util, ScomScript, ScriptV2View) {
+define(
+['./util', './ScomScript', './ScriptV2View', './DialogScript'],
+function(util, ScomScript, ScriptV2View, DialogScript) {
 
   'use strict';
   
@@ -413,12 +415,14 @@ define(['./util', './ScomScript', './ScriptV2View'], function(util, ScomScript, 
       }
       if (this.formatVersion <= 37) {
         for (var i = 0; i < list.length; i++) {
-          list[i].script = {};
-          list[i].script.compiled = this.bytes.subarray(this.endOffset, this.endOffset + list[i].codeSize);
+          list[i].script = new DialogScript(
+            this.bytes.buffer,
+            this.bytes.byteOffset + this.endOffset,
+            list[i].codeSize);
           this.endOffset += list[i].codeSize;
-          var compiledLen = this.dv.getInt32(this.endOffset, true);
-          list[i].script.source = masked('Avis Durgan', this.bytes, this.endOffset + 4, compiledLen);
-          this.endOffset += 4 + compiledLen;
+          var sourceLen = this.dv.getInt32(this.endOffset, true);
+          list[i].script.source = masked('Avis Durgan', this.bytes, this.endOffset + 4, sourceLen);
+          this.endOffset += 4 + sourceLen;
         }
         list.messages = new Array(this.dialogMessageCount);
         if (this.formatVersion > 25) {
