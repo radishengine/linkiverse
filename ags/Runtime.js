@@ -766,8 +766,8 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     else if (def.scriptCompiled_v2) {
       this.script = def.scriptCompiled_v2.instantiate(runtime);
     }
-    if (this.def.graphicalScript) {
-      this.graphicalScript = this.def.graphicalScript.instantiate(runtime);
+    if (this.def.main.graphicalScript) {
+      this.graphicalScript = this.def.main.graphicalScript.instantiate(runtime);
     }
   }
   RuntimeRoom.prototype = {
