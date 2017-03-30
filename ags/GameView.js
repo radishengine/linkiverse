@@ -420,8 +420,6 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
         const offset = this.endOffset;
         for (var i = 0; i < this.dialogs.length; i++) {
           this.endOffset += this.dialogs[i].codeSize;
-        }
-        for (var i = 0; i < this.dialogs.length; i++) {
           this.endOffset += 4 + this.dv.getInt32(this.endOffset, true);
         }
         const messages = new Array(this.dialogMessageCount);
@@ -440,19 +438,18 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
         }
         return function() {
           var codes = new Array(this.dialogs.length);
+          var sources = new Array(this.dialogs.length);
           var pos = offset;
-          for (var i = 0; i < codes.length; i++) {
+          for (var i = 0; i < this.dialogs.length; i++) {
             codes[i] = new DialogScript(
               this.bytes.buffer,
               this.bytes.byteOffset + pos,
               this.dialogs[i].codeSize);
             pos += this.dialogs[i].codeSize;
-          }
-          var sources = [];
-          for (var i = 0; i < this.dialogs.length; i++) {
             sources[i] = this.bytes.subarray(
               pos + 4,
               pos + 4 + this.dv.getInt32(pos, true));
+            pos += 4 + sources[i].length;
           }
           return new DialogScript(this.dialogs, codes, sources, messages);
         };
