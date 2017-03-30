@@ -1,4 +1,4 @@
-define(['./util', './ScomScript'], function(util, ScomScript) {
+define(['./util', './ScomScript', './ScriptV2View'], function(util, ScomScript, ScriptV2View) {
 
   'use strict';
   
@@ -272,7 +272,7 @@ define(['./util', './ScomScript'], function(util, ScomScript) {
       const offset = this.endOffset += 4;
       this.endOffset += length;
       return function() {
-        return this.bytes.subarray(offset, offset + length);
+        return new ScriptV2View(this.bytes.buffer, this.bytes.byteOffset + offset, length);
       };
     });
     if (this.formatVersion >= 31) {
