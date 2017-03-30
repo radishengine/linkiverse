@@ -159,6 +159,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           self.totalScore = self.game.totalScore;
           self.palette = self.game.palette.subarray();
           self.script = self.game.globalScript.instantiate(self);
+          self.dialogScript = self.game.dialogScript.instantiate(self);
           for (var k in self.script.exports) {
             self[k] = self.script.exports[k];
           }
@@ -401,104 +402,12 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     SetDialogOption: function(i_dialog, i_option, state) {
       console.error('NYI: SetDialogOption');
     },
-    runDialog: function(n) {
-      var dialog = this.game.dialogs[n];
-      var messages = this.game.dialogs.messages;
-      var code = dialog.script.compiled;
-      var pos = dialog.entryPoint;
-      function nextArg() {
-        pos += 2;
-        return code[pos - 2] | (code[pos - 1] << 8);
-      }
-      var self = this;
-      function next_step() {
-        for (;;) {
-          if (pos >= code.length) return;
-          switch (code[pos++]) {
-            case 1:
-              var speaker = nextArg();
-              var text = nextArg();
-              text = messages[text];
-              return self.characters[speaker].say(text).then(next_step);
-            case 2:
-              var option = nextArg();
-              console.log('option off', option);
-              continue;
-            case 3:
-              var option = nextArg();
-              console.log('option on', option);
-              continue;
-            case 4:
-              console.log('return');
-              return;
-            case 5:
-              return;
-            case 6:
-              var option = nextArg();
-              console.log('option off forever', option);
-              continue;
-            case 7:
-              var arg = nextArg();
-              if (typeof self.dialog_request === 'function') {
-                var result = self.dialog_request(arg);
-                if (result instanceof Promise) {
-                  return result.then(next_step);
-                }
-              }
-              continue;
-            case 8:
-              var dialog = nextArg();
-              console.log('go to dialog', dialog);
-              return;
-            case 9:
-              var sound = nextArg();
-              console.log('play sound', option);
-              self.playSound(sound);
-              continue;
-            case 10:
-              var item = nextArg();
-              console.log('add inventory', item);
-              continue;
-            case 11:
-              var character = nextArg();
-              var view = nextArg();
-              console.log('set speech view', character, view);
-              continue;
-            case 12:
-              var room = nextArg();
-              self.goToRoom(room);
-              continue;
-            case 13:
-              var id = nextArg();
-              var value = nextArg();
-              console.log('set global var', id, value);
-              continue;
-            case 14:
-              var points = nextArg();
-              console.log('add score', points);
-              continue;
-            case 15:
-              console.log('go to previous');
-              return;
-            case 16:
-              var item = nextArg();
-              console.log('lose inventory', item);
-              continue;
-            case 0xff:
-              console.log('end script');
-              return;
-            default: throw new Error('unknown dialog opcode: ' + code[pos - 1]);
-          }
-        }
-      }
-      this.mainExec.queueAction(next_step);
-    },
     DisplayMessage: function(number) {
       var text = this.getMessage(number);
       return this.display(text);
     },
     RunDialog: function(number) {
-      return this.runDialog(number);
+      this.mainExec.queueAction(this.dialogScript.exports['$'+number]);
     },
     getMessage: function(number) {
       return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
@@ -526,7 +435,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         case 'run_graphical_script':
           return this.room.graphicalScript.exports['$' + interaction.data1]();
         case 'run_dialog_topic':
-          return this.runDialog(interaction.data1);
+          return this.RunDialog(interaction.data1);
         case 'run_script':
           return this.room.script.exports[interaction.funcName]();
         case 'go_to_screen':
