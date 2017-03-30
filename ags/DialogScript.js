@@ -34,7 +34,7 @@ define(['./util'], function(util) {
     this.def = def;
     this.exports = {};
     for (var i = 0; i < def.codes.length; i++) {
-      this.exports['$' + i] = this.run.bind(this, i);
+      this.exports['$' + i] = this.runEntryPoint.bind(this, i);
     }
   }
   DialogScriptInstance.prototype = {
