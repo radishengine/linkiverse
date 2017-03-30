@@ -413,36 +413,51 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
         dialog.formatVersion = this.formatVersion;
         this.endOffset += dialog.byteLength;
       }
-      if (this.formatVersion <= 37) {
-        for (var i = 0; i < list.length; i++) {
-          list[i].script = new DialogScript(
-            this.bytes.buffer,
-            this.bytes.byteOffset + this.endOffset,
-            list[i].codeSize);
-          this.endOffset += list[i].codeSize;
-          var sourceLen = this.dv.getInt32(this.endOffset, true);
-          list[i].script.source = masked('Avis Durgan', this.bytes, this.endOffset + 4, sourceLen);
-          this.endOffset += 4 + sourceLen;
+      return list;
+    });
+    if (this.formatVersion <= 37) {
+      this.member('dialogScript', function() {
+        const offset = this.endOffset;
+        for (var i = 0; i < this.dialogs.length; i++) {
+          this.endOffset += this.dialogs[i].codeSize;
         }
-        list.messages = new Array(this.dialogMessageCount);
+        for (var i = 0; i < this.dialogs.length; i++) {
+          this.endOffset += 4 + this.dv.getInt32(this.endOffset, true);
+        }
+        const messages = new Array(this.dialogMessageCount);
         if (this.formatVersion > 25) {
           throw new Error('NYI');
         }
         else {
-          for (var i = 0; i < list.messages.length; i++) {
+          for (var i = 0; i < messages.length; i++) {
             var endPos = this.endOffset;
             while (this.bytes[endPos] !== 0) {
               endPos++;
             }
-            if (endPos !== this.endOffset) {
-              list.messages[i] = util.byteString(this.bytes.subarray(this.endOffset, endPos));
-            }
+            messages[i] = util.byteString(this.bytes.subarray(this.endOffset, endPos));
             this.endOffset = endPos + 1;
           }
         }
-      }
-      return list;
-    });
+        return function() {
+          var codes = new Array(this.dialogs.length);
+          var pos = offset;
+          for (var i = 0; i < codes.length; i++) {
+            codes[i] = new DialogScript(
+              this.bytes.buffer,
+              this.bytes.byteOffset + pos,
+              this.dialogs[i].codeSize);
+            pos += this.dialogs[i].codeSize;
+          }
+          var sources = [];
+          for (var i = 0; i < this.dialogs.length; i++) {
+            sources[i] = this.bytes.subarray(
+              pos + 4,
+              pos + 4 + this.dv.getInt32(pos, true));
+          }
+          return new DialogScript(codes, sources, messages);
+        };
+      });
+    }
     if (this.formatVersion >= 9) {
       this.member('guiSignature', member_uint32);
       this.member('guiVersion', function() {
