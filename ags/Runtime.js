@@ -83,6 +83,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     get scoreText() {
       return 'Score: ' + this.score + ' of ' + this.totalScore;
     },
+    GiveScore: function(n) {
+      this.score += n;
+      // TODO: on_event(GOT_SCORE)
+      if (n >= 0) {
+        // TODO: score sound
+      }
+    },
     get idMap() {
       var map = {};
       Object.defineProperty(this, 'idMap', {value:map, enumerable:true});
