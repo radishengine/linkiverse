@@ -305,17 +305,46 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         }
       });
     },
-    graphicalTimerRemaining: 0,
-    graphicalTimerUpdate: null,
-    runGraphicalScript: function(n) {
-      return this.runGraphicalScriptBlock(this.room.graphicalScripts[n], 0);
-    },
     NewRoom: function(n) {
       this.goToRoom(n);
     },
     NewRoomEx: function(n, x, y) {
       // TODO: support player co-ords
       this.goToRoom(n);
+    },
+    QuitGame: function(ask) {
+      // TODO
+      console.warn('QuitGame called');
+    },
+    StopMoving: function(character) {
+      // TODO
+      console.error('NYI: StopMoving');
+    },
+    ObjectOff: function(roomObject) {
+      console.error('NYI: ObjectOff');
+    },
+    ObjectOn: function(roomObject) {
+      console.error('NYI: ObjectOn');
+    },
+    AddInventory: function(item) {
+      console.error('NYI: AddInventory');
+    },
+    LoseInventory: function(item) {
+      console.error('NYI: LoseInventory');
+    },
+    RunAnimation: function(anim) {
+      console.error('NYI: RunAnimation');
+    },
+    onNthLoop: function(n) {
+      // TODO: set up a counter
+      console.error('NYI: onNthLoop');
+      return false;
+    },
+    GetPlayerCharacter: function() {
+      return this.player.number;
+    },
+    PlayFlic: function(which, maySkip) {
+      console.error('NYI: PlayFlic');
     },
     goToRoom: function(n) {
       var self = this;
@@ -461,48 +490,6 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
       this.mainExec.queueAction(next_step);
     },
-    runGraphicalScriptBlock: function(script, n) {
-      var block = script.blocks[n];
-      var self = this;
-      var i = 0;
-      function next_step() {
-        for (;;) {
-          if (i >= block.length) return;
-          var step = block[i++];
-          switch (step.actionType) {
-            case 'play_sound':
-              self.playSound(step.data1);
-              continue;
-            case 'set_timer':
-              self.graphicalTimerRemaining = step.data1;
-              if (!self.graphicalTimerUpdate) {
-                self.eventTarget.addEventListener('update', self.graphicalTimerUpdate = function timer_update() {
-                  if (--self.graphicalTimerRemaining <= 0) {
-                    self.eventTarget.removeEventListener('update', timer_update);
-                    self.graphicalTimerUpdate = null;
-                  }
-                });
-              }
-              continue;
-            case 'if_timer_expired':
-              if (self.graphicalTimerRemaining <= 0) {
-                var promise = self.runGraphicalScriptBlock(script, step.thenGoToBlock);
-                if (promise) {
-                  return promise.then(next_step);
-                }
-              }
-              continue;
-            case 'go_to_screen':
-              self.goToRoom(step.data1);
-              continue;
-            case 'run_dialog_topic':
-              self.runDialog(step.data1);
-              continue;
-          }
-        }
-      }
-      return next_step();
-    },
     DisplayMessage: function(number) {
       var text = this.getMessage(number);
       return this.display(text);
@@ -534,7 +521,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     performInteractionV2: function(interaction) {
       switch (interaction.response) {
         case 'run_graphical_script':
-          return this.runGraphicalScript(interaction.data1);
+          return this.room.graphicalScript.exports['$' + interaction.data1];
         case 'run_dialog_topic':
           return this.runDialog(interaction.data1);
         case 'run_script':
@@ -779,15 +766,15 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     else if (def.scriptCompiled_v2) {
       this.script = def.scriptCompiled_v2.instantiate(runtime);
     }
+    if (this.def.graphicalScript) {
+      this.graphicalScript = this.def.graphicalScript.instantiate(runtime);
+    }
   }
   RuntimeRoom.prototype = {
     viewportX: 0,
     viewportY: 0,
     get number() {
       return this.def.number;
-    },
-    get graphicalScripts() {
-      return this.def.main.graphicalScripts;
     },
     get messages() {
       return this.def.main.messages;
