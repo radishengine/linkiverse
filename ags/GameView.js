@@ -454,7 +454,7 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
               pos + 4,
               pos + 4 + this.dv.getInt32(pos, true));
           }
-          return new DialogScript(codes, sources, messages);
+          return new DialogScript(this.dialogs, codes, sources, messages);
         };
       });
     }
