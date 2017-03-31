@@ -208,7 +208,7 @@ define(['./util'], function(util) {
     runFrom: function(pos) {
       var code = this.def.code,
           consts = this.def.consts,
-          constsDV = this.def.consts,
+          constsDV = this.def.constsDV,
           importsByRef = this.def.importsByRef,
           data = this.data,
           dataDV = this.dataDV,
