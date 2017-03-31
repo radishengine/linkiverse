@@ -485,22 +485,19 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
             this.mainExec.queueAction(this.performInteractionV2.bind(this, interactions[i]));
           }
         }
-        for (var i = 0; i < interactions.length; i++) {
-          if (interactions[i].event === 'repeatedly_execute') {
-            this.eventTarget.roomRepExec = this.mainExec.tryImmediateAction.bind(
-              this.mainExec,
-              this.performInteractionV2.bind(
-                this,
-                interactions[i]));
-            function onLeavingRoom() {
-              this.removeEventListener('update', this.roomRepExec);
-              this.roomRepExec = null;
-              this.removeEventListener('leaving-room', onLeavingRoom);
-            }
-            this.eventTarget.addEventListener('update', this.eventTarget.roomRepExec);
-            this.eventTarget.addEventListener('leaving-room', onLeavingRoom);
-          }
-        }
+        interactions.forEach(function(interaction) {
+          if (interaction.event !== 'repeatedly_execute') return;
+          var roomRepExec = this.mainExec.tryImmediateAction.bind(
+            this.mainExec,
+            this.performInteractionV2.bind(
+              this,
+              interaction));
+          this.eventTarget.addEventListener('update', roomRepExec);
+          this.eventTarget.addEventListener('leaving-room', function onLeavingRoom() {
+            this.removeEventListener('update', roomRepExec);
+            this.removeEventListener('leaving-room', onLeavingRoom);
+          });
+        }, this);
       }
     },
     begin: function() {
