@@ -139,10 +139,13 @@ define(['./util'], function(util) {
     this.data = new Uint8Array(def.data);
     this.dataDV = new DataView(this.data.buffer, this.data.byteOffset, this.data.byteLength);
     this.exports = {};
-    for (var k in def.symbols) {
-      var symbol = def.symbols[k];
+    for (var i = 0; i < def.symbols.length; i++) {
+      var symbol = def.symbols[i];
       if (symbol.entryPoint >= 0) {
-        this.exports[k] = this.runFrom.bind(this, symbol.entryPoint);
+        this.exports[symbol.name] = this.runFrom.bind(this, symbol.entryPoint);
+      }
+      else {
+        // TODO: exported variables
       }
     }
   }
