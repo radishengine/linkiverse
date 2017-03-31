@@ -1017,9 +1017,6 @@ define(['./util'], function(util) {
               registers.sp = registers.bp;
               // pop bp
               registers.bp = registers.ss + stack.getInt32(registers.sp, true);
-              if (registerTypes.bp !== SLOT_STACK) {
-                return console.error('LEAVE: popped bp is type ' + registerTypes.bp);
-              }
               registers.sp += 4;
               continue codeLoop;
             case 0x3D: // NOP
