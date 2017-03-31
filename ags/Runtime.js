@@ -407,7 +407,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return this.display(text);
     },
     RunDialog: function(number) {
-      this.mainExec.queueAction(this.dialogScript.exports['$'+number]);
+      this.mainExec.onNextIdle(this.dialogScript.exports['$'+number]);
     },
     getMessage: function(number) {
       return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
