@@ -384,6 +384,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     PlayMusic: function(number) {
       return this.playMusic(number);
     },
+    InventoryScreen: function() {
+      console.error('NYI: InventoryScreen');
+    },
     display: function(text) {
       var font = this.fonts[0];
       var lines = font.wrap(text, 220);
