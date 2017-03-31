@@ -250,7 +250,7 @@ define(['./util'], function(util) {
       registerTypes.bp = SLOT_STACK;
       registers.sp = registers.ss = registers.bp = stack.byteLength;
       registers.sp -= argAllocation;
-      for (var i = 2; i < arguments.length; i--) {
+      for (var i = 2; i < arguments.length; i++) {
         // TODO: non-int args
         stack.setInt32(registers.sp + (i-2) * 4, arguments[i], true);
       }
