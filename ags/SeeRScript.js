@@ -178,11 +178,6 @@ define(['./util'], function(util) {
       var registerTypes = new Uint8Array(8);
       var stackPos, callTop;
       stackPos = callTop = stack.byteLength;
-      registerTypes.ds = SLOT_DATA;
-      registerTypes.es = SLOT_CONST;
-      registerTypes.sp = SLOT_STACK;
-      registerTypes.ss = SLOT_STACK; 
-      registerTypes.bp = SLOT_STACK;
       stackPos -= argAllocation + 4;
       for (var i = 2; i < arguments.length; i++) {
         // TODO: non-int args
@@ -951,9 +946,6 @@ define(['./util'], function(util) {
               return console.error('NYI: SeeR STI');
               continue codeLoop;
             case 0x3B: // ENTER
-              if (registerTypes.bp !== SLOT_STACK) {
-                return console.error('ENTER: bp is type ' + registerTypes.bp);
-              }
               // push bp
               stack.setInt32(stackPos -= 4, callTop - stack.byteLength, true);
               stackTypes[stackPos >>> 2] = SLOT_STACK;
@@ -961,9 +953,6 @@ define(['./util'], function(util) {
               callTop = stackPos;
               continue codeLoop;
             case 0x3C: // LEAVE
-              if (registerTypes.bp !== SLOT_STACK) {
-                return console.error('LEAVE: current bp is type ' + registerTypes.bp);
-              }
               // mov sp,bp
               stackPos = callTop;
               // pop bp
