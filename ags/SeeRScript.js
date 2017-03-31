@@ -142,7 +142,7 @@ define(['./util'], function(util) {
     for (var i = 0; i < def.symbols.length; i++) {
       var symbol = def.symbols[i];
       if (symbol.entryPoint >= 0) {
-        this.exports[symbol.name] = this.runFrom.bind(this, symbol.entryPoint);
+        this.exports[symbol.name] = this.runFrom.bind(this, symbol.entryPoint, symbol.argAllocation);
       }
       else {
         // TODO: exported variables
@@ -205,7 +205,7 @@ define(['./util'], function(util) {
     },
   };
   SeeRInstance.prototype = {
-    runFrom: function(pos) {
+    runFrom: function(pos, argAllocation) {
       var code = this.def.code,
           consts = this.def.consts,
           constsDV = this.def.constsDV,
@@ -249,9 +249,10 @@ define(['./util'], function(util) {
       registerTypes.ss = SLOT_STACK; 
       registerTypes.bp = SLOT_STACK;
       registers.sp = registers.ss = registers.bp = stack.byteLength;
-      for (var i = arguments.length-1; i >= 1; i--) {
+      registers.sp -= argAllocation;
+      for (var i = 2; i < arguments.length; i--) {
         // TODO: non-int args
-        stack.setInt32(registers.sp -= 4, arguments[i], true);
+        stack.setInt32(registers.sp + (i-2) * 4, arguments[i], true);
       }
       function nextStep() {
         var arg1IsPointer, arg1PointerBase, arg1IsRegister, arg1Register, arg1Value, arg1Type,
