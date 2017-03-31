@@ -1,4 +1,4 @@
-define(['./ScriptV2View', './ScomScript', './GraphicalScript'], function(ScriptV2View, ScomScript, GraphicalScript) {
+define(['./SeeRScript', './ScomScript', './GraphicalScript'], function(SeeRScript, ScomScript, GraphicalScript) {
 
   'use strict';
   
@@ -86,7 +86,7 @@ define(['./ScriptV2View', './ScomScript', './GraphicalScript'], function(ScriptV
         if (this.chunks[i].type === 'compiled_script_v2') {
           var bytes = this.chunks[i].data;
           var len = new DataView(bytes.buffer, bytes.byteOffset, 4).getInt32(0, true);
-          view = new ScriptV2View(bytes.buffer, bytes.byteOffset + 4, len);
+          view = new SeeRScript(bytes.buffer, bytes.byteOffset + 4, len);
         }
       }
       Object.defineProperty(this, 'scriptCompiled_v2', {value:view});
