@@ -454,7 +454,11 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x0B: // MOV  copies 4bytes
               var copyValue, copyType;
-              switch (arg2Type) {
+              if (arg2IsRegister) {
+                copyValue = registers[arg2Register];
+                copyType = registerTypes[arg2Register];
+              }
+              else switch (arg2Type) {
                 case SLOT_INT:
                   copyValue = arg2Value;
                   copyType = SLOT_INT;
@@ -492,7 +496,11 @@ define(['./util'], function(util) {
                   copyType = SLOT_INT;
                   break;
               }
-              switch (arg1Type) {
+              if (arg1IsRegister) {
+                registers[arg1Register] = copyValue;
+                registerTypes[arg1Register] = copyType;
+              }
+              else switch (arg1Type) {
                 case SLOT_STACK:
                   stack.setInt32(arg1Value, copyValue, true);
                   stackTypes[arg1Value >>> 2] = copyType;
@@ -826,7 +834,10 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x2D: // CMOV: copies 1 byte
               var copyValue;
-              switch (arg2Type) {
+              if (arg2IsRegister) {
+                copyValue = arg2Value & 0xff;
+              }
+              else switch (arg2Type) {
                 case SLOT_INT:
                   copyValue = arg2Value & 0xff;
                   break;
@@ -857,7 +868,12 @@ define(['./util'], function(util) {
                 default:
                   return console.error('NYI: SeeR CMOV from type ' + arg2Type);
               }
-              switch (arg1Type) {
+              if (arg1IsRegister) {
+                // TODO: check if the rest of the value should be cleared, not kept
+                registers[arg1Register] = (arg1Value & ~0xff) | (copyValue & 0xff);
+                registerTypes[arg1Register] = SLOT_INT;
+              }
+              else switch (arg1Type) {
                 case SLOT_STACK:
                   stack.setUint8(arg1Value, copyValue, true);
                   stackTypes[arg1Value >>> 2] = SLOT_INT;
@@ -884,7 +900,10 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x2E: // WMOV: copies 2 bytes
               var copyValue;
-              switch (arg2Type) {
+              if (arg2IsRegister) {
+                copyValue = arg2Value << 16 >> 16;
+              }
+              else switch (arg2Type) {
                 case SLOT_INT:
                   copyValue = arg2Value << 16 >> 16;
                   break;
@@ -910,7 +929,12 @@ define(['./util'], function(util) {
                 default:
                   return console.error('NYI: SeeR WMOV from type ' + arg2Type);
               }
-              switch (arg1Type) {
+              if (arg1IsRegister) {
+                // TODO: check if the rest of the value should be cleared, not kept
+                registers[arg1Register] = (arg1Value & ~0xffff) | (copyValue & 0xffff);
+                registerTypes[arg1Register] = SLOT_INT;
+              }
+              else switch (arg1Type) {
                 case SLOT_STACK:
                   stack.setInt16(arg1Value, copyValue, true);
                   stackTypes[arg1Value >>> 2] = SLOT_INT;
