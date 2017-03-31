@@ -339,7 +339,7 @@ define(['./util'], function(util) {
           }
           switch (op & 0x3F) {
             case 0x00: // EXTENDED
-              var extended = op | (code[pos] << 8) | (code[pos+1] << 16]) | (code[pos+2] << 24);
+              var extended = op | (code[pos] << 8) | (code[pos+1] << 16) | (code[pos+2] << 24);
               pos += 3;
               if (extended === 0x12345600 /* EXPR */) {
                 // marks the end of an expression, for interrupts
