@@ -984,10 +984,10 @@ define(['./util'], function(util) {
               return console.error('NYI: SeeR FORK');
               continue codeLoop;
             case 0x37: // RET
-              if (registers.sp === stack.byteLength) {
+              pos = stack.getInt32(registers.sp, true);
+              if (pos === 0) {
                 return registers[0];
               }
-              pos = stack.getInt32(registers.sp, true);
               registers.sp += 4;
               continue codeLoop;
             case 0x38: // WAIT
