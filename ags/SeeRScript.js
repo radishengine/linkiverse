@@ -448,7 +448,7 @@ define(['./util'], function(util) {
                   break;
                 case SLOT_STACK:
                   copyValue = stack.getInt32(arg2Value, true);
-                  copyType = stackTypes[registers.sp/4];
+                  copyType = stackTypes[arg2Value >>> 2];
                   break;
                 case SLOT_DATA:
                   copyValue = dataDV.getInt32(arg2Value, true);
@@ -478,7 +478,7 @@ define(['./util'], function(util) {
               switch (arg1Type) {
                 case SLOT_STACK:
                   stack.setInt32(arg1Value, copyValue, true);
-                  stackTypes[arg1Value/4] = copyType;
+                  stackTypes[arg1Value >>> 2] = copyType;
                   break;
                 case SLOT_DATA:
                   dataDV.setInt32(arg1Value, copyValue, true);
