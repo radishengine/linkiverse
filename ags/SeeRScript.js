@@ -249,10 +249,10 @@ define(['./util'], function(util) {
       registerTypes.ss = SLOT_STACK; 
       registerTypes.bp = SLOT_STACK;
       registers.sp = registers.ss = registers.bp = stack.byteLength;
-      registers.sp -= argAllocation;
+      registers.sp -= argAllocation + 4;
       for (var i = 2; i < arguments.length; i++) {
         // TODO: non-int args
-        stack.setInt32(registers.sp + (i-2) * 4, arguments[i], true);
+        stack.setInt32(registers.sp + (i-1) * 4, arguments[i], true);
       }
       function nextStep() {
         var arg1IsPointer, arg1PointerBase, arg1IsRegister, arg1Register, arg1Value, arg1Type,
