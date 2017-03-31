@@ -579,7 +579,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x0F: // ADD
               if (!arg1IsRegister) {
-                return console.error('NYI: ADD to non-register);
+                return console.error('NYI: ADD to non-register');
               }
               if (arg2Type !== SLOT_INT) {
                 return console.error('NYI: ADD type ' + arg2Type + ' to type ' + arg1Type);
@@ -615,7 +615,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x10: // SUB
               if (!arg1IsRegister) {
-                return console.error('NYI: SUB from non-register);
+                return console.error('NYI: SUB from non-register');
               }
               if (arg2Type !== SLOT_INT) {
                 if (arg2Type !== arg1Type) {
@@ -653,10 +653,7 @@ define(['./util'], function(util) {
               }
               continue codeLoop;
             case 0x11: // MUL
-              if (!arg1IsRegister) {
-                console.error('NYI: SUB from non-register);
-                return;
-              }
+              if (!arg1IsRegister) return console.error('NYI: MUL on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 console.error('NYI: MUL type ' + arg1Type + ' by type ' + arg2Type);
                 return;
@@ -665,10 +662,7 @@ define(['./util'], function(util) {
               registers[arg1Register] *= arg2Value;
               continue codeLoop;
             case 0x12: // DIV
-              if (!arg1IsRegister) {
-                console.error('NYI: DIV on non-register');
-                return;
-              }
+              if (!arg1IsRegister) return console.error('NYI: DIV on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 console.error('NYI: DIV type ' + arg1Type + ' by type ' + arg2Type);
                 return;
