@@ -40,10 +40,10 @@ define(['./util'], function(util) {
     get codeByteLength() {
       return this.dv.getUint32(36, true);
     },
-    get dataByteLength() {
+    get constsByteLength() {
       return this.dv.getUint32(40, true);
     },
-    get constsByteLength() {
+    get dataByteLength() {
       return this.dv.getUint32(44, true);
     },
     get stackSize() {
@@ -116,11 +116,6 @@ define(['./util'], function(util) {
       Object.defineProperty(this, 'code', {value:code, enumerable:true});
       return code;
     },
-    get data() {
-      var data = this.bytes.subarray(this.dataOffset, this.dataOffset + this.dataByteLength);
-      Object.defineProperty(this, 'data', {value:data, enumerable:true});
-      return data;
-    },
     get consts() {
       var consts = this.bytes.subarray(this.constsOffset, this.constsOffset + this.constsByteLength);
       Object.defineProperty(this, 'consts', {value:consts, enumerable:true});
@@ -136,7 +131,7 @@ define(['./util'], function(util) {
   function SeeRInstance(runtime, def) {
     this.runtime = runtime;
     this.def = def;
-    this.data = new Uint8Array(def.data);
+    this.data = new Uint8Array(def.dataByteLength);
     this.dataDV = new DataView(this.data.buffer, this.data.byteOffset, this.data.byteLength);
     this.exports = {};
     for (var i = 0; i < def.symbols.length; i++) {
