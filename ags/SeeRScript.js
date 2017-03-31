@@ -162,48 +162,6 @@ define(['./util'], function(util) {
   const SLOT_DATA = 3;
   const SLOT_IMPORT = 4;
   const SLOT_NAMED_OFFSET = 5;
-  const registerProperties = {
-    cs: {
-      get: function(){ return this[0]; },
-      set: function(v){ this[0] = v; },
-      enumerable: true,
-    },
-    ds: {
-      get: function(){ return this[1]; },
-      set: function(v){ this[1] = v; },
-      enumerable: true,
-    },
-    es: {
-      get: function(){ return this[2]; },
-      set: function(v){ this[2] = v; },
-      enumerable: true,
-    },
-    ss: {
-      get: function(){ return this[3]; },
-      set: function(v){ this[3] = v; },
-      enumerable: true,
-    },
-    ip: {
-      get: function(){ return this[4]; },
-      set: function(v){ this[4] = v; },
-      enumerable: true,
-    },
-    sp: {
-      get: function(){ return this[5]; },
-      set: function(v){ this[5] = v; },
-      enumerable: true,
-    },
-    bp: {
-      get: function(){ return this[6]; },
-      set: function(v){ this[6] = v; },
-      enumerable: true,
-    },
-    cx: {
-      get: function(){ return this[7]; },
-      set: function(v){ this[7] = v; },
-      enumerable: true,
-    },
-  };
   SeeRInstance.prototype = {
     runFrom: function(pos, argAllocation) {
       var code = this.def.code,
@@ -218,8 +176,18 @@ define(['./util'], function(util) {
           stackTypes = new Uint8Array(this.def.stackSize/4);
       var registers = new Int32Array(8);
       var registerTypes = new Uint8Array(8);
-      Object.defineProperties(registers, registerProperties);
-      Object.defineProperties(registerTypes, registerProperties);
+      var stackPos, callTop;
+      stackPos = callTop = stack.byteLength;
+      registerTypes.ds = SLOT_DATA;
+      registerTypes.es = SLOT_CONST;
+      registerTypes.sp = SLOT_STACK;
+      registerTypes.ss = SLOT_STACK; 
+      registerTypes.bp = SLOT_STACK;
+      stackPos -= argAllocation + 4;
+      for (var i = 2; i < arguments.length; i++) {
+        // TODO: non-int args
+        stack.setInt32(stackPos + (i-1) * 4, arguments[i], true);
+      }
       var namedOffsets = [];
       function allocNamedOffset(v) {
         if (v in namedOffsets) return namedOffsets[v];
@@ -230,7 +198,7 @@ define(['./util'], function(util) {
                 continue findingFreeSlot;
               }
             }
-            for (var j = registers.sp; j < registers.ss; j += 4) {
+            for (var j = stackPos; j < stack.byteLength; j += 4) {
               if (stackTypes[j >>> 2] === SLOT_NAMED_OFFSET && stack.getInt32(j, true) === i) {
                 continue findingFreeSlot;
               }
@@ -242,17 +210,6 @@ define(['./util'], function(util) {
           }
         }
         return namedOffsets[v] = namedOffsets.push(v) - 1;
-      }
-      registerTypes.ds = SLOT_DATA;
-      registerTypes.es = SLOT_CONST;
-      registerTypes.sp = SLOT_STACK;
-      registerTypes.ss = SLOT_STACK; 
-      registerTypes.bp = SLOT_STACK;
-      registers.sp = registers.ss = registers.bp = stack.byteLength;
-      registers.sp -= argAllocation + 4;
-      for (var i = 2; i < arguments.length; i++) {
-        // TODO: non-int args
-        stack.setInt32(registers.sp + (i-1) * 4, arguments[i], true);
       }
       function nextStep() {
         var arg1IsPointer, arg1PointerBase, arg1IsRegister, arg1Register, arg1Value, arg1Type,
@@ -281,16 +238,14 @@ define(['./util'], function(util) {
                   arg1Type = SLOT_IMPORT;
                   break;
                 case 1:
-                  arg1Value += registers.es;
-                  arg1Type = registerTypes.es;
+                  arg1Type = SLOT_CONST;
                   break;
                 case 2:
-                  arg1Value += registers.ds;
-                  arg1Type = registerTypes.ds;
+                  arg1Type = SLOT_DATA;
                   break;
                 case 3:
-                  arg1Value += registers.bp;
-                  arg1Type = registerTypes.bp;
+                  arg1Value += callTop;
+                  arg1Type = SLOT_STACK;
                   break;
               }
               break;
@@ -327,16 +282,14 @@ define(['./util'], function(util) {
                   arg1Type = SLOT_IMPORT;
                   break;
                 case 1:
-                  arg1Value += registers.es;
-                  arg1Type = registerTypes.es;
+                  arg1Type = SLOT_CONST;
                   break;
                 case 2:
-                  arg1Value += registers.ds;
-                  arg1Type = registerTypes.ds;
+                  arg1Type = SLOT_DATA;
                   break;
                 case 3:
-                  arg1Value += registers.bp;
-                  arg1Type = registerTypes.bp;
+                  arg1Value += callTop;
+                  arg1Type = SLOT_STACK;
                   break;
               }
               if (arg2IsPointer) switch (arg2PointerBase) {
@@ -344,16 +297,14 @@ define(['./util'], function(util) {
                   arg2Type = SLOT_IMPORT;
                   break;
                 case 1:
-                  arg2Value += registers.es;
-                  arg2Type = registerTypes.es;
+                  arg2Type = SLOT_CONST;
                   break;
                 case 2:
-                  arg2Value += registers.ds;
-                  arg2Type = registerTypes.ds;
+                  arg2Type = SLOT_DATA;
                   break;
                 case 3:
-                  arg2Value += registers.bp;
-                  arg2Type = registerTypes.bp;
+                  arg2Value += callTop;
+                  arg2Type = SLOT_STACK;
                   break;
               }
               break;
@@ -372,20 +323,20 @@ define(['./util'], function(util) {
             case 0x01: // PUSH
               switch (arg1Type) {
                 case SLOT_INT:
-                  stack.setInt32(registers.sp -= 4, arg1Value, true);
-                  stackTypes[registers.sp >>> 2] = SLOT_INT;
+                  stack.setInt32(stackPos -= 4, arg1Value, true);
+                  stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 case SLOT_CONST:
-                  stack.setInt32(registers.sp -= 4, constsDV.getInt32(arg1Value, true), true);
-                  stackTypes[registers.sp >>> 2] = SLOT_INT;
+                  stack.setInt32(stackPos -= 4, constsDV.getInt32(arg1Value, true), true);
+                  stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 case SLOT_STACK:
-                  stack.setInt32(registers.sp -= 4, stack.getInt32(arg1Value, true), true);
-                  stackTypes[registers.sp >>> 2] = stackTypes[arg1Value >>> 2];
+                  stack.setInt32(stackPos -= 4, stack.getInt32(arg1Value, true), true);
+                  stackTypes[stackPos >>> 2] = stackTypes[arg1Value >>> 2];
                   break;
                 case SLOT_DATA:
-                  stack.setInt32(registers.sp -= 4, dataDV.getInt32(arg1Value, true), true);
-                  stackTypes[registers.sp >>> 2] = SLOT_INT;
+                  stack.setInt32(stackPos -= 4, dataDV.getInt32(arg1Value, true), true);
+                  stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 case SLOT_IMPORT:
                   var external = importsByRef[arg1Value];
@@ -395,12 +346,12 @@ define(['./util'], function(util) {
                   if (external.argAllocation !== -1) {
                     return console.error('SeeR: attempt to PUSH from ' + external.name + '()');
                   }
-                  stack.setInt32(registers.sp -= 4, runtime.rawPeek(external.name + '+0', 4), true);
-                  stackTypes[registers.sp >>> 2] = SLOT_INT;
+                  stack.setInt32(stackPos -= 4, runtime.rawPeek(external.name + '+0', 4), true);
+                  stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 case SLOT_NAMED_OFFSET:
-                  stack.setInt32(registers.sp -= 4, runtime.rawPeek(namedOffsets[arg1Value], 4), true);
-                  stackTypes[registers.sp >>> 2] = SLOT_INT;
+                  stack.setInt32(stackPos -= 4, runtime.rawPeek(namedOffsets[arg1Value], 4), true);
+                  stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 default:
                   console.error('NYI: SeeR PUSH with type ' + arg1Type);
@@ -408,8 +359,8 @@ define(['./util'], function(util) {
               }
               continue codeLoop;
             case 0x02: // PUSHADR
-              stack.setInt32(registers.sp -= 4, arg1Value, true);
-              stackTypes[registers.sp >>> 2] = arg1Type;
+              stack.setInt32(stackPos -= 4, arg1Value, true);
+              stackTypes[stackPos >>> 2] = arg1Type;
               continue codeLoop;
             case 0x03: // DPUSH
               return console.error('NYI: SeeR DPUSH');
@@ -418,9 +369,9 @@ define(['./util'], function(util) {
               if (!arg1IsRegister) {
                 return console.error('NYI: POP to non-register');
               }
-              registers[arg1Register] = stack.getInt32(registers.sp, true);
-              registerTypes[arg1Register] = stackTypes[registers.sp >>> 2];
-              registers.sp += 4;
+              registers[arg1Register] = stack.getInt32(stackPos, true);
+              registerTypes[arg1Register] = stackTypes[stackPos >>> 2];
+              stackPos += 4;
               continue codeLoop;
             case 0x05: // NEG  bin:-1-ARG+1=-ARG
               if (!arg1IsRegister) {
@@ -449,7 +400,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x0A: // CALL
               console.warn('SeeR local CALL');
-              stack.setInt32(registers.sp -= 4, pos, true);
+              stack.setInt32(stackPos -= 4, pos, true);
               pos = arg1Value;
               continue codeLoop;
             case 0x0B: // MOV  copies 4bytes
@@ -568,8 +519,8 @@ define(['./util'], function(util) {
               }
               var args = [];
               for (var i = 0; i < argCount; i++) {
-                var v = stack.getInt32(registers.sp + i*4, true);
-                switch (stackTypes[(registers.sp >>> 2) + i]) {
+                var v = stack.getInt32(stackPos + i*4, true);
+                switch (stackTypes[(stackPos >>> 2) + i]) {
                   case SLOT_INT:
                     args.push(v);
                     break;
@@ -583,7 +534,7 @@ define(['./util'], function(util) {
                     args.push(data.subarray(v));
                     break;
                   default:
-                    console.error('NYI: SeeR arg type: ' + stackTypes[(registers.sp >>> 2) + i]);
+                    console.error('NYI: SeeR arg type: ' + stackTypes[(stackPos >>> 2) + i]);
                     args.push(v);
                     break;
                 }
@@ -984,11 +935,11 @@ define(['./util'], function(util) {
               return console.error('NYI: SeeR FORK');
               continue codeLoop;
             case 0x37: // RET
-              pos = stack.getInt32(registers.sp, true);
+              pos = stack.getInt32(stackPos, true);
               if (pos === 0) {
                 return registers[0];
               }
-              registers.sp += 4;
+              stackPos += 4;
               continue codeLoop;
             case 0x38: // WAIT
               return console.error('NYI: SeeR WAIT');
@@ -1004,20 +955,20 @@ define(['./util'], function(util) {
                 return console.error('ENTER: bp is type ' + registerTypes.bp);
               }
               // push bp
-              stack.setInt32(registers.sp -= 4, registers.bp - registers.ss, true);
-              stackTypes[registers.sp >>> 2] = SLOT_STACK;
+              stack.setInt32(stackPos -= 4, callTop - stack.byteLength, true);
+              stackTypes[stackPos >>> 2] = SLOT_STACK;
               // mov bp,sp
-              registers.bp = registers.sp;
+              callTop = stackPos;
               continue codeLoop;
             case 0x3C: // LEAVE
               if (registerTypes.bp !== SLOT_STACK) {
                 return console.error('LEAVE: current bp is type ' + registerTypes.bp);
               }
               // mov sp,bp
-              registers.sp = registers.bp;
+              stackPos = callTop;
               // pop bp
-              registers.bp = registers.ss + stack.getInt32(registers.sp, true);
-              registers.sp += 4;
+              callTop = stack.byteLength + stack.getInt32(stackPos, true);
+              stackPos += 4;
               continue codeLoop;
             case 0x3D: // NOP
               continue codeLoop;
