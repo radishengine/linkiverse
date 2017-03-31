@@ -87,10 +87,10 @@ define(function() {
     }
     pos++;
     var codeBase = pos;
-    if (dv.getInt32(pos, true) === 0x3D3D3D37) {
+    if (dv.getInt32(pos, true) === 0x3D3D3D37 /* opvcpuRET */) {
       // empty script
       pos += 4;
-      if (dv.getInt32(pos, true) !== 0x3D373C3B) {
+      if (dv.getInt32(pos, true) !== 0x3D373C3B /* opvcpuENTER */) {
         throw new Error('unexpected suffix');
       }
       pos += 4;
@@ -107,7 +107,7 @@ define(function() {
       }
       return;
     }
-    if (dv.getInt32(pos, true) !== 0x3D3D3D3B || dv.getInt32(pos+4, true) !== 0x3D3D373C) {
+    if (dv.getInt32(pos, true) !== 0x3D3D3D3B /* opvcpuENTER */ || dv.getInt32(pos+4, true) !== 0x3D3D373C /* opvcpuLEAVE */) {
       throw new Error('unexpected code');
     }
     pos += 8;
@@ -117,7 +117,7 @@ define(function() {
     for (var i = 0; i < this.code.length; i++) {
       this.code[i] = dv.getInt32(codeBase + i * 4, true);
     }
-    if (dv.getInt32(pos, true) !== 0x3D373C3B) {
+    if (dv.getInt32(pos, true) !== 0x3D373C3B /* opvcpuENTER */) {
       throw new Error('unexpected suffix');
     }
     pos += 8;
@@ -149,8 +149,8 @@ define(function() {
       var strings = this.def.strings;
       var code = this.def.code;
       var imports = this.def.imports;
-      if (code[pos++] !== 0x3D3D3D3B) {
-        if (code[pos-1] !== 0x3D373C3B) {
+      if (code[pos++] !== 0x3D3D3D3B  /* opvcpuENTER */) {
+        if (code[pos-1] !== 0x3D373C3B  /* opvcpuENTER */) {
           console.log('unexpected prefix: 0x' + code[pos - 1].toString(16));
         }
         return;
@@ -162,16 +162,16 @@ define(function() {
         codeLoop: for (;;) {
           var op = code[pos++];
           switch (op) {
-            case 0x3D3D373C:
+            case 0x3D3D373C:  /* opvcpuLEAVE */
               return;
-            case 0x00000001:
+            case 0x00000001: /* opvcpuPUSH */
               stack.unshift(code[pos++]);
               continue codeLoop;
-            case 0x00000D01:
+            case 0x00000D01: /* opvcpuPUSH */
               var local_var_address = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0000000D:
+            case 0x0000000D: /* opvcpuCALLEX */
               calling = imports[code[pos++]];
               var argSize = code[pos++];
               var flags = argSize & 0xffff0000;
@@ -209,66 +209,66 @@ define(function() {
                 }
               }
               continue codeLoop;
-            case 0x00000502:
+            case 0x00000502: /* opvcpuPUSHADR */
               var startPos = code[pos++];
               var endPos = startPos;
               while (strings[endPos] !== 0) endPos++;
               stack.unshift(String.fromCharCode.apply(null, strings.subarray(startPos, endPos)));
               continue codeLoop;
-            case 0x0002018B:
+            case 0x0002018B: /* opvcpuMOV */
               var imported = imports[code[pos++]];
               // TODO
               continue codeLoop;
-            case 0x00F50110:
+            case 0x00F50110: /* opvcpuSUB */
               var alloc_str_len = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0002010B:
+            case 0x0002010B: /* opvcpuMOV */
               var str_buf_offset = code[pos++]; // negative for local
               var unknown1 = code[pos++];
               var unknown2 = code[pos++];
               // TODO: something to do with pushing string buffer as a func arg
               continue codeLoop;
-            case 0x0003010B:
+            case 0x0003010B: /* opvcpuMOV */
               var array_offset = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0002010F:
+            case 0x0002010F: /* opvcpuADD */
               var add_value = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0003010F:
+            case 0x0003010F: /* opvcpuADD */
               var field_offset = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x030411AE:
+            case 0x030411AE: /* opvcpuWMOV */
               // TODO: load int value from previously specified struct field into register?
               continue codeLoop;
-            case 0x0203110F:
-            case 0x0304118B:
+            case 0x0203110F: /* opvcpuADD */
+            case 0x0304118B: /* opvcpuMOV */
               // TODO: work out what this does?
               continue codeLoop;
-            case 0x0003014B:
+            case 0x0003014B: /* opvcpuMOV */
               var store_value = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0002418B:
-            case 0x0003418B:
-            case 0x0200144B:
+            case 0x0002418B: /* opvcpuMOV */
+            case 0x0003418B: /* opvcpuMOV */
+            case 0x0200144B: /* opvcpuMOV */
               var script_var_offset = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0000044B:
+            case 0x0000044B: /* opvcpuMOV */
               var script_var_offset = code[pos++];
               var store_value = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0000044F:
+            case 0x0000044F: /* opvcpuADD */
               var script_var_offset = code[pos++];
               var increase_value = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x0002110B:
+            case 0x0002110B: /* opvcpuMOV */
               var unknown = code[pos++];
               if (unknown === 0x00020201) {
                 // TODO: work this out (local var vs. script var?)
@@ -278,17 +278,17 @@ define(function() {
               }
               // TODO
               continue codeLoop;
-            case 0x00020113:
-            case 0x00020117: // >=
-            case 0x00030113:
-            case 0x00040113:
-            case 0x00040115:
+            case 0x00020113: /* opvcpuCMPE x,a := x=(x==a)?1:0 */
+            case 0x00030113: /* opvcpuCMPE */
+            case 0x00040113: /* opvcpuCMPE */
+            case 0x00020117: /* opvcpuCMPNL x,a := x=(x>=a)?1:0 */
+            case 0x00040115: /* opvcpuCMPL x,a := x=(x<a)?1:0 */
               var value = code[pos++];
               // TODO
               continue codeLoop;
-            case 0x00020121:
-            case 0x00040121:
-            case 0x00000009:
+            case 0x00020121: /* opvcpuJFALSE */
+            case 0x00040121: /* opvcpuJFALSE */
+            case 0x00000009: /* opvcpuJMP */
               var jump = code[pos++];
               // TODO
               pos += jump / 4;
