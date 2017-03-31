@@ -530,7 +530,7 @@ define(['./util'], function(util) {
               return console.error('NYI: SeeR XCHG');
               continue codeLoop;
             case 0x0D: // CALLEX
-              if (arg1Type !== SLOT_IMPORT) {
+              if (arg1Type !== SLOT_INT) {
                 return console.error('NYI: SeeR CALLEX on type ' + arg1Type);
               }
               var external = importsByRef[arg1Value];
