@@ -1,6 +1,6 @@
 define(
-['./util', './ScomScript', './ScriptV2View', './DialogScript'],
-function(util, ScomScript, ScriptV2View, DialogScript) {
+['./util', './ScomScript', './SeeRScript', './DialogScript'],
+function(util, ScomScript, SeeRScript, DialogScript) {
 
   'use strict';
   
@@ -274,7 +274,7 @@ function(util, ScomScript, ScriptV2View, DialogScript) {
       const offset = this.endOffset += 4;
       this.endOffset += length;
       return function() {
-        return new ScriptV2View(this.bytes.buffer, this.bytes.byteOffset + offset, length);
+        return new SeeRScript(this.bytes.buffer, this.bytes.byteOffset + offset, length);
       };
     });
     if (this.formatVersion >= 31) {
