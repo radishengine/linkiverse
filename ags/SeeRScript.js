@@ -8,7 +8,7 @@ define(['./util'], function(util) {
   }
   SeeRScript.prototype = {
     instantiate: function(runtime) {
-      return new SeerInstance(runtime, this);
+      return new SeeRInstance(runtime, this);
     },
     get signature() {
       return util.byteString(this.bytes, 0, 8);
