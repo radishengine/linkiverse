@@ -322,6 +322,23 @@ define(['./util'], function(util) {
                 arg2Type = SLOT_INT;
                 pos += 4;
               }
+              if (arg1IsPointer) switch (arg1PointerBase) {
+                case 0:
+                  arg1Type = SLOT_IMPORT;
+                  break;
+                case 1:
+                  arg1Value += registers.es;
+                  arg1Type = registerTypes.es;
+                  break;
+                case 2:
+                  arg1Value += registers.ds;
+                  arg1Type = registerTypes.ds;
+                  break;
+                case 3:
+                  arg1Value += registers.bp;
+                  arg1Type = registerTypes.bp;
+                  break;
+              }
               if (arg2IsPointer) switch (arg2PointerBase) {
                 case 0:
                   arg2Type = SLOT_IMPORT;
