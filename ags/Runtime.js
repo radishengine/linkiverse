@@ -80,6 +80,13 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
+    rawPeek: function(nameAndOffset, dataSize) {
+      console.error('NYI: rawPeek ' + nameAndOffset);
+      return 0;
+    },
+    rawPoke: function(nameAndOffset, dataSize, value) {
+      console.error('NYI: rawPoke ' + nameAndOffset + ' = ' + value);
+    },
     get scoreText() {
       return 'Score: ' + this.score + ' of ' + this.totalScore;
     },
