@@ -429,7 +429,6 @@ define(['./util'], function(util) {
                   copyType = SLOT_INT;
                   break;
                 case SLOT_IMPORT:
-                  copyType = SLOT_INT;
                   var external = importsByRef[arg2Value];
                   if (!external) {
                     return console.error('SeeR: invalid import address ' + arg2Value);
@@ -437,7 +436,8 @@ define(['./util'], function(util) {
                   if (external.argAllocation !== -1) {
                     return console.error('SeeR: attempt to MOV from ' + external.name + '()');
                   }
-                  copyValue = runtime.rawPeek(external.name+'+0', 4);
+                  copyType = SLOT_NAMED_OFFSET;
+                  copyValue = allocNamedOffset(external.name+'+0');
                   break;
                 case SLOT_NAMED_OFFSET:
                   copyValue = runtime.rawPeek(namedOffsets[arg2Value], 4);
