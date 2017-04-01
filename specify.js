@@ -131,7 +131,7 @@ define(function() {
         ,'    byteLength: {value:byteLength, enumerable:true},'
         ,'  });'
         ,'};'
-      ].join('\n'));
+      ].join('\n'))();
       Func.prototype = Object.create(this);
       return Func;
     },
