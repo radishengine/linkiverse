@@ -169,6 +169,7 @@ define(['./util'], function(util) {
           runtime = this.runtime,
           stack = new DataView(new ArrayBuffer(this.def.stackSize)),
           stackTypes = new Uint8Array(this.def.stackSize/4);
+      var stackBytes = new Uint8Array(stack.buffer);
       var registers = new Int32Array(8);
       var registerTypes = new Uint8Array(8);
       var stackPos, callTop;
@@ -515,13 +516,38 @@ define(['./util'], function(util) {
                     args.push(v);
                     break;
                   case SLOT_CONST:
-                    args.push(consts.subarray(v));
+                    if (consts[v] === 0) args.push('');
+                    else {
+                      var endPos = v;
+                      do { } while (consts[++endPos] !== 0);
+                      args.push(util.byteString(consts, v, endPos));
+                    }
                     break;
                   case SLOT_STACK:
-                    args.push(new Uint8Array(stack.buffer, stack.byteOffset + v, stack.byteLength - v));
+                    if (runtime[external.name].passStringsByRef) {
+                      args.push(stackBytes.subarray(v));
+                    }
+                    else {
+                      if (stackBytes[v] === 0) args.push('');
+                      else {
+                        var endPos = v;
+                        do { } while (stackBytes[++endPos] !== 0);
+                        args.push(util.byteString(stackBytes, v, endPos));
+                      }
+                    }
                     break;
                   case SLOT_DATA:
-                    args.push(data.subarray(v));
+                    if (runtime[external.name].passStringsByRef) {
+                      args.push(data.subarray(v));
+                    }
+                    else {
+                      if (data[v] === 0) args.push('');
+                      else {
+                        var endPos = v;
+                        do { } while (data[++endPos] !== 0);
+                        args.push(util.byteString(data, v, endPos));
+                      }
+                    }
                     break;
                   default:
                     console.error('NYI: SeeR arg type: ' + stackTypes[(stackPos >>> 2) + i]);
@@ -786,7 +812,7 @@ define(['./util'], function(util) {
                   copyValue = consts[arg2Value];
                   break;
                 case SLOT_STACK:
-                  copyValue = stack.getUint8(arg2Value);
+                  copyValue = stackBytes[arg2Value];
                   break;
                 case SLOT_DATA:
                   copyValue = data[arg2Value];
@@ -816,7 +842,7 @@ define(['./util'], function(util) {
               }
               else switch (arg1Type) {
                 case SLOT_STACK:
-                  stack.setUint8(arg1Value, copyValue, true);
+                  stackBytes[arg1Value] = copyValue;
                   stackTypes[arg1Value >>> 2] = SLOT_INT;
                   break;
                 case SLOT_DATA:
