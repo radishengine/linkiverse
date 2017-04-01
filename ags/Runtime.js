@@ -36,7 +36,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   };
   var numericKeypadKeyMap = {
     Home: 371, PageUp: 373, '5': 376, End: 379, PageDown: 381,
-  },
+  };
   var ctrlKeyCodeMap = {};
   var altKeyCodeMap = {};
   'QWERTYUIOP'.split('').forEach(function(c, i) {
