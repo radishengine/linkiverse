@@ -570,6 +570,9 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x0F: // ADD
               if (arg1IsPointer && arg1PointerBase === BASE_DATA) {
+                if (arg2Type !== SLOT_INT) {
+                  return console.error('NYI: ADD ' + arg2Type + ' to data pointer');
+                }
                 dataDV.setInt32(arg1Value, dataDV.getInt32(arg1Value, true) + arg2Value, true);
                 continue codeLoop;
               }
