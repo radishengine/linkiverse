@@ -453,10 +453,14 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
       var ctx = runtime.element.getContext('2d');
       document.body.appendChild(runtime.element);
       document.addEventListener('keydown', function(e) {
-        runtime.element.dispatchEvent(new KeyboardEvent('keydown', {key:e.key, which:e.which, keyCode:e.keyCode}));
+        if (!runtime.element.dispatchEvent(new KeyboardEvent('keydown', e))) {
+          e.preventDefault();
+        }
       });
       document.addEventListener('keyup', function(e) {
-        runtime.element.dispatchEvent(new KeyboardEvent('keyup', {key:e.key, which:e.which, keyCode:e.keyCode}));
+        if (!runtime.element.dispatchEvent(new KeyboardEvent('keyup', e))) {
+          e.preventDefault();
+        }
       });
       runtime.begin();
       window.runtime = runtime;
