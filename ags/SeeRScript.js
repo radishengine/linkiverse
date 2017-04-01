@@ -17,7 +17,7 @@ define(['./util'], function(util) {
       return util.byteString(this.bytes, 0, 8);
     },
     get hasValidSignature() {
-      return this.signature === 'SeeRVPCU';
+      return this.signature === 'SeeRVCPU';
     },
     get version() {
       return this.dv.getUint16(10, true) + (this.dv.getUint16(8, true) / 100);
