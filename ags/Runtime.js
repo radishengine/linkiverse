@@ -350,7 +350,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return false;
     },
     GetPlayerCharacter: function() {
-      return this.player.number;
+      return this.player;
     },
     PlayFlic: function(which, maySkip) {
       console.error('NYI: PlayFlic');
@@ -842,6 +842,12 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     runtime.eventTarget.addEventListener('entering-room', this.updateVisible.bind(this));
   }
   RuntimeCharacter.prototype = Object.assign(Object.create(RuntimeSprite.prototype), {
+    valueOf: function() {
+      return this.number;
+    },
+    toString: function() {
+      return this.def.name;
+    },
     _on: true,
     _offsetXRatio: -0.5,
     _offsetYRatio: -1,
