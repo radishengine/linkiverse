@@ -163,8 +163,7 @@ define(['./util'], function(util) {
   const SLOT_CONST = 1;
   const SLOT_STACK = 2;
   const SLOT_DATA = 3;
-  const SLOT_IMPORT = 4;
-  const SLOT_NAMED_OFFSET = 5;
+  const SLOT_NAMED_OFFSET = 4;
   SeeRInstance.prototype = {
     runDestructor: function() {
       this.runFrom(this.def.destructorCodePos, 0);
@@ -237,7 +236,8 @@ define(['./util'], function(util) {
               }
               if (arg1IsPointer) switch (arg1PointerBase) {
                 case 0:
-                  arg1Type = SLOT_IMPORT;
+                  arg1Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
+                  arg1Type = SLOT_NAMED_OFFSET;
                   break;
                 case 1:
                   arg1Type = SLOT_CONST;
@@ -281,7 +281,8 @@ define(['./util'], function(util) {
               }
               if (arg1IsPointer) switch (arg1PointerBase) {
                 case 0:
-                  arg1Type = SLOT_IMPORT;
+                  arg1Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
+                  arg1Type = SLOT_NAMED_OFFSET;
                   break;
                 case 1:
                   arg1Type = SLOT_CONST;
@@ -296,7 +297,8 @@ define(['./util'], function(util) {
               }
               if (arg2IsPointer) switch (arg2PointerBase) {
                 case 0:
-                  arg2Type = SLOT_IMPORT;
+                  arg2Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
+                  arg2Type = SLOT_NAMED_OFFSET;
                   break;
                 case 1:
                   arg2Type = SLOT_CONST;
@@ -323,7 +325,11 @@ define(['./util'], function(util) {
               }
               continue codeLoop;
             case 0x01: // PUSH
-              switch (arg1Type) {
+              if (arg1IsRegister) {
+                stack.setInt32(stackPos -= 4, arg1Value, true);
+                stackTypes[stackPos >>> 2] = arg1Type;
+              }
+              else switch (arg1Type) {
                 case SLOT_INT:
                   stack.setInt32(stackPos -= 4, arg1Value, true);
                   stackTypes[stackPos >>> 2] = SLOT_INT;
@@ -338,17 +344,6 @@ define(['./util'], function(util) {
                   break;
                 case SLOT_DATA:
                   stack.setInt32(stackPos -= 4, dataDV.getInt32(arg1Value, true), true);
-                  stackTypes[stackPos >>> 2] = SLOT_INT;
-                  break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg1Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg1Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to PUSH from ' + external.name + '()');
-                  }
-                  stack.setInt32(stackPos -= 4, runtime.rawPeek(external.name + '+0', 4), true);
                   stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 case SLOT_NAMED_OFFSET:
@@ -428,20 +423,9 @@ define(['./util'], function(util) {
                   copyValue = dataDV.getInt32(arg2Value, true);
                   copyType = SLOT_INT;
                   break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg2Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import address ' + arg2Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to MOV from ' + external.name + '()');
-                  }
-                  copyType = SLOT_NAMED_OFFSET;
-                  copyValue = allocNamedOffset(external.name+'+0');
-                  break;
                 case SLOT_NAMED_OFFSET:
-                  copyValue = runtime.rawPeek(namedOffsets[arg2Value], 4);
-                  copyType = SLOT_INT;
+                  copyValue = arg2Value;
+                  copyType = SLOT_NAMED_OFFSET;
                   break;
                 default:
                   console.error('NYI: SeeR MOV from type ' + arg2Type);
@@ -460,16 +444,6 @@ define(['./util'], function(util) {
                   break;
                 case SLOT_DATA:
                   dataDV.setInt32(arg1Value, copyValue, true);
-                  break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg1Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import address ' + arg1Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to MOV to ' + external.name + '()');
-                  }
-                  runtime.rawPoke(external.name+'0', 4, copyValue);
                   break;
                 case SLOT_NAMED_OFFSET:
                   runtime.rawPoke(namedOffsets[arg1Value], 4, copyValue);
@@ -607,19 +581,6 @@ define(['./util'], function(util) {
                 continue codeLoop;
               }
               switch (leftType) {
-                case SLOT_IMPORT:
-                  var external = importsByRef[leftValue];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + leftValue);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to add to ' + external.name + '()');
-                  }
-                  if (rightValue < 0) {
-                    return console.error('SeeR: negative offset from ' + external.name);
-                  }
-                  registers[arg1Register] = allocNamedOffset(external.name + '+' + rightValue);
-                  break;
                 case SLOT_NAMED_OFFSET:
                   var parts = namedOffsets[leftValue].split('+');
                   if ((parts[1] = +parts[1] + rightValue) < 0) {
@@ -646,19 +607,6 @@ define(['./util'], function(util) {
                 continue codeLoop;
               }
               switch (arg1Type) {
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg1Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg1Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to add to ' + external.name + '()');
-                  }
-                  if (arg2Value > 0) {
-                    return console.error('SeeR: negative offset from ' + external.name);
-                  }
-                  registers[arg1Register] = allocNamedOffset(external.name + '+' + (-arg2Value));
-                  break;
                 case SLOT_NAMED_OFFSET:
                   var parts = namedOffsets[arg1Value].split('+');
                   if ((parts[1] -= arg2Value) < 0) {
@@ -716,6 +664,10 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x17: // CMPNL  x,a := x=(x>=a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPNL on non-register');
+              if (arg1Type === SLOT_NAMED_OFFSET) {
+                arg1Value = runtime.rawPeek(namedOffsets[arg1Type], 4);
+                arg1Type = SLOT_INT;
+              }
               if (arg1Type !== arg2Type) {
                 return console.error('NYI: type ' + arg1Type + ' >= type ' + arg2Type);
               }
@@ -840,17 +792,6 @@ define(['./util'], function(util) {
                 case SLOT_DATA:
                   copyValue = data[arg2Value];
                   break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg2Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg2Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to CMOV from ' + external.name + '()');
-                  }
-                  copyValue = runtime.rawPeek(external.name + '+0', 1);
-                  copyType = SLOT_INT;
-                  break;
                 case SLOT_NAMED_OFFSET:
                   copyValue = runtime.rawPeek(namedOffsets[arg2Value], 1);
                   copyType = SLOT_INT;
@@ -870,16 +811,6 @@ define(['./util'], function(util) {
                   break;
                 case SLOT_DATA:
                   data[arg1Value] = copyValue;
-                  break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg2Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg2Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to CMOV to ' + external.name + '()');
-                  }
-                  runtime.rawPoke(external.name + '+0', 1);
                   break;
                 case SLOT_NAMED_OFFSET:
                   runtime.rawPoke(namedOffsets[arg1Value], 1);
@@ -906,15 +837,8 @@ define(['./util'], function(util) {
                 case SLOT_DATA:
                   copyValue = dataDV.getInt16(arg2Value, true);
                   break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg2Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg2Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to WMOV from ' + external.name + '()');
-                  }
-                  copyValue = runtime.rawPeek(external.name + '+0', 2);
+                case SLOT_NAMED_OFFSET:
+                  copyValue = runtime.rawPeek(namedOffsets[arg2Value], 2);
                   break;
                 default:
                   return console.error('NYI: SeeR WMOV from type ' + arg2Type);
@@ -931,16 +855,6 @@ define(['./util'], function(util) {
                   break;
                 case SLOT_DATA:
                   data.setInt16(arg1Value, copyValue, true);
-                  break;
-                case SLOT_IMPORT:
-                  var external = importsByRef[arg2Value];
-                  if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg2Value);
-                  }
-                  if (external.argAllocation !== -1) {
-                    return console.error('SeeR: attempt to WMOV to ' + external.name + '()');
-                  }
-                  runtime.rawPoke(external.name + '+0', 2, copyValue);
                   break;
                 case SLOT_NAMED_OFFSET:
                   runtime.rawPoke(namedOffsets[arg1Value], 2, copyValue);
