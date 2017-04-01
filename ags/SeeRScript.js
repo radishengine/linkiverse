@@ -531,7 +531,7 @@ define(['./util'], function(util) {
                     else {
                       var endPos = v;
                       do { } while (consts[++endPos] !== 0);
-                      args.push(util.byteString(consts, v, endPos));
+                      args.push(util.byteString(consts.subarray(v, endPos)));
                     }
                     break;
                   case SLOT_STACK:
@@ -543,7 +543,7 @@ define(['./util'], function(util) {
                       else {
                         var endPos = v;
                         do { } while (stackBytes[++endPos] !== 0);
-                        args.push(util.byteString(stackBytes, v, endPos));
+                        args.push(util.byteString(stackBytes.subarray(v, endPos)));
                       }
                     }
                     break;
@@ -556,7 +556,7 @@ define(['./util'], function(util) {
                       else {
                         var endPos = v;
                         do { } while (data[++endPos] !== 0);
-                        args.push(util.byteString(data, v, endPos));
+                        args.push(util.byteString(data.subarray(v, endPos)));
                       }
                     }
                     break;
