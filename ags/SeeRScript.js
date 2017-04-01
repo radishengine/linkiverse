@@ -490,13 +490,13 @@ define(['./util'], function(util) {
               if (!external) {
                 return console.error('invalid SeeR import ref: ' + arg1Value);
               }
-              var argCount = arg2Value & 0xffff;
-              if (argCount !== external.argAllocation) {
+              var argAllocation = arg2Value & 0xffff;
+              if (argAllocation !== external.argAllocation) {
                 if (external.argAllocation === -1) {
                   console.error('attempt to call non-function: ' + external.name);
                 }
                 else {
-                  console.error('wrong arg allocation (expected ' + external.argAllocation + ', got ' + argCount + ')');
+                  console.error('wrong arg allocation (expected ' + external.argAllocation + ', got ' + argAllocation + ')');
                 }
                 return;
               }
@@ -520,8 +520,8 @@ define(['./util'], function(util) {
                 continue codeLoop;
               }
               var args = [];
-              for (var i = 0; i < argCount; i++) {
-                var v = stack.getInt32(stackPos + i*4, true);
+              for (var i = 0; i < argAllocation; i += 4) {
+                var v = stack.getInt32(stackPos + i, true);
                 switch (stackTypes[(stackPos >>> 2) + i]) {
                   case SLOT_INT:
                     args.push(v);
