@@ -70,7 +70,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.eventTarget.runtime = this;
     this.eventTarget.addEventListener('entering-room', this.onEnteringRoom.bind(this));
     this.update = this.update.bind(this);
-    this.audioContext = audioContext;
+    this.au3dioContext = audioContext;
     this.mainExec = new ExecutionChannel(this);
     this.eventTarget.addEventListener('mousedown', function(e) {
       e.preventDefault();
@@ -87,10 +87,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         case 'Alt': pressedMap[407] = true; return;
       }
       var keycode = 0;
-      if ((e.ctrlKey || '405' in pressedMap || '406' in pressedMap) && e.key in ctrlKeyCodeMap) {
+      if (e.ctrlKey && e.key in ctrlKeyCodeMap) {
         keycode = ctrlKeyCodeMap[e.key];
       }
-      else if ((e.altKey || '407' in pressedMap) && e.key in altKeyCodeMap) {
+      else if (e.altKey && e.key in altKeyCodeMap) {
         keycode = altKeyCodeMap[e.key];
       }
       else if (e.location === 3 && e.key in numericKeypadKeyMap) {
