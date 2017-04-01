@@ -33,9 +33,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     '0': 48,
     ArrowUp: 372, ArrowLeft: 375, ArrowRight: 377, ArrowDown: 380,
     F11: 433, F12: 434,
+    Home: 371, PageUp: 373, End: 379, PageDown: 381,
   };
   var numericKeypadKeyMap = {
-    Home: 371, PageUp: 373, '5': 376, End: 379, PageDown: 381,
+    '5': 376,
   };
   var ctrlKeyCodeMap = {};
   var altKeyCodeMap = {};
@@ -86,17 +87,17 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         case 'Alt': pressedMap[407] = true; return;
       }
       var keycode = 0;
-      if (e.ctrlKey && e.key in ctrlKeyCodeMap) {
+      if ((e.ctrlKey || '405' in pressedMap || '406' in pressedMap) && e.key in ctrlKeyCodeMap) {
         keycode = ctrlKeyCodeMap[e.key];
       }
-      else if (e.altKey && e.key in altKeyCodeMap) {
+      else if ((e.altKey || '407' in pressedMap) && e.key in altKeyCodeMap) {
         keycode = altKeyCodeMap[e.key];
-      }
-      else if (e.key in keyCodeMap) {
-        keycode = keyCodeMap[e.key];
       }
       else if (e.location === 3 && e.key in numericKeypadKeyMap) {
         keycode = numericKeypadKeyMap[e.key];
+      }
+      else if (e.key in keyCodeMap) {
+        keycode = keyCodeMap[e.key];
       }
       if (keycode !== 0) {
         pressedMap[keycode] = true;
