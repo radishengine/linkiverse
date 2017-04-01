@@ -123,14 +123,14 @@ define(function() {
     },
     createType: function(name) {
       name = name || 'CustomSpec';
-      var Func = new Function([
-        'return function ' + name + '(buffer, byteOffset, byteLength) {',
-        '  Object.defineProperties(this, {
-        '    buffer: {value:buffer, enumerable:true},',
-        '    byteOffset: {value:byteOffset, enumerable:true},',
-        '    byteLength: {value:byteLength, enumerable:true},',
-        '  });',
-        '};',
+      var Func = new Function([''
+        ,'return function ' + name + '(buffer, byteOffset, byteLength) {'
+        ,'  Object.defineProperties(this, {'
+        ,'    buffer: {value:buffer, enumerable:true},'
+        ,'    byteOffset: {value:byteOffset, enumerable:true},'
+        ,'    byteLength: {value:byteLength, enumerable:true},'
+        ,'  });'
+        ,'};'
       ].join('\n'));
       Func.prototype = Object.create(this);
       return Func;
