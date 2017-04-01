@@ -63,6 +63,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
     this.element = document.createElement('CANVAS');
+    this.element.tabindex = 0;
     this.element.width = 320;
     this.element.height = 200;
     this.ctx2d = this.element.getContext('2d');
