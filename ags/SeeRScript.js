@@ -5,6 +5,9 @@ define(['./util'], function(util) {
   function SeeRScript(buffer, byteOffset, byteLength) {
     var dv = this.dv = new DataView(buffer, byteOffset, byteLength);
     var bytes = this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+    if (!this.hasValidSignature || this.version !== 0.94) {
+      throw new Error('not a valid SeeR 0.94 script');
+    }
   }
   SeeRScript.prototype = {
     instantiate: function(runtime) {
@@ -31,31 +34,35 @@ define(['./util'], function(util) {
     get codeOffset() {
       return this.dv.getUint32(24, true);
     },
+    /* not used */
+    //get dataOffset() {
+    //  return this.dv.getUint32(28, true);
+    //},
     get constsOffset() {
-      return this.dv.getUint32(28, true);
-    },
-    get initOffset() {
       return this.dv.getUint32(32, true);
     },
-    get codeByteLength() {
+    get initOffset() {
       return this.dv.getUint32(36, true);
     },
-    get constsByteLength() {
+    get codeByteLength() {
       return this.dv.getUint32(40, true);
     },
     get dataByteLength() {
       return this.dv.getUint32(44, true);
     },
-    get stackSize() {
+    get constsByteLength() {
       return this.dv.getUint32(48, true);
+    },
+    get stackByteLength() {
+      return this.dv.getUint32(52, true);
     },
     get importsOffset() {
       return this.dv.getUint32(56, true);
     },
-    get constructOffset() {
+    get constructorCodePos() {
       return this.dv.getUint32(60, true);
     },
-    get destructOffset() {
+    get destructorCodePos() {
       return this.dv.getUint32(64, true);
     },
     // TODO: TITL, AUTH
@@ -143,6 +150,7 @@ define(['./util'], function(util) {
         // TODO: exported variables
       }
     }
+    this.runFrom(def.constructorCodePos, 0);
   }
   const OP_ARG_COUNT = new Uint8Array(0x40);
   for (var i = 0x01; i <= 0x0A; i++) {
@@ -158,6 +166,9 @@ define(['./util'], function(util) {
   const SLOT_IMPORT = 4;
   const SLOT_NAMED_OFFSET = 5;
   SeeRInstance.prototype = {
+    runDestructor: function() {
+      this.runFrom(this.def.destructorCodePos, 0);
+    },
     runFrom: function(pos, argAllocation) {
       var code = this.def.code,
           consts = this.def.consts,
