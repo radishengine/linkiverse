@@ -392,6 +392,18 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     InventoryScreen: function() {
       console.error('NYI: InventoryScreen');
     },
+    SaveGameDialog: function() {
+      console.error('NYI: SaveGameDialog');
+    },
+    RestartGame: function() {
+      console.error('NYI: RestartGame()');
+    },
+    SaveScreenShot: function(filename) {
+      console.error('NYI: SaveScreenShot()');
+    },
+    Debug: function(mode, data) {
+      console.error('NYI: Debug()');
+    },
     display: function(text) {
       var font = this.fonts[0];
       var lines = font.wrap(text, 220);
