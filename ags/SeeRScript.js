@@ -622,7 +622,7 @@ define(['./util'], function(util) {
                   break;
                 case SLOT_NAMED_OFFSET:
                   var parts = namedOffsets[leftValue].split('+');
-                  if ((parts[1] += rightValue) < 0) {
+                  if ((parts[1] = +parts[1] + rightValue) < 0) {
                     return console.error('SeeR: negative offset from ' + parts[0]);
                   }
                   registers[arg1Register] = allocNamedOffset(parts.join('+'));
