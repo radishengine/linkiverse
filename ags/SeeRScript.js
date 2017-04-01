@@ -502,7 +502,7 @@ define(['./util'], function(util) {
               var args = [];
               for (var i = 0; i < argAllocation; i += 4) {
                 var v = stack.getInt32(stackPos + i, true);
-                switch (stackTypes[(stackPos >>> 2) + i]) {
+                switch (stackTypes[(stackPos + i) >>> 2]) {
                   case SLOT_INT:
                     args.push(v);
                     break;
