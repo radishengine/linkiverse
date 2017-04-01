@@ -489,8 +489,29 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       console.error('NYI: SaveScreenShot()');
     },
     Debug: function(mode, data) {
-      console.error('NYI: Debug()');
+      switch (mode) {
+        case 0:
+          console.error('NYI: give all inventory');
+          break;
+        case 1:
+          console.error('NYI: display interpreter version');
+          break;
+        case 2:
+          console.error('NYI: show reachable walk regions');
+          break;
+        case 3:
+          console.error('NYI: teleport');
+          break;
+        case 4:
+          var enable = !!data;
+          console.error('NYI: show fps');
+          break;
+        default:
+          console.warn('unknown Debug() mode: ' + mode);
+          break;
+      }
     },
+
     display: function(text) {
       var font = this.fonts[0];
       var lines = font.wrap(text, 220);
