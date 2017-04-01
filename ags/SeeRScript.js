@@ -352,8 +352,8 @@ define(['./util'], function(util) {
                   stackTypes[stackPos >>> 2] = SLOT_INT;
                   break;
                 case SLOT_NAMED_OFFSET:
-                  stack.setInt32(stackPos -= 4, runtime.rawPeek(namedOffsets[arg1Value], 4), true);
-                  stackTypes[stackPos >>> 2] = SLOT_INT;
+                  stack.setInt32(stackPos -= 4, arg1Value, true);
+                  stackTypes[stackPos >>> 2] = SLOT_NAMED_OFFSET;
                   break;
                 default:
                   console.error('NYI: SeeR PUSH with type ' + arg1Type);
