@@ -321,6 +321,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       // TODO: support player co-ords
       this.goToRoom(n);
     },
+    IsGamePaused: function() {
+      console.error('NYI: IsGamePaused');
+      return false;
+    },
     QuitGame: function(ask) {
       // TODO
       console.warn('QuitGame called');
