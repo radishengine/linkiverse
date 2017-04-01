@@ -602,7 +602,7 @@ define(['./util'], function(util) {
               else {
                 return console.error('NYI: ADD type ' + arg2Type + ' to type ' + arg1Type);
               }
-              registers[arg1Register] = leftType;
+              registerTypes[arg1Register] = leftType;
               if (rightValue === 0) {
                 continue codeLoop;
               }
