@@ -15,15 +15,24 @@ define(function() {
       this.endOffset += byteLength;
       def = def(offset);
       if (typeof def === 'function') {
-        Object.defineProperty(this, name, {
-          get: function() {
-            var value = def.apply(this);
-            Object.defineProperty(this, name, {value:value, enumerable:true, configurable:true});
-            return value;
-          },
-          enumerable: true,
-          configurable: true,
-        });
+        if (def.noCache) {
+          Object.defineProperty(this, name, {
+            get: def,
+            enumerable: true,
+            configurable: true,
+          });
+        }
+        else {
+          Object.defineProperty(this, name, {
+            get: function() {
+              var value = def.apply(this);
+              Object.defineProperty(this, name, {value:value, enumerable:true, configurable:true});
+              return value;
+            },
+            enumerable: true,
+            configurable: true,
+          });
+        }
       }
       else {
         Object.defineProperty(this, name, {
@@ -42,9 +51,11 @@ define(function() {
       if (!name) return this.$skip(byteLength);
       var getter = DataView.prototype['get'+dvName];
       return this.$(name, byteLength, function(offset) {
-        return function() {
+        function get() {
           return getter.call(this.dv, offset, this.littleEndian);
-        };
+        }
+        get.noCache = true;
+        return get;
       });
     },
     $numericMulti: function(byteLength, dvName, list) {
