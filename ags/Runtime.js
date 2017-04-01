@@ -26,6 +26,39 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   
   const interfaceSubstitutions = /@(GAMENAME|OVERHOTSPOT|SCORE(TEXT)?|TOTALSCORE)@/gi;
   
+  var keyCodeMap = {
+    Enter: 13,
+    Escape: 27,
+    ' ': 32,
+    '0': 48,
+    ArrowUp: 372, ArrowLeft: 375, ArrowRight: 377, ArrowDown: 380,
+    F11: 433, F12: 434,
+  };
+  var numericKeypadKeyMap = {
+    Home: 371, PageUp: 373, '5': 376, End: 379, PageDown: 381,
+  },
+  var ctrlKeyCodeMap = {};
+  var altKeyCodeMap = {};
+  'QWERTYUIOP'.split('').forEach(function(c, i) {
+    altKeyCodeMap[c] = altKeyCodeMap[c.toLowerCase()] = 316 + i;
+  });
+  'ASDFGHJKL'.split('').forEach(function(c, i) {
+    altKeyCodeMap[c] = altKeyCodeMap[c.toLowerCase()] = 330 + i;
+  });
+  'ZXCVBNM'.split('').forEach(function(c, i) {
+    altKeyCodeMap[c] = altKeyCodeMap[c.toLowerCase()] = 344 + i;
+  });
+  for (var i = 0; i <= 26; i++) {
+    var upper = String.fromCharCode('A'.charCodeAt(0) + i);
+    var lower = String.fromCharCode('a'.charCodeAt(0) + i);
+    keyCodeMap[lower] = keyCodeMap[upper] = 65 + i;
+    ctrlKeyCodeMap[lower] = ctrlKeyCodeMap[upper] = 1 + i;
+  }
+  for (var i = 0; i < 10; i++) {
+    keyCodeMap[''+i] = 48 + i;
+    keyCodeMap['F'+(i+1)] = 359 + i;
+  }
+  
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
     this.element = document.createElement('CANVAS');
@@ -42,18 +75,60 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       e.preventDefault();
       e.stopPropagation();
     });
+    var self = this;
+    var pressedMap = this.pressedMap = {};
     this.eventTarget.addEventListener('keydown', function(e) {
       e.preventDefault();
       e.stopPropagation();
+      switch (e.key) {
+        case 'Control': pressedMap[e.location === 2 ? 406 : 405] = true; return;
+        case 'Shift': pressedMap[e.location === 2 ? 404 : 403] = true; return;
+        case 'Alt': pressedMap[407] = true; return;
+      }
+      var keycode = 0;
+      if (e.ctrlKey && e.key in ctrlKeyCodeMap) {
+        keycode = ctrlKeyCodeMap[e.key];
+      }
+      else if (e.altKey && e.key in altKeyCodeMap) {
+        keycode = altKeyCodeMap[e.key];
+      }
+      else if (e.key in keyCodeMap) {
+        keycode = keyCodeMap[e.key];
+      }
+      else if (e.location === 3 && e.key in numericKeypadKeyMap) {
+        keycode = numericKeypadKeyMap[e.key];
+      }
+      if (keycode !== 0) {
+        pressedMap[keycode] = true;
+        self.on_key_press(keycode);
+      }
     });
     this.eventTarget.addEventListener('keyup', function(e) {
       e.preventDefault();
       e.stopPropagation();
+      switch (e.key) {
+        case 'Control': delete pressedMap[e.location === 2 ? 406 : 405]; return;
+        case 'Shift': delete pressedMap[e.location === 2 ? 404 : 403]; return;
+        case 'Alt': delete pressedMap[407]; return;
+      }
+      if (e.key in ctrlKeyCodeMap) {
+        delete pressedMap[ctrlKeyCodeMap[e.key]];
+      }
+      if (e.key in altKeyCodeMap) {
+        delete pressedMap[altKeyCodeMap[e.key]];
+      }
+      if (e.key in keyCodeMap) {
+        delete pressedMap[keyCodeMap[e.key]];
+      }
+      if (e.location === 3 && e.key in numericKeypadKeyMap) {
+        delete pressedMap[numericKeypadKeyMap[e.key]];
+      }
     });
     this.fonts = [];
     this.overlays = [];
   }
   Runtime.prototype = {
+    on_key_press: function() { },
     tickMillisecs: 1000/40,
     get ticksPerSecond() {
       return Math.round(1000/this.tickMillisecs);
