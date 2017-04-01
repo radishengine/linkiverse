@@ -513,6 +513,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     },
 
     display: function(text) {
+      text = ''+text;
       var font = this.fonts[0];
       var lines = font.wrap(text, 220);
       var boxWidth = 6;
