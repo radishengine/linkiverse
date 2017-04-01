@@ -7,14 +7,98 @@ define(function() {
     return def ? Object.assign(spec, def) : spec;
   }
   
+  function Dot(object, memberName) {
+    this.object = object;
+    this.memberName = memberName;
+    Object.freeze(this);
+  }
+  Dot.prototype = {
+    toString: function() {
+      return this.object + '.' + this.memberName;
+    },
+  };
+  
+  function SquareIndex(object, index) {
+    this.object = object;
+    this.index = index;
+    Object.freeze(this);
+  }
+  SquareIndex.prototype = {
+    toString: function() {
+      return isNaN(this.index) ? this.object+'[]' : this.object+'['+this.index+']';
+    },
+  };
+  
+  function demangle(name) {
+    var dot = name.match(/^(.*)\.([^\.\[\]]+)$/);
+    if (dot) {
+      return Dot(demangle(dot[1]), dot[2]);
+    }
+    var sqIdx = name.match(/^(.*?)\[(\d+)?\]$/);
+    if (sqIdx) {
+      return SquareIndex(demangle(sqIdx[1]), +sqIdx[2]));
+    }
+    return name;
+  }
+  
   specify.factory = {
     endOffset: 0,
     littleEndian: true,
+    $objectGetter: function(target) {
+      if (typeof target === 'string') {
+        var prop = Object.getOwnPropertyDescriptor(this, target);
+        if (!prop) {
+          Object.defineProperty(this, target, {
+            get: function() {
+              var obj = {};
+              Object.defineProperty(this, target, {
+                value: obj,
+                enumerable: true,
+                configurable: true,
+              });
+              return obj;
+            },
+            enumerable: true,
+            configurable: true,
+          });
+          
+        }
+      }
+      if (target instanceof Dot) {
+        return this.$getObject(target.object)
+      }
+    },
     $: function(name, byteLength, def) {
       const offset = this.endOffset;
       this.endOffset += byteLength;
       def = def(offset);
+      name = demangle(name);
+      var context = this;
+      while (typeof name !== 'string') {
+        while (name instanceof Dot) {
+          var spec = Object.getOwnPropertyDescriptor(context, name.memberName);
+          if (spec) {
+            if ('value' in spec) {
+              context = spec.value;
+            }
+            else {
+              spec.get
+              Object.defineProperty(context, 
+            }
+          }
+          else {
+            var newContext = {};
+            Object.defineProperty(context, name, {
+              value: newContext,
+              enumerable: true,
+              configurable: true,
+            });
+            context = newContext;
+          }
+        }
+      }
       if (typeof def === 'function') {
+        if (context !== this) def = def.bind(this);
         if (def.noCache) {
           Object.defineProperty(this, name, {
             get: def,
