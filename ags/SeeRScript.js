@@ -588,35 +588,47 @@ define(['./util'], function(util) {
               if (!arg1IsRegister) {
                 return console.error('NYI: ADD to non-register');
               }
-              if (arg2Type !== SLOT_INT) {
+              var leftValue, leftType, rightValue;
+              if (arg2Type === SLOT_INT) {
+                leftValue = arg1Value;
+                leftType = arg1Type;
+                rightValue = arg2Value;
+              }
+              else if (arg1Type === SLOT_INT) {
+                leftValue = arg2Value;
+                leftType = arg2Type;
+                rightValue = arg1Value;
+              }
+              else {
                 return console.error('NYI: ADD type ' + arg2Type + ' to type ' + arg1Type);
               }
-              if (arg2Value === 0) {
+              registers[arg1Register] = leftType;
+              if (rightValue === 0) {
                 continue codeLoop;
               }
-              switch (arg1Type) {
+              switch (leftType) {
                 case SLOT_IMPORT:
-                  var external = importsByRef[arg1Value];
+                  var external = importsByRef[leftValue];
                   if (!external) {
-                    return console.error('SeeR: invalid import ref ' + arg1Value);
+                    return console.error('SeeR: invalid import ref ' + leftValue);
                   }
                   if (external.argAllocation !== -1) {
                     return console.error('SeeR: attempt to add to ' + external.name + '()');
                   }
-                  if (arg2Value < 0) {
+                  if (rightValue < 0) {
                     return console.error('SeeR: negative offset from ' + external.name);
                   }
-                  registers[arg1Register] = allocNamedOffset(external.name + '+' + arg2Value);
+                  registers[arg1Register] = allocNamedOffset(external.name + '+' + rightValue);
                   break;
                 case SLOT_NAMED_OFFSET:
-                  var parts = namedOffsets[arg1Value].split('+');
-                  if ((parts[1] += arg2Value) < 0) {
+                  var parts = namedOffsets[leftValue].split('+');
+                  if ((parts[1] += rightValue) < 0) {
                     return console.error('SeeR: negative offset from ' + parts[0]);
                   }
                   registers[arg1Register] = allocNamedOffset(parts.join('+'));
                   break;
                 default:
-                  registers[arg1Register] += arg2Value;
+                  registers[arg1Register] = leftValue + rightValue;
                   break;
               }
               continue codeLoop;
