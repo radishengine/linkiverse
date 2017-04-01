@@ -103,7 +103,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         e.preventDefault();
         e.stopPropagation();
         pressedMap[keycode] = true;
-        self.on_key_press(keycode);
+        self.onKey(keycode);
       }
     });
     this.eventTarget.addEventListener('keyup', function(e) {
@@ -173,6 +173,9 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     },
     get scoreText() {
       return 'Score: ' + this.score + ' of ' + this.totalScore;
+    },
+    onKey: function(keycode) {
+      this.mainExec.tryImmediateAction(this.on_key_press.bind(this, keycode));
     },
     GiveScore: function(n) {
       this.score += n;
