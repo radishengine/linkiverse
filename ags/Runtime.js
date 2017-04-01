@@ -80,8 +80,6 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     var self = this;
     var pressedMap = this.pressedMap = {};
     this.eventTarget.addEventListener('keydown', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
       switch (e.key) {
         case 'Control': pressedMap[e.location === 2 ? 406 : 405] = true; return;
         case 'Shift': pressedMap[e.location === 2 ? 404 : 403] = true; return;
@@ -101,29 +99,37 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         keycode = keyCodeMap[e.key];
       }
       if (keycode !== 0) {
+        e.preventDefault();
+        e.stopPropagation();
         pressedMap[keycode] = true;
         self.on_key_press(keycode);
       }
     });
     this.eventTarget.addEventListener('keyup', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
       switch (e.key) {
         case 'Control': delete pressedMap[e.location === 2 ? 406 : 405]; return;
         case 'Shift': delete pressedMap[e.location === 2 ? 404 : 403]; return;
         case 'Alt': delete pressedMap[407]; return;
       }
       if (e.key in ctrlKeyCodeMap) {
+        e.preventDefault();
+        e.stopPropagation();
         delete pressedMap[ctrlKeyCodeMap[e.key]];
       }
       if (e.key in altKeyCodeMap) {
+        e.preventDefault();
+        e.stopPropagation();
         delete pressedMap[altKeyCodeMap[e.key]];
       }
-      if (e.key in keyCodeMap) {
-        delete pressedMap[keyCodeMap[e.key]];
-      }
       if (e.location === 3 && e.key in numericKeypadKeyMap) {
+        e.preventDefault();
+        e.stopPropagation();
         delete pressedMap[numericKeypadKeyMap[e.key]];
+      }
+      else if (e.key in keyCodeMap) {
+        e.preventDefault();
+        e.stopPropagation();
+        delete pressedMap[keyCodeMap[e.key]];
       }
     });
     this.fonts = [];
