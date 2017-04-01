@@ -179,7 +179,7 @@ define(['./util'], function(util) {
           symbols = this.def.symbols,
           runtime = this.runtime,
           stack = new DataView(new ArrayBuffer(this.def.stackByteLength)),
-          stackTypes = new Uint8Array(this.def.stackLength/4);
+          stackTypes = new Uint8Array(this.def.stackByteLength/4);
       var stackBytes = new Uint8Array(stack.buffer);
       var registers = new Int32Array(8);
       var registerTypes = new Uint8Array(8);
