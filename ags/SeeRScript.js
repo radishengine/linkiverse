@@ -671,7 +671,7 @@ define(['./util'], function(util) {
             case 0x17: // CMPNL  x,a := x=(x>=a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPNL on non-register');
               if (arg1Type === SLOT_NAMED_OFFSET) {
-                arg1Value = runtime.rawPeek(namedOffsets[arg1Type], 4);
+                arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
                 arg1Type = SLOT_INT;
               }
               if (arg1Type !== arg2Type) {
