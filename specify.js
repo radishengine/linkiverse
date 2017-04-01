@@ -51,7 +51,7 @@ define(function() {
       if (list.length === 0) {
         return this.$skip(byteLength);
       }
-      for (var i = 2; i < list.length; i++) {
+      for (var i = 0; i < list.length; i++) {
         this.$numeric(list[i], byteLength, dvName);
       }
       return this;
