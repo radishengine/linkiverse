@@ -195,6 +195,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         for (var i = 0; i < self.characters.length; i++) {
           self.characters[i] = new RuntimeCharacter(self, i);
         }
+        self.player = self.characters[self.game.playerCharacterId];
         for (var i = 0; i < self.game.interfaces.length; i++) {
           var gui = self.game.interfaces[i];
           if (gui.isInitiallyShown) {
