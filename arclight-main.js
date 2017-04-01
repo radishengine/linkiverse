@@ -1,6 +1,6 @@
 require(
-['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/midi'],
-function(inflate, GameView, RoomView, Runtime, midi) {
+['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/midi', 'specify'],
+function(inflate, GameView, RoomView, Runtime, midi, specify) {
 
   'use strict';
   
@@ -9,6 +9,8 @@ function(inflate, GameView, RoomView, Runtime, midi) {
   }
   
   window.midi = midi;
+  
+  window.specify = specify;
   
   var audioContext = new AudioContext;
   
