@@ -47,12 +47,12 @@ define(function() {
         };
       });
     },
-    $numericMulti: function(byteLength, dvName) {
-      if (arguments.length === 2) {
+    $numericMulti: function(byteLength, dvName, list) {
+      if (list.length === 0) {
         return this.$skip(byteLength);
       }
-      for (var i = 2; i < arguments.length; i++) {
-        this.$numeric(arguments[i], byteLength, dvName);
+      for (var i = 2; i < list.length; i++) {
+        this.$numeric(list[i], byteLength, dvName);
       }
       return this;
     },
@@ -70,37 +70,37 @@ define(function() {
     },
     $i8: function(name) {
       if (arguments.length !== 1) {
-        return this.$numericMulti.apply(this, [1, 'Int8'].concat(arguments));
+        return this.$numericMulti(1, 'Int8', arguments);
       }
       return this.$numeric(4, 'Int8');
     },
     $u32: function(name) {
       if (arguments.length !== 1) {
-        return this.$numericMulti.apply(this, [4, 'Uint32'].concat(arguments));
+        return this.$numericMulti(4, 'Uint32', arguments);
       }
       return this.$numeric(4, 'Uint32');
     },
     $u16: function(name) {
       if (arguments.length !== 1) {
-        return this.$numericMulti.apply(this, [2, 'Uint16'].concat(arguments));
+        return this.$numericMulti(2, 'Uint16', arguments);
       }
       return this.$numeric(4, 'Uint16');
     },
     $u8: function(name) {
       if (arguments.length !== 1) {
-        return this.$numericMulti.apply(this, [1, 'Uint8'].concat(arguments));
+        return this.$numericMulti(1, 'Uint8', arguments);
       }
       return this.$numeric(4, 'Uint8');
     },
     $f32: function(name) {
       if (arguments.length !== 1) {
-        return this.$numericMulti.apply(this, [4, 'Float32'].concat(arguments));
+        return this.$numericMulti(4, 'Float32', arguments);
       }
       return this.$numeric(4, 'Float32');
     },
     $f64: function(name) {
       if (arguments.length !== 1) {
-        return this.$numericMulti.apply(this, [8, 'Float64'].concat(arguments));
+        return this.$numericMulti(8, 'Float64', arguments);
       }
       return this.$numeric(4, 'Float64');
     },
