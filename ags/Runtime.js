@@ -75,6 +75,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.eventTarget.addEventListener('mousedown', function(e) {
       e.preventDefault();
       e.stopPropagation();
+      this.focus();
     });
     var self = this;
     var pressedMap = this.pressedMap = {};
