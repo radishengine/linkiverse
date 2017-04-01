@@ -164,6 +164,10 @@ define(['./util'], function(util) {
   const SLOT_STACK = 2;
   const SLOT_DATA = 3;
   const SLOT_NAMED_OFFSET = 4;
+  const BASE_NAMED_OFFSET = 0;
+  const BASE_CONST = 1;
+  const BASE_DATA = 2;
+  const BASE_STACK = 3;
   SeeRInstance.prototype = {
     runDestructor: function() {
       this.runFrom(this.def.destructorCodePos, 0);
@@ -565,24 +569,27 @@ define(['./util'], function(util) {
               return console.error('NYI: SeeR COPY');
               continue codeLoop;
             case 0x0F: // ADD
-              if (!arg1IsRegister) {
-                return console.error('NYI: ADD to non-register');
+              if (arg1IsPointer && arg1PointerBase === BASE_DATA) {
+                dataDV.setInt32(arg1Value, dataDV.getInt32(arg1Value, true) + arg2Value, true);
+                continue codeLoop;
               }
               var leftValue, leftType, rightValue;
-              if (arg2Type === SLOT_INT) {
-                leftValue = arg1Value;
-                leftType = arg1Type;
-                rightValue = arg2Value;
-              }
-              else if (arg1Type === SLOT_INT) {
-                leftValue = arg2Value;
-                leftType = arg2Type;
-                rightValue = arg1Value;
+              if (arg1IsRegister) {
+                if (arg2Type === SLOT_INT) {
+                  leftValue = arg1Value;
+                  leftType = arg1Type;
+                  rightValue = arg2Value;
+                }
+                else if (arg1Type === SLOT_INT) {
+                  leftValue = arg2Value;
+                  leftType = arg2Type;
+                  rightValue = arg1Value;
+                }
+                registerTypes[arg1Register] = leftType;
               }
               else {
                 return console.error('NYI: ADD type ' + arg2Type + ' to type ' + arg1Type);
               }
-              registerTypes[arg1Register] = leftType;
               if (rightValue === 0) {
                 continue codeLoop;
               }
@@ -592,14 +599,21 @@ define(['./util'], function(util) {
                   if ((parts[1] = +parts[1] + rightValue) < 0) {
                     return console.error('SeeR: negative offset from ' + parts[0]);
                   }
-                  registers[arg1Register] = allocNamedOffset(parts.join('+'));
+                  leftValue = allocNamedOffset(parts.join('+'));
                   break;
                 default:
-                  registers[arg1Register] = leftValue + rightValue;
+                  leftValue = leftValue + rightValue;
                   break;
+              }
+              if (arg1IsRegister) {
+                registers[arg1Register] = leftValue;
               }
               continue codeLoop;
             case 0x10: // SUB
+              if (arg1IsPointer && arg1PointerBase === BASE_DATA) {
+                dataDV.setInt32(arg1Value, dataDV.getInt32(arg1Value, true) - arg2Value, true);
+                continue codeLoop;
+              }
               if (!arg1IsRegister) {
                 return console.error('NYI: SUB from non-register');
               }
