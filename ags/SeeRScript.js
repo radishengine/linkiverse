@@ -236,8 +236,10 @@ define(['./util'], function(util) {
               }
               if (arg1IsPointer) switch (arg1PointerBase) {
                 case 0:
-                  arg1Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
-                  arg1Type = SLOT_NAMED_OFFSET;
+                  if (arg1Type === SLOT_INT) {
+                    arg1Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
+                    arg1Type = SLOT_NAMED_OFFSET;
+                  }
                   break;
                 case 1:
                   arg1Type = SLOT_CONST;
@@ -281,8 +283,10 @@ define(['./util'], function(util) {
               }
               if (arg1IsPointer) switch (arg1PointerBase) {
                 case 0:
-                  arg1Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
-                  arg1Type = SLOT_NAMED_OFFSET;
+                  if (arg1Type === SLOT_INT) {
+                    arg1Value = allocNamedOffset(importsByRef[arg1Value].name + '+0');
+                    arg1Type = SLOT_NAMED_OFFSET;
+                  }
                   break;
                 case 1:
                   arg1Type = SLOT_CONST;
@@ -297,8 +301,10 @@ define(['./util'], function(util) {
               }
               if (arg2IsPointer) switch (arg2PointerBase) {
                 case 0:
-                  arg2Value = allocNamedOffset(importsByRef[arg2Value].name + '+0');
-                  arg2Type = SLOT_NAMED_OFFSET;
+                  if (arg2Type === SLOT_INT) {
+                    arg2Value = allocNamedOffset(importsByRef[arg2Value].name + '+0');
+                    arg2Type = SLOT_NAMED_OFFSET;
+                  }
                   break;
                 case 1:
                   arg2Type = SLOT_CONST;
