@@ -48,7 +48,7 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   'ZXCVBNM'.split('').forEach(function(c, i) {
     altKeyCodeMap[c] = altKeyCodeMap[c.toLowerCase()] = 344 + i;
   });
-  for (var i = 0; i <= 26; i++) {
+  for (var i = 0; i < 26; i++) {
     var upper = String.fromCharCode('A'.charCodeAt(0) + i);
     var lower = String.fromCharCode('a'.charCodeAt(0) + i);
     keyCodeMap[lower] = keyCodeMap[upper] = 65 + i;
