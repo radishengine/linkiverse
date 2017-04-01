@@ -76,7 +76,7 @@ define(['specify'], function() {
     .$endif()
     .$if('formatVersion', '>=', 31)
       .$if('formatVersion', '>=', 38)
-        .$(ScomScript', 'dialogScript')
+        .$(ScomScript, 'dialogScript')
       .$endif()
       .$u32('moduleScripts.length')
       .$(ScomScript, 'moduleScripts[]')
