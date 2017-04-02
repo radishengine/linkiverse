@@ -236,7 +236,7 @@ define(['./util'], function(util) {
                 else {
                   branch.next = doBranch(jumpTo);
                 }
-                return;
+                return branch;
               case 0x0A: // CALL
                 var callEntryPoint = codeDV.getInt32(pos + 4);
                 var symbol = this.symbolsByEntryPoint[callEntryPoint];
@@ -252,7 +252,7 @@ define(['./util'], function(util) {
                   nextIfTrue: doBranch(pos + codeDV.getInt32(pos + 4)),
                   nextIfFalse: doBranch(nextPos),
                 };
-                return;
+                return branch;
               case 0x21: // JFALSE
                 branch.body = code.subarray(entryPoint, pos);
                 branch.next = {
@@ -260,11 +260,11 @@ define(['./util'], function(util) {
                   nextIfFalse: doBranch(pos + codeDV.getInt32(pos + 4)),
                   nextIfTrue: doBranch(nextPos),
                 };
-                return;
+                return branch;
               case 0x37: // RET
                 branch.body = code.subarray(entryPoint, pos);
                 branch.next = 'return';
-                return;
+                return branch;
             }
             pos = nextPos;
           }
