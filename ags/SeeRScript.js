@@ -207,7 +207,7 @@ define(['./util'], function(util) {
             // branch has already been visited, try the next one
             continue visiting;
           }
-          break finding;
+          break finding; // we've found a suitable candidate
         }
         var pos, nextPos;
         reading: for (pos = 0; pos < branch.length; pos = nextPos) {
