@@ -226,7 +226,7 @@ define(['./util'], function(util) {
               nextPos = pos + 4 + (branch[pos+1] & 2 ? 0 : 4);
               break;
             case 2:
-              nextPos = pos + 4 + (branch[pos+1] & 1 ? 0 : 4) + (branch[pos] & 0x10 ? 0 : 4);
+              nextPos = pos + 4 + (branch[pos+1] & 1 ? 0 : 4) + (branch[pos+1] & 0x10 ? 0 : 4);
               break;
           }
           switch (op) {
