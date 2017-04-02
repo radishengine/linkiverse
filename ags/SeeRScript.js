@@ -181,8 +181,7 @@ define(['./util'], function(util) {
         if (entryPoint < branch.entryPoint || entryPoint >= (branch.entryPoint + branch.byteLength)) {
           var i_lo = 0, i_hi = branches.length-1;
           finding: for (;;) {
-            i_branch = (i_lo + i_hi) >> 1;
-            branch = branches[i_branch];
+            branch = branches[i_branch = (i_lo + i_hi) >> 1];
             var diff = entryPoint - branch.entryPoint;
             if (diff < 0) {
               i_hi = i_branch - 1;
