@@ -235,8 +235,9 @@ define(['./util'], function(util) {
           }
           switch (op) {
             case 0x09: // JMP
+              var jumpTo = nextPos + codeDV.getInt32(entryPoint + pos + 4, true);
               pos = nextPos;
-              nextPos += codeDV.getInt32(entryPoint + pos + 4, true);
+              nextPos = jumpTo;
               break reading;
             case 0x0A: // CALL
               var callEntryPoint = codeDV.getInt32(entryPoint + pos + 4, true);
