@@ -166,16 +166,16 @@ define(['./util'], function(util) {
       return dv;      
     },
     get analysis() {
-      var code = this.code, codeDV = this.codeDV;
-      var branches = [code.subarray()];
+      var codeDV = this.codeDV;
+      var branches = [this.code.subarray()];
       branches[0].entryPoint = 0;
-      var toVisit = [this.constructorCodePos, this.destructorCodePos];
+      var entryPoints = [this.constructorCodePos, this.destructorCodePos];
       for (var i = 0; i < this.symbols.length; i++) {
         if (this.symbols[i].argAllocation !== -1) {
-          toVisit.push(this.symbols[i].entryPoint);
+          entryPoints.push(this.symbols[i].entryPoint);
         }
       }
-      visiting: for (var entryPoint = toVisit.pop(); !isNaN(entryPoint); entryPoint = toVisit.pop()) {
+      visiting: for (var entryPoint = entryPoints.pop(); !isNaN(entryPoint); entryPoint = entryPoints.pop()) {
         var i, branch;
         var i_lo = 0, i_hi = branches.length-1;
         finding: for (;;) {
@@ -210,20 +210,7 @@ define(['./util'], function(util) {
           break visiting;
         }
         var pos, nextPos;
-        function terminate(butContinue, assign) {
-          if (nextPos !== branch.length) {
-            var split1 = branch.subarray(0, nextPos), split2 = branch.subarray(nextPos);
-            split1.entryPoint = entryPoint;
-            split2.entryPoint = entryPoint + nextPos;
-            branches.splice(i, 1, split1, split2);
-            branch = split1;
-            if (butContinue) {
-              toVisit.push(entryPoint + nextPos);
-            }
-          }
-          if (assign) Object.assign(branch, assign);
-        }
-        for (pos = 0; pos < branch.length; pos = nextPos) {
+        reading: for (pos = 0; pos < branch.length; pos = nextPos) {
           var op = branch[pos] & 0x3F;
           switch (OP_ARG_COUNT[op]) {
             case 0:
@@ -238,42 +225,62 @@ define(['./util'], function(util) {
           }
           switch (op) {
             case 0x09: // JMP
-              var jumpTo = nextPos + codeDV.getInt32(pos + 4, true);
-              toVisit.push(jumpTo);
-              terminate(false, {next:jumpTo});
-              continue visiting;
+              pos = nextPos;
+              nextPos += codeDV.getInt32(entryPoint + pos + 4, true);
+              break reading;
             case 0x0A: // CALL
-              var callEntryPoint = codeDV.getInt32(pos + 4, true);
+              var callEntryPoint = codeDV.getInt32(entryPoint + pos + 4, true);
+              entryPoints.push(nextPos);
               var symbol = this.symbolsByEntryPoint[callEntryPoint];
-              toVisit.push(nextPos);
-              toVisit.push(symbol.entryPoint);
-              terminate(true, {next:nextPos, call:symbol ? symbol.name : '$'+callEntryPoint});
-              continue visiting;
+              pos = nextPos;
+              if (symbol) {
+                nextPos = {type:'call', call:symbol.name, next:entryPoint + nextPos};
+              }
+              else {
+                nextPos = {type:'call', call:'$'+callEntryPoint, next:entryPoint + nextPos};
+              }
+              break reading;
             case 0x0D: // CALLEX
-              toVisit.push(nextPos);
-              terminate(true, {next:nextPos, call:this.importsByRef[codeDV.getInt32(pos + 4, true)].name});
-              continue visiting;
+              var external = this.importsByRef[codeDV.getInt32(entryPoint + pos + 4, true)];
+              entryPoints.push(entryPoint + nextPos);
+              pos = nextPos;
+              nextPos = {type:'call', call:external.name, next:entryPoint + nextPos};
+              break reading;
             case 0x20: // JTRUE
-              var testRegister = code[pos + 1] & 7;
-              var ifTrue = nextPos + codeDV.getInt32(pos + 4, true), ifFalse = nextPos;
-              toVisit.push(nextPos);
-              toVisit.push(jumpTo);
-              terminate(true, {next:{testRegister:testRegister, ifTrue:ifTrue, ifFalse:ifFalse}});
-              continue visiting;
+              var register = branch[pos + 1] & 7;
+              var nextIfTrue = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
+              var nextIfFalse = entryPoint + nextPos;
+              entryPoints.push(nextIfTrue, nextIfFalse);
+              pos = nextPos;
+              nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
+              break reading;
             case 0x21: // JFALSE
-              var testRegister = code[pos + 1] & 7;
-              var ifTrue = nextPos, ifFalse = nextPos + codeDV.getInt32(pos + 4, true);
-              toVisit.push(nextPos);
-              toVisit.push(jumpTo);
-              terminate(true, {next:{testRegister:testRegister, ifTrue:ifTrue, ifFalse:ifFalse}});
-              continue visiting;
+              var register = branch[pos + 1] & 7;
+              var nextIfTrue = entryPoint + nextPos;
+              var nextIfFalse = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
+              entryPoints.push(nextIfTrue, nextIfFalse);
+              pos = nextPos;
+              nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
+              break reading;
             case 0x37: // RET
-              terminate(false, {next:'return'});
-              continue visiting;
+              pos = nextPos;
+              nextPos = 'return';
+              break reading;
           }
         }
-        // fall through
-        toVisit.push(branch.next = entryPoint + nextPos);
+        if (pos < branch.length) {
+          var split1 = branch.subarray(0, pos), split2 = branch.subarray(pos);
+          split1.entryPoint = entryPoint;
+          split2.entryPoint = entryPoint + pos;
+          branches.splice(i, 1, split1, split2);
+          branch = split1;
+        }
+        if (typeof nextPos === 'number') {
+          entryPoints.push(branch.next = entryPoint + nextPos);
+        }
+        else {
+          branch.next = nextPos;
+        }
       }
       var obj = {branches:branches};
       Object.defineProperty(this, 'analysis', {value:obj, enumerable:true});
