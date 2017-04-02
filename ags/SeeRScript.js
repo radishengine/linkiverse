@@ -3,11 +3,11 @@ define(['./util'], function(util) {
   'use strict';
   
   const OP_ARG_COUNT = new Uint8Array(0x40);
-  for (var i = 0x01; i <= 0x0A; i++) {
-    OP_ARG_COUNT[i] = 1;
+  for (var i_op = 0x01; i_op <= 0x0A; i_op++) {
+    OP_ARG_COUNT[i_op] = 1;
   }
-  for (var i = 0x0B; i <= 0x36; i++) {
-    OP_ARG_COUNT[i] = 2;
+  for (var i_op = 0x0B; i_op <= 0x36; i_op++) {
+    OP_ARG_COUNT[i_op] = 2;
   }
   const SLOT_INT = 0;
   const SLOT_CONST = 1;
@@ -170,25 +170,25 @@ define(['./util'], function(util) {
       var branches = [this.code.subarray()];
       branches[0].entryPoint = 0;
       var entryPoints = [this.constructorCodePos, this.destructorCodePos];
-      for (var i = 0; i < this.symbols.length; i++) {
-        if (this.symbols[i].argAllocation !== -1) {
-          entryPoints.push(this.symbols[i].entryPoint);
+      for (var i_symbol = 0; i_symbol < this.symbols.length; i_symbol++) {
+        if (this.symbols[i_symbol].argAllocation !== -1) {
+          entryPoints.push(this.symbols[i_symbol].entryPoint);
         }
       }
       visiting: for (var entryPoint = entryPoints.pop(); !isNaN(entryPoint); entryPoint = entryPoints.pop()) {
-        var i, branch;
+        var i_branch, branch;
         var i_lo = 0, i_hi = branches.length-1;
         finding: for (;;) {
-          i = (i_lo + i_hi) >> 1;
-          branch = branches[i];
+          i_branch = (i_lo + i_hi) >> 1;
+          branch = branches[i_branch];
           var diff = entryPoint - branch.entryPoint;
           if (diff < 0) {
-            i_hi = i - 1;
+            i_hi = i_branch - 1;
             continue finding;
           }
           if (diff > 0) {
             if (diff >= branch.byteLength) {
-              i_lo = i + 1;
+              i_lo = i_branch + 1;
               if (i_lo > i_hi) {
                 throw new RangeError('entry point of range: ' + entryPoint);
               }
@@ -200,8 +200,9 @@ define(['./util'], function(util) {
             if ('next' in branch) {
               split2.next = branch.next;
             }
-            branches.splice(i, 1, split1, split2);
+            branches.splice(i_branch, 1, split1, split2);
             branch = split2;
+            i_branch++;
           }
           if ('next' in branch) {
             // branch has already been visited, try the next one
@@ -272,7 +273,7 @@ define(['./util'], function(util) {
           var split1 = branch.subarray(0, pos), split2 = branch.subarray(pos);
           split1.entryPoint = entryPoint;
           split2.entryPoint = entryPoint + pos;
-          branches.splice(i, 1, split1, split2);
+          branches.splice(i_branch, 1, split1, split2);
           branch = split1;
         }
         if (typeof nextPos === 'number') {
