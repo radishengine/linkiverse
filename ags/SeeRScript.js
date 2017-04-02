@@ -169,6 +169,7 @@ define(['./util'], function(util) {
       var funcs = {}, vars = {};
       var queue = [];
       var symbolsByEntryPoint = this.symbolsByEntryPoint;
+      var importsByRef = this.importsByRef;
       var code = this.code, codeDV = this.codeDV;
       function analyseFrom(entryPoint, name, argAllocation) {
         if (name in funcs) return;
@@ -239,11 +240,11 @@ define(['./util'], function(util) {
                 return branch;
               case 0x0A: // CALL
                 var callEntryPoint = codeDV.getInt32(pos + 4);
-                var symbol = this.symbolsByEntryPoint[callEntryPoint];
+                var symbol = symbolsByEntryPoint[callEntryPoint];
                 analysis.internalCalls[symbol ? symbol.name : '$'+callEntryPoint] = true;
                 break;
               case 0x0D: // CALLEX
-                analysis.externalCalls[this.importsByRef[codeDV.getInt32(pos + 4)].name] = true;
+                analysis.externalCalls[importsByRef[codeDV.getInt32(pos + 4)].name] = true;
                 break;
               case 0x20: // JTRUE
                 branch.body = code.subarray(entryPoint, pos);
