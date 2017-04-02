@@ -178,28 +178,27 @@ define(['./util'], function(util) {
       }
       entryPoints.sort(function(a, b){ return a > b; }); // ascending order
       visiting: for (var entryPoint = entryPoints.shift(); !isNaN(entryPoint); entryPoint = entryPoints.shift()) {
-        if (entryPoint < branch.entryPoint || entryPoint >= (branch.entryPoint + branch.byteLength)) {
+        var diff = entryPoint - branch.entryPoint;
+        if (diff < 0 || diff >= branch.byteLength) {
           var i_lo = 0, i_hi = branches.length-1;
           finding: for (;;) {
             branch = branches[i_branch = (i_lo + i_hi) >> 1];
-            var diff = entryPoint - branch.entryPoint;
+            diff = entryPoint - branch.entryPoint;
             if (diff < 0) {
               i_hi = i_branch - 1;
               continue finding;
             }
-            if (diff >= 0) {
-              if (diff >= branch.byteLength) {
-                i_lo = i_branch + 1;
-                if (i_lo > i_hi) {
-                  throw new RangeError('entry point of range: ' + entryPoint);
-                }
-                continue finding;
+            if (diff >= branch.byteLength) {
+              i_lo = i_branch + 1;
+              if (i_lo > i_hi) {
+                throw new RangeError('entry point of range: ' + entryPoint);
               }
-              break finding; // we've found a suitable candidate to visit
+              continue finding;
             }
+            break finding; // we've found a suitable candidate to visit
           }
         }
-        if (entryPoint > branch.entryPoint) {
+        if (diff > 0) {
           var split1 = branch.subarray(0, diff), split2 = branch.subarray(diff);
           split1.entryPoint = branch.entryPoint;
           split2.entryPoint = entryPoint;
