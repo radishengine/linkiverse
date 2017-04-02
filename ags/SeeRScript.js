@@ -197,7 +197,7 @@ define(['./util'], function(util) {
           var branch = branches[entryPoint] = code.subarray(entryPoint);
           branch.entryPoint = entryPoint;
           for (var pos = entryPoint;;) {
-            var op = code[pos & 0x3F];
+            var op = code[pos] & 0x3F;
             var nextPos;
             switch (OP_ARG_COUNT[op]) {
               case 0:
