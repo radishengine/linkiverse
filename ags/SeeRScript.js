@@ -251,7 +251,7 @@ define(['./util'], function(util) {
                 branch.body = code.subarray(entryPoint, pos);
                 branch.next = {
                   jumpOnRegister: code[pos + 1] & 7,
-                  nextIfTrue: doBranch(pos + codeDV.getInt32(pos + 4, true)),
+                  nextIfTrue: doBranch(nextPos + codeDV.getInt32(pos + 4, true)),
                   nextIfFalse: doBranch(nextPos),
                 };
                 return branch;
@@ -259,7 +259,7 @@ define(['./util'], function(util) {
                 branch.body = code.subarray(entryPoint, pos);
                 branch.next = {
                   jumpOnRegister: code[pos + 1] & 7,
-                  nextIfFalse: doBranch(pos + codeDV.getInt32(pos + 4, true)),
+                  nextIfFalse: doBranch(nextPos + codeDV.getInt32(pos + 4, true)),
                   nextIfTrue: doBranch(nextPos),
                 };
                 return branch;
