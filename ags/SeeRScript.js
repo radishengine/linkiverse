@@ -215,12 +215,12 @@ define(['./util'], function(util) {
           var op = branch[pos] & 0x3F;
           switch (OP_ARG_COUNT[op]) {
             case 0:
-              nextPos = pos + 1;
               if (op === 0x37 /* RET */) {
-                pos = nextPos;
+                pos++;
                 nextPos = 'return';
                 break reading;
               }
+              nextPos = pos + 1;
               continue reading;
             case 1:
               nextPos = pos + 4 + (branch[pos+1] & 2 ? 0 : 4);
