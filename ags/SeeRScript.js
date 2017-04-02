@@ -203,6 +203,7 @@ define(['./util'], function(util) {
           split1.entryPoint = branch.entryPoint;
           split2.entryPoint = entryPoint;
           if ('next' in branch) {
+            split1.next = entryPoint;
             split2.next = branch.next;
           }
           branches.splice(i_branch, 1, split1, split2);
@@ -210,6 +211,7 @@ define(['./util'], function(util) {
           i_branch++;
         }
         if ('next' in branch) {
+          branch = branches[i_branch = branches.length - 1];
           continue visiting; // branch has already been visited, try the next one
         }
         var pos, nextPos;
