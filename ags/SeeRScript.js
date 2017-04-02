@@ -176,7 +176,7 @@ define(['./util'], function(util) {
           entryPoints.push(this.symbols[i_symbol].entryPoint);
         }
       }
-      entryPoints.sort(function(a,b){ return a < b; });
+      entryPoints.sort(function(a, b){ return a > b; }); // ascending order
       visiting: for (var entryPoint = entryPoints.shift(); !isNaN(entryPoint); entryPoint = entryPoints.shift()) {
         if (entryPoint < branch.entryPoint || entryPoint >= (branch.entryPoint + branch.byteLength)) {
           var i_lo = 0, i_hi = branches.length-1;
