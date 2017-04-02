@@ -177,7 +177,7 @@ define(['./util'], function(util) {
         }
       }
       entryPoints.sort(function(a,b){ return a < b; });
-      visiting: for (var entryPoint = entryPoints.unshift(); !isNaN(entryPoint); entryPoint = entryPoints.unshift()) {
+      visiting: for (var entryPoint = entryPoints.shift(); !isNaN(entryPoint); entryPoint = entryPoints.shift()) {
         if (entryPoint < branch.entryPoint || entryPoint >= (branch.entryPoint + branch.byteLength)) {
           var i_lo = 0, i_hi = branches.length-1;
           finding: for (;;) {
