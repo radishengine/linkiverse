@@ -167,48 +167,52 @@ define(['./util'], function(util) {
     },
     get analysis() {
       var codeDV = this.codeDV;
-      var branches = [this.code.subarray()];
-      branches[0].entryPoint = 0;
+      var branch = this.code.subarray(), i_branch = 0;
+      branch.entryPoint = 0;
+      var branches = [branch];
       var entryPoints = [this.constructorCodePos, this.destructorCodePos];
       for (var i_symbol = 0; i_symbol < this.symbols.length; i_symbol++) {
         if (this.symbols[i_symbol].argAllocation !== -1) {
           entryPoints.push(this.symbols[i_symbol].entryPoint);
         }
       }
-      visiting: for (var entryPoint = entryPoints.pop(); !isNaN(entryPoint); entryPoint = entryPoints.pop()) {
-        var i_branch, branch;
-        var i_lo = 0, i_hi = branches.length-1;
-        finding: for (;;) {
-          i_branch = (i_lo + i_hi) >> 1;
-          branch = branches[i_branch];
-          var diff = entryPoint - branch.entryPoint;
-          if (diff < 0) {
-            i_hi = i_branch - 1;
-            continue finding;
-          }
-          if (diff > 0) {
-            if (diff >= branch.byteLength) {
-              i_lo = i_branch + 1;
-              if (i_lo > i_hi) {
-                throw new RangeError('entry point of range: ' + entryPoint);
-              }
+      entryPoints.sort(function(a,b){ return a < b; });
+      visiting: for (var entryPoint = entryPoints.unshift(); !isNaN(entryPoint); entryPoint = entryPoints.unshift()) {
+        if (entryPoint < branch.entryPoint || entryPoint >= (branch.entryPoint + branch.byteLength)) {
+          var i_lo = 0, i_hi = branches.length-1;
+          finding: for (;;) {
+            i_branch = (i_lo + i_hi) >> 1;
+            branch = branches[i_branch];
+            var diff = entryPoint - branch.entryPoint;
+            if (diff < 0) {
+              i_hi = i_branch - 1;
               continue finding;
             }
-            var split1 = branch.subarray(0, diff), split2 = branch.subarray(diff);
-            split1.entryPoint = branch.entryPoint;
-            split2.entryPoint = entryPoint;
-            if ('next' in branch) {
-              split2.next = branch.next;
+            if (diff >= 0) {
+              if (diff >= branch.byteLength) {
+                i_lo = i_branch + 1;
+                if (i_lo > i_hi) {
+                  throw new RangeError('entry point of range: ' + entryPoint);
+                }
+                continue finding;
+              }
+              break finding; // we've found a suitable candidate to visit
             }
-            branches.splice(i_branch, 1, split1, split2);
-            branch = split2;
-            i_branch++;
           }
+        }
+        if (entryPoint > branch.entryPoint) {
+          var split1 = branch.subarray(0, diff), split2 = branch.subarray(diff);
+          split1.entryPoint = branch.entryPoint;
+          split2.entryPoint = entryPoint;
           if ('next' in branch) {
-            // branch has already been visited, try the next one
-            continue visiting;
+            split2.next = branch.next;
           }
-          break finding; // we've found a suitable candidate
+          branches.splice(i_branch, 1, split1, split2);
+          branch = split2;
+          i_branch++;
+        }
+        if ('next' in branch) {
+          continue visiting; // branch has already been visited, try the next one
         }
         var pos, nextPos;
         reading: for (pos = 0; pos < branch.length; pos = nextPos) {
@@ -236,7 +240,7 @@ define(['./util'], function(util) {
               break reading;
             case 0x0A: // CALL
               var callEntryPoint = codeDV.getInt32(entryPoint + pos + 4, true);
-              entryPoints.push(nextPos);
+              entryPoints.unshift(nextPos);
               var symbol = this.symbolsByEntryPoint[callEntryPoint];
               pos = nextPos;
               if (symbol) {
@@ -248,7 +252,7 @@ define(['./util'], function(util) {
               break reading;
             case 0x0D: // CALLEX
               var external = this.importsByRef[codeDV.getInt32(entryPoint + pos + 4, true)];
-              entryPoints.push(entryPoint + nextPos);
+              entryPoints.unshift(entryPoint + nextPos);
               pos = nextPos;
               nextPos = {type:'call', call:external.name, next:entryPoint + nextPos};
               break reading;
@@ -256,7 +260,7 @@ define(['./util'], function(util) {
               var register = branch[pos + 1] & 7;
               var nextIfTrue = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
               var nextIfFalse = entryPoint + nextPos;
-              entryPoints.push(nextIfTrue, nextIfFalse);
+              entryPoints.unshift(nextIfFalse, nextIfTrue);
               pos = nextPos;
               nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
               break reading;
@@ -264,25 +268,31 @@ define(['./util'], function(util) {
               var register = branch[pos + 1] & 7;
               var nextIfTrue = entryPoint + nextPos;
               var nextIfFalse = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
-              entryPoints.push(nextIfTrue, nextIfFalse);
+              entryPoints.unshift(nextIfTrue, nextIfFalse);
               pos = nextPos;
               nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
               break reading;
           }
         }
+        var next_i;
         if (pos < branch.length) {
           var split1 = branch.subarray(0, pos), split2 = branch.subarray(pos);
           split1.entryPoint = entryPoint;
           split2.entryPoint = entryPoint + pos;
           branches.splice(i_branch, 1, split1, split2);
           branch = split1;
+          next_i = i_branch + 1;
+        }
+        else {
+          next_i = branches.length - 1;
         }
         if (typeof nextPos === 'number') {
-          entryPoints.push(branch.next = entryPoint + nextPos);
+          entryPoints.unshift(branch.next = entryPoint + nextPos);
         }
         else {
           branch.next = nextPos;
         }
+        branch = branches[i_branch = next_i];
       }
       var obj = {branches:branches};
       Object.defineProperty(this, 'analysis', {value:obj, enumerable:true});
