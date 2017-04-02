@@ -196,7 +196,7 @@ define(['./util'], function(util) {
           if (entryPoint in branches) return branches[entryPoint];
           var branch = branches[entryPoint] = code.subarray(entryPoint);
           branch.entryPoint = entryPoint;
-          for (var pos = entryPoint;;) {
+          for (var pos = entryPoint; pos < code.length; ) {
             var op = code[pos] & 0x3F;
             var nextPos;
             switch (OP_ARG_COUNT[op]) {
@@ -213,7 +213,7 @@ define(['./util'], function(util) {
             switch (op) {
               case 0x09: // JMP
                 branch.body = code.subarray(entryPoint, pos);
-                var jumpTo = nextPos + codeDV.getInt32(pos + 4);
+                var jumpTo = nextPos + codeDV.getInt32(pos + 4, true);
                 if (jumpTo < nextPos && !(jumpTo in branches)) {
                   var jumpInto = -1;
                   for (var earlierEntryPoint in branches) {
@@ -240,18 +240,18 @@ define(['./util'], function(util) {
                 }
                 return branch;
               case 0x0A: // CALL
-                var callEntryPoint = codeDV.getInt32(pos + 4);
+                var callEntryPoint = codeDV.getInt32(pos + 4, true);
                 var symbol = symbolsByEntryPoint[callEntryPoint];
                 analysis.internalCalls[symbol ? symbol.name : '$'+callEntryPoint] = true;
                 break;
               case 0x0D: // CALLEX
-                analysis.externalCalls[importsByRef[codeDV.getInt32(pos + 4)].name] = true;
+                analysis.externalCalls[importsByRef[codeDV.getInt32(pos + 4, true)].name] = true;
                 break;
               case 0x20: // JTRUE
                 branch.body = code.subarray(entryPoint, pos);
                 branch.next = {
                   jumpOnRegister: code[pos + 1] & 7,
-                  nextIfTrue: doBranch(pos + codeDV.getInt32(pos + 4)),
+                  nextIfTrue: doBranch(pos + codeDV.getInt32(pos + 4, true)),
                   nextIfFalse: doBranch(nextPos),
                 };
                 return branch;
@@ -259,7 +259,7 @@ define(['./util'], function(util) {
                 branch.body = code.subarray(entryPoint, pos);
                 branch.next = {
                   jumpOnRegister: code[pos + 1] & 7,
-                  nextIfFalse: doBranch(pos + codeDV.getInt32(pos + 4)),
+                  nextIfFalse: doBranch(pos + codeDV.getInt32(pos + 4, true)),
                   nextIfTrue: doBranch(nextPos),
                 };
                 return branch;
