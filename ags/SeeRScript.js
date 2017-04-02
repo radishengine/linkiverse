@@ -216,7 +216,12 @@ define(['./util'], function(util) {
           switch (OP_ARG_COUNT[op]) {
             case 0:
               nextPos = pos + 1;
-              break;
+              if (op === 0x37 /* RET */) {
+                pos = nextPos;
+                nextPos = 'return';
+                break reading;
+              }
+              continue reading;
             case 1:
               nextPos = pos + 4 + (branch[pos+1] & 2 ? 0 : 4);
               break;
@@ -262,10 +267,6 @@ define(['./util'], function(util) {
               entryPoints.push(nextIfTrue, nextIfFalse);
               pos = nextPos;
               nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
-              break reading;
-            case 0x37: // RET
-              pos = nextPos;
-              nextPos = 'return';
               break reading;
           }
         }
