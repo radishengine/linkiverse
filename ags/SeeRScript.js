@@ -190,6 +190,7 @@ define(['./util'], function(util) {
             break;
           }
         }
+        // conditionals, loops & calls
         var branches = {};
         function doBranch(entryPoint) {
           if (entryPoint in branches) return branches[entryPoint];
