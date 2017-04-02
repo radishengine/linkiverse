@@ -2,6 +2,23 @@ define(['./util'], function(util) {
 
   'use strict';
   
+  const OP_ARG_COUNT = new Uint8Array(0x40);
+  for (var i = 0x01; i <= 0x0A; i++) {
+    OP_ARG_COUNT[i] = 1;
+  }
+  for (var i = 0x0B; i <= 0x36; i++) {
+    OP_ARG_COUNT[i] = 2;
+  }
+  const SLOT_INT = 0;
+  const SLOT_CONST = 1;
+  const SLOT_STACK = 2;
+  const SLOT_DATA = 3;
+  const SLOT_NAMED_OFFSET = 4;
+  const BASE_NAMED_OFFSET = 0;
+  const BASE_CONST = 1;
+  const BASE_DATA = 2;
+  const BASE_STACK = 3;
+  
   function SeeRScript(buffer, byteOffset, byteLength) {
     var dv = this.dv = new DataView(buffer, byteOffset, byteLength);
     var bytes = this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -89,6 +106,16 @@ define(['./util'], function(util) {
       Object.defineProperty(this, 'symbols', {value:symbols, enumerable:true});
       return symbols;
     },
+    get symbolsByEntryPoint() {
+      var obj = {};
+      for (var i = 0; i < this.symbols.length; i++) {
+        if (this.symbols[i].entryPoint >= 0) {
+          obj[this.symbols[i].entryPoint] = this.symbols[i];
+        }
+      }
+      Object.defineProperty(this, 'symbolsByEntryPoint', {value:obj, enumerable:true});
+      return obj;
+    },
     get imports() {
       const baseOffset = this.importsOffset;
       var imports = [], bytes = this.bytes, dv = this.dv, pos = baseOffset;
@@ -123,6 +150,11 @@ define(['./util'], function(util) {
       Object.defineProperty(this, 'code', {value:code, enumerable:true});
       return code;
     },
+    get codeDV() {
+      var dv = new DataView(this.code.buffer, this.code.byteOffset, this.code.byteLength);
+      Object.defineProperty(this, 'codeDV', {value:dv, enumerable:true});
+      return dv;
+    },
     get consts() {
       var consts = this.bytes.subarray(this.constsOffset, this.constsOffset + this.constsByteLength);
       Object.defineProperty(this, 'consts', {value:consts, enumerable:true});
@@ -132,6 +164,123 @@ define(['./util'], function(util) {
       var dv = new DataView(this.consts.buffer, this.consts.byteOffset, this.consts.byteLength);
       Object.defineProperty(this, 'constsDV', {value:dv, enumerable:true});
       return dv;      
+    },
+    get analysis() {
+      var funcs = {}, vars = {};
+      var queue = [];
+      var symbolsByEntryPoint = this.symbolsByEntryPoint;
+      var code = this.code, codeDV = this.codeDV;
+      function analyseFrom(entryPoint, name, argAllocation) {
+        if (name in funcs) return;
+        var analysis = funcs[name] = {
+          name:name, entryPoint:entryPoint, entryStackSize:4 + argAllocation,
+          loops:0, externalCalls:{},
+        };
+        // emptiness check
+        for (var pos = entryPoint; ; pos++) {
+          if (pos >= code.length || code[pos] === 0x37 /* RET */) {
+            analysis.isEmpty = true;
+            break;
+          }
+          if (code[pos] !== 0x3B /* ENTER */
+          &&  code[pos] !== 0x3C /* LEAVE */
+          &&  code[pos] !== 0x3D /* NOP */) {
+            analysis.isEmpty = false;
+            break;
+          }
+        }
+        var branches = {};
+        function doBranch(entryPoint) {
+          if (entryPoint in branches) return branches[entryPoint];
+          var branch = branches[entryPoint] = code.subarray(entryPoint);
+          branch.entryPoint = entryPoint;
+          for (var pos = entryPoint;;) {
+            var op = code[pos & 0x3F];
+            var nextPos;
+            switch (OP_ARG_COUNT[op]) {
+              case 0:
+                nextPos = pos + 1;
+                break;
+              case 1:
+                nextPos = pos + 4 + (code[pos+1] & 2 ? 0 : 4);
+                break;
+              case 2:
+                nextPos = pos + 4 + (code[pos+1] & 1 ? 0 : 4) + (code[pos] & 0x10 ? 0 : 4);
+                break;
+            }
+            switch (op) {
+              case 0x09: // JMP
+                branch.body = code.subarray(entryPoint, pos);
+                var jumpTo = nextPos + codeDV.getInt32(pos + 4);
+                if (jumpTo < nextPos && !(jumpTo in branches)) {
+                  var jumpInto = -1;
+                  for (var earlierEntryPoint in branches) {
+                    entryPoint = +entryPoint;
+                    if (earlierEntryPoint < jumpTo && earlierEntryPoint > jumpInto) {
+                      jumpInto = earlierEntryPoint;
+                    }
+                  }
+                  if (jumpInto === -1) {
+                    throw new Error('invalid jump back point');
+                  }
+                  jumpInto = branches[jumpInto];
+                  var jumpSlice = jumpInto.body.subarray(jumpTo - jumpInto.entryPoint);
+                  jumpSlice.entryPoint = jumpTo;
+                  jumpSlice.body = jumpSlice;
+                  jumpSlice.next = jumpInto.next;
+                  jumpInto.body = jumpInto.body.subarray(0, jumpTo - jumpInto.entryPoint);
+                  jumpInto.next = jumpSlice;
+                  branch.next = jumpSlice;
+                  branches[jumpTo] = jumpSlice;
+                }
+                else {
+                  branch.next = doBranch(jumpTo);
+                }
+                return;
+              case 0x0A: // CALL
+                var callEntryPoint = codeDV.getInt32(pos + 4);
+                var symbol = this.symbolsByEntryPoint[callEntryPoint];
+                analysis.internalCalls[symbol ? symbol.name : '$'+callEntryPoint] = true;
+                break;
+              case 0x0D: // CALLEX
+                analysis.externalCalls[this.importsByRef[codeDV.getInt32(pos + 4)].name] = true;
+                break;
+              case 0x20: // JTRUE
+                branch.body = code.subarray(entryPoint, pos);
+                branch.next = {
+                  jumpOnRegister: code[pos + 1] & 7,
+                  nextIfTrue: doBranch(pos + codeDV.getInt32(pos + 4)),
+                  nextIfFalse: doBranch(nextPos),
+                };
+                return;
+              case 0x21: // JFALSE
+                branch.body = code.subarray(entryPoint, pos);
+                branch.next = {
+                  jumpOnRegister: code[pos + 1] & 7,
+                  nextIfFalse: doBranch(pos + codeDV.getInt32(pos + 4)),
+                  nextIfTrue: doBranch(nextPos),
+                };
+                return;
+              case 0x37: // RET
+                branch.body = code.subarray(entryPoint, pos);
+                branch.next = 'return';
+                return;
+            }
+            pos = nextPos;
+          }
+          return branch;
+        }
+        analysis.root = doBranch(entryPoint);
+      }
+      analyseFrom(this.constructorCodePos, '$c', 0);
+      analyseFrom(this.destructorCodePos, '$d', 0);
+      this.symbols.forEach(function(symbol) {
+        if (symbol.argAllocation < 0) return;
+        analyseFrom(symbol.entryPoint, symbol.name, symbol.argAllocation);
+      });
+      var obj = {funcs:funcs};
+      Object.defineProperty(this, 'analysis', {value:obj, enumerable:true});
+      return obj;
     },
   };
   
@@ -152,22 +301,6 @@ define(['./util'], function(util) {
     }
     this.runFrom(def.constructorCodePos, 0);
   }
-  const OP_ARG_COUNT = new Uint8Array(0x40);
-  for (var i = 0x01; i <= 0x0A; i++) {
-    OP_ARG_COUNT[i] = 1;
-  }
-  for (var i = 0x0B; i <= 0x36; i++) {
-    OP_ARG_COUNT[i] = 2;
-  }
-  const SLOT_INT = 0;
-  const SLOT_CONST = 1;
-  const SLOT_STACK = 2;
-  const SLOT_DATA = 3;
-  const SLOT_NAMED_OFFSET = 4;
-  const BASE_NAMED_OFFSET = 0;
-  const BASE_CONST = 1;
-  const BASE_DATA = 2;
-  const BASE_STACK = 3;
   SeeRInstance.prototype = {
     runDestructor: function() {
       this.runFrom(this.def.destructorCodePos, 0);
