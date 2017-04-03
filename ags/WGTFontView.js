@@ -99,21 +99,21 @@ define(function() {
     },
     wrap: function(text, maxWidth) {
       var lines = [];
-      while (text.length > 0) {
-        var i_end = (this.glyphs.maxWidth / maxWidth) | 0;
+      for (var i_start = 0, i_end; i_start < text.length; i_start = i_end + 1) {
+        i_end = i_start + (this.glyphs.maxWidth / maxWidth) | 0;
         if (i_end >= text.length) {
-          lines.push(text);
+          lines.push(text.substring(i_start));
           break;
         }
         i_end = text.lastIndexOf(' ', i_end);
-        if (i_end === -1) {
-          i_end = text.indexOf(' ');
+        if (i_end < i_start) {
+          i_end = text.indexOf(' ', i_start);
           if (i_end === -1) {
             i_end = text.length;
           }
         }
         else {
-          var width = this.getTextWidth(text, 0, i_end);
+          var width = this.getTextWidth(text, i_start, i_end);
           for (var i_space = text.indexOf(' ', i_end+1); i_space !== -1; i_space = text.indexOf(' ', i_end+1)) {
             if ((width += this.getTextWidth(text, i_end, i_space)) > maxWidth) {
               break;
@@ -121,8 +121,7 @@ define(function() {
             i_end = i_space;
           }
         }
-        lines.push(text.substring(0, i_end));
-        text = text.substring(i_end + 1);
+        lines.push(text.substring(i_start, i_end));
       }
       return lines;
     },
