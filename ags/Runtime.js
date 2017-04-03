@@ -454,6 +454,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       this.mainExec.onNextIdle(function() {
         self.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
         return loading.then(function(room) {
+          self.graphics.background = room.background;
           self.room = room;
           self.palette = room.backgroundBitmap.palette;
           self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
@@ -838,8 +839,6 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   }
   RuntimeRoom.prototype = {
     loaded: Promise.resolve(),
-    viewportX: 0,
-    viewportY: 0,
     get number() {
       return this.def.number;
     },
