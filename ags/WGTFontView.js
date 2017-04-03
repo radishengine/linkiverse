@@ -122,7 +122,7 @@ define(function() {
             }
             i_extend = text.lastIndexOf(' ', i_extend);
             if (i_extend <= i_end) {
-              break;
+              i_extend = text.indexOf(' ', i_end + 1);
             }
             if ((remainingWidth -= this.getTextWidth(text, i_end, i_extend)) < 0) {
               break;
