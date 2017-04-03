@@ -43,15 +43,10 @@ define(function() {
   function RuntimeGraphics(runtime) {
     this.runtime = runtime;
     this.screen = document.createElement('CANVAS');
-    this.screen.width = 640;
-    this.screen.height = 400;
     this.screenCtx = this.screen.getContext('2d');
-    this.screenCtx.imageSmoothingEnabled = false;
-    this.scratch = document.createElement('CANVAS');
-    this.scratch.width = 640;
-    this.scratch.height = 400;
+    this.scratchpad = document.createElement('CANVAS');
     this.scratchCtx = this.scratchpad.getContext('2d');
-    this.scratchCtx.imageSmoothingEnabled = false;
+    this.setViewport(640, 400, 2);
     var self = this;
     this.screen.addEventListener('mousemove', function(e) {
       self.mouseX = (e.clientX / self.viewportScale) | 0;
@@ -102,6 +97,10 @@ define(function() {
       this.viewportScale = scale;
       this.screen.width = width;
       this.screen.height = height;
+      this.screenCtx.imageSmoothingEnabled = false;
+      this.scratchpad.width = width;
+      this.scratchpad.height = height;
+      this.scratchCtx.imageSmoothingEnabled = false;
     },
     get viewportCenterX() {
       return this.viewportX + (this.viewportWidth/2) | 0;
