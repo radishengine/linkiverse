@@ -142,7 +142,7 @@ define(function() {
       for (var i = 0; i < text.length; i++) {
         var glyph = this.glyphs[text.charCodeAt(i)];
         if (!glyph) continue;
-        ctx2d.drawImage(glyph, x, y);
+        ctx2d.drawImage(glyph, x, y, glyph.width, glyph.height, 0, 0, glyph.width, glyph.height);
         x += glyph.width;
       }
     },
