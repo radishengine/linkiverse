@@ -75,17 +75,19 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.audioContext = audioContext;
     this.mainExec = new ExecutionChannel(this);
     var self = this;
-    this.eventTarget.addEventListener('mousedown', function(e) {
+    function on_click(e) {
       e.preventDefault();
       e.stopPropagation();
       this.focus();
       if (e.button === 0) {
         self.onClick(0);
       }
-      else if (e.button === 1) {
+      else if (e.button === 2) {
         self.onClick(1);
       }
-    });
+    }
+    this.eventTarget.addEventListener('mousedown', on_click);
+    this.eventTarget.addEventListener('contextmenu', on_click);
     var pressedMap = this.pressedMap = {};
     this.eventTarget.addEventListener('keydown', function(e) {
       switch (e.key) {
