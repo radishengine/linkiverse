@@ -796,18 +796,18 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   RuntimeTextOverlay.prototype = Object.assign(Object.create(RuntimeOverlay.prototype), {
     redraw: function() {
       var ctx2d = this.canvas.getContext('2d');
+      ctx2d.globalCompositeOperation = 'copy';
       var w = this.canvas.width, h = this.canvas.height;
       if (w === 0 || h === 0) return;
-      var imageData = ctx2d.createImageData(w, h);
-      var asU32 = new Uint32Array(imageData.data.buffer, imageData.data.byteOffset, imageData.data.byteLength/4);
-      var rgba = this.runtime.getColorRGBA(this.colorCode);
       var y = Math.floor((h - this.font.lineHeight * this.lines.length) * this.alignmentY);
       for (var i = 0; i < this.lines.length; i++) {
         var x = Math.floor((w - this.font.getTextWidth(this.lines[i])) * this.alignmentX);
-        this.font.putRawPixels(asU32, x, y, w, this.lines[i], rgba);
+        this.font.drawText(this.lines[i], x, y);
         y += this.font.lineHeight;
       }
-      ctx2d.putImageData(imageData, 0, 0);
+      ctx2d.globalCompositeOperation = 'source-in';
+      ctx2d.fillStyle = this.runtime.getColorStyle(this.colorCode);
+      ctx2d.fillRect(0, 0, w, h);
     },
     render: function() {
       this.runtime.ctx2d.drawImage(this.canvas, this.x, this.y);
