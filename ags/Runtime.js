@@ -80,10 +80,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       e.stopPropagation();
       this.focus();
       if (e.button === 0) {
-        self.onClick(0);
+        self.onClick(1);
       }
       else if (e.button === 2) {
-        self.onClick(1);
+        self.onClick(2);
       }
     }
     this.eventTarget.addEventListener('mousedown', on_click);
