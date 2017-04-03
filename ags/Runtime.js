@@ -64,7 +64,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.fileSystem = fileSystem;
     this.graphics = new Graphics(this);
     this.graphics.setViewport(640, 400, 2);
-    this.element = this.graphics.canvas;
+    this.element = this.graphics.screen;
     this.element.tabIndex = 0;
     this.ctx2d = this.element.getContext('2d');
     this.eventTarget = this.element;
