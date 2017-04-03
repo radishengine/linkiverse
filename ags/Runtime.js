@@ -333,8 +333,11 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         return self.loadRoom(self.game.playerCharacter.room);
       })
       .then(function(roomDef) {
-        self.room = new RuntimeRoom(self, roomDef);
-        return self.room.loaded;
+        return (self.room = new RuntimeRoom(self, roomDef)).loaded;
+      })
+      .then(function(room) {
+        self.palette = room.backgroundBitmap.palette;
+        self.graphics.background = room.background;
       });
     },
     textSpeed: 15,
