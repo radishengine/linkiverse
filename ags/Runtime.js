@@ -783,8 +783,8 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.x = x;
     this.y = y;
     this.canvas = document.createElement('CANVAS');
-    this.canvas.width = width;
-    this.canvas.height = height;
+    this.width = this.canvas.width = width;
+    this.height = this.canvas.height = height;
     this.font = font;
     this.colorCode = colorCode;
     this.alignmentX = alignmentX;
