@@ -21,31 +21,31 @@ define(function() {
     },
     get glyphs() {
       var list = new Array(this.glyphCount);
+      list.maxWidth = list.maxHeight = 0;
       var offset = this.addressesOffset;
       var buffer = this.dv.buffer;
       var byteLength = this.dv.byteLength;
       for (var i = 0; i < list.length; i++) {
         var glyphOffset = this.dv.getUint16(offset + i*2, true);
         list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset);
+        list.maxWidth = Math.max(list.maxWidth, list[i].width);
+        list.maxHeight = Math.max(list.maxHeight, list[i].height);
       }
-      Object.defineProperty(this, 'glyphs', {value:list});
+      Object.defineProperty(this, 'glyphs', {value:list, enumerable:true});
       return list;
     },
-    getTextWidth: function(str) {
+    getTextWidth: function(str, i, j) {
+      if (isNaN(i)) i = 0;
+      if (isNaN(j)) j = str.length;
       var w = 0;
-      for (var i = 0; i < str.length; i++) {
+      for (; i < j; i++) {
         var glyph = this.glyphs[str.charCodeAt(i)];
         if (glyph) w += glyph.width;
       }
       return w;
     },
     get lineHeight() {
-      var h = 0;
-      for (var i = 0; i < this.glyphs.length; i++) {
-        h = Math.max(h, this.glyphs[i].height);
-      }
-      Object.defineProperty(this, 'lineHeight', {value:h});
-      return h;
+      return this.glyphs.maxHeight;
     },
     getAllImageData: function(ctx2d) {
       var chars = new Array(256);
@@ -98,26 +98,32 @@ define(function() {
       }
     },
     wrap: function(text, maxWidth) {
-      var lineStart = 0, word1Start = 0, word1End = text.indexOf(' ');
-      if (word1End === -1) return [text];
-      var word2End = text.indexOf(' ', word1End + 1);
-      if (word2End === -1) word2End = text.width;
       var lines = [];
-      var spaceWidth = this.getTextWidth(' ');
-      var lineWidth = this.getTextWidth(text.substring(word1Start, word1End));
-      do {
-        var word2Width = this.getTextWidth(text.substring(word1End + 1, word2End));
-        if ((lineWidth += spaceWidth + word2Width) > maxWidth) {
-          lines.push(text.substring(lineStart, word1End));
-          lineStart = word1End + 1;
-          lineWidth = word2Width;
+      while (text.length > 0) {
+        var i_end = (this.glyphs.maxWidth / maxWidth) | 0;
+        if (i_end >= text.length) {
+          lines.push(text);
+          break;
         }
-        word1Start = word1End + 1;
-        word1End = word2End;
-        word2End = text.indexOf(' ', word2End + 1);
-        if (word2End === -1) word2End = text.length;
-      } while (word1End < text.length);
-      lines.push(text.substring(lineStart));
+        i_end = text.lastIndexOf(' ', i_end);
+        if (i_end === -1) {
+          i_end = text.indexOf(' ');
+          if (i_end === -1) {
+            i_end = text.length;
+          }
+        }
+        else {
+          var width = this.getTextWidth(text, 0, i_end);
+          for (var i_space = text.indexOf(' ', i_end+1); i_space !== -1; i_space = text.indexOf(' ', i_end+1)) {
+            if ((width += this.getTextWidth(text, i_end, i_space)) > maxWidth) {
+              break;
+            }
+            i_end = i_space;
+          }
+        }
+        lines.push(text.substring(0, i_end));
+        text = text.substring(i_end + 1);
+      }
       return lines;
     },
   };
