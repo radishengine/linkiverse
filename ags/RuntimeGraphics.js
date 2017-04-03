@@ -126,9 +126,9 @@ define(function() {
         -this.viewportX * this.viewportScale,
         -this.viewportY * this.viewportScale);
       this.screenCtx.scale(
-        this.background.viewportScale,
-        this.background.viewportScale);
-      this.screenCtx.drawImage(this.background, 0, 0);
+        this._bg.viewportScale,
+        this._bg.viewportScale);
+      this.screenCtx.drawImage(this._bg, 0, 0);
       this.screenCtx.restore();
     },
     _mo: false,
