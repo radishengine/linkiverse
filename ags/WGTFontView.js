@@ -123,6 +123,9 @@ define(function() {
             i_extend = text.lastIndexOf(' ', i_extend);
             if (i_extend <= i_end) {
               i_extend = text.indexOf(' ', i_end + 1);
+              if (i_extend === -1) {
+                i_extend = text.length;
+              }
             }
             if ((remainingWidth -= this.getTextWidth(text, i_end, i_extend)) < 0) {
               break;
