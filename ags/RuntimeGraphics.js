@@ -121,10 +121,15 @@ define(function() {
       return new Sprite(this, number, x, y, handleX, handleY, handleRatioX, handleRatioY);
     },
     redraw: function() {
-      this.canvas.drawImage(
-        this.background,
+      this.screenCtx.save();
+      this.screenCtx.translate(
         -this.viewportX * this.viewportScale,
         -this.viewportY * this.viewportScale);
+      this.screenCtx.scale(
+        this.background.viewportScale,
+        this.background.viewportScale);
+      this.screenCtx.drawImage(this.background, 0, 0);
+      this.screenCtx.restore();
     },
     _mo: false,
     get mouseOver() {
