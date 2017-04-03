@@ -63,7 +63,7 @@ define(function() {
     viewportScale: 1,
     _bg: EMPTY_IMAGE_SOURCE,
     _vpx:0, _vpy:0,
-    get backgroundImageSource() {
+    get background() {
       var bg = this._bg;
       return bg === EMPTY_IMAGE_SOURCE ? null : bg;
     },
@@ -87,7 +87,7 @@ define(function() {
       this._vpy = Math.max(0, Math.min(y,
         (this._bg.viewportHeight/this.viewportScale | 0) - this.viewportHeight));
     },
-    set backgroundImageSource(src) {
+    set background(src) {
       this._bg = src || EMPTY_IMAGE_SOURCE;
       this.viewportX = this.viewportX;
       this.viewportY = this.viewportY;
@@ -122,7 +122,7 @@ define(function() {
     },
     redraw: function() {
       this.canvas.drawImage(
-        this.backgroundImageSource,
+        this.background,
         -this.viewportX * this.viewportScale,
         -this.viewportY * this.viewportScale);
     },
