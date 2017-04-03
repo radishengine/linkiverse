@@ -47,6 +47,14 @@ define(function() {
     get lineHeight() {
       return this.glyphs.maxHeight;
     },
+    getAllImages() {
+      if ('_allImages' in this) return this._allImages;
+      var ctx = document.createElement('CANVAS').getContext('2d');
+      return this._allImages = Promise.all(this.glyphs.map(function(glyph) {
+        if (!glyph) return;
+        return window.createBitmapImage(glyph.createImageData(ctx));
+      }));
+    },
     getAllImageData: function(ctx2d) {
       var chars = new Array(256);
       var empty = ctx.createImageData(1, 1);
