@@ -113,12 +113,18 @@ define(function() {
           }
         }
         else {
-          var width = this.getTextWidth(text, i_start, i_end);
-          for (var i_space = text.indexOf(' ', i_end+1); i_space !== -1; i_space = text.indexOf(' ', i_end+1)) {
-            if ((width += this.getTextWidth(text, i_end, i_space)) > maxWidth) {
+          var remainingWidth = maxWidth - this.getTextWidth(text, i_start, i_end);
+          while (remainingWidth > 0) {
+            var i_extend = text.lastIndexOf(' ', i_end + (remainingWidth / this.glyphs.maxWidth)|0);
+            if (i_extend <= i_end) {
               break;
             }
-            i_end = i_space;
+            if (i_extend >= text.length) {
+              i_end = text.length;
+              break;
+            }
+            remainingWidth -= this.getTextWidth(text, i_end, i_extend);
+            i_end = i_extend;
           }
         }
         lines.push(text.substring(i_start, i_end));
