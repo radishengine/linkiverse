@@ -796,8 +796,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   RuntimeTextOverlay.prototype = Object.assign(Object.create(RuntimeOverlay.prototype), {
     redraw: function() {
       var ctx2d = this.canvas.getContext('2d');
-      ctx2d.globalCompositeOperation = 'source-over';
       var w = this.canvas.width, h = this.canvas.height;
+      ctx2d.clearRect(0, 0, w, h);
+      ctx2d.globalCompositeOperation = 'source-over';
       if (w === 0 || h === 0) return;
       var y = Math.floor((h - this.font.lineHeight * this.lines.length) * this.alignmentY);
       for (var i = 0; i < this.lines.length; i++) {
