@@ -74,12 +74,18 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.update = this.update.bind(this);
     this.audioContext = audioContext;
     this.mainExec = new ExecutionChannel(this);
+    var self = this;
     this.eventTarget.addEventListener('mousedown', function(e) {
       e.preventDefault();
       e.stopPropagation();
       this.focus();
+      if (e.button === 0) {
+        self.onClick(0);
+      }
+      else if (e.button === 1) {
+        self.onClick(1);
+      }
     });
-    var self = this;
     var pressedMap = this.pressedMap = {};
     this.eventTarget.addEventListener('keydown', function(e) {
       switch (e.key) {
@@ -139,6 +145,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   }
   Runtime.prototype = {
     on_key_press: function() { },
+    on_click: function() { },
     tickMillisecs: 1000/40,
     get ticksPerSecond() {
       return Math.round(1000/this.tickMillisecs);
@@ -177,6 +184,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     },
     onKey: function(keycode) {
       this.mainExec.tryImmediateAction(this.on_key_press.bind(this, keycode));
+    },
+    onClick: function(buttonNumber) {
+      this.mainExec.tryImmediateAction(this.on_click.bind(this, buttonNumber));
     },
     GiveScore: function(n) {
       this.score += n;
