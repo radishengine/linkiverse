@@ -162,7 +162,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
       var game = this.game;
       return promise.then(function(buffer) {
-        return new RoomView(game, n, buffer, 0, buffer.byteLength).loaded;
+        return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
     rawPeek: function(nameAndOffset, dataSize) {
@@ -334,6 +334,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       })
       .then(function(roomDef) {
         self.room = new RuntimeRoom(self, roomDef);
+        return self.room.loaded;
       });
     },
     textSpeed: 15,
