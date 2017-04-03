@@ -114,12 +114,6 @@ define(function() {
     set viewportCenterX(cx) {
       this.viewportY = cy - (this.viewportHeight/2) | 0;
     },
-    createDrawList: function() {
-      return new DrawList(this);
-    },
-    createSprite: function(number, x, y, handleX, handleY, handleRatioX, handleRatioY) {
-      return new Sprite(this, number, x, y, handleX, handleY, handleRatioX, handleRatioY);
-    },
     redraw: function() {
       this.screenCtx.save();
       this.screenCtx.translate(
@@ -139,31 +133,6 @@ define(function() {
       this._mo = mo;
     },
   };
-  
-  function DrawList(graphics) {
-    this.graphics = graphics;
-    this.items = [];
-  }
-  DrawList.prototype = {
-    x:0, y:0,
-  };
-  
-  function Sprite(graphics, number, x, y, handleX, handleY, handleRatioX, handleRatioY) {
-    this.graphics = graphics;
-    this.number = number;
-    this.x = x;
-    this.y = y;
-    this.handleX = handleX;
-    this.handleY = handleY;
-    this.handleRatioX = handleRatioX;
-    this.handleRatioY = handleRatioY;
-  }
-  Sprite.prototype = {
-    x:0, y:0, handleX:0, handleY:0, handleRatioX:0, handleRatioY:0,
-  };
-  
-  RuntimeGraphics.Sprite = Sprite;
-  RuntimeGraphics.DrawList = DrawList;
   
   return RuntimeGraphics;
 
