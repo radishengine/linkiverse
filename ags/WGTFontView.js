@@ -27,9 +27,14 @@ define(function() {
       var byteLength = this.dv.byteLength;
       for (var i = 0; i < list.length; i++) {
         var glyphOffset = this.dv.getUint16(offset + i*2, true);
-        list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset);
+        list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset).createCanvas();
         list.maxWidth = Math.max(list.maxWidth, list[i].width);
         list.maxHeight = Math.max(list.maxHeight, list[i].height);
+        if ('createImageBitmap' in window) {
+          window.createImageBitmap(list[i]).then((function(list, i, image) {
+            list[i] = image;
+          }).bind(null, list, i));
+        }
       }
       Object.defineProperty(this, 'glyphs', {value:list, enumerable:true});
       return list;
@@ -131,6 +136,16 @@ define(function() {
       }
       return lines;
     },
+    drawText: function(ctx2d, text, x, y) {
+      if (isNaN(x)) x = 0;
+      if (isNaN(y)) y = 0;
+      for (var i = 0; i < text.length; i++) {
+        var glyph = this.glyphs[text.charCodeAt(i)];
+        if (!glyph) continue;
+        ctx2d.drawImage(glyph, x, y);
+        x += glyph.width;
+      }
+    },
   };
   
   function WGTGlyphView(buffer, byteOffset, byteLength) {
@@ -149,6 +164,14 @@ define(function() {
     },
     getBitplanes: function() {
       return this.bytes.slice(4, 4 + this.stride * this.height);
+    },
+    createCanvas: function() {
+      var canvas = document.createElement('CANVAS');
+      canvas.width = this.width;
+      canvas.height = this.height;
+      var ctx2d = canvas.getContext('2d');
+      canvas.putImageData(this.createImageData(ctx2d), 0, 0);
+      return canvas;
     },
     createImageData: function(ctx2d) {
       var stride = this.stride, width = this.width, height = this.height;
