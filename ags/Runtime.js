@@ -6,7 +6,8 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   
   window.xm = xm;
   
-  const updateEvent = new CustomEvent('update');
+  const updateEventWithAnim = new CustomEvent('update', {detail:{animate:true}});
+  const updateEventNoAnim = new CustomEvent('update', {detail:{animate:false}});
   
   var littleEndian = (function() {
     return new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
@@ -648,6 +649,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         requestAnimationFrame(self.update);
       });
     },
+    paused: false,
+    IsGamePaused: function() {
+      return this.paused;
+    },
     update: function(now) {
       requestAnimationFrame(this.update);
       if (now < this.nextTick) return;
@@ -655,7 +660,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       if (this.nextTick < now) {
         this.nextTick = now + this.tickMillisecs;
       }
-      this.eventTarget.dispatchEvent(updateEvent);
+      this.eventTarget.dispatchEvent(this.paused ? updateEventNoAnim : updateEventWithAnim);
       this.redraw();
     },
     addEventfulGlobal: function(name, initialValue) {
