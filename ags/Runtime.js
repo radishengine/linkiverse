@@ -162,7 +162,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
       var game = this.game;
       return promise.then(function(buffer) {
-        return new RoomView(game, n, buffer, 0, buffer.byteLength);
+        return new RoomView(game, n, buffer, 0, buffer.byteLength).loaded;
       });
     },
     rawPeek: function(nameAndOffset, dataSize) {
