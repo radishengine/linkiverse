@@ -842,11 +842,11 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     var imageData = runtime.ctx2d.createImageData(pic.width, pic.height);
     pic.setImageData(imageData);
     var self = this;
-    var timeCheck = Performance.now();
+    var timeCheck = performance.now();
     this.loaded = Promise.all([
       this.loaded,
       window.createImageBitmap(imageData).then(function(background) {
-        console.log('time to load: ' + (Performance.now() - timeCheck));
+        console.log('time to load: ' + (performance.now() - timeCheck));
         background.viewportScale = 2;
         self.background = background;
       }),
