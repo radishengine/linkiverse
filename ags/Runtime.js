@@ -1,6 +1,6 @@
 define(
-['./GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/midi', 'playback/xm'],
-function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
+['./RuntimeGraphics', './GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/midi', 'playback/xm'],
+function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
 
   'use strict';
   
@@ -62,10 +62,10 @@ function(GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
-    this.element = document.createElement('CANVAS');
+    this.graphics = new Graphics(this);
+    this.graphics.setViewport(640, 400, 2);
+    this.element = this.graphics.canvas;
     this.element.tabIndex = 0;
-    this.element.width = 320;
-    this.element.height = 200;
     this.ctx2d = this.element.getContext('2d');
     this.eventTarget = this.element;
     this.eventTarget.runtime = this;
