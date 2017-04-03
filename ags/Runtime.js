@@ -449,7 +449,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     goToRoom: function(n) {
       var self = this;
       var loading = self.loadRoom(n).then(function(roomDef) {
-        return new RuntimeRoom(self, roomDef);
+        return new RuntimeRoom(self, roomDef).loaded;
       });
       this.mainExec.onNextIdle(function() {
         self.eventTarget.dispatchEvent(new CustomEvent('leaving-room'));
@@ -593,7 +593,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
     },
     redraw: function() {
-      this.ctx2d.putImageData(this.room.background, -this.room.viewportX, -this.room.viewportY);
+      this.graphics.redraw();
       for (var i = 0; i < this.overlays.length; i++) {
         this.overlays[i].render();
       }
@@ -819,7 +819,13 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     var pic = def.main.backgroundBitmap;
     var imageData = runtime.ctx2d.createImageData(pic.width, pic.height);
     pic.setImageData(imageData);
-    this.background = imageData;
+    var self = this;
+    this.loaded = Promise.all([
+      this.loaded,
+      window.createImageBitmap(imageData).then(function(background) {
+        self.background = background;
+      }),
+    ]).then(function(){ return self; });
     if (def.scriptCompiled_v3) {
       this.script = def.scriptCompiled_v3.instantiate(runtime);
     }
@@ -831,6 +837,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     }
   }
   RuntimeRoom.prototype = {
+    loaded: Promise.resolve(),
     viewportX: 0,
     viewportY: 0,
     get number() {
