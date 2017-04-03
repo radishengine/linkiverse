@@ -100,7 +100,7 @@ define(function() {
     wrap: function(text, maxWidth) {
       var lines = [];
       for (var i_start = 0, i_end; i_start < text.length; i_start = i_end + 1) {
-        i_end = i_start + (this.glyphs.maxWidth / maxWidth) | 0;
+        i_end = i_start + (maxWidth / this.glyphs.maxWidth) | 0;
         if (i_end >= text.length) {
           lines.push(text.substring(i_start));
           break;
