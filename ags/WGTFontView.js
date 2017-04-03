@@ -170,7 +170,7 @@ define(function() {
       canvas.width = this.width;
       canvas.height = this.height;
       var ctx2d = canvas.getContext('2d');
-      canvas.putImageData(this.createImageData(ctx2d), 0, 0);
+      ctx2d.putImageData(this.createImageData(ctx2d), 0, 0);
       return canvas;
     },
     createImageData: function(ctx2d) {
