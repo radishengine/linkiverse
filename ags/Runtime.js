@@ -597,7 +597,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       this.graphics.redraw();
       for (var i = 0; i < this.overlays.length; i++) {
         this.ctx2d.save();
-        this.ctx2d.scale(this.graphics.viewportScale);
+        this.ctx2d.scale(this.graphics.viewportScale, this.graphics.viewportScale);
         this.overlays[i].render();
         this.ctx2d.restore();
       }
