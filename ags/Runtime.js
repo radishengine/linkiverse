@@ -802,7 +802,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var y = Math.floor((h - this.font.lineHeight * this.lines.length) * this.alignmentY);
       for (var i = 0; i < this.lines.length; i++) {
         var x = Math.floor((w - this.font.getTextWidth(this.lines[i])) * this.alignmentX);
-        this.font.drawText(this.lines[i], x, y);
+        this.font.drawText(ctx2d, this.lines[i], x, y);
         y += this.font.lineHeight;
       }
       ctx2d.globalCompositeOperation = 'source-in';
