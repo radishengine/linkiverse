@@ -319,7 +319,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
                           case '@SCORETEXT@': return runtime.scoreText;
                         }
                       });
-                      this.lines = this.font.wrap(this.text);
+                      this.lines = this.font.wrap(this.text, this.width);
                       this.redraw();
                     };
                     overlay.update();
