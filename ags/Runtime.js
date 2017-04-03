@@ -361,6 +361,18 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     WaitKey: function(ticks) {
       return this.wait(ticks, {keys:true});
     },
+    animDelay: function(ticks) {
+      var eventTarget = this.eventTarget;
+      return new Promise(function(resolve, reject) {
+        function on_tick(e) {
+          if (e.detail.animate && --ticks < 1) {
+            this.removeEventListener('update', on_tick);
+            resolve();
+          }
+        }
+        eventTarget.addEventListener('update', on_tick);
+      });
+    },
     wait: function(ticks, cancellers) {
       var eventTarget = this.eventTarget;
       return new Promise(function(resolve, reject) {
