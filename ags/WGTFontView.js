@@ -115,12 +115,13 @@ define(function() {
         else {
           var remainingWidth = maxWidth - this.getTextWidth(text, i_start, i_end);
           for (;;) {
-            var i_extend = text.lastIndexOf(' ', i_end + (remainingWidth / this.glyphs.maxWidth)|0);
-            if (i_extend <= i_end) {
-              break;
-            }
+            var i_extend = i_end + (remainingWidth / this.glyphs.maxWidth)|0;
             if (i_extend >= text.length) {
               i_end = text.length;
+              break;
+            }
+            i_extend = text.lastIndexOf(' ', i_extend);
+            if (i_extend <= i_end) {
               break;
             }
             if ((remainingWidth -= this.getTextWidth(text, i_end, i_extend)) < 0) {
