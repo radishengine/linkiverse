@@ -114,7 +114,7 @@ define(function() {
         }
         else {
           var remainingWidth = maxWidth - this.getTextWidth(text, i_start, i_end);
-          while (remainingWidth > 0) {
+          for (;;) {
             var i_extend = text.lastIndexOf(' ', i_end + (remainingWidth / this.glyphs.maxWidth)|0);
             if (i_extend <= i_end) {
               break;
@@ -123,7 +123,9 @@ define(function() {
               i_end = text.length;
               break;
             }
-            remainingWidth -= this.getTextWidth(text, i_end, i_extend);
+            if ((remainingWidth -= this.getTextWidth(text, i_end, i_extend)) < 0) {
+              break;
+            }
             i_end = i_extend;
           }
         }
