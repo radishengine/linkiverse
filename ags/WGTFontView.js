@@ -98,40 +98,26 @@ define(function() {
       }
     },
     wrap: function(text, maxWidth) {
-      var lines = [];
+      var lines = [], glyphMaxWidth = this.glyphs.maxWidth;
       for (var i_start = 0, i_end; i_start < text.length; i_start = i_end + 1) {
-        i_end = i_start + (maxWidth / this.glyphs.maxWidth) | 0;
-        if (i_end >= text.length) {
-          lines.push(text.substring(i_start));
-          break;
-        }
-        i_end = text.lastIndexOf(' ', i_end);
-        if (i_end < i_start) {
-          i_end = text.indexOf(' ', i_start);
-          if (i_end === -1) {
+        i_end = text.indexOf(' ', i_start);
+        if (i_end === -1) i_end = text.length;
+        var remainingWidth = maxWidth - this.getTextWidth(text, i_start, i_end);
+        for (;;) {
+          var i_extend = i_end + (remainingWidth / glyphMaxWidth)|0;
+          if (i_extend >= text.length) {
             i_end = text.length;
+            break;
           }
-        }
-        else {
-          var remainingWidth = maxWidth - this.getTextWidth(text, i_start, i_end);
-          for (;;) {
-            var i_extend = i_end + (remainingWidth / this.glyphs.maxWidth)|0;
-            if (i_extend >= text.length) {
-              i_end = text.length;
-              break;
-            }
-            i_extend = text.lastIndexOf(' ', i_extend);
-            if (i_extend <= i_end) {
-              i_extend = text.indexOf(' ', i_end + 1);
-              if (i_extend === -1) {
-                i_extend = text.length;
-              }
-            }
-            if ((remainingWidth -= this.getTextWidth(text, i_end, i_extend)) < 0) {
-              break;
-            }
-            i_end = i_extend;
+          i_extend = text.lastIndexOf(' ', i_extend);
+          if (i_extend <= i_end) {
+            i_extend = text.indexOf(' ', i_end + 1);
+            if (i_extend === -1) i_extend = text.length;
           }
+          if ((remainingWidth -= this.getTextWidth(text, i_end, i_extend)) < 0) {
+            break;
+          }
+          i_end = i_extend;
         }
         lines.push(text.substring(i_start, i_end));
       }
