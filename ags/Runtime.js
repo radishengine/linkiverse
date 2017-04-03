@@ -145,7 +145,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   }
   Runtime.prototype = {
     on_key_press: function() { },
-    on_click: function() { },
+    on_mouse_click: function() { },
     tickMillisecs: 1000/40,
     get ticksPerSecond() {
       return Math.round(1000/this.tickMillisecs);
@@ -186,7 +186,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       this.mainExec.tryImmediateAction(this.on_key_press.bind(this, keycode));
     },
     onClick: function(buttonNumber) {
-      this.mainExec.tryImmediateAction(this.on_click.bind(this, buttonNumber));
+      this.mainExec.tryImmediateAction(this.on_mouse_click.bind(this, buttonNumber));
     },
     GiveScore: function(n) {
       this.score += n;
