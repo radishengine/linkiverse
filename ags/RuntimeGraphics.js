@@ -58,6 +58,7 @@ define(function() {
     this.screen.addEventListener('mouseleave', function() {
       self.mouseOver = false;
     });
+    this.sceneSprites = [];
   }
   RuntimeGraphics.prototype = {
     viewportScale: 1,
@@ -111,18 +112,27 @@ define(function() {
     get viewportCenterY() {
       return this.viewportY + (this.viewportHeight/2) | 0;
     },
-    set viewportCenterX(cx) {
+    set viewportCenterY(cy) {
       this.viewportY = cy - (this.viewportHeight/2) | 0;
     },
     redraw: function() {
       this.screenCtx.save();
+      
       this.screenCtx.translate(
         -this.viewportX * this.viewportScale,
         -this.viewportY * this.viewportScale);
+      
+      this.screenCtx.save();
       this.screenCtx.scale(
         this._bg.viewportScale,
         this._bg.viewportScale);
       this.screenCtx.drawImage(this._bg, 0, 0);
+      this.screenCtx.restore();
+      
+      for (var i = 0; i < this.sceneSprites.length; i++) {
+        this.sceneSprites[i].drawTo(this.screenCtx, this.scratchCtx, this.scratchpad);
+      }
+      
       this.screenCtx.restore();
     },
     _mo: false,
@@ -133,6 +143,20 @@ define(function() {
       this._mo = mo;
     },
   };
+  
+  function Sprite(graphics, number, x, y, viewportScale) {
+    this.graphics = graphics;
+    this.number = number;
+    this.x = x;
+    this.y = y;
+    this.viewportScale = viewportScale;
+  }
+  Sprite.prototype = {
+    drawTo: function(ctx, scratchCtx, scratchpad) {
+    },
+  };
+  
+  RuntimeGraphics.Sprite = Sprite;
   
   return RuntimeGraphics;
 
