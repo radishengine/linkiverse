@@ -596,7 +596,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     redraw: function() {
       this.graphics.redraw();
       for (var i = 0; i < this.overlays.length; i++) {
+        this.ctx2d.save();
+        this.ctx2d.scale(this.graphics.viewportScale);
         this.overlays[i].render();
+        this.ctx2d.restore();
       }
     },
     onEnteringRoom: function() {
@@ -770,10 +773,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   RuntimeBoxOverlay.prototype = Object.create(RuntimeOverlay.prototype, {
     render: {
       value: function() {
-        this.runtime.ctx2d.fillStyle = this.fillStyle;
-        this.runtime.ctx2d.strokeStyle = this.strokeStyle;
+        this.runtime.ctx2d.fillStyle = this.strokeStyle;
         this.runtime.ctx2d.fillRect(this.x, this.y, this.width, this.height);
-        this.runtime.ctx2d.strokeRect(this.x+0.5, this.y+0.5, this.width, this.height);
+        this.runtime.ctx2d.fillStyle = this.fillStyle;
+        this.runtime.ctx2d.fillRect(this.x + 1, this.y + 1, this.width - 2, this.height - 2);
       },
     },
   });
