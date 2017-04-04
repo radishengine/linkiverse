@@ -192,6 +192,16 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var parts = nameAndOffset.split('+', 2);
       var name = parts[0], offset = +parts[1];
       switch (name) {
+        case 'player':
+          Object.defineProperty(this, nameAndOffset, {
+            get: function() {
+              return this.rawPeek('character+' + (this.player * this.player.def.byteLength + offset), dataSize);
+            },
+            set: function(v) {
+              this.rawPoke('character+' + (this.player * this.player.def.byteLength + offset), dataSize, v);
+            },
+          });
+          return true;
         case 'gs_globals':
           var index = offset >> 2;
           Object.defineProperty(this, nameAndOffset, {
