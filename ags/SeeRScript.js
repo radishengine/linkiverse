@@ -760,7 +760,7 @@ define(['./util'], function(util) {
               }
               switch (leftType) {
                 case SLOT_NAMED_OFFSET:
-                  var parts = namedOffsets[leftValue].split('+');
+                  var parts = namedOffsets[leftValue].split('+', 2);
                   if ((parts[1] = +parts[1] + rightValue) < 0) {
                     return console.error('SeeR: negative offset from ' + parts[0]);
                   }
@@ -793,7 +793,7 @@ define(['./util'], function(util) {
               }
               switch (arg1Type) {
                 case SLOT_NAMED_OFFSET:
-                  var parts = namedOffsets[arg1Value].split('+');
+                  var parts = namedOffsets[arg1Value].split('+', 2);
                   if ((parts[1] -= arg2Value) < 0) {
                     return console.error('SeeR: negative offset from ' + external.name);
                   }
