@@ -161,6 +161,42 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     GetGameSpeed: function() {
       return this.ticksPerSecond;
     },
+    StrCopy: Object.assign(function StrCopy(buffer, str) {
+      if (!(buffer instanceof Uint8Array)) {
+        throw new Error('StrCopy: arg 1 must be a memory buffer, got ' + buffer);
+      }
+      if (str instanceof Uint8Array) {
+        for (var i = 0; ; i++) {
+          if ((buffer[i] = str[i]) === 0) return;
+        }
+      }
+      str = ''+str;
+      for (var i = 0; i < str.length; i++) {
+        buffer[i] = str.charCodeAt(i);
+      }
+      buffer[str.length + 1] = 0;
+    }, {passStringsByRef:true}),
+    StrCat: Object.assign(function StrCat(buffer, str) {
+      if (!(buffer instanceof Uint8Array)) {
+        throw new Error('StrCat: arg 1 must be a memory buffer, got ' + buffer);
+      }
+      var i_start = buffer.indexOf(0);
+      if (i_start === -1) {
+        console.error('StrCat: buffer has no null terminator');
+        return;
+      }
+      this.StrCopy(buffer.subarray(i_start), str);
+    }, {passStringsByRef:true}),
+    GetLocationName: Object.assign(function GetLocationName(x, y, buffer) {
+      if (!(buffer instanceof Uint8Array)) {
+        throw new Error('GetLocationName: arg 3 must be a memory buffer, got ' + buffer);
+      }
+      console.error('NYI: GetLocationName');
+      this.StrCopy(buffer, '');
+    }, {passStringsByRef:true}),
+    SetLabelText: function(interface, label, text) {
+      console.error('NYI: SetLabelText: ' + interface + ',' + label + ',' + text);
+    },
     loadRoom: function(n) {
       var promise;
       if (n === 0 && this.fileSystem.getName('intro.crm')) {
