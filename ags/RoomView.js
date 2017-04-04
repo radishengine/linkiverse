@@ -768,7 +768,7 @@ define(['./SeeRScript', './ScomScript', './GraphicalScript'], function(SeeRScrip
         }
         return {
           stride: dv.getInt32(0, true),
-          width: this.width,
+          width: dv.getInt32(0, true) / (this.bitsPerPixel * 8),
           height: dv.getInt32(4, true),
           data: uncompressed.subarray(8),
           palette: palette,
