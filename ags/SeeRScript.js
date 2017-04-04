@@ -593,7 +593,7 @@ define(['./util'], function(util) {
                   copyType = SLOT_INT;
                   break;
               }
-              if (arg1IsRegister) {
+              if (arg1IsRegister && !arg1IsPointer) {
                 registers[arg1Register] = copyValue;
                 registerTypes[arg1Register] = copyType;
               }
