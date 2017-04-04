@@ -530,6 +530,15 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         if ('game_start' in self.script.exports) {
           return self.script.exports.game_start();
         }
+        if ('repeatedly_execute' in self.script.exports) {
+          var mainRepExec = self.script.exports.repeatedly_execute;
+          this.eventTarget.addEventListener('idle', function() {
+            this.addEventListener('update', mainRepExec);
+          });
+          this.eventTarget.addEventListener('busy', function() {
+            this.removeEventListener('update', mainRepExec);
+          });
+        }
       })
       .then(function() {
         return self.loadRoom(self.game.playerCharacter.room);
