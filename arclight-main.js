@@ -82,7 +82,7 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
         };
         script.type = 'text/javascript';
         script.src = '//archive.org/advancedsearch.php'
-          + '?q=collection:' + self.identifier + '+ags_format_version:(7 OR 9)' // + '+-subject:"game+creation-software"'
+          + '?q=collection:' + self.identifier + '+ags_format_version:11' // + '+-subject:"game+creation-software"'
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
           + '&rows=100'
