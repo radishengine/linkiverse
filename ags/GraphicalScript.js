@@ -112,6 +112,7 @@ define(['./util'], function(util) {
   function GraphicalScriptInstance(runtime, def) {
     this.runtime = runtime;
     this.def = def;
+    this.vars = new Int32Array(def.varNames.length);
     this.exports = {};
     for (var i = 0; i < this.def.functions.length; i++) {
       var func = this.def.functions[i];
@@ -120,7 +121,18 @@ define(['./util'], function(util) {
     }
   }
   GraphicalScriptInstance.prototype = {
+    getVar: function(number) {
+      --number;
+      if (number >= 100) return this.vars[number - 100];
+      return this.runtime.GetGlobalInt(number);
+    },
+    setVar: function(number, value) {
+      --number;
+      if (number >= 100) return this.vars[number - 100];
+      this.runtime.SetGlobalInt(number, value);
+    },
     run: function(funcNumber) {
+      var self = this;
       var runtime = this.runtime;
       var func = this[funcNumber];
       var block = func.blocks[0];
@@ -161,16 +173,16 @@ define(['./util'], function(util) {
               }
               result = runtime.gscript_request(action.data1);
               break;
-            case 11: result = runtime.SetGlobalInt(action.data1, 1); break;
-            case 12: result = runtime.SetGlobalInt(action.data1, 0); break;
+            case 11: self.setVar(action.data1, 1); continue codeLoop;
+            case 12: self.setVar(action.data1, 0); continue codeLoop;
             case 13: return;
             case 14:
-              if (!runtime.GetGlobalInt(action.data1)) {
+              if (!self.getVar(action.data1)) {
                 enterBlock(action.thenGoToBlock);
               }
               continue codeLoop;
             case 15:
-              if (runtime.GetGlobalInt(action.data1)) {
+              if (self.getVar(action.data1)) {
                 enterBlock(action.thenGoToBlock);
               }
               continue codeLoop;
