@@ -634,6 +634,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
 
     display: function(text) {
       text = ''+text;
+      if (!/[^ ]/.test(text)) {
+        return this.wait(this.getTextDisplayTicks(text), {mouseButtons:true, keys:true});
+      }
       var font = this.fonts[0];
       var lines = font.wrap(text, 220);
       var boxWidth = 6;
