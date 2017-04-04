@@ -216,6 +216,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 24:
               if (runtime.graphicalTimerRemaining <= 0) {
+                runtime.graphicalTimerRemaining = Infinity;
                 enterBlock(action.thenGoToBlock);
               }
               continue codeLoop;
