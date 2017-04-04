@@ -744,6 +744,10 @@ define(['./util'], function(util) {
                   arg1Value += callTop;
                   arg1Type = SLOT_STACK;
                 }
+                if (arg2Register === 6) {
+                  arg2Value += callTop;
+                  arg2Type = SLOT_STACK;
+                }
                 if (arg2Type === SLOT_INT) {
                   leftValue = arg1Value;
                   leftType = arg1Type;
