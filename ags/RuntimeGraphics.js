@@ -119,20 +119,22 @@ define(function() {
       this.screenCtx.save();
       this.screenCtx.scale(this.viewportScale, this.viewportScale);
       
-      // <scene>
-      {
+      /* <scene> */ {
         this.screenCtx.save();
         this.screenCtx.translate(-this.viewportX, -this.viewportY);
-        this.screenCtx.scale(
-          this._bg.viewportScale,
-          this._bg.viewportScale);
-        this.screenCtx.drawImage(this._bg, 0, 0);
+        /* <background> */ {
+          this.screenCtx.save();
+          this.screenCtx.scale(
+            this._bg.viewportScale,
+            this._bg.viewportScale);
+          this.screenCtx.drawImage(this._bg, 0, 0);
+          this.screenCtx.restore();
+        } /* </background> */
         for (var i = 0; i < this.sceneSprites.length; i++) {
           this.sceneSprites[i].drawTo(this.screenCtx, this.scratchCtx, this.scratchpad);
         }
         this.screenCtx.restore();
-      }
-      // </scene>
+      } /* </scene> */
       
       this.screenCtx.restore();
     },
