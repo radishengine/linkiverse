@@ -1000,7 +1000,7 @@ define(['./util'], function(util) {
                 default:
                   return console.error('NYI: SeeR CMOV from type ' + arg2Type);
               }
-              if (arg1IsRegister) {
+              if (arg1IsRegister && !arg1IsPointer) {
                 // TODO: check if the rest of the value should be cleared, not kept
                 registers[arg1Register] = (arg1Value & ~0xff) | (copyValue & 0xff);
                 registerTypes[arg1Register] = SLOT_INT;
@@ -1044,7 +1044,7 @@ define(['./util'], function(util) {
                 default:
                   return console.error('NYI: SeeR WMOV from type ' + arg2Type);
               }
-              if (arg1IsRegister) {
+              if (arg1IsRegister && !arg1IsPointer) {
                 // TODO: check if the rest of the value should be cleared, not kept
                 registers[arg1Register] = (arg1Value & ~0xffff) | (copyValue & 0xffff);
                 registerTypes[arg1Register] = SLOT_INT;
