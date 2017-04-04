@@ -174,7 +174,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       for (var i = 0; i < str.length; i++) {
         buffer[i] = str.charCodeAt(i);
       }
-      buffer[str.length + 1] = 0;
+      buffer[str.length] = 0;
     }, {passStringsByRef:true}),
     StrCat: Object.assign(function StrCat(buffer, str) {
       if (!(buffer instanceof Uint8Array)) {
