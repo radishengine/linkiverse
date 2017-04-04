@@ -123,7 +123,7 @@ define(['./util'], function(util) {
   GraphicalScriptInstance.prototype = {
     getVar: function(number) {
       if (number >= 100) return this.runtime.GetGlobalInt(number - 100);
-      return this.vars(number);
+      return this.vars[number];
     },
     setVar: function(number, value) {
       if (number >= 100) return this.runtime.SetGlobalInt(number - 100, value);
