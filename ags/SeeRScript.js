@@ -562,7 +562,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x0B: // MOV  copies 4bytes
               var copyValue, copyType;
-              if (arg2IsRegister) {
+              if (arg2IsRegister && !arg2IsPointer) {
                 copyValue = registers[arg2Register];
                 copyType = registerTypes[arg2Register];
               }
@@ -977,7 +977,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x2D: // CMOV: copies 1 byte
               var copyValue;
-              if (arg2IsRegister) {
+              if (arg2IsRegister && !arg2IsPointer) {
                 copyValue = arg2Value & 0xff;
               }
               else switch (arg2Type) {
@@ -1022,7 +1022,7 @@ define(['./util'], function(util) {
               continue codeLoop;
             case 0x2E: // WMOV: copies 2 bytes
               var copyValue;
-              if (arg2IsRegister) {
+              if (arg2IsRegister && !arg2IsPointer) {
                 copyValue = arg2Value << 16 >> 16;
               }
               else switch (arg2Type) {
