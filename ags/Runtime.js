@@ -810,6 +810,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     },
     DisplayMessage: function(number) {
       var message = this.getMessage(number);
+      if (!message) return;
       var promise;
       if (message.isShownAsSpeech) {
         promise = this.player.say(message.text);
