@@ -527,9 +527,6 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
             }
           }
         }
-        if ('game_start' in self.script.exports) {
-          return self.script.exports.game_start();
-        }
         if ('repeatedly_execute' in self.script.exports) {
           var mainRepExec = self.script.exports.repeatedly_execute;
           this.eventTarget.addEventListener('idle', function() {
@@ -538,6 +535,12 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           this.eventTarget.addEventListener('busy', function() {
             this.removeEventListener('update', mainRepExec);
           });
+          if (!this.mainExec.isBusy) {
+            self.eventTarget.addEventListener('update', mainRepExec);
+          }
+        }
+        if ('game_start' in self.script.exports) {
+          return self.script.exports.game_start();
         }
       })
       .then(function() {
