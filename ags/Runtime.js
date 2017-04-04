@@ -952,7 +952,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     this.loaded = Promise.all([
       this.loaded,
       window.createImageBitmap(imageData).then(function(background) {
-        background.viewportScale = pic.viewportScale / runtime.graphics.viewportScale;
+        background.viewportScale = pic.viewportScale;
         self.background = background;
       }),
     ]).then(function(){ return self; });
