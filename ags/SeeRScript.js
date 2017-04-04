@@ -826,23 +826,39 @@ define(['./util'], function(util) {
                 console.error('NYI: CMPE on non-register');
                 return;
               }
+              if (arg1Type === SLOT_NAMED_OFFSET) {
+                arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
+                arg1Type = SLOT_INT;
+              }
               registers[arg1Register] = (arg1Type === arg2Type) && (arg1Value === arg2Value);
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
             case 0x14: // CMPG  x,a := x=(x>a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPG on non-register');
+              if (arg1Type === SLOT_NAMED_OFFSET) {
+                arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
+                arg1Type = SLOT_INT;
+              }
               if (arg1Type !== arg2Type) return console.error('NYI: type ' + arg1Type + ' > type ' + arg2Type);
               registers[arg1Register] = arg1Value > arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
             case 0x15: // CMPL  /x,a := x=(x<a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPL on non-register');
+              if (arg1Type === SLOT_NAMED_OFFSET) {
+                arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
+                arg1Type = SLOT_INT;
+              }
               if (arg1Type !== arg2Type) return console.error('NYI: type ' + arg1Type + ' < type ' + arg2Type);
               registers[arg1Register] = arg1Value > arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
             case 0x16: // CMPNG  x,a := x=(x<=a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPNG on non-register');
+              if (arg1Type === SLOT_NAMED_OFFSET) {
+                arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
+                arg1Type = SLOT_INT;
+              }
               if (arg1Type !== arg2Type) return console.error('NYI: type ' + arg1Type + ' <= type ' + arg2Type);
               registers[arg1Register] = arg1Value <= arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
