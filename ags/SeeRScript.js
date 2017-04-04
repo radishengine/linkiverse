@@ -740,6 +740,10 @@ define(['./util'], function(util) {
               }
               var leftValue, leftType, rightValue;
               if (arg1IsRegister) {
+                if (arg1Register === 6) {
+                  arg1Value += callTop;
+                  arg1Type = SLOT_STACK;
+                }
                 if (arg2Type === SLOT_INT) {
                   leftValue = arg1Value;
                   leftType = arg1Type;
@@ -800,6 +804,9 @@ define(['./util'], function(util) {
                   registers[arg1Register] = allocNamedOffset(parts.join('+'));
                   break;
                 default:
+                  if (arg1Register === 5) {
+                    stackPos -= arg2Value;
+                  }
                   registers[arg1Register] -= arg2Value;
                   break;
               }
