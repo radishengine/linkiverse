@@ -350,25 +350,8 @@ define(function() {
                 }
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
-                var value = 0;
-                if (dataObject.name === 'character') {
-                   // TODO: check if character struct is ever not 320 bytes?
-                  var fieldOffset = dataOffset % 320;
-                  var index = (dataOffset - fieldOffset) / 320;
-                  if (index >= runtime.characters.length) {
-                    throw new Error('bad data access');
-                  }
-                  var character = runtime.characters[index];
-                  var fieldName = getCharacterIntFieldName(fieldOffset);
-                  if (!fieldName) {
-                    throw new Error('bad data access');
-                  }
-                  registers[register] = character[fieldName];
-                  registers.types[register] = 0;
-                }
-                else {
-                  throw new Error('bad data access');
-                }
+                registers[register] = runtime.rawPeek(dataObject.name + '+' + dataOffset);
+                registers.types[register] = 0;
                 break;
               case 6:
                 registers[register] = stack.getInt32(registers.mar, true);
@@ -399,24 +382,7 @@ define(function() {
                 }
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
-                var value = 0;
-                if (dataObject.name === 'character') {
-                   // TODO: check if character struct is ever not 320 bytes?
-                  var fieldOffset = dataOffset % 320;
-                  var index = (dataOffset - fieldOffset) / 320;
-                  if (index >= runtime.characters.length) {
-                    throw new Error('bad data access');
-                  }
-                  var character = runtime.characters[index];
-                  var fieldName = getCharacterIntFieldName(fieldOffset);
-                  if (!fieldName) {
-                    throw new Error('bad data access');
-                  }
-                  character[fieldName] = registers[register];
-                }
-                else {
-                  throw new Error('bad data access');
-                }
+                runtime.rawPoke(dataObject.name + '+' + dataOffset, registers[register], 4);
                 break;
               case 6:
                 stack.setInt32(registers.mar, registers[register], true);
@@ -537,26 +503,8 @@ define(function() {
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
                 var value = 0;
-                if (dataObject.name === 'character') {
-                   // TODO: check if character struct is ever not 320 bytes?
-                  var fieldOffset = dataOffset % 320;
-                  var index = (dataOffset - fieldOffset) / 320;
-                  if (index >= runtime.characters.length) {
-                    throw new Error('bad data access');
-                  }
-                  var character = runtime.characters[index];
-                  if (fieldOffset >= 68 && fieldOffset < 68 + 100*2) {
-                    var inventoryItemNumber = (fieldOffset - 68) / 2;
-                    registers[register] = character.getInventoryCount(inventoryItemNumber);
-                    registers.types[register] = 0;
-                  }
-                  else {
-                    throw new Error('bad data access');
-                  }
-                }
-                else {
-                  throw new Error('bad data access');
-                }
+                registers[register] = runtime.rawPeek(dataObject.name + '+' + dataObject, 2);
+                registers.types[register] = 0;
                 break;
               default:
                 console.error('NYI: read memory type ' + registers.types.mar);
@@ -583,24 +531,7 @@ define(function() {
                 }
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
-                var value = 0;
-                if (dataObject.name === 'character') {
-                   // TODO: check if character struct is ever not 320 bytes?
-                  var fieldOffset = dataOffset % 320;
-                  var index = (dataOffset - fieldOffset) / 320;
-                  if (index >= runtime.characters.length) {
-                    throw new Error('bad data access');
-                  }
-                  var character = runtime.characters[index];
-                  var fieldName = getCharacterByteFieldName(fieldOffset);
-                  if (!fieldName) {
-                    throw new Error('bad data access');
-                  }
-                  character[fieldName] = registers[register];
-                }
-                else {
-                  throw new Error('bad data access');
-                }
+                runtime.rawPoke(dataObject.name + '+' + dataOffset, 1, registers[register]);
                 break;
               default:
                 console.error('NYI: write memory type ' + registers.types.mar);
@@ -874,28 +805,6 @@ define(function() {
       return nextStep();
     },
   };
-  
-  function getCharacterIntFieldName(offset) {
-    if (offset & 3) return null;
-    switch (offset >> 2) {
-      case 0: return 'normalView';
-      case 1: return 'speechView';
-      case 2: return 'view';
-      case 3: return 'room';
-      case 4: return 'previousRoom';
-      case 5: return 'x';
-      case 6: return 'y';
-      case 7: return 'wait';
-      case 8: return 'flags';
-      case 10: return 'idleView';
-      case 13: return 'activeInventoryItem';
-      default: return null;
-    }
-  }
-  
-  function getCharacterByteFieldName(offset) {
-    return (offset === 318) ? 'on' : null;
-  }
   
   return ScomScript;
 
