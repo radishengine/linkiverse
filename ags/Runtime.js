@@ -809,14 +809,24 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       console.error('NYI: SetDialogOption');
     },
     DisplayMessage: function(number) {
-      var text = this.getMessage(number);
-      return this.display(text);
+      var message = this.getMessage(number);
+      var promise;
+      if (message.isShownAsSpeech) {
+        promise = this.player.say(message.text);
+      }
+      else {
+        promise = this.display(message.text); // TODO: auto remove after timeout
+      }
+      if (message.continuesToNext) {
+        promise = Promise.all([promise]).then(this.DisplayMessage.bind(this, number + 1));
+      }
+      return promise;
     },
     RunDialog: function(number) {
       this.mainExec.onNextIdle(this.dialogScript.exports['$'+number]);
     },
     getMessage: function(number) {
-      return number < 500 ? this.room.messages[number] : this.game.globalMessages[number];
+      return number < 500 ? this.room.messages[number] : {text:this.game.globalMessages[number]};
     },
     Random: function(max) {
       return (Math.random() * (max + 1)) | 0;
@@ -849,7 +859,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           return;
         case 'display_message':
           var number = interaction.data1;
-          return this.display(this.getMessage(number));
+          return this.DisplayMessage(number);
       }
     },
     playingMusic: -1,
@@ -1137,7 +1147,12 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return this.def.number;
     },
     get messages() {
-      return this.def.main.messages;
+      var flags = this.def.main.messageFlags;
+      var list = this.def.main.messages.map(function(msg, i) {
+        return Object.assign({text:msg}, flags[i]);
+      });
+      Object.defineProperty(this, 'messages', {value:list, enumerable:true});
+      return list;
     },
     get backgroundBitmap() {
       return this.def.main.backgroundBitmap;
