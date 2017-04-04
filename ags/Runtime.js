@@ -833,6 +833,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
     },
     onEnteringRoom: function() {
+      this.player.room = this.room.number;
       var musicTrack = this.room.startupMusic;
       if (musicTrack !== 0) {
         this.playMusic(musicTrack);
