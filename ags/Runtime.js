@@ -297,6 +297,15 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           }
           else {
             fieldOffset -= (this.game.formatVersion >= 13) ? 100 : 56;
+            var itemCount = (this.game.formatVersion >= 13) ? 301 : 100;
+            if (fieldOffset >= 12 && fieldOffset < 12 + (itemCount * 2)) {
+              var itemNumber = (fieldOffset - 12) >>> 2;
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.getInventoryCount(itemNumber); },
+                set: function(v) { character.setInventoryCount(itemNumber, v); },
+              });
+              return true;
+            }
             switch (fieldOffset) {
               case 0:
                 Object.defineProperty(this, nameAndOffset, {
