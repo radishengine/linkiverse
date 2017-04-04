@@ -528,16 +528,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
           }
         }
         if ('repeatedly_execute' in self.script.exports) {
-          var mainRepExec = self.script.exports.repeatedly_execute;
-          self.eventTarget.addEventListener('idle', function() {
-            this.addEventListener('update', mainRepExec);
+          self.eventTarget.addEventListener('update', function() {
+            self.mainExec.tryImmediateAction(self.script.exports.repeatedly_execute);
           });
-          self.eventTarget.addEventListener('busy', function() {
-            this.removeEventListener('update', mainRepExec);
-          });
-          if (!self.mainExec.isBusy) {
-            self.eventTarget.addEventListener('update', mainRepExec);
-          }
         }
         if ('game_start' in self.script.exports) {
           return self.script.exports.game_start();
