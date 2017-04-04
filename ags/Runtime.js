@@ -178,6 +178,13 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var parts = nameAndOffset.split('+', 2);
       var name = parts[0], offset = +parts[1];
       switch (name) {
+        case 'gs_globals':
+          const index = offset >> 2;
+          Object.defineProperty(this, nameAndOffset, {
+            get: function() { return this.gs_globals[index]; },
+            set: function(v) { this.gs_globals[index] = v; },
+          });
+          return true;
         case 'game':
           switch (offset) {
             case 244:
