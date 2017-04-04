@@ -131,14 +131,14 @@ define(['./SeeRScript', './ScomScript', './GraphicalScript'], function(SeeRScrip
     
     this.endOffset = 0;
     
-    this.member('bitsPerPixel', function() {
+    this.member('pixelByteLength', function() {
       if (this.formatVersion < 12) {
         return 8;
       }
       const offset = this.endOffset;
       this.endOffset += 4;
       return function() {
-        return this.dv.getInt32(offset, true) * 8;
+        return this.dv.getInt32(offset, true);
       };
     });
     
@@ -766,13 +766,15 @@ define(['./SeeRScript', './ScomScript', './GraphicalScript'], function(SeeRScrip
           palette[i+2] = (palette[i+2] << 2) | (palette[i+2] >> 4);
           palette[i+3] = 0xFF;
         }
+        var width = dv.getInt32(0, true) / this.pixelByteLength;
         return {
           stride: dv.getInt32(0, true),
-          width: dv.getInt32(0, true) / (this.bitsPerPixel * 8),
+          width: width,
           height: dv.getInt32(4, true),
           data: uncompressed.subarray(8),
           palette: palette,
-          bitsPerPixel: this.bitsPerPixel,
+          viewportScale: this.width / width,
+          bitsPerPixel: this.pixelByteLength * 8,
           setImageData: function (imageData) {
             var w = this.width, h = this.height, data = this.data;
             var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
