@@ -664,6 +664,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       console.error('NYI: onNthLoop');
       return false;
     },
+    PlayAnimation: function(number) {
+      console.error('NYI: PlayAnimation');
+    },
     GetPlayerCharacter: function() {
       return this.player;
     },
