@@ -174,19 +174,52 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
+    get inventoryWindowItemCount() {
+      console.error('NYI: inventoryWindowItemCount');
+      return 0;
+    },
+    set inventoryWindowItemCount(v) {
+      console.error('NYI: inventoryWindowItemCount');
+    },
     definePeekProperty(nameAndOffset, dataSize) {
       var parts = nameAndOffset.split('+', 2);
       var name = parts[0], offset = +parts[1];
       switch (name) {
         case 'gs_globals':
-          const index = offset >> 2;
+          var index = offset >> 2;
           Object.defineProperty(this, nameAndOffset, {
             get: function() { return this.gs_globals[index]; },
             set: function(v) { this.gs_globals[index] = v; },
           });
           return true;
         case 'game':
+          if (offset >= 20 && offset < 220) {
+            var index = (offset - 20) >> 2;
+            Object.defineProperty(this, nameAndOffset, {
+              get: function() { return this.globalscriptvars[index]; },
+              set: function(v) { this.globalscriptvars[index] = v; },
+            });
+            return true;
+          }
           switch (offset) {
+            case 0:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return this.score; },
+                set: function(v) { this.score = v; },
+              });
+              return true;
+            case 232:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return this.inventoryWindowItemCount; },
+                set: function(v) { this.inventoryWindowItemCount = v; },
+              });
+              return true;
+            case 240:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return this.inventoryWindowItemsPerLine; },
+                set: function(v) { this.inventoryWindowItemsPerLine = v; },
+              });
+              return true;
             case 244:
               Object.defineProperty(this, nameAndOffset, {
                 get: function() { return this.textSpeed; },
@@ -298,15 +331,20 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return id;
     },
     get gs_globals() {
-      var ints = new Int32Array(100);
+      var ints = new Int32Array(50);
       Object.defineProperty(this, 'gs_globals', {value:ints, enumerable:true});
       return ints;
     },
+    get globalscriptvars() {
+      var ints = new Int32Array(500);
+      Object.defineProperty(this, 'globalscriptvars', {value:ints, enumerable:true});
+      return ints;
+    },
     GetGlobalInt: function(n) {
-      return this.gs_globals[n-1];
+      return this.globalscriptvars[n];
     },
     SetGlobalInt: function(n, v) {
-      this.gs_globals[n-1] = v;
+      this.globalscriptvars[n] = v;
     },
     CreateTextOverlay: function(x, y, width, fontNumber, color, text) {
       var font = this.fonts[fontNumber];
