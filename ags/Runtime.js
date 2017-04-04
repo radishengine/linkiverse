@@ -178,6 +178,16 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       var parts = nameAndOffset.split('+', 2);
       var name = parts[0], offset = +parts[1];
       switch (name) {
+        case 'game':
+          switch (offset) {
+            case 244:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return this.textSpeed; },
+                set: function(v) { this.textSpeed = v; },
+              });
+              return true;
+          }
+          break;
         case 'character':
           var structSize = this.game.characters[0].byteLength;
           var characterNumber = (offset / structSize) | 0;
