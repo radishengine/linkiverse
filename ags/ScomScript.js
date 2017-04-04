@@ -350,7 +350,7 @@ define(function() {
                 }
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
-                registers[register] = runtime.rawPeek(dataObject.name + '+' + dataOffset);
+                registers[register] = runtime.rawPeek(dataObject.name + '+' + dataOffset, 4);
                 registers.types[register] = 0;
                 break;
               case 6:
@@ -382,7 +382,7 @@ define(function() {
                 }
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
-                runtime.rawPoke(dataObject.name + '+' + dataOffset, registers[register], 4);
+                runtime.rawPoke(dataObject.name + '+' + dataOffset, 4, registers[register]);
                 break;
               case 6:
                 stack.setInt32(registers.mar, registers[register], true);
@@ -531,7 +531,7 @@ define(function() {
                 }
                 var dataObject = imports[i];
                 var dataOffset = registers.mar - dataObject.offset;
-                runtime.rawPoke(dataObject.name + '+' + dataOffset, 1, registers[register]);
+                runtime.rawPoke(dataObject.name + '+' + dataOffset, registers[register], 1);
                 break;
               default:
                 console.error('NYI: write memory type ' + registers.types.mar);
