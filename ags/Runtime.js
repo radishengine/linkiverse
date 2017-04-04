@@ -175,10 +175,15 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       });
     },
     rawPeek: function(nameAndOffset, dataSize) {
+      if (nameAndOffset in this) return this[nameAndOffset];
       console.error('NYI: rawPeek ' + nameAndOffset);
       return 0;
     },
     rawPoke: function(nameAndOffset, dataSize, value) {
+      if (nameAndOffset in this) {
+        this[nameAndOffset] = value;
+        return;
+      }
       console.error('NYI: rawPoke ' + nameAndOffset + ' = ' + value);
     },
     get scoreText() {
@@ -709,6 +714,15 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       });
     },
   };
+  
+  Object.defineProperties(Runtime.prototype, {
+    'mouse+0': {
+      get: function() { return this.graphics.mouseX; },
+    },
+    'mouse+4': {
+      get: function() { return this.graphics.mouseY; },
+    },
+  });
   
   Runtime.prototype.addEventfulGlobal('score', 0);
   Runtime.prototype.addEventfulGlobal('totalScore', 0);
