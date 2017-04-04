@@ -414,6 +414,11 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
             }
           }
         }
+        if ('game_start' in self.script.exports) {
+          return self.script.exports.game_start();
+        }
+      })
+      .then(function() {
         return self.loadRoom(self.game.playerCharacter.room);
       })
       .then(function(roomDef) {
