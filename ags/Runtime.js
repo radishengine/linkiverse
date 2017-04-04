@@ -174,13 +174,77 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         return new RoomView(game, n, buffer, 0, buffer.byteLength);
       });
     },
+    definePeekOp(nameAndOffset, dataSize) {
+      var parts = nameAndOffset.split('+', 2);
+      var name = parts[0], offset = +parts[1];
+      if (name === 'character') {
+        var structSize = this.game.characters[0].byteLength;
+        var characterNumber = (offset / structSize) | 0;
+        var fieldOffset = offset % structSize;
+        const character = this.characters[characterNumber];
+        if (fieldOffset < 56) {
+          switch (fieldOffset) {
+            case 0:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.normalView; },
+                set: function(v) { character.normalView = v; },
+              });
+              return true;
+            case 4:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.speechView; },
+                set: function(v) { character.speechView = v; },
+              });
+              return true;
+            case 8:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.currentView; },
+                set: function(v) { character.currentView = v; },
+              });
+              return true;
+            case 12:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.room; },
+                set: function(v) { character.room = v; },
+              });
+              return true;
+            case 16:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.previousRoom; },
+                set: function(v) { character.previousRoom = v; },
+              });
+              return true;
+            case 20:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.x; },
+                set: function(v) { character.x = v; },
+              });
+              return true;
+            case 24:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.y; },
+                set: function(v) { character.y = v; },
+              });
+              return true;
+            case 52:
+              Object.defineProperty(this, nameAndOffset, {
+                get: function() { return character.activeInventoryItem; },
+                set: function(v) { character.activeInventoryItem = v; },
+              });
+              return true;
+          }
+        }
+      }
+    },
     rawPeek: function(nameAndOffset, dataSize) {
-      if (nameAndOffset in this) return this[nameAndOffset];
+      if (nameAndOffset in this || this.definePeekProp(nameAndOffset, dataSize)) {
+        return this[nameAndOffset];
+      }
       console.error('NYI: rawPeek ' + nameAndOffset);
       return 0;
     },
     rawPoke: function(nameAndOffset, dataSize, value) {
-      if (nameAndOffset in this) {
+      if (nameAndOffset in this || this.definePeekProp(nameAndOffset, dataSize)) {
         this[nameAndOffset] = value;
         return;
       }
