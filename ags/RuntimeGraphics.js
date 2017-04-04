@@ -118,18 +118,21 @@ define(function() {
     redraw: function() {
       this.screenCtx.save();
       this.screenCtx.scale(this.viewportScale, this.viewportScale);
-      this.screenCtx.translate(-this.viewportX, -this.viewportY);
       
-      this.screenCtx.save();
-      this.screenCtx.scale(
-        this._bg.viewportScale,
-        this._bg.viewportScale);
-      this.screenCtx.drawImage(this._bg, 0, 0);
-      this.screenCtx.restore();
-      
-      for (var i = 0; i < this.sceneSprites.length; i++) {
-        this.sceneSprites[i].drawTo(this.screenCtx, this.scratchCtx, this.scratchpad);
+      // <scene>
+      {
+        this.screenCtx.save();
+        this.screenCtx.translate(-this.viewportX, -this.viewportY);
+        this.screenCtx.scale(
+          this._bg.viewportScale,
+          this._bg.viewportScale);
+        this.screenCtx.drawImage(this._bg, 0, 0);
+        for (var i = 0; i < this.sceneSprites.length; i++) {
+          this.sceneSprites[i].drawTo(this.screenCtx, this.scratchCtx, this.scratchpad);
+        }
+        this.screenCtx.restore();
       }
+      // </scene>
       
       this.screenCtx.restore();
     },
