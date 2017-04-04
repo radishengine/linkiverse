@@ -526,8 +526,8 @@ define(['./SeeRScript', './ScomScript', './GraphicalScript'], function(SeeRScrip
       return function() {
         var list = new Array(this.messageCount);
         for (var i = 0; i < list.length; i++) {
-          var flags1 = this.bytes[offset*2];
-          var flags2 = this.bytes[offset*2 + 1];
+          var flags1 = this.bytes[offset + i*2];
+          var flags2 = this.bytes[offset + i*2 + 1];
           list[i] = {
             isShownAsSpeech: !!flags1,
             continuesToNext: !!(flags2 & 1),
