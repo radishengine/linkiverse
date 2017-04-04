@@ -584,8 +584,8 @@ define(['./util'], function(util) {
                   copyType = SLOT_INT;
                   break;
                 case SLOT_NAMED_OFFSET:
-                  copyValue = arg2Value;
-                  copyType = SLOT_NAMED_OFFSET;
+                  copyValue = runtime.rawPeek(namedOffsets[arg2Value], 4);
+                  copyType = SLOT_INT;
                   break;
                 default:
                   console.error('NYI: SeeR MOV from type ' + arg2Type);
