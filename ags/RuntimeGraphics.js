@@ -117,10 +117,8 @@ define(function() {
     },
     redraw: function() {
       this.screenCtx.save();
-      
-      this.screenCtx.translate(
-        -this.viewportX * this.viewportScale,
-        -this.viewportY * this.viewportScale);
+      this.screenCtx.scale(this.viewportScale, this.viewportScale);
+      this.screenCtx.translate(-this.viewportX, -this.viewportY);
       
       this.screenCtx.save();
       this.screenCtx.scale(
