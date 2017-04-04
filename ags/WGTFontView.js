@@ -27,6 +27,7 @@ define(function() {
       var byteLength = this.dv.byteLength;
       for (var i = 0; i < list.length; i++) {
         var glyphOffset = this.dv.getUint16(offset + i*2, true);
+        var glyph = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset);
         list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset).createCanvas();
         list.maxWidth = Math.max(list.maxWidth, list[i].width);
         list.maxHeight = Math.max(list.maxHeight, list[i].height);
@@ -169,8 +170,10 @@ define(function() {
       var canvas = document.createElement('CANVAS');
       canvas.width = this.width;
       canvas.height = this.height;
-      var ctx2d = canvas.getContext('2d');
-      ctx2d.putImageData(this.createImageData(ctx2d), 0, 0);
+      if (this.width > 0 && this.height > 0) {
+        var ctx2d = canvas.getContext('2d');
+        ctx2d.putImageData(this.createImageData(ctx2d), 0, 0);
+      }
       return canvas;
     },
     createImageData: function(ctx2d) {
