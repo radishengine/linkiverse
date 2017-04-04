@@ -175,12 +175,12 @@ define(['./util'], function(util) {
             case 12: self.setVar(action.data1, 0); continue codeLoop;
             case 13: return;
             case 14:
-              if (!self.getVar(action.data1)) {
+              if (self.getVar(action.data1)) {
                 enterBlock(action.thenGoToBlock);
               }
               continue codeLoop;
             case 15:
-              if (self.getVar(action.data1)) {
+              if (!self.getVar(action.data1)) {
                 enterBlock(action.thenGoToBlock);
               }
               continue codeLoop;
