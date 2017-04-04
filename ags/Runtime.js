@@ -292,6 +292,38 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
                 return true;
             }
           }
+          else if (this.game.formatVersion >= 13 && fieldOffset < 100) {
+            // TODO
+          }
+          else {
+            fieldOffset -= (this.game.formatVersion >= 13) ? 100 : 56;
+            switch (fieldOffset) {
+              case 0:
+                Object.defineProperty(this, nameAndOffset, {
+                  get: function() { return character.currentLoop; },
+                  set: function(v) { character.currentLoop = v; },
+                });
+                return true;
+              case 2:
+                Object.defineProperty(this, nameAndOffset, {
+                  get: function() { return character.currentFrame; },
+                  set: function(v) { character.currentFrame = v; },
+                });
+                return true;
+              case 4:
+                Object.defineProperty(this, nameAndOffset, {
+                  get: function() { return character.isWalking; },
+                  set: function(v) { character.isWalking = v; },
+                });
+                return true;
+              case 6:
+                Object.defineProperty(this, nameAndOffset, {
+                  get: function() { return character.isAnimating; },
+                  set: function(v) { character.isAnimating = v; },
+                });
+                return true;
+            }
+          }
           break;
       }
       return false;
