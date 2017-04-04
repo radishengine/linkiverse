@@ -810,7 +810,6 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
   function ExecutionChannel(runtime) {
     this.runtime = runtime;
     this.busyEvent = new CustomEvent('busy', {detail:{channel:this}});
-    this.idleEvent = new CustomEvent('idle', {detail:{channel:this}});
     this.decrementBusyCount = this.decrementBusyCount.bind(this);
   }
   ExecutionChannel.prototype = {
@@ -843,7 +842,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     },
     decrementBusyCount: function() {
       if (--this.busyCount === 0) {
-        this.runtime.eventTarget.dispatchEvent(this.idleEvent);
+        this.runtime.eventTarget.dispatchEvent(new CustomEvent('idle', {detail:{channel:this}}));
       }
     },
     onNextIdle: function(callback) {
