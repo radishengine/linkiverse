@@ -181,6 +181,13 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     set inventoryWindowItemCount(v) {
       console.error('NYI: inventoryWindowItemCount');
     },
+    get inventoryWindowItemsPerLine() {
+      console.error('NYI: inventoryWindowItemsPerLine');
+      return 0;
+    },
+    set inventoryWindowItemsPerLine(v) {
+      console.error('NYI: inventoryWindowItemsPerLine');
+    },
     definePeekProperty(nameAndOffset, dataSize) {
       var parts = nameAndOffset.split('+', 2);
       var name = parts[0], offset = +parts[1];
