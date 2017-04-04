@@ -694,6 +694,9 @@ define(['./util'], function(util) {
                       }
                     }
                     break;
+                  case SLOT_NAMED_OFFSET:
+                    args.push(runtime.rawPeek(namedOffsets[v], 4));
+                    break;
                   default:
                     console.error('NYI: SeeR arg type: ' + stackTypes[(stackPos >>> 2) + i]);
                     args.push(v);
