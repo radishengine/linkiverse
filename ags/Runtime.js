@@ -194,8 +194,8 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       console.error('NYI: GetLocationName');
       this.StrCopy(buffer, '');
     }, {passStringsByRef:true}),
-    SetLabelText: function(interface, label, text) {
-      console.error('NYI: SetLabelText: ' + interface + ',' + label + ',' + text);
+    SetLabelText: function(gui, label, text) {
+      console.error('NYI: SetLabelText: ' + gui + ',' + label + ',' + text);
     },
     loadRoom: function(n) {
       var promise;
