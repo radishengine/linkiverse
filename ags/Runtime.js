@@ -529,13 +529,13 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         }
         if ('repeatedly_execute' in self.script.exports) {
           var mainRepExec = self.script.exports.repeatedly_execute;
-          this.eventTarget.addEventListener('idle', function() {
+          self.eventTarget.addEventListener('idle', function() {
             this.addEventListener('update', mainRepExec);
           });
-          this.eventTarget.addEventListener('busy', function() {
+          self.eventTarget.addEventListener('busy', function() {
             this.removeEventListener('update', mainRepExec);
           });
-          if (!this.mainExec.isBusy) {
+          if (!self.mainExec.isBusy) {
             self.eventTarget.addEventListener('update', mainRepExec);
           }
         }
