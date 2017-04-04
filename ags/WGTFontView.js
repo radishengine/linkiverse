@@ -31,7 +31,7 @@ define(function() {
         list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset).createCanvas();
         list.maxWidth = Math.max(list.maxWidth, list[i].width);
         list.maxHeight = Math.max(list.maxHeight, list[i].height);
-        if ('createImageBitmap' in window) {
+        if (glyph.width > 0 && glyph.height > 0 && 'createImageBitmap' in window) {
           window.createImageBitmap(list[i]).then((function(list, i, image) {
             list[i] = image;
           }).bind(null, list, i));
