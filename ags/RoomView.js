@@ -133,7 +133,7 @@ define(['./SeeRScript', './ScomScript', './GraphicalScript'], function(SeeRScrip
     
     this.member('pixelByteLength', function() {
       if (this.formatVersion < 12) {
-        return 8;
+        return 1;
       }
       const offset = this.endOffset;
       this.endOffset += 4;
