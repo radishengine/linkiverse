@@ -28,9 +28,9 @@ define(function() {
       for (var i = 0; i < list.length; i++) {
         var glyphOffset = this.dv.getUint16(offset + i*2, true);
         var glyph = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset);
-        list[i] = new WGTGlyphView(buffer, glyphOffset, byteLength - glyphOffset).createCanvas();
-        list.maxWidth = Math.max(list.maxWidth, list[i].width);
-        list.maxHeight = Math.max(list.maxHeight, list[i].height);
+        list[i] = glyph.createCanvas();
+        list.maxWidth = Math.max(list.maxWidth, glyph.width);
+        list.maxHeight = Math.max(list.maxHeight, glyph.height);
         if (glyph.width > 0 && glyph.height > 0 && 'createImageBitmap' in window) {
           window.createImageBitmap(list[i]).then((function(list, i, image) {
             list[i] = image;
