@@ -509,6 +509,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
     InventoryScreen: function() {
       console.error('NYI: InventoryScreen');
     },
+    ProcessClick: function(x, y, mode) {
+      console.error('NYI: ProcessClick');
+    },
     SaveGameDialog: function() {
       console.error('NYI: SaveGameDialog');
     },
