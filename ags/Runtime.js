@@ -291,15 +291,15 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       return id;
     },
     get gs_globals() {
-      var dv = new DataView(new ArrayBuffer(100 * 4));
-      Object.defineProperty(this, 'gs_globals', {value:dv, enumerable:true});
-      return dv;
+      var ints = new Int32Array(100);
+      Object.defineProperty(this, 'gs_globals', {value:ints, enumerable:true});
+      return ints;
     },
     GetGlobalInt: function(n) {
-      return this.gs_globals.getInt32((n-1) * 4, true);
+      return this.gs_globals[n-1];
     },
     SetGlobalInt: function(n, v) {
-      this.gs_globals.setInt32((n-1) * 4, v, true);
+      this.gs_globals[n-1] = v;
     },
     CreateTextOverlay: function(x, y, width, fontNumber, color, text) {
       var font = this.fonts[fontNumber];
