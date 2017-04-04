@@ -699,6 +699,13 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       this.eventTarget.dispatchEvent(this.paused ? updateEventNoAnim : updateEventWithAnim);
       this.redraw();
     },
+    cursorMode: 0,
+    GetCursorMode: function() {
+      return this.cursorMode;
+    },
+    SetCursorMode: function(v) {
+      this.cursorMode = v;
+    },
     addEventfulGlobal: function(name, initialValue) {
       const internalName = '_' + name;
       const changeEvent = new CustomEvent('global-changed', {detail:name});
