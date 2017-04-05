@@ -178,7 +178,7 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
           if (dv.getUint16(i + 20, true) === (suffix.length - i - 22)) {
             break findSignature;
           }
-          i_maybe = i;
+          if (isNaN(i_maybe)) i_maybe = i;
         }
       }
       if (i < 4) {
