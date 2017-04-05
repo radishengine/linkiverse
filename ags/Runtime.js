@@ -476,6 +476,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
         overlay.remove();
       }
     },
+    SetViewport: function(x, y) {
+      this.graphics.viewportX = x;
+      this.graphics.viewportY = y;
+    },
     SetTextOverlay: function(id, x, y, width, fontNumber, color, text) {
       this.RemoveOverlay(id);
       var font = this.fonts[fontNumber];
