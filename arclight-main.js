@@ -169,24 +169,24 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
       findSignature: for (i = suffix.length - 22; i >= 4; i -= 4) {
         switch(suffix[i]) {
           case 0x50:
-            if (dv.getUint32(i, true) === 0x06054b50 && dv.getUint16(i + 20) === (suffix.length - i - 22)) {
+            if (dv.getUint32(i, true) === 0x06054b50 && dv.getUint16(i + 20, true) === (suffix.length - i - 22)) {
               break findSignature;
             }
             continue findSignature;
           case 0x4B:
-            if (dv.getUint32(i-1, true) === 0x06054b50 && dv.getUint16(i + 19) === (suffix.length - i - 21)) {
+            if (dv.getUint32(i-1, true) === 0x06054b50 && dv.getUint16(i + 19, true) === (suffix.length - i - 21)) {
               i--;
               break findSignature;
             }
             continue findSignature;
           case 0x05:
-            if (dv.getUint32(i-2, true) === 0x06054b50 && dv.getUint16(i + 18) === (suffix.length - i - 20)) {
+            if (dv.getUint32(i-2, true) === 0x06054b50 && dv.getUint16(i + 18, true) === (suffix.length - i - 20)) {
               i -= 2;
               break findSignature;
             }
             continue findSignature;
           case 0x06:
-            if (dv.getUint32(i-3, true) === 0x06054b50 && dv.getUint16(i + 17) === (suffix.length - i - 19)) {
+            if (dv.getUint32(i-3, true) === 0x06054b50 && dv.getUint16(i + 17, true) === (suffix.length - i - 19)) {
               i -= 3;
               break findSignature;
             }
