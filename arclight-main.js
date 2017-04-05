@@ -164,9 +164,9 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
       fr.readAsArrayBuffer(zipBlob.slice(suffixOffset));
     })
     .then(function(suffix) {
-      var i = suffix.length - 22;
       var dv = new DataView(suffix.buffer, suffix.byteOffset, suffix.byteLength);
-      findSignature: do {
+      var i;
+      findSignature: for (i = suffix.length - 22; i >= 4; i -= 4) {
         switch(suffix[i]) {
           case 0x50:
             if (dv.getUint32(i, true) === 0x06054b50 && dv.getUint16(i + 20) === (suffix.length - i - 22)) {
@@ -192,10 +192,8 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
             }
             continue findSignature;
         }
-        if ((i -= 4) < 4) {
-          return Promise.reject('invalid zip file');
-        }
-      } while (1);
+      }
+      if (i < 4) return Promise.reject('invalid zip file');
       if (dv.getUint16(i + 4, true) !== 0) {
         return Promise.reject('multipart zip not supported');
       }
