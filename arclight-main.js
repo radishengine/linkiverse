@@ -165,35 +165,26 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
     })
     .then(function(suffix) {
       var dv = new DataView(suffix.buffer, suffix.byteOffset, suffix.byteLength);
-      var i;
+      var i, i_maybe = NaN;
       findSignature: for (i = suffix.length - 22; i >= 4; i -= 4) {
         switch(suffix[i]) {
-          case 0x50:
-            if (dv.getUint32(i, true) === 0x06054b50 && dv.getUint16(i + 20, true) === (suffix.length - i - 22)) {
-              break findSignature;
-            }
-            continue findSignature;
-          case 0x4B:
-            if (dv.getUint32(i-1, true) === 0x06054b50 && dv.getUint16(i + 19, true) === (suffix.length - i - 21)) {
-              i--;
-              break findSignature;
-            }
-            continue findSignature;
-          case 0x05:
-            if (dv.getUint32(i-2, true) === 0x06054b50 && dv.getUint16(i + 18, true) === (suffix.length - i - 20)) {
-              i -= 2;
-              break findSignature;
-            }
-            continue findSignature;
-          case 0x06:
-            if (dv.getUint32(i-3, true) === 0x06054b50 && dv.getUint16(i + 17, true) === (suffix.length - i - 19)) {
-              i -= 3;
-              break findSignature;
-            }
-            continue findSignature;
+          default: continue findSignature;
+          case 0x50: break;
+          case 0x4B: i--; break;
+          case 0x05: i -= 2; break;
+          case 0x06: i -= 3; break;
+        }
+        if (dv.getUint32(i, true) === 0x06054b50) {
+          if (dv.getUint16(i + 20, true) === (suffix.length - i - 22)) {
+            break findSignature;
+          }
+          i_maybe = i;
         }
       }
-      if (i < 4) return Promise.reject('invalid zip file');
+      if (i < 4) {
+        if (!isNaN(i_maybe)) i = i_maybe;
+        else return Promise.reject('invalid zip file');
+      }
       if (dv.getUint16(i + 4, true) !== 0) {
         return Promise.reject('multipart zip not supported');
       }
