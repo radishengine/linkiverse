@@ -187,6 +187,21 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
       this.StrCopy(buffer.subarray(i_start), str);
     }, {passStringsByRef:true}),
+    StrComp: Object.assign(function StrCopy(buffer, str) {
+      str = ''+str;
+      if (typeof buffer === 'string') {
+        return (buffer < str) ? -1 : (buffer > str) ? 1 : 0;
+      }
+      if (!(buffer instanceof Uint8Array)) {
+        throw new Error('StrComp: arg 1 must be a string or memory buffer, got ' + buffer);
+      }
+      for (var i = 0; i < str.length; i++) {
+        if (buffer[i] === 0) return -1;
+        var diff = str.charCodeAt(i) - buffer[i];
+        if (diff !== 0) return diff;
+      }
+      return (buffer[i] !== 0) ? 1 : 0;
+    }, {passStringsByRef:true}),
     GetLocationName: Object.assign(function GetLocationName(x, y, buffer) {
       if (!(buffer instanceof Uint8Array)) {
         throw new Error('GetLocationName: arg 3 must be a memory buffer, got ' + buffer);
