@@ -584,9 +584,15 @@ define(function() {
             continue codeLoop;
           case 33: // CALLEXT
             var register = code[offset++];
-            var funcName = imports.byOffset[registers[register]].name;
-            if (typeof runtime[funcName] === 'function') {
-              var result = runtime[funcName].apply(runtime, realStack);
+            var func = imports.byOffset[registers[register]];
+            if (typeof runtime[func.name] === 'function') {
+              var args = realStack.slice();
+              for (var i = 0; i < args.length; i++) {
+                if (args[i] instanceof Uint8Array && !runtime[func.name].passStringsByRef) {
+                  args[i] = String.fromCharCode.apply(null, args[i].subarray(0, args[i].indexOf(0)));
+                }
+              }
+              var result = runtime[func.name].apply(runtime, args);
               if (result instanceof Promise) {
                 return result.then(function(result) {
                   // TODO: handle non-int return types
@@ -602,7 +608,7 @@ define(function() {
               }
             }
             else {
-              console.log(funcName, realStack);
+              console.log(func.name, realStack);
               registers[register] = 0;
               registers.types[register] = 0;
             }
