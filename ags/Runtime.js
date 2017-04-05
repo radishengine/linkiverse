@@ -187,8 +187,22 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       }
       this.StrCopy(buffer.subarray(i_start), str);
     }, {passStringsByRef:true}),
-    StrComp: Object.assign(function StrCopy(buffer, str) {
-      str = ''+str;
+    InputBox: Object.assign(function InputBox(requestMessage, buffer) {
+      if (requestMessage instanceof Uint8Array) {
+        requestMessage = String.fromCharCode.apply(null, requestMessage.subarray(0, requestMessage.indexOf(0)));
+      }
+      else requestMessage = ''+requestMessage;
+      if (!(buffer instanceof Uint8Array)) {
+        throw new Error('InputBox: arg 2 must be a memory buffer, got ' + buffer);
+      }
+      var currentValue = String.fromCharCode.apply(null, buffer.subarray(0, buffer.indexOf(0)));
+      this.StrCopy(buffer, window.prompt(requestMessage, currentValue) || '');
+    }, {passStringsByRef:true}),
+    StrComp: Object.assign(function StrComp(buffer, str) {
+      if (str instanceof Uint8Array) {
+        str = String.fromCharCode.apply(null, str.subarray(0, str.indexOf(0)));
+      }
+      else str = ''+str;
       if (typeof buffer === 'string') {
         return (buffer < str) ? -1 : (buffer > str) ? 1 : 0;
       }
