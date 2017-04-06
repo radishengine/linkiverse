@@ -58,6 +58,9 @@ define(function() {
         case ',':
           var spliceArgs = [i, 1];
           spliceArgs.push.apply(spliceArgs, steps[i]);
+          if (i+1 !== steps.length && spliceArgs[spliceArgs.length-1].op === 'const') {
+            spliceArgs.pop();
+          }
           steps.splice.apply(steps, spliceArgs);
           break;
       }
