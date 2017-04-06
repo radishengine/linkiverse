@@ -18,7 +18,7 @@ define(function() {
   Stack32.prototype = {
     maxSize: 4000,
     _pos: 0,
-    _localBase: 0,
+    localBase: 0,
     get absolutePos() {
       return this._pos;
     },
@@ -57,10 +57,10 @@ define(function() {
       this._pos = newPos;
     },
     get localPos() {
-      return this.topRelativePos - this._localBase;
+      return this.topRelativePos - this.localBase;
     },
     set localPos(pos) {
-      this.topRelativePos = this._localBase + pos;
+      this.topRelativePos = this.localBase + pos;
     },
     ensureBelow: function(n) {
       var diff = n - this._pos;
@@ -86,11 +86,11 @@ define(function() {
       return i;
     },
     pushLocalBase: function() {
-      this.pushInt32(this._localBase);
-      this._localBase = this.topRelativePos;
+      this.pushInt32(this.localBase);
+      this.localBase = this.topRelativePos;
     },
     popLocalBase: function() {
-      this._localBase = this.popInt32();
+      this.localBase = this.popInt32();
     },
   };
   
