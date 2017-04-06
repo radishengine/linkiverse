@@ -14,10 +14,140 @@ define(['modeval', './util'], function(modeval, util) {
   const SLOT_STACK = 2;
   const SLOT_DATA = 3;
   const SLOT_NAMED_OFFSET = 4;
+  
   const BASE_NAMED_OFFSET = 0;
   const BASE_CONST = 1;
   const BASE_DATA = 2;
   const BASE_STACK = 3;
+  
+  function BytecodeReader(code, pos) {
+    this.code = code;
+    this.dv = new DataView(code.buffer, code.byteOffset, code.byteLength);
+    if (!isNaN(pos)) this.nextPos = pos;
+    this.registers = new Int32Array(8);
+    this.registerTypes = new Uint8Array(8);
+    this.callTops = [];
+    this.stack = new util.Stack32(4000, 16);
+  }
+  BytecodeReader.prototype = {
+    pos: -1,
+    nextPos: 0,
+    callTop: 0,
+    next: function() {
+      if ((this.pos = this.nextPos) >= this.code.length) return 0;
+      var op = this.code[this.pos] & 0x3F;
+      if (op === 0) {
+        this.nextPos = this.pos + 4;
+        return this.dv.getInt32(this.pos, true);
+      }
+      switch (op) {
+        case 0x00:
+          this.nextPos = this.pos + 4;
+          op = this.dv.getInt32(this.pos, true);
+          break;
+        case 0x01: case 0x02: case 0x03: case 0x04: case 0x05:
+        case 0x06: case 0x07: case 0x08: case 0x09: case 0x0A:
+          var full = this.dv.getInt32(this.pos, true);
+          this.arg1IsPointer = full & 0x100;
+          this.arg1PointerBase = (full >> 10) & 3;
+          this.arg1IsRegister = full & 0x200;
+          if (this.arg1IsRegister) {
+            this.arg1Register = (full >> 16) & 7;
+            this.arg1Value = this.registers[this.arg1Register];
+            this.arg1Type = this.registerTypes[this.arg1Register];
+            this.nextPos = this.pos + 4;
+          }
+          else {
+            this.arg1Value = this.dv.getInt32(this.pos + 4);
+            this.arg1Type = SLOT_INT;
+            this.nextPos = this.pos + 8;
+          }
+          if (this.arg1IsPointer) switch (this.arg1PointerBase) {
+            case 0:
+              this.arg1Type = SLOT_NAMED_OFFSET;
+              break;
+            case 1:
+              this.arg1Type = SLOT_CONST;
+              break;
+            case 2:
+              this.arg1Type = SLOT_DATA;
+              break;
+            case 3:
+              this.arg1Value += this.stack.localBase;
+              this.arg1Type = SLOT_STACK;
+              break;
+          }
+          break;
+        default:
+          var full = this.dv.getInt32(this.pos, true);
+          this.arg1IsPointer = full & 0x40;
+          this.arg1PointerBase = (full >> 9) & 3;
+          this.arg1IsRegister = full & 0x100;
+          this.arg1Register = full & 0x70000;
+          this.arg2IsPointer = full & 0x80;
+          this.arg2PointerBase = (full >> 13) & 3;
+          this.arg2IsRegister = full & 0x1000;
+          this.arg2Register = (full >> 24) & 7;
+          this.nextPos = this.pos + 4;
+          if (this.arg1IsRegister) {
+            this.arg1Value = this.registers[this.arg1Register];
+            this.arg1Type = this.registerTypes[this.arg1Register];
+          }
+          else {
+            this.arg1Value = this.dv.getInt32(this.nextPos, true);
+            this.arg1Type = SLOT_INT;
+            this.nextPos += 4;
+          }
+          if (this.arg2IsRegister) {
+            this.arg2Value = this.registers[this.arg2Register];
+            this.arg2Type = this.registerTypes[this.arg2Register];
+          }
+          else {
+            this.arg2Value = this.dv.getInt32(this.nextPos, true);
+            this.arg2Type = SLOT_INT;
+            this.nextPos += 4;
+          }
+          if (this.arg1IsPointer) switch (this.arg1PointerBase) {
+            case 0:
+              this.arg1Type = SLOT_NAMED_OFFSET;
+              break;
+            case 1:
+              this.arg1Type = SLOT_CONST;
+              break;
+            case 2:
+              this.arg1Type = SLOT_DATA;
+              break;
+            case 3:
+              this.arg1Value += this.stack.localBase;
+              this.arg1Type = SLOT_STACK;
+              break;
+          }
+          if (this.arg2IsPointer) switch (this.arg2PointerBase) {
+            case 0:
+              this.arg2Type = SLOT_NAMED_OFFSET;
+              break;
+            case 1:
+              this.arg2Type = SLOT_CONST;
+              break;
+            case 2:
+              this.arg2Type = SLOT_DATA;
+              break;
+            case 3:
+              this.arg2Value += this.stack.localBase;
+              this.arg2Type = SLOT_STACK;
+              break;
+          }
+          break;
+        case 0x37: case 0x38: case 0x39: case 0x3A:
+        case 0x3B: case 0x3C: case 0x3D:
+          this.nextPos = this.pos + 1;
+          break;
+        case 0x3E: case 0x3F:
+          throw new Error('unknown opcode: 0x' + op.toString(16));
+      }
+      return this.op = op;
+    },
+  };
   
   function SeeRScript(buffer, byteOffset, byteLength) {
     var dv = this.dv = new DataView(buffer, byteOffset, byteLength);
