@@ -1,6 +1,6 @@
 define(function() {
 
-	'use strict';
+  'use strict';
 
   function modeval(name, def) {
     var args = [];
