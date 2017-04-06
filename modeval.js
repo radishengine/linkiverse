@@ -64,8 +64,8 @@ define(function() {
     }
     if (steps.length === 0) return NO_OP;
     if (steps.length === 1) return steps[0];
-    if (steps.length >= COMMA_CACHE.length) {
-      COMMA_CACHE.length = Math.max(COMMA_CACHE, steps.length);
+    if (steps.length > COMMA_CACHE.length) {
+      COMMA_CACHE.length = steps.length;
     }
     if (!COMMA_CACHE[steps.length]) {
       var def = '{ ' + new Array(steps.length).join('$(); ') + 'return $(); }';
