@@ -78,18 +78,37 @@ define(function() {
   }
 
   function unop(operator) {
-    return modeval(operator, '('+operator+' $())');
+    var factory = modeval(operator, '('+operator+' $())');
+    return function(operand) {
+      if (operand.op === 'const') {
+        return CONST(factory(operand)());
+      }
+      return factory(operand);
+    };
   }
 
   function binop(operator) {
-    return modeval(operator, '($() '+operator+' $())')
+    var factory = modeval(operator, '($() '+operator+' $())');
+    return function(left, right) {
+      if (left.op === 'const' && right.op === 'const') {
+        return CONST(factory(left, right)());
+      }
+      return factory(left, right);
+    };
   }
+  
+  var if_factory = modeval('if', '($() ? $() : $())');
 
   var generic = {
     CONST: CONST,
     NO_OP: NO_OP,
     COMMA: COMMA,
-    IF: modeval('if', '($() ? $() : $())'),
+    IF: function(condition, thenValue, elseValue) {
+      if (condition.op === 'const') {
+        return condition() ? thenValue : elseValue;
+      }
+      return if_factory(condition, thenValue, elseValue);
+    },
     WHILE: modeval('while', '{ while ($()) { $(); } }'),
     GET: modeval('[]', '($()[$()])'),
     SET: modeval('[]', '($()[$()] = $())'),
