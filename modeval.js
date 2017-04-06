@@ -91,7 +91,8 @@ define(function() {
     COMMA: COMMA,
     IF: modeval('if', '($() ? $() : $())'),
     WHILE: modeval('while', '{ while ($()) { $(); } }'),
-    INDEX: modeval('[]', '($()[$()])'),
+    GET: modeval('[]', '($()[$()])'),
+    SET: modeval('[]', '($()[$()] = $())'),
   };
 
   var constants = {
@@ -128,10 +129,10 @@ define(function() {
   };
 
   var dataViewAccess = {
-    GETI8: modeval('getInt8', '$().getInt8($())'),
-    GETU8: modeval('getUint8', '$().getUint8($())'),
-    SETI8: modeval('setInt8', '$().setUint8($(), $())'),
-    SETU8: modeval('setUint8', '$().setUint8($(), $())'),
+    DV_GETI8: modeval('getInt8', '$().getInt8($())'),
+    DV_GETU8: modeval('getUint8', '$().getUint8($())'),
+    DV_SETI8: modeval('setInt8', '$().setUint8($(), $())'),
+    DV_SETU8: modeval('setUint8', '$().setUint8($(), $())'),
   };
   
   [true, false].forEach(function(littleEndian) {
@@ -140,8 +141,8 @@ define(function() {
       [32, 16].forEach(function(intSize) {
         var typeName = (signed ? 'Int' : 'Uint') + intSize;
         var typeLabel = (signed ? 'U' : 'I') + intSize + endianLabel;
-        var getLabel = 'GET' + typeLabel;
-        var setLabel = 'SET' + typeLabel;
+        var getLabel = 'DV_GET' + typeLabel;
+        var setLabel = 'DV_SET' + typeLabel;
         var getFuncName = 'get' + typeName;
         var setFuncName = 'set' + typeName;
         var getOpName = getFuncName + endianLabel;
@@ -156,8 +157,8 @@ define(function() {
     [32, 64].forEach(function(floatSize) {
       var typeName = 'Float' + floatSize;
       var typeLabel = 'F' + floatSize + endianLabel;
-      var getLabel = 'GET' + typeLabel;
-      var setLabel = 'SET' + typeLabel;
+      var getLabel = 'DV_GET' + typeLabel;
+      var setLabel = 'DV_SET' + typeLabel;
       var getFuncName = 'get' + typeName;
       var setFuncName = 'set' + typeName;
       var getOpName = getFuncName + endianLabel;
