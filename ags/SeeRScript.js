@@ -1,4 +1,4 @@
-define(['./util'], function(util) {
+define(['modeval', './util'], function(modeval, util) {
 
   'use strict';
   
@@ -165,7 +165,7 @@ define(['./util'], function(util) {
       Object.defineProperty(this, 'constsDV', {value:dv, enumerable:true});
       return dv;      
     },
-    get analysis() {
+    findBranches: function() {
       var codeDV = this.codeDV;
       var branch = this.code.subarray(), i_branch = 0;
       branch.entryPoint = 0;
@@ -219,13 +219,8 @@ define(['./util'], function(util) {
           var op = branch[pos] & 0x3F;
           switch (OP_ARG_COUNT[op]) {
             case 0:
-              if (op === 0x37 /* RET */) {
-                pos++;
-                nextPos = 'return';
-                break reading;
-              }
               nextPos = pos + 1;
-              continue reading;
+              break;
             case 1:
               nextPos = pos + 4 + (branch[pos+1] & 2 ? 0 : 4);
               break;
@@ -273,6 +268,18 @@ define(['./util'], function(util) {
               pos = nextPos;
               nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
               break reading;
+            case 0x37: // RET
+              pos = nextPos;
+              nextPos = 'return';
+              break reading;
+            case 0x3B: // ENTER
+              entryPoints.unshift(pos = nextPos);
+              nextPos = {type:'enter', next:nextPos, stackDiff:4};
+              break reading;
+            case 0x3C: // LEAVE
+              entryPoints.unshift(pos = nextPos);
+              nextPos = {type:'leave', next:nextPos, stackDiff:-4};
+              break reading;
           }
         }
         var next_i;
@@ -295,9 +302,7 @@ define(['./util'], function(util) {
         }
         branch = branches[i_branch = next_i];
       }
-      var obj = {branches:branches};
-      Object.defineProperty(this, 'analysis', {value:obj, enumerable:true});
-      return obj;
+      return branches;
     },
   };
   
