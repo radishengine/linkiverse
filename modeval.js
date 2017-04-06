@@ -26,7 +26,6 @@ define(function() {
       if (!/^\s*\{/.test(def)) def = '{ return ' + def + '; }';
       args.push('return function() '+def+';');
     }
-    console.log(args);
     const proto = Function.apply(null, args);
     return function() {
       var props = {
