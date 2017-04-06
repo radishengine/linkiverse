@@ -41,9 +41,23 @@ define(function() {
     };
   }
 
-  const NO_OP = modeval('no-op', '{ return; }');
-  const CONST = modeval('const', '$');
-
+  const const_factory = modeval('const', '$');
+  const if_factory = modeval('if', '($() ? $() : $())');
+  function CONST(v) {
+    if (isNaN(v)) return const_factory(v);
+    return Object.defineProperties(const_factory(v), {
+      minValue: {value:v, enumerable:true},
+      maxValue: {value:v, enumerable:true},
+    });
+  }
+  const NO_OP = CONST(undefined);
+  function IF(condition, thenValue, elseValue) {
+    if (condition.op === 'const') {
+      return condition() ? thenValue : elseValue;
+    }
+    return if_factory(condition, thenValue, elseValue);
+  }
+  
   const COMMA_CACHE = [];
   function COMMA(/* ... */) {
     var steps = [].slice.apply(arguments);
@@ -97,18 +111,11 @@ define(function() {
     };
   }
   
-  var if_factory = modeval('if', '($() ? $() : $())');
-
   var generic = {
     CONST: CONST,
     NO_OP: NO_OP,
     COMMA: COMMA,
-    IF: function(condition, thenValue, elseValue) {
-      if (condition.op === 'const') {
-        return condition() ? thenValue : elseValue;
-      }
-      return if_factory(condition, thenValue, elseValue);
-    },
+    IF: IF,
     WHILE: modeval('while', '{ while ($()) { $(); } }'),
     GET: modeval('[]', '($()[$()])'),
     SET: modeval('[]', '($()[$()] = $())'),
