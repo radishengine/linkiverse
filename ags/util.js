@@ -42,20 +42,9 @@ define(function() {
         }
         throw new Error('stack underflow');
       }
-      var newPos = this.dv.byteLength + pos;
-      if (newPos < 0) {
-        var newSize = this.dv.byteLength;
-        do {
-          if (newSize >= this.maxSize) throw new Error('stack overflow');
-          newPos += newSize;
-          newSize *= 2;
-        } while (newPos < 0);
-        var newDV = new DataView(new ArrayBuffer(newSize));
-        new Uint8Array(newDV.buffer).set(
-          new Uint8Array(this.dv.buffer),
-          newSize - this.dv.byteLength);
-      }
-      this._pos = newPos;
+      this._pos = this.dv.byteLength;
+      this.ensureBelow(-pos);
+      this._pos += pos;
     },
     get localPos() {
       return this.topRelativePos - this.localBase;
@@ -68,10 +57,11 @@ define(function() {
       if (diff <= 0) return;
       var newSize = this.dv.byteLength;
       do {
-        if (newSize >= this.maxSize) throw new Error('stack overflow');
         diff -= newSize;
         this._pos += newSize;
-        newSize *= 2;
+        if ((newSize *= 2) >= this.maxSize) {
+          throw new Error('stack overflow');
+        }
       } while (diff > 0);
       var newDV = new DataView(new ArrayBuffer(newSize));
       new Uint8Array(newDV.buffer, newSize - this.dv.byteLength).set(new Uint8Array(this.dv.buffer));
