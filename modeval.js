@@ -19,8 +19,13 @@ define(function() {
       return arg;
     });
     const argCount = args.length;
-    if (!/^\s*\{/.test(def)) def = '{ return ' + def + '; }';
-    args.push('return function() '+def+';');
+    if (USE_ARROW_FUNCS) {
+      args.push('return () => '+def+';');
+    }
+    else {
+      if (!/^\s*\{/.test(def)) def = '{ return ' + def + '; }';
+      args.push('return function() '+def+';');
+    }
     console.log(args);
     const proto = Function.apply(null, args);
     return function() {
