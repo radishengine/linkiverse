@@ -4,7 +4,7 @@ define(function() {
 
   function modeval(name, def) {
     var args = [];
-    def = def.replace('$', function(arg) {
+    def = def.replace(/\$/g, function(arg) {
       arg += args.length;
       args.push(arg);
       return arg;
