@@ -58,7 +58,7 @@ define(function() {
         case ',':
           var spliceArgs = [i, 1];
           spliceArgs.push.apply(spliceArgs, steps[i]);
-          steps.s
+          steps.splice.apply(steps, spliceArgs);
           break;
       }
     }
