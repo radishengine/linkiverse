@@ -24,7 +24,7 @@ define(function() {
       }
       var bindArgs = [].slice.apply(arguments);
       bindArgs.unshift(null);
-      return Object.defineProperties(proto.bind.apply(proto, bindArgs), props);
+      return Object.defineProperties(proto.apply(null, bindArgs), props);
     };
   }
 
