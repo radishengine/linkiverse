@@ -273,11 +273,11 @@ define(['modeval', './util'], function(modeval, util) {
               nextPos = 'return';
               break reading;
             case 0x3B: // ENTER
-              entryPoints.unshift(pos = nextPos);
+              entryPoints.unshift(entryPoint + (pos = nextPos));
               nextPos = {type:'enter', next:nextPos, stackDiff:4};
               break reading;
             case 0x3C: // LEAVE
-              entryPoints.unshift(pos = nextPos);
+              entryPoints.unshift(entryPoint + (pos = nextPos));
               nextPos = {type:'leave', next:nextPos, stackDiff:-4};
               break reading;
           }
