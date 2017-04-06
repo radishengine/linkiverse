@@ -117,19 +117,40 @@ define(function() {
     SETI8: modeval('setInt8', '$().setUint8($(), $())'),
     SETU8: modeval('setUint8', '$().setUint8($(), $())'),
   };
-
+  
   [true, false].forEach(function(littleEndian) {
+    var endianLabel = (littleEndian ? 'LE' : 'BE');
     [true, false].forEach(function(signed) {
       [32, 16].forEach(function(intSize) {
-        var getName = 'get' + (signed ? 'Int' : 'Uint') + intSize;
-        var setName = 'set' + (signed ? 'Int' : 'Uint') + intSize;
-        var opName = funcName + (littleEndian ? 'LE' : 'BE');
-        var label = (signed ? 'U' : 'I') + intSize;
-        dataViewAccess['GET'+label] = modeval(opName, '$().' + funcName + '($(), ' + littleEndian + ')');
+        var typeName = (signed ? 'Int' : 'Uint') + intSize;
+        var typeLabel = (signed ? 'U' : 'I') + intSize + endianLabel;
+        var getLabel = 'GET' + typeLabel;
+        var setLabel = 'SET' + typeLabel;
+        var getFuncName = 'get' + typeName;
+        var setFuncName = 'set' + typeName;
+        var getOpName = getFuncName + endianLabel;
+        dataViewAccess[getLabel] = modeval(
+          getFuncName + endianLabel,
+          '$().' + getFuncName + '($(), ' + littleEndian + ')');
+        dataViewAccess[setLabel] = modeval(
+          setFuncName + endianLabel,
+          '$().' + setFuncName + '($(), $(), ' + littleEndian + ')');
       });
     });
     [32, 64].forEach(function(floatSize) {
-
+      var typeName = 'Float' + floatSize;
+      var typeLabel = 'F' + floatSize + endianLabel;
+      var getLabel = 'GET' + typeLabel;
+      var setLabel = 'SET' + typeLabel;
+      var getFuncName = 'get' + typeName;
+      var setFuncName = 'set' + typeName;
+      var getOpName = getFuncName + endianLabel;
+      dataViewAccess[getLabel] = modeval(
+        getFuncName + endianLabel,
+        '$().' + getFuncName + '($(), ' + littleEndian + ')');
+      dataViewAccess[setLabel] = modeval(
+        setFuncName + endianLabel,
+        '$().' + setFuncName + '($(), $(), ' + littleEndian + ')');
     });
   });
 
