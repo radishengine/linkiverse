@@ -1,6 +1,15 @@
 define(function() {
 
   'use strict';
+  
+  const USE_ARROW_FUNCS = (function() {
+    try {
+      return eval('() => 1')() === 1;
+    }
+    catch (e) {
+      return false;
+    }
+  })();
 
   function modeval(name, def) {
     var args = [];
