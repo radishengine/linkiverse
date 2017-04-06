@@ -23,7 +23,6 @@ define(function() {
         props[i] = {value:arguments[i], enumerable:true};
       }
       var bindArgs = [].slice.apply(arguments);
-      bindArgs.unshift(null);
       return Object.defineProperties(proto.apply(null, bindArgs), props);
     };
   }
