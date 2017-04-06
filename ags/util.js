@@ -14,6 +14,7 @@ define(function() {
   function Stack32(maxSize, initialSize) {
     if (!isNaN(maxSize)) this.maxSize = maxSize;
     this.dv = new DataView(new ArrayBuffer(isNaN(initialSize) ? 16 : initialSize));
+    this._pos = this.dv.byteLength;
   }
   Stack32.prototype = {
     maxSize: 4000,
