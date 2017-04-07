@@ -384,11 +384,11 @@ define(['modeval', './util'], function(modeval, util) {
       reading: for (;;) switch (terp.next()) {
         case OP_EOF: break reading;
         case OP_RET:
-          if (info.registers[terp.arg1Register].out) {
-            delete info.registers[terp.arg1Register].out;
+          if (info.registers[0].out) {
+            delete info.registers[0].out;
           }
           else {
-            info.registers[terp.arg1Register].in = true;
+            info.registers[0].in = true;
           }
           break reading;
       }
