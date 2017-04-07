@@ -236,11 +236,6 @@ define(['modeval', './util'], function(modeval, util) {
       Object.defineProperty(this, 'code', {value:code, enumerable:true});
       return code;
     },
-    get codeDV() {
-      var dv = new DataView(this.code.buffer, this.code.byteOffset, this.code.byteLength);
-      Object.defineProperty(this, 'codeDV', {value:dv, enumerable:true});
-      return dv;
-    },
     get consts() {
       var consts = this.bytes.subarray(this.constsOffset, this.constsOffset + this.constsByteLength);
       Object.defineProperty(this, 'consts', {value:consts, enumerable:true});
@@ -252,7 +247,6 @@ define(['modeval', './util'], function(modeval, util) {
       return dv;      
     },
     findBranches: function() {
-      var codeDV = this.codeDV;
       var branch = this.code.subarray(), i_branch = 0;
       branch.entryPoint = 0;
       var branches = [branch];
