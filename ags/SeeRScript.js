@@ -398,21 +398,97 @@ define(['modeval', './util'], function(modeval, util) {
       }
       return branches;
     },
-    getBranchInfo: function(branch) {
+    getBranchInfo: function(branch, localDepth) {
+      if (isNaN(localDepth)) localDepth = 0;
       var info = {
         registers: [{}, {}, {}, {}],
         stackDiff: 0,
         maxStackDiff: 0,
+        stack: {},
       };
       var terp = new BytecodeReader(branch);
+      function stackSlot(localPos) {
+        localPos += localDepth;
+        return info.stack[localPos] = info.stack[localPos] || {};
+      }
       reading: for (;;) switch (terp.next()) {
-        case OP_EOF: break reading;
+        case OP_EOF:
+        case OP_JMP:
+          break reading;
+        case OP_PUSH:
+          info.maxStackDiff = Math.min(info.maxStackDiff, info.stackDiff -= 4);
+          if (terp.arg1IsRegister) {
+            if (!info.registers[terp.arg1Register].out) {
+              info.registers[terp.arg1Register].in = true;
+            }
+          }
+          else if (terp.arg1IsPointer) switch (terp.arg1PointerBase) {
+            case BASE_STACK:
+              stackSlot(terp.arg1Value).out = true;
+              break;
+          }
+          stackSlot(info.stackDiff).out = true;
+          continue reading;
+        case OP_PUSHADR:
+          info.maxStackDiff = Math.min(info.maxStackDiff, info.stackDiff -= 4);
+          switch (terp.arg1PointerBase) {
+            case BASE_STACK:
+              throw new Error('pushing register pointer');
+          }
+          stackSlot(info.stackDiff).out = true;
+          continue reading;
+        case OP_DPUSH:
+        case OP_DNEG:
+          throw new Error('NYI: double operations');
+        case OP_POP:
+          var slot = stackSlot(info.stackDiff);
+          if (slot.out) delete slot.out;
+          info.stackDiff += 4;
+          info.registers[terp.arg1Register].out = true;
+          continue reading;
+        case OP_NEG:
+        case OP_NOT:
+          Object.assign(info.registers[terp.arg1Register], {in:true, out:true});
+          continue reading;
+        case OP_CALL:
+          var symbol = this.symbolsByEntryPoint[terp.arg1Value];
+          for (var argPos = 0; argPos < symbol.argAllocation; argPos += 4) {
+            stackSlot(info.stackDiff + argPos).in = true;
+          }
+          info.maxStackDiff = Math.min(info.maxStackDiff, info.stackDiff -= 4);
+          stackSlot(info.stackDiff).out = true;
+          info.registers[0].out = true;
+          break reading;
+        case OP_MOV:
+          if (terp.arg2IsPointer) switch (terp.arg2PointerBase) {
+            case BASE_STACK:
+              if (terp.arg2IsRegister) {
+                throw new Error('MOV from stack pointer in register');
+              }
+              break;
+          }
+          else if (terp.arg2IsRegister) {
+            
+          }
+          continue reading;
         case OP_CALLEX:
+          var external = this.importsByRef[terp.arg1Value];
+          for (var argPos = 0; argPos < external.argAllocation; argPos += 4) {
+            stackSlot(info.stackDiff + argPos).in = true;
+          }
           if (!terp.callexIsVoid) {
             info.registers[0].out = true;
           }
           break reading;
+        case OP_JTRUE:
+        case OP_JFALSE:
+          if (!info.registers[terp.arg1Register].out) {
+            info.registers[terp.arg1Register].in = true;
+          }
+          break reading;
         case OP_RET:
+          stackSlot(info.stackDiff).in = true;
+          info.stackDiff += 4;
           if (info.registers[0].out) {
             delete info.registers[0].out;
           }
