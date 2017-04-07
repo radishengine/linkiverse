@@ -339,7 +339,7 @@ define(['modeval', './util'], function(modeval, util) {
               terp.nextPos = {
                 type: 'if',
                 register: terp.arg1Register,
-                nextIfTrue: terp.nextPos + terp.arg1Value,
+                nextIfTrue: terp.nextPos + terp.arg2Value,
                 nextIfFalse: terp.nextPos,
               };
               entryPoints.unshift(terp.nextPos.nextIfFalse, terp.nextPos.nextIfTrue);
@@ -350,7 +350,7 @@ define(['modeval', './util'], function(modeval, util) {
                 type: 'if',
                 register: terp.arg1Register,
                 nextIfTrue: terp.nextPos,
-                nextIfFalse: terp.nextPos + terp.arg1Value,
+                nextIfFalse: terp.nextPos + terp.arg2Value,
               };
               entryPoints.unshift(terp.nextPos.nextIfTrue, terp.nextPos.nextIfFalse);
               break reading;
