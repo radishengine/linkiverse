@@ -20,13 +20,13 @@ define(function() {
     });
     const argCount = args.length;
     if (USE_ARROW_FUNCS) {
-      args.push('return () => '+def+';');
+      def = 'return (' + args.join(',') + ') => ' + def + ';';
     }
     else {
-      if (!/^\s*\{/.test(def)) def = '{ return ' + def + '; }';
-      args.push('return function() '+def+';');
+      def = 'return function('+args.join(',')+') ' +
+             (/^\s*\{/.test(def) ? def : '{ return '+def+'; }');
     }
-    const proto = Function.apply(null, args);
+    const proto = new Function(def)();
     return function() {
       var props = {
         op: {value:name, enumerable:true},
@@ -36,7 +36,8 @@ define(function() {
         props[i] = {value:arguments[i], enumerable:true};
       }
       var bindArgs = [].slice.apply(arguments);
-      return Object.defineProperties(proto.apply(null, bindArgs), props);
+      bindArgs.unshift(null);
+      return Object.defineProperties(proto.bind.apply(proto, bindArgs), props);
     };
   }
 
