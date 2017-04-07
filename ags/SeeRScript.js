@@ -346,6 +346,7 @@ define(['modeval', './util'], function(modeval, util) {
       reading:
         while (terp.nextPos < endPoint) switch (terp.next()) {
           case OP_EOF:
+            terp.pos = terp.nextPos;
             break reading;
           case OP_JMP:
             terp.pos = terp.nextPos;
