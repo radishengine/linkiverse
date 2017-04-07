@@ -304,74 +304,68 @@ define(['modeval', './util'], function(modeval, util) {
           branch = branches[i_branch = branches.length - 1];
           continue visiting; // branch has already been visited, try the next one
         }
-        var pos, nextPos;
-        reading: for (pos = 0; pos < branch.length; pos = nextPos) {
-          var op = branch[pos] & 0x3F;
-          switch (OP_ARG_COUNT[op]) {
-            case 0:
-              nextPos = pos + 1;
-              break;
-            case 1:
-              nextPos = pos + 4 + (branch[pos+1] & 2 ? 0 : 4);
-              break;
-            case 2:
-              nextPos = pos + 4 + (branch[pos+1] & 1 ? 0 : 4) + (branch[pos+1] & 0x10 ? 0 : 4);
-              break;
-          }
-          terp.nextPos = entryPoint + pos;
+        terp.nextPos = entryPoint;
+        var endPoint = entryPoint + branch.byteLength;
+        reading: while (terp.nextPos < endPoint) {
           switch (terp.next()) {
             case OP_EOF:
               break reading;
             case OP_JMP:
-              var jumpTo = nextPos + codeDV.getInt32(entryPoint + pos + 4, true);
-              pos = nextPos;
-              nextPos = jumpTo;
+              terp.pos = terp.nextPos;
+              terp.nextPos += terp.arg1Value;
               break reading;
             case OP_CALL:
-              var callEntryPoint = codeDV.getInt32(entryPoint + pos + 4, true);
-              entryPoints.unshift(nextPos);
-              var symbol = this.symbolsByEntryPoint[callEntryPoint];
-              pos = nextPos;
-              if (symbol) {
-                nextPos = {type:'call', call:symbol.name, next:entryPoint + nextPos};
-              }
-              else {
-                nextPos = {type:'call', call:'$'+callEntryPoint, next:entryPoint + nextPos};
-              }
+              entryPoints.unshift(terp.nextPos);
+              var symbol = this.symbolsByEntryPoint[terp.arg1Value];
+              terp.pos = terp.nextPos;
+              terp.nextPos = {
+                type: 'call',
+                call: symbol ? symbol.name : '$'+terp.arg1Value,
+                next: terp.nextPos,
+              };
               break reading;
             case OP_CALLEX:
-              var external = this.importsByRef[codeDV.getInt32(entryPoint + pos + 4, true)];
-              entryPoints.unshift(entryPoint + nextPos);
-              pos = nextPos;
-              nextPos = {type:'call', call:external.name, next:entryPoint + nextPos};
+              var external = this.importsByRef[terp.arg1Value];
+              entryPoints.unshift(terp.nextPos);
+              terp.pos = terp.nextPos;
+              terp.nextPos = {
+                type: 'call',
+                call: external.name,
+                next: terp.nextPos,
+              };
               break reading;
             case OP_JTRUE:
-              var register = branch[pos + 1] & 7;
-              var nextIfTrue = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
-              var nextIfFalse = entryPoint + nextPos;
-              entryPoints.unshift(nextIfFalse, nextIfTrue);
-              pos = nextPos;
-              nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
+              terp.pos = terp.nextPos;
+              terp.nextPos = {
+                type: 'if',
+                register: terp.arg1Register,
+                nextIfTrue: terp.nextPos + terp.arg1Value,
+                nextIfFalse: terp.nextPos,
+              };
+              entryPoints.unshift(terp.nextPos.nextIfFalse, terp.nextPos.nextIfTrue);
               break reading;
             case OP_JFALSE:
-              var register = branch[pos + 1] & 7;
-              var nextIfTrue = entryPoint + nextPos;
-              var nextIfFalse = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
-              entryPoints.unshift(nextIfTrue, nextIfFalse);
-              pos = nextPos;
-              nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
+              terp.pos = terp.nextPos;
+              terp.nextPos = {
+                type: 'if',
+                register: terp.arg1Register,
+                nextIfTrue: terp.nextPos,
+                nextIfFalse: terp.nextPos + terp.arg1Value,
+              };
+              entryPoints.unshift(terp.nextPos.nextIfTrue, terp.nextPos.nextIfFalse);
               break reading;
             case OP_RET:
-              pos = nextPos;
-              nextPos = 'return';
+              terp.pos = terp.nextPos;
+              terp.nextPos = 'return';
               break reading;
           }
         }
         var next_i;
-        if (pos < branch.length) {
-          var split1 = branch.subarray(0, pos), split2 = branch.subarray(pos);
+        if (terp.pos < endPoint) {
+          var split1 = this.code.subarray(entryPoint, terp.pos);
+          var split2 = this.code.subarray(terp.pos, endPoint);
           split1.entryPoint = entryPoint;
-          split2.entryPoint = entryPoint + pos;
+          split2.entryPoint = terp.pos;
           branches.splice(i_branch, 1, split1, split2);
           branch = split1;
           next_i = i_branch + 1;
@@ -379,11 +373,11 @@ define(['modeval', './util'], function(modeval, util) {
         else {
           next_i = branches.length - 1;
         }
-        if (typeof nextPos === 'number') {
-          entryPoints.unshift(branch.next = entryPoint + nextPos);
+        if (typeof terp.nextPos === 'number') {
+          entryPoints.unshift(branch.next = terp.nextPos);
         }
         else {
-          branch.next = nextPos;
+          branch.next = terp.nextPos;
         }
         branch = branches[i_branch = next_i];
       }
