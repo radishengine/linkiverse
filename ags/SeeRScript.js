@@ -433,8 +433,13 @@ define(['modeval', './util'], function(modeval, util) {
           throw new Error('symbol not found: ' + entryPoint);
         }
       }
-      var branch = this.branches.find(entryPoint);
-      console.log(branch);
+      var symbol = this.symbols[entryPoint].name;
+      var branches = this.branches;
+      function doBranch(pos, stackTop) {
+        var branch = branches.find(pos);
+        console.log(stackTop, branch);
+      }
+      return doBranch(entryPoint, -(4 + symbol.argAllocation));
     },
     getBranchInfo: function(branch, localDepth) {
       if (isNaN(localDepth)) localDepth = 0;
