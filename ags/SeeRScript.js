@@ -254,7 +254,10 @@ define(['modeval', './util'], function(modeval, util) {
       }
       entryPoints.sort(function(a, b){ return a > b; }); // ascending order
       var terp = new BytecodeReader(this.code);
-      visiting: for (var entryPoint = entryPoints.shift(); !isNaN(entryPoint); entryPoint = entryPoints.shift()) {
+    visiting:
+      for (var entryPoint = entryPoints.shift();
+           !isNaN(entryPoint);
+           entryPoint = entryPoints.shift()) {
         var diff = entryPoint - branch.entryPoint;
         if (diff < 0 || diff >= branch.byteLength) {
           var i_lo = 0, i_hi = branches.length-1;
