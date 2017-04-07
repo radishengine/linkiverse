@@ -443,7 +443,7 @@ define(['modeval', './util'], function(modeval, util) {
       Object.defineProperty(this, 'branches', {value:branches, enumerable:true});
       return branches;
     },
-    getControlFlow: function(entryPoint) {
+    getControlFlow: function() {
       var flow = {};
       for (var i = 0; i < this.entryPoints.length; i++) {
         var entryPoint = this.entryPoints[i];
