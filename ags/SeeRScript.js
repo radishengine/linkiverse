@@ -418,6 +418,15 @@ define(['modeval', './util'], function(modeval, util) {
         branch = branches[i_branch = next_i];
       }
       branches.find = branchSearch;
+      for (var i = branches.length-1; i >= 0; i--) {
+        var branch = branches[i];
+        if ('next' in branch) {
+          if (typeof branch.next === 'number' && branch.next <= branch.entryPoint) {
+            branches.find(branch.next).beginsLoop = true;
+          }
+        }
+        else branches.splice(i, 1);
+      }
       Object.defineProperty(this, 'branches', {value:branches, enumerable:true});
       return branches;
     },
@@ -434,12 +443,6 @@ define(['modeval', './util'], function(modeval, util) {
         }
       }
       var symbol = this.symbolsByEntryPoint[entryPoint];
-      var branches = this.branches;
-      function doBranch(pos, stackTop) {
-        var branch = branches.find(pos);
-        console.log(stackTop, branch);
-      }
-      return doBranch(entryPoint, -(4 + symbol.argAllocation));
     },
     getBranchInfo: function(branch, localDepth) {
       if (isNaN(localDepth)) localDepth = 0;
