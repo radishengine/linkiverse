@@ -376,6 +376,24 @@ define(['modeval', './util'], function(modeval, util) {
       }
       return branches;
     },
+    getBranchInfo: function(branch) {
+      var info = {
+        registers: [{}, {}, {}, {}],
+      };
+      var terp = new BytecodeReader(branch);
+      reading: for (;;) switch (terp.next()) {
+        case OP_EOF: break reading;
+        case OP_RET:
+          if (info.registers[terp.arg1Register].out) {
+            delete info.registers[terp.arg1Register].out;
+          }
+          else {
+            info.registers[terp.arg1Register].in = true;
+          }
+          break reading;
+      }
+      return info;
+    },
   };
   
   function SeeRInstance(runtime, def) {
