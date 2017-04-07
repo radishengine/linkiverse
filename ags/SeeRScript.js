@@ -66,7 +66,7 @@ define(['modeval', './util'], function(modeval, util) {
             this.nextPos = this.pos + 4;
           }
           else {
-            this.arg1Value = this.dv.getInt32(this.pos + 4);
+            this.arg1Value = this.dv.getInt32(this.pos + 4, true);
             this.nextPos = this.pos + 8;
           }
           break;
