@@ -306,59 +306,58 @@ define(['modeval', './util'], function(modeval, util) {
         }
         terp.nextPos = entryPoint;
         var endPoint = entryPoint + branch.byteLength;
-        reading: while (terp.nextPos < endPoint) {
-          switch (terp.next()) {
-            case OP_EOF:
-              break reading;
-            case OP_JMP:
-              terp.pos = terp.nextPos;
-              terp.nextPos += terp.arg1Value;
-              break reading;
-            case OP_CALL:
-              entryPoints.unshift(terp.nextPos);
-              var symbol = this.symbolsByEntryPoint[terp.arg1Value];
-              terp.pos = terp.nextPos;
-              terp.nextPos = {
-                type: 'call',
-                call: symbol ? symbol.name : '$'+terp.arg1Value,
-                next: terp.nextPos,
-              };
-              break reading;
-            case OP_CALLEX:
-              var external = this.importsByRef[terp.arg1Value];
-              entryPoints.unshift(terp.nextPos);
-              terp.pos = terp.nextPos;
-              terp.nextPos = {
-                type: 'call',
-                call: external.name,
-                next: terp.nextPos,
-              };
-              break reading;
-            case OP_JTRUE:
-              terp.pos = terp.nextPos;
-              terp.nextPos = {
-                type: 'if',
-                register: terp.arg1Register,
-                nextIfTrue: terp.nextPos + terp.arg2Value,
-                nextIfFalse: terp.nextPos,
-              };
-              entryPoints.unshift(terp.nextPos.nextIfFalse, terp.nextPos.nextIfTrue);
-              break reading;
-            case OP_JFALSE:
-              terp.pos = terp.nextPos;
-              terp.nextPos = {
-                type: 'if',
-                register: terp.arg1Register,
-                nextIfTrue: terp.nextPos,
-                nextIfFalse: terp.nextPos + terp.arg2Value,
-              };
-              entryPoints.unshift(terp.nextPos.nextIfTrue, terp.nextPos.nextIfFalse);
-              break reading;
-            case OP_RET:
-              terp.pos = terp.nextPos;
-              terp.nextPos = 'return';
-              break reading;
-          }
+    reading:
+        while (terp.nextPos < endPoint) switch (terp.next()) {
+          case OP_EOF:
+            break reading;
+          case OP_JMP:
+            terp.pos = terp.nextPos;
+            terp.nextPos += terp.arg1Value;
+            break reading;
+          case OP_CALL:
+            entryPoints.unshift(terp.nextPos);
+            var symbol = this.symbolsByEntryPoint[terp.arg1Value];
+            terp.pos = terp.nextPos;
+            terp.nextPos = {
+              type: 'call',
+              call: symbol ? symbol.name : '$'+terp.arg1Value,
+              next: terp.nextPos,
+            };
+            break reading;
+          case OP_CALLEX:
+            var external = this.importsByRef[terp.arg1Value];
+            entryPoints.unshift(terp.nextPos);
+            terp.pos = terp.nextPos;
+            terp.nextPos = {
+              type: 'call',
+              call: external.name,
+              next: terp.nextPos,
+            };
+            break reading;
+          case OP_JTRUE:
+            terp.pos = terp.nextPos;
+            terp.nextPos = {
+              type: 'if',
+              register: terp.arg1Register,
+              nextIfTrue: terp.nextPos + terp.arg2Value,
+              nextIfFalse: terp.nextPos,
+            };
+            entryPoints.unshift(terp.nextPos.nextIfFalse, terp.nextPos.nextIfTrue);
+            break reading;
+          case OP_JFALSE:
+            terp.pos = terp.nextPos;
+            terp.nextPos = {
+              type: 'if',
+              register: terp.arg1Register,
+              nextIfTrue: terp.nextPos,
+              nextIfFalse: terp.nextPos + terp.arg2Value,
+            };
+            entryPoints.unshift(terp.nextPos.nextIfTrue, terp.nextPos.nextIfFalse);
+            break reading;
+          case OP_RET:
+            terp.pos = terp.nextPos;
+            terp.nextPos = 'return';
+            break reading;
         }
         var next_i;
         if (terp.pos < endPoint) {
