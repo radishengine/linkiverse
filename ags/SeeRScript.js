@@ -103,6 +103,28 @@ define(['modeval', './util'], function(modeval, util) {
       }
       return this.op = op;
     },
+    get callexArgAllocation() {
+      return this.arg2Value & 0xffff;
+    },
+    get callexIsVoid() {
+      return this.arg2Value & 0x400000;
+    },
+    get callexStructMode() {
+      var structMode = (this.arg2Value >> 23) & 7;
+      return (structMode < 2) ? !!structMode : 1 << (structMode - 2);
+    },
+    get callexIsFromOtherInstance() {
+      return this.arg2Value & 0x4000000;
+    },
+    get callexResultType() {
+      return (this.arg2Value & 0x8000000) ? 'double' : 'int';
+    },
+    get callexIsMember() {
+      return this.arg2Value & 0x10000000;
+    },
+    get callexDispatcher() {
+      return this.arg2Value >>> 29;
+    },
   };
   
   function SeeRScript(buffer, byteOffset, byteLength) {
@@ -300,7 +322,7 @@ define(['modeval', './util'], function(modeval, util) {
         }
         terp.nextPos = entryPoint;
         var endPoint = entryPoint + branch.byteLength;
-    reading:
+      reading:
         while (terp.nextPos < endPoint) switch (terp.next()) {
           case OP_EOF:
             break reading;
@@ -379,10 +401,17 @@ define(['modeval', './util'], function(modeval, util) {
     getBranchInfo: function(branch) {
       var info = {
         registers: [{}, {}, {}, {}],
+        stackDiff: 0,
+        maxStackDiff: 0,
       };
       var terp = new BytecodeReader(branch);
       reading: for (;;) switch (terp.next()) {
         case OP_EOF: break reading;
+        case OP_CALLEX:
+          if (!terp.callexIsVoid) {
+            info.registers[0].out = true;
+          }
+          break reading;
         case OP_RET:
           if (info.registers[0].out) {
             delete info.registers[0].out;
