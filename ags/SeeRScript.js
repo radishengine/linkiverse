@@ -422,6 +422,17 @@ define(['modeval', './util'], function(modeval, util) {
       return branches;
     },
     getControlFlow: function(entryPoint) {
+      if (typeof entryPoint === 'string') {
+        for (var i = 0; i < this.symbols.length; i++) {
+          if (this.symbols[i].name === entryPoint) {
+            entryPoint = this.symbols[i].entryPoint;
+            break;
+          }
+        }
+        if (typeof entryPoint === 'string') {
+          throw new Error('symbol not found: ' + entryPoint);
+        }
+      }
       var branch = this.branches.find(entryPoint);
       console.log(branch);
     },
