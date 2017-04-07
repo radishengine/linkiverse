@@ -127,6 +127,27 @@ define(['modeval', './util'], function(modeval, util) {
     },
   };
   
+  function branchSearch(entryPoint) {
+    if (entryPoint < 0) return null;
+    var i_lo = 0, i_hi = this.length-1;
+    for (;;) {
+      var i = (i_lo + i_hi) >> 1;
+      var diff = entryPoint - this[i].entryPoint;
+      if (diff < 0) {
+        i_hi = i - 1;
+        continue;
+      }
+      if (diff >= this[i].byteLength) {
+        i_lo = i + 1;
+        if (i_lo > i_hi) {
+          return null;
+        }
+        continue;
+      }
+      return this[i];
+    }
+  }
+  
   function SeeRScript(buffer, byteOffset, byteLength) {
     var dv = this.dv = new DataView(buffer, byteOffset, byteLength);
     var bytes = this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -268,7 +289,7 @@ define(['modeval', './util'], function(modeval, util) {
       Object.defineProperty(this, 'constsDV', {value:dv, enumerable:true});
       return dv;      
     },
-    findBranches: function() {
+    get branches() {
       var branch = this.code.subarray(), i_branch = 0;
       branch.entryPoint = 0;
       var branches = [branch];
@@ -396,7 +417,13 @@ define(['modeval', './util'], function(modeval, util) {
         }
         branch = branches[i_branch = next_i];
       }
+      branches.find = branchSearch;
+      Object.defineProperty(this, 'branches', {value:branches, enumerable:true});
       return branches;
+    },
+    getControlFlow: function(entryPoint) {
+      var branch = this.branches.find(entryPoint);
+      console.log(branch);
     },
     getBranchInfo: function(branch, localDepth) {
       if (isNaN(localDepth)) localDepth = 0;
