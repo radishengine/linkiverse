@@ -22,6 +22,8 @@ define(['modeval', './util'], function(modeval, util) {
   const BASE_STACK = 3;
   const BASE_LOCAL_STACK = 3;
   
+  const OP_EOF = 0;
+  
   function BytecodeReader(code, pos) {
     this.code = code;
     this.dv = new DataView(code.buffer, code.byteOffset, code.byteLength);
@@ -251,6 +253,7 @@ define(['modeval', './util'], function(modeval, util) {
         }
       }
       entryPoints.sort(function(a, b){ return a > b; }); // ascending order
+      var terp = new BytecodeReader(this.code);
       visiting: for (var entryPoint = entryPoints.shift(); !isNaN(entryPoint); entryPoint = entryPoints.shift()) {
         var diff = entryPoint - branch.entryPoint;
         if (diff < 0 || diff >= branch.byteLength) {
@@ -302,7 +305,10 @@ define(['modeval', './util'], function(modeval, util) {
               nextPos = pos + 4 + (branch[pos+1] & 1 ? 0 : 4) + (branch[pos+1] & 0x10 ? 0 : 4);
               break;
           }
-          switch (op) {
+          terp.nextPos = pos;
+          switch (terp.next()) {
+            case OP_EOF:
+              break reading;
             case 0x09: // JMP
               var jumpTo = nextPos + codeDV.getInt32(entryPoint + pos + 4, true);
               pos = nextPos;
@@ -345,14 +351,6 @@ define(['modeval', './util'], function(modeval, util) {
             case 0x37: // RET
               pos = nextPos;
               nextPos = 'return';
-              break reading;
-            case 0x3B: // ENTER
-              entryPoints.unshift(entryPoint + (pos = nextPos));
-              nextPos = {type:'enter', next:nextPos, stackDiff:4};
-              break reading;
-            case 0x3C: // LEAVE
-              entryPoints.unshift(entryPoint + (pos = nextPos));
-              nextPos = {type:'leave', next:nextPos, stackDiff:-4};
               break reading;
           }
         }
