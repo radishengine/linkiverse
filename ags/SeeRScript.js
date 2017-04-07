@@ -305,7 +305,7 @@ define(['modeval', './util'], function(modeval, util) {
               nextPos = pos + 4 + (branch[pos+1] & 1 ? 0 : 4) + (branch[pos+1] & 0x10 ? 0 : 4);
               break;
           }
-          terp.nextPos = pos;
+          terp.nextPos = entryPoint + pos;
           switch (terp.next()) {
             case OP_EOF:
               break reading;
