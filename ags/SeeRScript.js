@@ -289,10 +289,7 @@ define(['modeval', './util'], function(modeval, util) {
       Object.defineProperty(this, 'constsDV', {value:dv, enumerable:true});
       return dv;      
     },
-    get branches() {
-      var branch = this.code.subarray(), i_branch = 0;
-      branch.entryPoint = 0;
-      var branches = [branch];
+    get entryPoints() {
       var entryPoints = [this.constructorCodePos, this.destructorCodePos];
       for (var i_symbol = 0; i_symbol < this.symbols.length; i_symbol++) {
         if (this.symbols[i_symbol].argAllocation !== -1) {
@@ -300,6 +297,15 @@ define(['modeval', './util'], function(modeval, util) {
         }
       }
       entryPoints.sort(function(a, b){ return a > b; }); // ascending order
+      Object.freeze(entryPoints);
+      Object.defineProperty(this, 'entryPoints', {value:entryPoints, enumerable:true});
+      return entryPoints;
+    },
+    get branches() {
+      var branch = this.code.subarray(), i_branch = 0;
+      branch.entryPoint = 0;
+      var branches = [branch];
+      var entryPoints = this.entryPoints.slice();
       var terp = new BytecodeReader(this.code);
     visiting:
       for (var entryPoint = entryPoints.shift();
@@ -438,18 +444,12 @@ define(['modeval', './util'], function(modeval, util) {
       return branches;
     },
     getControlFlow: function(entryPoint) {
-      if (typeof entryPoint === 'string') {
-        for (var i = 0; i < this.symbols.length; i++) {
-          if (this.symbols[i].name === entryPoint) {
-            entryPoint = this.symbols[i].entryPoint;
-            break;
-          }
-        }
-        if (typeof entryPoint === 'string') {
-          throw new Error('symbol not found: ' + entryPoint);
-        }
+      var flow = {};
+      for (var i = 0; i < this.entryPoints.length; i++) {
+        var entryPoint = this.entryPoints[i];
+        flow[entryPoint] = true;
       }
-      var symbol = this.symbolsByEntryPoint[entryPoint];
+      return flow;
     },
     getBranchInfo: function(branch, localDepth) {
       if (isNaN(localDepth)) localDepth = 0;
