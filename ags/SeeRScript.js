@@ -22,7 +22,21 @@ define(['modeval', './util'], function(modeval, util) {
   const BASE_STACK = 3;
   const BASE_LOCAL_STACK = 3;
   
-  const OP_EOF = 0;
+  const OP_EOF = 0,
+    OP_PUSH = 0x01, OP_PUSHADR = 0x02, OP_DPUSH = 0x03, OP_POP = 0x04,
+    OP_NEG = 0x05, OP_DNEG = 0x06, OP_NOT = 0x07, OP_OPTIONS = 0x08, OP_JMP = 0x09,
+    OP_CALL = 0x0A, OP_MOV = 0x0B, OP_XCHG = 0x0C, OP_CALLEX = 0x0D, OP_COPY = 0x0E,
+    OP_ADD = 0x0F, OP_SUB = 0x10, OP_MUL = 0x11, OP_DIV = 0x12, OP_CMPE = 0x13,
+    OP_CMPG = 0x14, OP_CMPL = 0x15, OP_CMPNG = 0x16, OP_CMPNL = 0x17, OP_MOD = 0x18,
+    OP_AND = 0x19, OP_OR = 0x1A, OP_XOR = 0x1B, OP_ANDL = 0x1C, OP_ORL = 0x1D,
+    OP_SHL = 0x1E, OP_SHR = 0x1F, OP_JTRUE = 0x20, OP_JFALSE = 0x21, OP_DADD = 0x22,
+    OP_DSUB = 0x23, OP_DMUL = 0x24, OP_DDIV = 0x25, OP_DCMPE = 0x26, OP_DCMPG = 0x27,
+    OP_DCMPL = 0x28, OP_DCMPNG = 0x29, OP_DCMPNL = 0x2A, OP_FIXMUL = 0x2B,
+    OP_FIXDIV = 0x2C, OP_CMOV = 0x2D, OP_WMOV = 0x2E, OP_DMOV = 0x2F, OP_IDBL = 0x30,
+    OP_DINT = 0x31, OP_FDBL = 0x32, OP_DFLT = 0x33, OP_DFIX = 0x34, OP_FIXDBL = 0x35,
+    OP_FORK = 0x36, OP_RET = 0x37, OP_WAIT = 0x38, OP_CLI = 0x39, OP_STI = 0x3A,
+    OP_ENTER = 0x3B, OP_LEAVE = 0x3C, OP_NOP = 0x3D,
+    OP_INVALID_1 = 0x3E, OP_INVALID_2 = 0x3F;
   
   function BytecodeReader(code, pos) {
     this.code = code;
@@ -34,19 +48,15 @@ define(['modeval', './util'], function(modeval, util) {
     nextPos: 0,
     callTop: 0,
     next: function() {
-      if ((this.pos = this.nextPos) >= this.code.length) return 0;
+      if ((this.pos = this.nextPos) >= this.code.length) return OP_EOF;
       var op = this.code[this.pos] & 0x3F;
-      if (op === 0) {
-        this.nextPos = this.pos + 4;
-        return this.dv.getInt32(this.pos, true);
-      }
       switch (op) {
         case 0x00:
           this.nextPos = this.pos + 4;
           op = this.dv.getInt32(this.pos, true);
           break;
-        case 0x01: case 0x02: case 0x03: case 0x04: case 0x05:
-        case 0x06: case 0x07: case 0x08: case 0x09: case 0x0A:
+        case OP_PUSH: case OP_PUSHADR: case OP_DPUSH: case OP_POP: case OP_NEG:
+        case OP_DNEG: case OP_NOT: case OP_OPTIONS: case OP_JMP: case OP_CALL:
           var full = this.dv.getInt32(this.pos, true);
           if (this.arg1IsPointer = full & 0x100) {
             this.arg1PointerBase = (full >> 10) & 3;
@@ -84,11 +94,11 @@ define(['modeval', './util'], function(modeval, util) {
             this.nextPos += 4;
           }
           break;
-        case 0x37: case 0x38: case 0x39: case 0x3A:
-        case 0x3B: case 0x3C: case 0x3D:
+        case OP_RET: case OP_WAIT: case OP_CLI: case OP_STI:
+        case OP_ENTER: case OP_LEAVE: case OP_NOP:
           this.nextPos = this.pos + 1;
           break;
-        case 0x3E: case 0x3F:
+        case OP_INVALID_1: case OP_INVALID_2:
           throw new Error('unknown opcode: 0x' + op.toString(16));
       }
       return this.op = op;
@@ -312,12 +322,12 @@ define(['modeval', './util'], function(modeval, util) {
           switch (terp.next()) {
             case OP_EOF:
               break reading;
-            case 0x09: // JMP
+            case OP_JMP:
               var jumpTo = nextPos + codeDV.getInt32(entryPoint + pos + 4, true);
               pos = nextPos;
               nextPos = jumpTo;
               break reading;
-            case 0x0A: // CALL
+            case OP_CALL:
               var callEntryPoint = codeDV.getInt32(entryPoint + pos + 4, true);
               entryPoints.unshift(nextPos);
               var symbol = this.symbolsByEntryPoint[callEntryPoint];
@@ -329,13 +339,13 @@ define(['modeval', './util'], function(modeval, util) {
                 nextPos = {type:'call', call:'$'+callEntryPoint, next:entryPoint + nextPos};
               }
               break reading;
-            case 0x0D: // CALLEX
+            case OP_CALLEX:
               var external = this.importsByRef[codeDV.getInt32(entryPoint + pos + 4, true)];
               entryPoints.unshift(entryPoint + nextPos);
               pos = nextPos;
               nextPos = {type:'call', call:external.name, next:entryPoint + nextPos};
               break reading;
-            case 0x20: // JTRUE
+            case OP_JTRUE:
               var register = branch[pos + 1] & 7;
               var nextIfTrue = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
               var nextIfFalse = entryPoint + nextPos;
@@ -343,7 +353,7 @@ define(['modeval', './util'], function(modeval, util) {
               pos = nextPos;
               nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
               break reading;
-            case 0x21: // JFALSE
+            case OP_JFALSE:
               var register = branch[pos + 1] & 7;
               var nextIfTrue = entryPoint + nextPos;
               var nextIfFalse = entryPoint + nextPos + codeDV.getInt32(entryPoint+pos+4, true);
@@ -351,7 +361,7 @@ define(['modeval', './util'], function(modeval, util) {
               pos = nextPos;
               nextPos = {type:'if', register:register, nextIfTrue:nextIfTrue, nextIfFalse:nextIfFalse};
               break reading;
-            case 0x37: // RET
+            case OP_RET:
               pos = nextPos;
               nextPos = 'return';
               break reading;
@@ -564,7 +574,7 @@ define(['modeval', './util'], function(modeval, util) {
                 console.error('unknown SeeR extended opcode: 0x' + extended.toString(16));
               }
               continue codeLoop;
-            case 0x01: // PUSH
+            case OP_PUSH:
               if (arg1IsRegister) {
                 stack.setInt32(stackPos -= 4, arg1Value, true);
                 stackTypes[stackPos >>> 2] = arg1Type;
@@ -595,14 +605,14 @@ define(['modeval', './util'], function(modeval, util) {
                   return;
               }
               continue codeLoop;
-            case 0x02: // PUSHADR
+            case OP_PUSHADR:
               stack.setInt32(stackPos -= 4, arg1Value, true);
               stackTypes[stackPos >>> 2] = arg1Type;
               continue codeLoop;
-            case 0x03: // DPUSH
+            case OP_DPUSH:
               return console.error('NYI: SeeR DPUSH');
               continue codeLoop;
-            case 0x04: // POP
+            case OP_POP:
               if (!arg1IsRegister) {
                 return console.error('NYI: POP to non-register');
               }
@@ -610,7 +620,7 @@ define(['modeval', './util'], function(modeval, util) {
               registerTypes[arg1Register] = stackTypes[stackPos >>> 2];
               stackPos += 4;
               continue codeLoop;
-            case 0x05: // NEG  bin:-1-ARG+1=-ARG
+            case OP_NEG: //  bin:-1-ARG+1=-ARG
               if (!arg1IsRegister) {
                 return console.error('NYI: NEG non-register');
               }
@@ -619,28 +629,28 @@ define(['modeval', './util'], function(modeval, util) {
               }
               registers[arg1Register] = -arg1Value;
               continue codeLoop;
-            case 0x06: // DNEG
+            case OP_DNEG:
               return console.error('NYI: SeeR DNEG');
               continue codeLoop;
-            case 0x07: // NOT  !
+            case OP_NOT: //  !
               if (!arg1IsRegister) {
                 return console.error('NYI: NOT non-register');
               }
               registers[arg1Register] = !arg1Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
-            case 0x08: // OPTIONS  optionvcpu* set or not
+            case OP_OPTIONS: //  optionvcpu* set or not
               return console.error('NYI: SeeR OPTIONS');
               continue codeLoop;
-            case 0x09: // JMP
+            case OP_JMP:
               pos += arg1Value;
               continue codeLoop;
-            case 0x0A: // CALL
+            case OP_CALL:
               console.warn('SeeR local CALL');
               stack.setInt32(stackPos -= 4, pos, true);
               pos = arg1Value;
               continue codeLoop;
-            case 0x0B: // MOV  copies 4bytes
+            case OP_MOV: //  copies 4bytes
               var copyValue, copyType;
               if (arg2IsRegister && !arg2IsPointer) {
                 copyValue = registers[arg2Register];
@@ -693,10 +703,10 @@ define(['modeval', './util'], function(modeval, util) {
                   return;
               }
               continue codeLoop;
-            case 0x0C: // XCHG
+            case OP_XCHG:
               return console.error('NYI: SeeR XCHG');
               continue codeLoop;
-            case 0x0D: // CALLEX
+            case OP_CALLEX:
               if (arg1Type !== SLOT_INT) {
                 return console.error('NYI: SeeR CALLEX on type ' + arg1Type);
               }
@@ -798,10 +808,10 @@ define(['modeval', './util'], function(modeval, util) {
                 registerTypes[0] = SLOT_INT;
               }
               continue codeLoop;
-            case 0x0E: // COPY  dest,src:copy CX-bytes from source to dest,CX=1
+            case OP_COPY: //  dest,src:copy CX-bytes from source to dest,CX=1
               return console.error('NYI: SeeR COPY');
               continue codeLoop;
-            case 0x0F: // ADD
+            case OP_ADD:
               if (arg1IsPointer) {
                 switch (arg1PointerBase) {
                   case BASE_DATA:
@@ -862,7 +872,7 @@ define(['modeval', './util'], function(modeval, util) {
                 registers[arg1Register] = leftValue;
               }
               continue codeLoop;
-            case 0x10: // SUB
+            case OP_SUB:
               if (arg1IsPointer && arg1PointerBase === BASE_DATA) {
                 dataDV.setInt32(arg1Value, dataDV.getInt32(arg1Value, true) - arg2Value, true);
                 continue codeLoop;
@@ -895,7 +905,7 @@ define(['modeval', './util'], function(modeval, util) {
                   break;
               }
               continue codeLoop;
-            case 0x11: // MUL
+            case OP_MUL:
               if (!arg1IsRegister) return console.error('NYI: MUL on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 console.error('NYI: MUL type ' + arg1Type + ' by type ' + arg2Type);
@@ -904,7 +914,7 @@ define(['modeval', './util'], function(modeval, util) {
               // TODO: imul32 overflow semantics?
               registers[arg1Register] *= arg2Value;
               continue codeLoop;
-            case 0x12: // DIV
+            case OP_DIV:
               if (!arg1IsRegister) return console.error('NYI: DIV on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 console.error('NYI: DIV type ' + arg1Type + ' by type ' + arg2Type);
@@ -912,7 +922,7 @@ define(['modeval', './util'], function(modeval, util) {
               }
               registers[arg1Register] /= arg2Value;
               continue codeLoop;
-            case 0x13: // CMPE  x,a := x=(x==a)?1:0
+            case OP_CMPE: //  x,a := x=(x==a)?1:0
               if (!arg1IsRegister) {
                 console.error('NYI: CMPE on non-register');
                 return;
@@ -924,7 +934,7 @@ define(['modeval', './util'], function(modeval, util) {
               registers[arg1Register] = (arg1Type === arg2Type) && (arg1Value === arg2Value);
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
-            case 0x14: // CMPG  x,a := x=(x>a)?1:0
+            case OP_CMPG: //  x,a := x=(x>a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPG on non-register');
               if (arg1Type === SLOT_NAMED_OFFSET) {
                 arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
@@ -934,7 +944,7 @@ define(['modeval', './util'], function(modeval, util) {
               registers[arg1Register] = arg1Value > arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
-            case 0x15: // CMPL  /x,a := x=(x<a)?1:0
+            case OP_CMPL: //  /x,a := x=(x<a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPL on non-register');
               if (arg1Type === SLOT_NAMED_OFFSET) {
                 arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
@@ -944,7 +954,7 @@ define(['modeval', './util'], function(modeval, util) {
               registers[arg1Register] = arg1Value > arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
-            case 0x16: // CMPNG  x,a := x=(x<=a)?1:0
+            case OP_CMPNG: //  x,a := x=(x<=a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPNG on non-register');
               if (arg1Type === SLOT_NAMED_OFFSET) {
                 arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
@@ -954,7 +964,7 @@ define(['modeval', './util'], function(modeval, util) {
               registers[arg1Register] = arg1Value <= arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
-            case 0x17: // CMPNL  x,a := x=(x>=a)?1:0
+            case OP_CMPNL: //  x,a := x=(x>=a)?1:0
               if (!arg1IsRegister) return console.error('NYI: CMPNL on non-register');
               if (arg1Type === SLOT_NAMED_OFFSET) {
                 arg1Value = runtime.rawPeek(namedOffsets[arg1Value], 4);
@@ -966,28 +976,28 @@ define(['modeval', './util'], function(modeval, util) {
               registers[arg1Register] = arg1Value >= arg2Value;
               registerTypes[arg1Register] = SLOT_INT;
               continue codeLoop;
-            case 0x18: // MOD
+            case OP_MOD:
               if (!arg1IsRegister) return console.error('NYI: MOD on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 return console.error('NYI: type ' + arg1Type + ' MOD type ' + arg2Type);
               }
               registers[arg1Register] = arg1Value % arg2Value;
               continue codeLoop;
-            case 0x19: // AND  &
+            case OP_AND: //  &
               if (!arg1IsRegister) return console.error('NYI: AND on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 return console.error('NYI: type ' + arg1Type + ' & type ' + arg2Type);
               }
               registers[arg1Register] &= arg2Value;
               continue codeLoop;
-            case 0x1A: // OR  |
+            case OP_OR: //  |
               if (!arg1IsRegister) return console.error('NYI: OR on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 return console.error('NYI: type ' + arg1Type + ' | type ' + arg2Type);
               }
               registers[arg1Register] |= arg2Value;
               continue codeLoop;
-            case 0x1B: // XOR
+            case OP_XOR:
               if (!arg1IsRegister) return console.error('NYI: XOR on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 console.error('NYI: type ' + arg1Type + ' ^ type ' + arg2Type);
@@ -995,78 +1005,78 @@ define(['modeval', './util'], function(modeval, util) {
               }
               registers[arg1Register] ^= arg2Value;
               continue codeLoop;
-            case 0x1C: // ANDL  &&
+            case OP_ANDL: //  &&
               if (!arg1IsRegister) return console.error('NYI: ANDL on non-register');
               if (arg1Value) {
                 registers[arg1Register] = arg2Value;
                 registerTypes[arg1Register] = arg2Type;
               }
               continue codeLoop;
-            case 0x1D: // ORL  ||
+            case OP_ORL: //  ||
               if (!arg1IsRegister) return console.error('NYI: ORL on non-register');
               if (!arg1Value) {
                 registers[arg1Register] = arg2Value;
                 registerTypes[arg1Register] = arg2Type;
               }
               continue codeLoop;
-            case 0x1E: // SHL
+            case OP_SHL:
               if (!arg1IsRegister) return console.error('NYI: SHL on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 return console.error('NYI: type ' + arg1Type + ' << type ' + arg2Type);
               }
               registers[arg1Register] = arg1Value << arg2Value;
               continue codeLoop;
-            case 0x1F: // SHR
+            case OP_SHR:
               if (!arg1IsRegister) return console.error('NYI: SHL on non-register');
               if (arg1Type !== SLOT_INT || arg2Type !== SLOT_INT) {
                 return console.error('NYI: type ' + arg1Type + ' >> type ' + arg2Type);
               }
               registers[arg1Register] = arg1Value >> arg2Value;
               continue codeLoop;
-            case 0x20: // JTRUE
+            case OP_JTRUE:
               if (arg1Value) {
                 pos += arg2Value;
               }
               continue codeLoop;
-            case 0x21: // JFALSE
+            case OP_JFALSE:
               if (!arg1Value) {
                 pos += arg2Value;
               }
               continue codeLoop;
-            case 0x22: // DADD
+            case OP_DADD:
               return console.error('NYI: SeeR DADD');
               continue codeLoop;
-            case 0x23: // DSUB
+            case OP_DSUB:
               return console.error('NYI: SeeR DSUB');
               continue codeLoop;
-            case 0x24: // DMUL
+            case OP_DMUL:
               return console.error('NYI: SeeR DMUL');
               continue codeLoop;
-            case 0x25: // DDIV
+            case OP_DDIV:
               return console.error('NYI: SeeR DDIV');
               continue codeLoop;
-            case 0x26: // DCMPE  x,a := x=(x==a)?1:0
+            case OP_DCMPE: //  x,a := x=(x==a)?1:0
               return console.error('NYI: SeeR DCMPE');
               continue codeLoop;
-            case 0x27: // DCMPG  x,a := x=(x>a)?1:0
+            case OP_DCMPG: //  x,a := x=(x>a)?1:0
               return console.error('NYI: SeeR DCMPG');
               continue codeLoop;
-            case 0x28: // DCMPL  x,a := x=(x<a)?1:0
+            case OP_DCMPL: //  x,a := x=(x<a)?1:0
               return console.error('NYI: SeeR DCMPL');
               continue codeLoop;
-            case 0x29: // DCMPNG  x,a := x=(x<=a)?1:0
+            case OP_DCMPNG: //  x,a := x=(x<=a)?1:0
               return console.error('NYI: SeeR DCMPNG');
               continue codeLoop;
-            case 0x2A: // DCMPNL  x,a := x=(x>=a)?1:0
+            case OP_DCMPNL: //  x,a := x=(x>=a)?1:0
               return console.error('NYI: SeeR DCMPNL');
               continue codeLoop;
-            case 0x2B: // FIXMUL
+            case OP_FIXMUL:
               return console.error('NYI: SeeR FIXMUL');
               continue codeLoop;
-            case 0x2C: // FIXDIV
+            case OP_FIXDIV:
               return console.error('NYI: SeeR FIXDIV');
               continue codeLoop;
-            case 0x2D: // CMOV: copies 1 byte
+            case OP_CMOV: // copies 1 byte
               var copyValue;
               if (arg2IsRegister && !arg2IsPointer) {
                 copyValue = arg2Value & 0xff;
@@ -1111,7 +1121,7 @@ define(['modeval', './util'], function(modeval, util) {
                   return console.error('NYI: SeeR CMOV to type ' + arg1Type);
               }
               continue codeLoop;
-            case 0x2E: // WMOV: copies 2 bytes
+            case OP_WMOV: // copies 2 bytes
               var copyValue;
               if (arg2IsRegister && !arg2IsPointer) {
                 copyValue = arg2Value << 16 >> 16;
@@ -1155,61 +1165,57 @@ define(['modeval', './util'], function(modeval, util) {
                   return console.error('NYI: SeeR WMOV to type ' + arg1Type);
               }
               continue codeLoop;
-            case 0x2F: // DMOV: copies 8 bytes
+            case OP_DMOV: // copies 8 bytes
               return console.error('NYI: SeeR DMOV');
               continue codeLoop;
-            case 0x30: // IDBL
+            case OP_IDBL:
               return console.error('NYI: SeeR IDBL');
               continue codeLoop;
-            case 0x31: // DINT
+            case OP_DINT:
               return console.error('NYI: SeeR DINT');
               continue codeLoop;
-            case 0x32: // FDBL
+            case OP_FDBL:
               return console.error('NYI: SeeR FDBL');
               continue codeLoop;
-            case 0x33: // DFLT
+            case OP_DFLT:
               return console.error('NYI: SeeR DFLT');
               continue codeLoop;
-            case 0x34: // DFIX
+            case OP_DFIX:
               return console.error('NYI: SeeR DFIX');
               continue codeLoop;
-            case 0x35: // FIXDBL
+            case OP_FIXDBL:
               return console.error('NYI: SeeR FIXDBL');
               continue codeLoop;
-            case 0x36: // FORK
+            case OP_FORK:
               return console.error('NYI: SeeR FORK');
               continue codeLoop;
-            case 0x37: // RET
+            case OP_RET:
               pos = stack.getInt32(stackPos, true);
               if (pos === 0) {
                 return registers[0];
               }
               stackPos += 4;
               continue codeLoop;
-            case 0x38: // WAIT
+            case OP_WAIT:
               return console.error('NYI: SeeR WAIT');
               continue codeLoop;
-            case 0x39: // CLI : \Turn OFF\ Multitasking
+            case OP_CLI: // \Turn OFF\ Multitasking
               return console.error('NYI: SeeR CLI');
               continue codeLoop;
-            case 0x3A: // STI
+            case OP_STI:
               return console.error('NYI: SeeR STI');
               continue codeLoop;
-            case 0x3B: // ENTER
-              // push bp
+            case OP_ENTER:
               stack.setInt32(stackPos -= 4, callTop - stack.byteLength, true);
               stackTypes[stackPos >>> 2] = SLOT_STACK;
-              // mov bp,sp
               callTop = stackPos;
               continue codeLoop;
-            case 0x3C: // LEAVE
-              // mov sp,bp
+            case OP_LEAVE:
               stackPos = callTop;
-              // pop bp
               callTop = stack.byteLength + stack.getInt32(stackPos, true);
               stackPos += 4;
               continue codeLoop;
-            case 0x3D: // NOP
+            case OP_NOP:
               continue codeLoop;
             default:
               console.error('unknown SeeR opcode: ' + code[pos-1].toString(16));
