@@ -17,10 +17,11 @@ define(['modeval', './util'], function(modeval, util) {
         SLOT_LOCAL_STACK = 5,
   
         BASE_NAMED_OFFSET = 0,
+        BASE_IMPORT = 0,
         BASE_CONST = 1,
         BASE_DATA = 2,
         BASE_STACK = 3,
-        BASE_LOCAL_STACK = 4,
+        BASE_LOCAL_STACK = 3,
   
         OP_EOF = 0,
         OP_PUSH = 0x01,
