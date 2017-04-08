@@ -435,7 +435,13 @@ define(['modeval', './util'], function(modeval, util) {
         var branch = branches[i];
         if ('next' in branch) {
           if (typeof branch.next === 'number' && branch.next <= branch.entryPoint) {
-            branches.find(branch.next).beginsLoop = true;
+            var backBranch = branches.find(branch.next);
+            if ('loopEndPoints' in backBranch) {
+              backBranch.loopEndPoints.unshift(branch.entryPoint + branch.byteLength);
+            }
+            else {
+              backBranch.loopEndPoints = [branch.entryPoint + branch.byteLength];
+            }
           }
         }
         else branches.splice(i, 1);
@@ -444,10 +450,77 @@ define(['modeval', './util'], function(modeval, util) {
       return branches;
     },
     getControlFlow: function() {
+      var self = this;
+      function addToBlock(block) {
+        var pos = block.entryPoint;
+        while (pos < block.endPoint) {
+          var branch = self.branches.find(pos);
+          block.push(branch);
+          if (typeof branch.next === 'number') {
+            if (branch.next <= branch.entryPoint) {
+              throw new Error('NYI: loops');
+            }
+            pos = branch.next;
+            continue;
+          }
+          if (branch.next === 'if') {
+            var endPoint = Math.max(branch.next.nextIfFalse, branch.next.nextIfTrue);
+            var conditional = {
+              type: 'if',
+              register: branch.register,
+              trueBranch: Object.assign([], {
+                entryPoint: branch.next.nextIfTrue,
+                endPoint: endPoint,
+              }),
+              falseBranch: Object.assign([], {
+                entryPoint: branch.next.nextIfFalse,
+                endPoint: endPoint,
+              }),
+            };
+            addToBlock(conditional.trueBranch);
+            addToBlock(conditional.falseBranch);
+            if (isNaN(conditional.trueBranch.endPoint)) {
+              if (isNaN(conditional.falseBranch.endPoint)) {
+                delete block.endPoint;
+                return;
+              }
+              pos = conditional.falseBranch.endPoint;
+            }
+            else {
+              if (conditional.falseBranch.endPoint === conditional.trueBranch.endPoint
+              ||  isNaN(conditional.falseBranch.endPoint)) {
+                pos = conditional.falseBranch.endPoint;
+              }
+              else {
+                throw new Error('conditional end point mismatch');
+              }
+            }
+            continue;
+          }
+          if (branch.next === 'call') {
+            pos = branch.next.next;
+            continue;
+          }
+          if (branch.next === 'return') {
+            delete block.endPoint;
+            return;
+          }
+          throw new Error('unknown "next": ' + branch.next);
+        }
+        block.endPoint = pos;
+      }
       var flow = {};
       for (var i = 0; i < this.entryPoints.length; i++) {
         var entryPoint = this.entryPoints[i];
-        flow[entryPoint] = true;
+        var block = flow[entryPoint] = [];
+        block.entryPoint = entryPoint;
+        if (i+1 === this.entryPoints.length) {
+          block.endPoint = this.code.length;
+        }
+        else {
+          block.endPoint = this.entryPoints[i+1];
+        }
+        addToBlock(block);
       }
       return flow;
     },
