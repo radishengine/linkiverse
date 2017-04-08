@@ -500,20 +500,40 @@ define(['modeval', './util'], function(modeval, util) {
     },
     getControlFlow: function() {
       var self = this;
-      function addToBlock(block) {
+      function addToBlock(block, breakPos) {
         var pos = block.entryPoint;
         while (pos < block.endPoint) {
           var branch = self.branches.find(pos);
+          if ('loopEndPoints' in branch) {
+            var i_end = branch.loopEndPoints.indexOf(block.endPoint);
+            if (i_end !== -1 && block.entryPoint === branch.entryPoint) {
+              block.type = 'loop';
+              breakPos = block.endPoint;
+            }
+            if (i_end !== 0) {
+              if (i_end === -1) i_end = branch.loopEndPoints.length;
+              var loop = [];
+              loop.entryPoint = branch.entryPoint;
+              pos = loop.endPoint = branch.loopEndPoints[i_end - 1];
+              addToBlock(loop, loop.endPoint);
+              continue;
+            }
+          }
           block.push(branch);
           if (typeof branch.next === 'number') {
             if (branch.next <= branch.entryPoint) {
-              throw new Error('NYI: loops');
+              block.endPoint = 'continue';
+              return;
+            }
+            if (branch.next === breakPos) {
+              block.endPoint = 'break';
+              return;
             }
             pos = branch.next;
             continue;
           }
           if (branch.next === 'return') {
-            delete block.endPoint;
+            block.endPoint = 'return';
             return;
           }
           if (branch.next.type === 'if') {
@@ -525,11 +545,11 @@ define(['modeval', './util'], function(modeval, util) {
               var trueBlock = [];
               trueBlock.entryPoint = branch.next.nextIfTrue;
               trueBlock.endPoint = branch.next.nextIfFalse;
-              addToBlock(trueBlock);
+              addToBlock(trueBlock, breakPos);
               var falseBlock = [];
               falseBlock.entryPoint = branch.next.nextIfFalse;
               falseBlock.endPoint = isNaN(trueBlock.endPoint) ? branch.next.nextIfFalse : trueBlock.endPoint;
-              addToBlock(falseBlock);
+              addToBlock(falseBlock, breakPos);
               block.push({
                 type: 'if',
                 register: branch.next.register,
@@ -546,7 +566,7 @@ define(['modeval', './util'], function(modeval, util) {
             else {
               throw new Error('NYI: JTRUE');
             }
-         }
+          }
           if (branch.next.type === 'call') {
             pos = branch.next.next;
             continue;
