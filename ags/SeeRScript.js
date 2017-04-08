@@ -470,7 +470,7 @@ define(['modeval', './util'], function(modeval, util) {
           if (branch.next.type === 'if') {
             if (branch.next.nextIfTrue === branch.entryPoint + branch.byteLength) {
               // jump if false
-              if (branch.next.jumpIfFalse <= branch.entryPoint) {
+              if (branch.next.nextIfFalse <= branch.entryPoint) {
                 throw new Error('NYI: backwards JFALSE');
               }
               var trueBlock = [];
