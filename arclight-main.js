@@ -255,6 +255,7 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
               for (var i = 0; i < count; i++) {
                 var name = String.fromCharCode.apply(null, names.subarray(13 * i, 13 * (i + 1))).replace(/\0.*/, '');
                 name = name.toLowerCase();
+                if (/^".*"$/.test(name)) name = name.substring(1, name.length-1);
                 var length = lengths.getUint32(i * 4, true);
                 files[name] = mainBlob.slice(offset, offset + length);
                 offset += length;
