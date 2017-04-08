@@ -412,26 +412,6 @@ define(['modeval', './util'], function(modeval, util) {
               terp.pos = terp.nextPos;
               terp.nextPos += terp.arg1Value;
               break reading;
-            case OP_CALL:
-              entryPoints.unshift(terp.nextPos);
-              var symbol = this.symbolsByEntryPoint[terp.arg1Value];
-              terp.pos = terp.nextPos;
-              terp.nextPos = {
-                type: 'call',
-                call: symbol ? symbol.name : '$'+terp.arg1Value,
-                next: terp.nextPos,
-              };
-              break reading;
-            case OP_CALLEX:
-              var external = this.importsByRef[terp.arg1Value];
-              entryPoints.unshift(terp.nextPos);
-              terp.pos = terp.nextPos;
-              terp.nextPos = {
-                type: 'call',
-                call: external.name,
-                next: terp.nextPos,
-              };
-              break reading;
             case OP_JTRUE:
               terp.pos = terp.nextPos;
               terp.nextPos = {
@@ -580,10 +560,6 @@ define(['modeval', './util'], function(modeval, util) {
             else {
               throw new Error('NYI: JTRUE');
             }
-          }
-          if (branch.next.type === 'call') {
-            pos = branch.next.next;
-            continue;
           }
           throw new Error('unknown "next": ' + branch.next);
         }
