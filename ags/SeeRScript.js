@@ -546,22 +546,36 @@ define(['modeval', './util'], function(modeval, util) {
               trueBlock.entryPoint = branch.next.nextIfTrue;
               trueBlock.endPoint = branch.next.nextIfFalse;
               addToBlock(trueBlock, breakPos);
-              var falseBlock = [];
-              falseBlock.entryPoint = branch.next.nextIfFalse;
-              falseBlock.endPoint = isNaN(trueBlock.endPoint) ? branch.next.nextIfFalse : trueBlock.endPoint;
-              addToBlock(falseBlock, breakPos);
-              block.push({
-                type: 'if',
-                register: branch.next.register,
-                onTrue: trueBlock,
-                onFalse: falseBlock,
-              });
-              if (isNaN(falseBlock.endPoint)) {
-                if (isNaN(trueBlock.endPoint)) return;
-                else pos = trueBlock.endPoint;
+              if (branch.next.nextIfFalse === breakPos) {
+                block.push({
+                  type: 'if',
+                  register: branch.next.register,
+                  onTrue: trueBlock,
+                  onFalse: Object.assign([], {endPoint:'break'}),
+                });
+                if (!isNaN(trueBlock.endPoint)) {
+                  throw new Error('unterminated loop');
+                }
+                return;
               }
-              else pos = falseBlock.endPoint;
-              continue;
+              else {
+                var falseBlock = [];
+                falseBlock.entryPoint = branch.next.nextIfFalse;
+                falseBlock.endPoint = isNaN(trueBlock.endPoint) ? branch.next.nextIfFalse : trueBlock.endPoint;
+                addToBlock(falseBlock, breakPos);
+                block.push({
+                  type: 'if',
+                  register: branch.next.register,
+                  onTrue: trueBlock,
+                  onFalse: falseBlock,
+                });
+                if (isNaN(falseBlock.endPoint)) {
+                  if (isNaN(trueBlock.endPoint)) return;
+                  else pos = trueBlock.endPoint;
+                }
+                else pos = falseBlock.endPoint;
+                continue;
+              }
             }
             else {
               throw new Error('NYI: JTRUE');
