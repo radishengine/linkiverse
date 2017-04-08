@@ -471,7 +471,7 @@ define(['modeval', './util'], function(modeval, util) {
             var endPoint = Math.max(branch.next.nextIfFalse, branch.next.nextIfTrue);
             var conditional = {
               type: 'if',
-              register: branch.register,
+              register: branch.next.register,
               trueBranch: Object.assign([], {
                 entryPoint: branch.next.nextIfTrue,
                 endPoint: endPoint,
