@@ -468,39 +468,36 @@ define(['modeval', './util'], function(modeval, util) {
             return;
           }
           if (branch.next.type === 'if') {
-            var endPoint = Math.max(branch.next.nextIfFalse, branch.next.nextIfTrue);
-            var conditional = {
-              type: 'if',
-              register: branch.next.register,
-              trueBranch: Object.assign([], {
-                entryPoint: branch.next.nextIfTrue,
-                endPoint: endPoint,
-              }),
-              falseBranch: Object.assign([], {
-                entryPoint: branch.next.nextIfFalse,
-                endPoint: endPoint,
-              }),
-            };
-            addToBlock(conditional.trueBranch);
-            addToBlock(conditional.falseBranch);
-            if (isNaN(conditional.trueBranch.endPoint)) {
-              if (isNaN(conditional.falseBranch.endPoint)) {
-                delete block.endPoint;
-                return;
+            if (branch.next.nextIfTrue === branch.entryPoint + branch.byteLength) {
+              // jump if false
+              if (branch.next.jumpIfFalse <= branch.entryPoint) {
+                throw new Error('NYI: backwards JFALSE');
               }
-              pos = conditional.falseBranch.endPoint;
+              var trueBlock = [];
+              trueBlock.entryPoint = branch.next.nextIfTrue;
+              trueBlock.endPoint = branch.next.nextIfFalse;
+              addToBlock(trueBlock);
+              var falseBlock = [];
+              falseBlock.entryPoint = branch.next.nextIfFalse;
+              falseBlock.endPoint = isNaN(trueBlock.endPoint) ? branch.next.nextIfFalse : trueBlock.endPoint;
+              addToBlock(falseBlock);
+              block.push({
+                type: 'if',
+                register: branch.next.register,
+                onTrue: trueBlock,
+                onFalse: falseBlock,
+              });
+              if (isNaN(falseBlock.endPoint)) {
+                if (isNaN(trueBlock.endPoint)) return;
+                else pos = trueBlock.endPoint;
+              }
+              else pos = falseBlock.endPoint;
+              continue;
             }
             else {
-              if (conditional.falseBranch.endPoint === conditional.trueBranch.endPoint
-              ||  isNaN(conditional.falseBranch.endPoint)) {
-                pos = conditional.falseBranch.endPoint;
-              }
-              else {
-                throw new Error('conditional end point mismatch');
-              }
+              throw new Error('NYI: JTRUE');
             }
-            continue;
-          }
+         }
           if (branch.next.type === 'call') {
             pos = branch.next.next;
             continue;
