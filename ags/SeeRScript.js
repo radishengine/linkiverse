@@ -9,20 +9,20 @@ define(['modeval', './util'], function(modeval, util) {
   for (var i_op = 0x0B; i_op <= 0x36; i_op++) {
     OP_ARG_COUNT[i_op] = 2;
   }
-  const SLOT_INT = 0;
-  const SLOT_CONST = 1;
-  const SLOT_STACK = 2;
-  const SLOT_DATA = 3;
-  const SLOT_NAMED_OFFSET = 4;
-  const SLOT_LOCAL_STACK = 5;
+  const SLOT_INT = 0,
+        SLOT_CONST = 1,
+        SLOT_STACK = 2,
+        SLOT_DATA = 3,
+        SLOT_NAMED_OFFSET = 4,
+        SLOT_LOCAL_STACK = 5,
   
-  const BASE_NAMED_OFFSET = 0;
-  const BASE_CONST = 1;
-  const BASE_DATA = 2;
-  const BASE_STACK = 3;
-  const BASE_LOCAL_STACK = 3;
+        BASE_NAMED_OFFSET = 0,
+        BASE_CONST = 1,
+        BASE_DATA = 2,
+        BASE_STACK = 3,
+        BASE_LOCAL_STACK = 4,
   
-  const OP_EOF = 0,
+        OP_EOF = 0,
         OP_PUSH = 0x01,
         OP_PUSHADR = 0x02,
         OP_DPUSH = 0x03,
