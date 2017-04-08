@@ -254,8 +254,8 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
               var flags = new DataView(fileData, names.byteLength + lengths.byteLength, 2 * count);
               for (var i = 0; i < count; i++) {
                 var name = String.fromCharCode.apply(null, names.subarray(13 * i, 13 * (i + 1))).replace(/\0.*/, '');
+                name = name.replace(/[\r\n]+$/, ''); // observed in at least one case
                 name = name.toLowerCase();
-                if (/^".*"$/.test(name)) name = name.substring(1, name.length-1);
                 var length = lengths.getUint32(i * 4, true);
                 files[name] = mainBlob.slice(offset, offset + length);
                 offset += length;
