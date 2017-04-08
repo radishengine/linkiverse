@@ -497,11 +497,11 @@ define(['modeval', './util'], function(modeval, util) {
             }
             continue;
           }
-          if (branch.next === 'call') {
+          if (branch.next.type === 'call') {
             pos = branch.next.next;
             continue;
           }
-          if (branch.next === 'return') {
+          if (branch.next.type === 'return') {
             delete block.endPoint;
             return;
           }
