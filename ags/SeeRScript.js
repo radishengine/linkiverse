@@ -463,7 +463,11 @@ define(['modeval', './util'], function(modeval, util) {
             pos = branch.next;
             continue;
           }
-          if (branch.next === 'if') {
+          if (branch.next === 'return') {
+            delete block.endPoint;
+            return;
+          }
+          if (branch.next.type === 'if') {
             var endPoint = Math.max(branch.next.nextIfFalse, branch.next.nextIfTrue);
             var conditional = {
               type: 'if',
@@ -500,10 +504,6 @@ define(['modeval', './util'], function(modeval, util) {
           if (branch.next.type === 'call') {
             pos = branch.next.next;
             continue;
-          }
-          if (branch.next.type === 'return') {
-            delete block.endPoint;
-            return;
           }
           throw new Error('unknown "next": ' + branch.next);
         }
