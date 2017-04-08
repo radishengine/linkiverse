@@ -345,7 +345,7 @@ define(['modeval', './util'], function(modeval, util) {
           entryPoints.push(this.symbols[i_symbol].entryPoint);
         }
       }
-      entryPoints.sort(function(a, b){ return a > b; }); // ascending order
+      entryPoints.sort(function(a, b){ return a - b; }); // ascending order
       Object.freeze(entryPoints);
       Object.defineProperty(this, 'entryPoints', {value:entryPoints, enumerable:true});
       return entryPoints;
