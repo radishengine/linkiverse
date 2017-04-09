@@ -619,27 +619,27 @@ define(['modeval', './util'], function(modeval, util) {
               ctx.stackTop -= 4;
               ctx.localBase = ctx.stackTop;
               ctx.stackTop = 0;
-              console.log('enter');
+              console.log('enter', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_LEAVE:
               ctx.stackTop += 4;
-              console.log('leave', ctx.stackTop);
+              console.log('leave', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_PUSH:
               ctx.stackTop -= 4;
-              console.log('push', ctx.stackTop);
+              console.log('push', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_PUSHADR:
               ctx.stackTop -= 4;
-              console.log('pushadr', ctx.stackTop);
+              console.log('pushadr', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_POP:
               ctx.stackTop += 4;
-              console.log('pop', ctx.stackTop);
+              console.log('pop', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_CALLEX:
               var external = def.importsByRef[terp.callexImportRef];
-              console.log('callex', external.name, ctx.stackTop, ctx.stackTop + terp.callexArgAllocation);
+              console.log('callex', external.name, ctx.localBase + ctx.stackTop, ctx.localBase + ctx.stackTop + terp.callexArgAllocation);
               continue reading;
           }
           return;
