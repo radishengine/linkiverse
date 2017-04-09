@@ -611,7 +611,7 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_EOF: break reading;
             case OP_ADD:
               if (terp.arg1IsRegister) switch (terp.arg1Register) {
-                case 6:
+                case 5:
                   ctx.stackTop += terp.arg2Value;
                   console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
                   break;
