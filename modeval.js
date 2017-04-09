@@ -122,6 +122,7 @@ define(function() {
   var generic = {
     CONST: CONST,
     NO_OP: NO_OP,
+    CTX: modeval('ctx', 'ctx'),
     COMMA: COMMA,
     IF: IF,
     WHILE: modeval('while', '{ while ($(ctx)) { $(ctx); } }'),
