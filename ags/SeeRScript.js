@@ -357,10 +357,8 @@ define(['modeval', './util'], function(modeval, util) {
       var branches = [branch];
       var entryPoints = this.entryPoints.slice();
       var terp = new BytecodeReader(this.code);
-    visiting:
-      for (var entryPoint = entryPoints.shift();
-           !isNaN(entryPoint);
-           entryPoint = entryPoints.shift()) {
+      var entryPoint;
+      visiting: while (!isNaN(entryPoint = entryPoints.shift())) {
         var diff = entryPoint - branch.entryPoint;
         if (diff < 0 || diff >= branch.byteLength) {
           var i_lo = 0, i_hi = branches.length-1;
@@ -399,8 +397,7 @@ define(['modeval', './util'], function(modeval, util) {
         }
         terp.nextPos = entryPoint;
         var endPoint = entryPoint + branch.byteLength;
-      reading:
-        for (;;) {
+        reading: for (;;) {
           if (terp.nextPos >= endPoint) {
             terp.pos = terp.nextPos = endPoint;
             break;
