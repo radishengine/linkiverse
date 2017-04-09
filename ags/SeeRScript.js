@@ -609,6 +609,13 @@ define(['modeval', './util'], function(modeval, util) {
           var terp = new BytecodeReader(part);
           reading: for (;;) switch (terp.next()) {
             case OP_EOF: break reading;
+            case OP_MOV:
+              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                case 5:
+                  throw new Error('NYI');
+                  break;
+              }
+              continue reading;
             case OP_ADD:
               if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 case 5:
