@@ -600,11 +600,38 @@ define(['modeval', './util'], function(modeval, util) {
   SeeRInstance.prototype = {
     getInfo: function() {
       var flow = this.def.getControlFlow();
-      function doPart(part) {
-        console.log(part);
+      function doPart(part, localBase, stackTop) {
+        if (part instanceof Uint8Array) {
+          var terp = new BytecodeReader(part);
+          reading: for (;;) switch (terp.next()) {
+            case OP_EOF: break reading;
+          }
+          return;
+        }
+        if (part.type === 'if') {
+          console.log('if register[' + part.register + ']:');
+          doPart(part.onTrue, localBase, stackTop);
+          console.log('else:');
+          doPart(part.onFalse, localBase, stackTop);
+          console.log('end if');
+          return;
+        }
+        if (part.type === 'loop') {
+          console.log('loop:');
+        }
+        for (var i = 0; i < part.length; i++) {
+          doPart(part[i], localBase, stackTop);
+        }
+        if (isNaN(part.endPoint)) {
+          console.log(part.endPoint);
+        }
+        if (part.type === 'loop') {
+          console.log('end loop');
+        }
       }
       for (var entryPoint in flow) {
-        doPart(flow[entryPoint]);
+        var symbol = this.def.symbolsByEntryPoint[entryPoint];
+        doPart(flow[entryPoint], -symbol.argAllocation - 4, 0);
       }
     },
     runDestructor: function() {
