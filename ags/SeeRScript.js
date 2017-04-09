@@ -600,37 +600,41 @@ define(['modeval', './util'], function(modeval, util) {
   SeeRInstance.prototype = {
     getInfo: function() {
       var flow = this.def.getControlFlow();
-      function doPart(part, localBase, stackTop) {
+      function doPart(part, ctx) {
         if (part instanceof Uint8Array) {
           var terp = new BytecodeReader(part);
           reading: for (;;) switch (terp.next()) {
+            case OP_EOF: break reading;
             case OP_ENTER:
-              stackTop -= 4;
-              localBase = stackTop;
-              stackTop = 0;
-              console.log('enter', stackTop);
+              ctx.stackTop -= 4;
+              ctx.localBase = ctx.stackTop;
+              ctx.stackTop = 0;
+              console.log('enter', ctx.localBase);
               continue reading;
             case OP_LEAVE:
-              stackTop += 4;
-              console.log('leave', stackTop);
+              ctx.stackTop += 4;
+              console.log('leave', ctx.localBase);
               continue reading;
             case OP_PUSH:
-              stackTop -= 4;
-              console.log('push', stackTop);
+              ctx.stackTop -= 4;
+              console.log('push', ctx.stackTop);
+              continue reading;
+            case OP_PUSHADR:
+              ctx.stackTop -= 4;
+              console.log('pushadr', ctx.stackTop);
               continue reading;
             case OP_POP:
-              stackTop += 4;
-              console.log('pop', stackTop);
+              ctx.stackTop += 4;
+              console.log('pop', ctx.stackTop);
               continue reading;
-            case OP_EOF: break reading;
           }
           return;
         }
         if (part.type === 'if') {
           console.log('if register[' + part.register + ']:');
-          doPart(part.onTrue, localBase, stackTop);
+          doPart(part.onTrue, ctx);
           console.log('else:');
-          doPart(part.onFalse, localBase, stackTop);
+          doPart(part.onFalse, ctx);
           console.log('end if');
           return;
         }
@@ -638,7 +642,7 @@ define(['modeval', './util'], function(modeval, util) {
           console.log('loop:');
         }
         for (var i = 0; i < part.length; i++) {
-          doPart(part[i], localBase, stackTop);
+          doPart(part[i], ctx);
         }
         if (isNaN(part.endPoint)) {
           console.log(part.endPoint);
@@ -649,7 +653,10 @@ define(['modeval', './util'], function(modeval, util) {
       }
       for (var entryPoint in flow) {
         var symbol = this.def.symbolsByEntryPoint[entryPoint];
-        doPart(flow[entryPoint], 0, -(symbol ? symbol.argAllocation : 0) - 4);
+        doPart(flow[entryPoint], {
+          localBase: -(symbol ? symbol.argAllocation : 0) - 4,
+          stackTop: 0,
+        });
       }
     },
     runDestructor: function() {
