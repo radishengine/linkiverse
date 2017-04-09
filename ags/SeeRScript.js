@@ -598,6 +598,15 @@ define(['modeval', './util'], function(modeval, util) {
     this.runFrom(def.constructorCodePos, 0);
   }
   SeeRInstance.prototype = {
+    getInfo: function() {
+      var flow = this.def.getControlFlow();
+      function doPart(part) {
+        console.log(part);
+      }
+      for (var entryPoint in flow) {
+        doPart(flow[entryPoint]);
+      }
+    },
     runDestructor: function() {
       this.runFrom(this.def.destructorCodePos, 0);
     },
