@@ -616,7 +616,15 @@ define(['modeval', './util'], function(modeval, util) {
                   console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
                   break;
               }
-              continue reading;              
+              continue reading;
+            case OP_SUB:
+              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                case 5:
+                  ctx.stackTop -= terp.arg2Value;
+                  console.log('stack - ' + terp.arg2Value + ' = ' + ctx.stackTop);
+                  break;
+              }
+              continue reading;
             case OP_ENTER:
               ctx.stackTop -= 4;
               ctx.localBase = ctx.stackTop;
