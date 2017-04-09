@@ -255,10 +255,10 @@ define(['modeval', './util'], function(modeval, util) {
     get importsOffset() {
       return this.dv.getUint32(56, true);
     },
-    get constructorCodePos() {
+    get constructorEntryPoint() {
       return this.dv.getUint32(60, true);
     },
-    get destructorCodePos() {
+    get destructorEntryPoint() {
       return this.dv.getUint32(64, true);
     },
     // TODO: TITL, AUTH
@@ -340,7 +340,7 @@ define(['modeval', './util'], function(modeval, util) {
       return dv;      
     },
     get entryPoints() {
-      var entryPoints = [this.constructorCodePos, this.destructorCodePos];
+      var entryPoints = [this.constructorEntryPoint, this.destructorEntryPoint];
       for (var i_symbol = 0; i_symbol < this.symbols.length; i_symbol++) {
         if (this.symbols[i_symbol].argAllocation !== -1) {
           entryPoints.push(this.symbols[i_symbol].entryPoint);
@@ -631,7 +631,7 @@ define(['modeval', './util'], function(modeval, util) {
       }
       for (var entryPoint in flow) {
         var symbol = this.def.symbolsByEntryPoint[entryPoint];
-        doPart(flow[entryPoint], -symbol.argAllocation - 4, 0);
+        doPart(flow[entryPoint], -(symbol ? symbol.argAllocation : 0) - 4, 0);
       }
     },
     runDestructor: function() {
