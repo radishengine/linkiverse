@@ -40,7 +40,14 @@ define(function() {
         toJSON: {value:modeval_toJSON, enumerable:true},
       };
       for (var i = 0; i < argCount; i++) {
-        props[i] = {value:arguments[i], enumerable:true};
+        var arg = arguments[i];
+        // can't do this until CONST() itself wouldn't cause an infinite loop
+        /*
+        if (typeof arg !== 'function' || !('op' in arg)) {
+          arg = CONST(arg);
+        }
+        */
+        props[i] = {value:arg, enumerable:true};
       }
       var bindArgs = [].slice.apply(arguments);
       bindArgs.length = argCount;
@@ -119,15 +126,17 @@ define(function() {
     };
   }
   
+  var CTX = modeval('ctx', 'ctx')();
+  
   var generic = {
     CONST: CONST,
     NO_OP: NO_OP,
-    CTX: modeval('ctx', 'ctx'),
+    CTX: CTX,
     COMMA: COMMA,
     IF: IF,
     WHILE: modeval('while', '{ while ($(ctx)) { $(ctx); } }'),
     GET: modeval('[]', '($(ctx)[$(ctx)])'),
-    SET: modeval('[]', '($(ctx)[$(ctx)] = $(ctx))'),
+    SET: modeval('[]=', '($(ctx)[$(ctx)] = $(ctx))'),
   };
 
   var constants = {
