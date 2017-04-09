@@ -614,6 +614,17 @@ define(['modeval', './util'], function(modeval, util) {
                 case 5:
                   throw new Error('NYI');
                   break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
+              }
+              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                case 5:
+                  throw new Error('NYI');
+                  break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
               }
               continue reading;
             case OP_ADD:
@@ -622,6 +633,9 @@ define(['modeval', './util'], function(modeval, util) {
                   ctx.stackTop += terp.arg2Value;
                   console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
                   break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
               }
               continue reading;
             case OP_SUB:
@@ -629,6 +643,9 @@ define(['modeval', './util'], function(modeval, util) {
                 case 5:
                   ctx.stackTop -= terp.arg2Value;
                   console.log('stack - ' + terp.arg2Value + ' = ' + ctx.stackTop);
+                  break;
+                case 6:
+                  throw new Error('NYI');
                   break;
               }
               continue reading;
