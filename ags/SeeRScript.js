@@ -639,11 +639,11 @@ define(['modeval', './util'], function(modeval, util) {
               continue reading;
             case OP_CALLEX:
               var external = def.importsByRef[terp.callexImportRef];
+              ctx.stackTop += terp.callexArgAllocation;
               console.log(
                 'callex',
                 external.name,
-                ctx.localBase + ctx.stackTop,
-                ctx.localBase + ctx.stackTop + terp.callexArgAllocation);
+                ctx.localBase + ctx.stackTop);
               continue reading;
           }
           return;
