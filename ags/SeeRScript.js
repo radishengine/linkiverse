@@ -595,7 +595,7 @@ define(['modeval', './util'], function(modeval, util) {
         // TODO: exported variables
       }
     }
-    this.runFrom(def.constructorCodePos, 0);
+    this.runFrom(def.constructorEntryPoint, 0);
   }
   SeeRInstance.prototype = {
     getInfo: function() {
@@ -635,7 +635,7 @@ define(['modeval', './util'], function(modeval, util) {
       }
     },
     runDestructor: function() {
-      this.runFrom(this.def.destructorCodePos, 0);
+      this.runFrom(this.def.destructorEntryPoint, 0);
     },
     runFrom: function(pos, argAllocation) {
       var code = this.def.code,
