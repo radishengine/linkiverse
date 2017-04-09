@@ -637,12 +637,28 @@ define(['modeval', './util'], function(modeval, util) {
                   throw new Error('NYI');
                   break;
               }
+              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                case 5:
+                  throw new Error('NYI');
+                  break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
+              }
               continue reading;
             case OP_SUB:
               if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 case 5:
                   ctx.stackTop -= terp.arg2Value;
                   console.log('stack - ' + terp.arg2Value + ' = ' + ctx.stackTop);
+                  break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
+              }
+              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                case 5:
+                  throw new Error('NYI');
                   break;
                 case 6:
                   throw new Error('NYI');
