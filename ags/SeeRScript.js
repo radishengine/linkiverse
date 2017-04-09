@@ -680,6 +680,9 @@ define(['modeval', './util'], function(modeval, util) {
               console.log('push', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_PUSHADR:
+              if (terp.arg1PointerBase === BASE_LOCAL_STACK) {
+                throw new Error('NYI');
+              }
               ctx.stackTop -= 4;
               console.log('pushadr', ctx.localBase + ctx.stackTop);
               continue reading;
