@@ -605,15 +605,21 @@ define(['modeval', './util'], function(modeval, util) {
           var terp = new BytecodeReader(part);
           reading: for (;;) switch (terp.next()) {
             case OP_EOF: break reading;
+            case OP_ADD:
+              if (terp.arg1IsPointer && terp.arg1PointerBase === BASE_STACK) {
+                ctx.stackTop += terp.arg2Value;
+                console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
+              }
+              continue reading;              
             case OP_ENTER:
               ctx.stackTop -= 4;
               ctx.localBase = ctx.stackTop;
               ctx.stackTop = 0;
-              console.log('enter', ctx.localBase);
+              console.log('enter');
               continue reading;
             case OP_LEAVE:
               ctx.stackTop += 4;
-              console.log('leave', ctx.localBase);
+              console.log('leave', ctx.stackTop);
               continue reading;
             case OP_PUSH:
               ctx.stackTop -= 4;
