@@ -604,6 +604,16 @@ define(['modeval', './util'], function(modeval, util) {
         if (part instanceof Uint8Array) {
           var terp = new BytecodeReader(part);
           reading: for (;;) switch (terp.next()) {
+            case OP_ENTER:
+              stackTop -= 4;
+              localBase = stackTop;
+              stackTop = 0;
+              console.log('enter', stackTop);
+              continue reading;
+            case OP_LEAVE:
+              stackTop += 4;
+              console.log('leave', stackTop);
+              continue reading;
             case OP_PUSH:
               stackTop -= 4;
               console.log('push', stackTop);
@@ -639,7 +649,7 @@ define(['modeval', './util'], function(modeval, util) {
       }
       for (var entryPoint in flow) {
         var symbol = this.def.symbolsByEntryPoint[entryPoint];
-        doPart(flow[entryPoint], -(symbol ? symbol.argAllocation : 0) - 4, 0);
+        doPart(flow[entryPoint], 0, -(symbol ? symbol.argAllocation : 0) - 4);
       }
     },
     runDestructor: function() {
