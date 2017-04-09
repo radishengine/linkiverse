@@ -604,6 +604,14 @@ define(['modeval', './util'], function(modeval, util) {
         if (part instanceof Uint8Array) {
           var terp = new BytecodeReader(part);
           reading: for (;;) switch (terp.next()) {
+            case OP_PUSH:
+              stackTop -= 4;
+              console.log('push', stackTop);
+              continue reading;
+            case OP_POP:
+              stackTop += 4;
+              console.log('pop', stackTop);
+              continue reading;
             case OP_EOF: break reading;
           }
           return;
