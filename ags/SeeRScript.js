@@ -639,17 +639,28 @@ define(['modeval', './util'], function(modeval, util) {
               continue reading;
             case OP_CALLEX:
               var external = def.importsByRef[terp.callexImportRef];
-              console.log('callex', external.name, ctx.localBase + ctx.stackTop, ctx.localBase + ctx.stackTop + terp.callexArgAllocation);
+              console.log(
+                'callex',
+                external.name,
+                ctx.localBase + ctx.stackTop,
+                ctx.localBase + ctx.stackTop + terp.callexArgAllocation);
               continue reading;
           }
           return;
         }
         if (part.type === 'if') {
           console.log('if register[' + part.register + ']:');
-          doPart(part.onTrue, ctx);
+          var trueCtx = Object.assign({}, ctx);
+          doPart(part.onTrue, trueCtx);
           console.log('else:');
-          doPart(part.onFalse, ctx);
+          var falseCtx = Object.assign({}, ctx);
+          doPart(part.onFalse, falseCtx);
           console.log('end if');
+          if (trueCtx.localBase !== falseCtx.localBase || trueCtx.stackTop !== falseCtx.stackTop) {
+            throw new Error('branch stack mismatch');
+          }
+          ctx.localBase = trueCtx.localBase;
+          ctx.stackTop = trueCtx.stackTop;
           return;
         }
         if (part.type === 'loop') {
