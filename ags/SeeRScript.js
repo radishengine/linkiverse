@@ -153,6 +153,9 @@ define(['modeval', './util'], function(modeval, util) {
       }
       return this.op = op;
     },
+    get callexImportRef() {
+      return this.arg1Value;
+    },
     get callexArgAllocation() {
       return this.arg2Value & 0xffff;
     },
@@ -599,7 +602,8 @@ define(['modeval', './util'], function(modeval, util) {
   }
   SeeRInstance.prototype = {
     getInfo: function() {
-      var flow = this.def.getControlFlow();
+      var def = this.def;
+      var flow = def.getControlFlow();
       function doPart(part, ctx) {
         if (part instanceof Uint8Array) {
           var terp = new BytecodeReader(part);
@@ -632,6 +636,10 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_POP:
               ctx.stackTop += 4;
               console.log('pop', ctx.stackTop);
+              continue reading;
+            case OP_CALLEX:
+              var external = def.importsByRef[terp.callexImportRef];
+              console.log('callex', external.name, ctx.stackTop, ctx.stackTop + terp.callexArgAllocation);
               continue reading;
           }
           return;
