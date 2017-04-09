@@ -610,9 +610,11 @@ define(['modeval', './util'], function(modeval, util) {
           reading: for (;;) switch (terp.next()) {
             case OP_EOF: break reading;
             case OP_ADD:
-              if (terp.arg1IsPointer && terp.arg1PointerBase === BASE_STACK) {
-                ctx.stackTop += terp.arg2Value;
-                console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
+              if (terp.arg1IsPointer) switch (terp.arg1Register) {
+                case 6:
+                  ctx.stackTop += terp.arg2Value;
+                  console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
+                  break;
               }
               continue reading;              
             case OP_ENTER:
