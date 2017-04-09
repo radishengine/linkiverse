@@ -10,6 +10,12 @@ define(function() {
       return false;
     }
   })();
+  
+  function modeval_toJSON() {
+    var values = [].slice.apply(this);
+    values.unshift(this.op);
+    return values;
+  }
 
   function modeval(name, def) {
     var args = [];
@@ -20,10 +26,10 @@ define(function() {
     });
     const argCount = args.length;
     if (USE_ARROW_FUNCS) {
-      def = 'return (' + args.join(',') + ') => ' + def + ';';
+      def = 'return (' + args.concat(['ctx']).join(',') + ') => ' + def + ';';
     }
     else {
-      def = 'return function('+args.join(',')+') ' +
+      def = 'return function('+args.concat(['ctx']).join(',')+') ' +
              (/^\s*\{/.test(def) ? def : '{ return '+def+'; }');
     }
     const proto = new Function(def)();
@@ -31,18 +37,20 @@ define(function() {
       var props = {
         op: {value:name, enumerable:true},
         length: {value:argCount, enumerable:true},
+        toJSON: {value:modeval_toJSON, enumerable:true},
       };
       for (var i = 0; i < argCount; i++) {
         props[i] = {value:arguments[i], enumerable:true};
       }
       var bindArgs = [].slice.apply(arguments);
+      bindArgs.length = argCount;
       bindArgs.unshift(null);
       return Object.defineProperties(proto.bind.apply(proto, bindArgs), props);
     };
   }
 
   const const_factory = modeval('const', '$');
-  const if_factory = modeval('if', '($() ? $() : $())');
+  const if_factory = modeval('if', '($(ctx) ? $(ctx) : $(ctx))');
   function CONST(v) {
     if (isNaN(v)) return const_factory(v);
     return Object.defineProperties(const_factory(v), {
@@ -85,14 +93,14 @@ define(function() {
       COMMA_CACHE.length = steps.length;
     }
     if (!COMMA_CACHE[steps.length]) {
-      var def = '{ ' + new Array(steps.length).join('$(); ') + 'return $(); }';
+      var def = '{ ' + new Array(steps.length).join('$(ctx); ') + 'return $(ctx); }';
       COMMA_CACHE[steps.length] = modeval(',', def);
     }
     return COMMA_CACHE[steps.length].apply(null, steps);
   }
 
   function unop(operator) {
-    var factory = modeval(operator, '('+operator+' $())');
+    var factory = modeval(operator, '('+operator+' $(ctx))');
     return function(operand) {
       if (operand.op === 'const') {
         return CONST(factory(operand)());
@@ -102,7 +110,7 @@ define(function() {
   }
 
   function binop(operator) {
-    var factory = modeval(operator, '($() '+operator+' $())');
+    var factory = modeval(operator, '($(ctx) '+operator+' $(ctx))');
     return function(left, right) {
       if (left.op === 'const' && right.op === 'const') {
         return CONST(factory(left, right)());
@@ -116,9 +124,9 @@ define(function() {
     NO_OP: NO_OP,
     COMMA: COMMA,
     IF: IF,
-    WHILE: modeval('while', '{ while ($()) { $(); } }'),
-    GET: modeval('[]', '($()[$()])'),
-    SET: modeval('[]', '($()[$()] = $())'),
+    WHILE: modeval('while', '{ while ($(ctx)) { $(ctx); } }'),
+    GET: modeval('[]', '($(ctx)[$(ctx)])'),
+    SET: modeval('[]', '($(ctx)[$(ctx)] = $(ctx))'),
   };
 
   var constants = {
@@ -134,8 +142,8 @@ define(function() {
   };
 
   var boologic = {
-    L_AND: modeval('&&', '{ var a=$(), b=$(); return a && b; }'),
-    L_OR: modeval('||', '{ var a=$(), b=$(); return a && b; }'),
+    L_AND: modeval('&&', '{ var a=$(ctx), b=$(ctx); return a && b; }'),
+    L_OR: modeval('||', '{ var a=$(ctx), b=$(ctx); return a && b; }'),
     L_NOT: unop('!'),
   };
 
@@ -150,15 +158,15 @@ define(function() {
   };
 
   var intMath = {
-    IDIV32: modeval('(int)/', '(($() / $()) | 0)'), 
-    IMUL32: modeval('(int)*', '(($() * $()) | 0)'), // TODO: imul32 overflow semantics
+    IDIV32: modeval('(int)/', '(($(ctx) / $(ctx)) | 0)'), 
+    IMUL32: modeval('(int)*', '(($(ctx) * $(ctx)) | 0)'), // TODO: imul32 overflow semantics
   };
 
   var dataViewAccess = {
-    DV_GETI8: modeval('getInt8', '$().getInt8($())'),
-    DV_GETU8: modeval('getUint8', '$().getUint8($())'),
-    DV_SETI8: modeval('setInt8', '$().setUint8($(), $())'),
-    DV_SETU8: modeval('setUint8', '$().setUint8($(), $())'),
+    DV_GETI8: modeval('getInt8', '$(ctx).getInt8($(ctx))'),
+    DV_GETU8: modeval('getUint8', '$(ctx).getUint8($(ctx))'),
+    DV_SETI8: modeval('setInt8', '$(ctx).setUint8($(ctx), $(ctx))'),
+    DV_SETU8: modeval('setUint8', '$(ctx).setUint8($(ctx), $(ctx))'),
   };
   
   [true, false].forEach(function(littleEndian) {
@@ -174,10 +182,10 @@ define(function() {
         var getOpName = getFuncName + endianLabel;
         dataViewAccess[getLabel] = modeval(
           getFuncName + endianLabel,
-          '$().' + getFuncName + '($(), ' + littleEndian + ')');
+          '$(ctx).' + getFuncName + '($(ctx), ' + littleEndian + ')');
         dataViewAccess[setLabel] = modeval(
           setFuncName + endianLabel,
-          '$().' + setFuncName + '($(), $(), ' + littleEndian + ')');
+          '$(ctx).' + setFuncName + '($(ctx), $(ctx), ' + littleEndian + ')');
       });
     });
     [32, 64].forEach(function(floatSize) {
@@ -190,10 +198,10 @@ define(function() {
       var getOpName = getFuncName + endianLabel;
       dataViewAccess[getLabel] = modeval(
         getFuncName + endianLabel,
-        '$().' + getFuncName + '($(), ' + littleEndian + ')');
+        '$(ctx).' + getFuncName + '($(ctx), ' + littleEndian + ')');
       dataViewAccess[setLabel] = modeval(
         setFuncName + endianLabel,
-        '$().' + setFuncName + '($(), $(), ' + littleEndian + ')');
+        '$(ctx).' + setFuncName + '($(ctx), $(ctx), ' + littleEndian + ')');
     });
   });
 
