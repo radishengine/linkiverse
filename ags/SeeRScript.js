@@ -659,9 +659,7 @@ define(['modeval', './util'], function(modeval, util) {
                   console.warn('ADD from reg 5');
                   break;
                 case REG_LOCAL_STACK_BASE:
-                  //throw new Error('NYI');
                   addValue = ctx.localBase;
-                  console.warn('ADD from reg 6');
                   break;
               }
               else {
