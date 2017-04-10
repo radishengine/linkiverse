@@ -611,7 +611,9 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_EOF: break reading;
             case OP_MOV:
               var copyValue;
-              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+              if (terp.arg2IsPointer) {
+              }
+              else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 default:
                   copyValue = ctx['r' + terp.arg2Register];
                   break;
@@ -622,12 +624,12 @@ define(['modeval', './util'], function(modeval, util) {
                   throw new Error('NYI');
                   break;
               }
-              else if (terp.arg2IsPointer) {
-              }
               else {
                 copyValue = terp.arg2Value;
               }
-              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+              if (terp.arg1IsPointer) {
+              }
+              else if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 default:
                   ctx['r' + terp.arg2Register] = copyValue;
                   break;
@@ -640,7 +642,19 @@ define(['modeval', './util'], function(modeval, util) {
               }
               continue reading;
             case OP_ADD:
-              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+              if (terp.arg2IsPointer) {
+              }
+              else if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                case 5:
+                  throw new Error('NYI');
+                  break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
+              }
+              if (terp.arg1IsPointer) {
+              }
+              else if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 case 5:
                   ctx.stackTop += terp.arg2Value;
                   console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
@@ -649,7 +663,11 @@ define(['modeval', './util'], function(modeval, util) {
                   throw new Error('NYI');
                   break;
               }
-              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+              continue reading;
+            case OP_SUB:
+              if (terp.arg2IsPointer) {
+              }
+              else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 case 5:
                   throw new Error('NYI');
                   break;
@@ -657,20 +675,12 @@ define(['modeval', './util'], function(modeval, util) {
                   throw new Error('NYI');
                   break;
               }
-              continue reading;
-            case OP_SUB:
-              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+              if (terp.arg1IsPointer) {
+              }
+              else if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 case 5:
                   ctx.stackTop -= terp.arg2Value;
                   console.log('stack - ' + terp.arg2Value + ' = ' + ctx.stackTop);
-                  break;
-                case 6:
-                  throw new Error('NYI');
-                  break;
-              }
-              if (terp.arg2IsRegister) switch (terp.arg2Register) {
-                case 5:
-                  throw new Error('NYI');
                   break;
                 case 6:
                   throw new Error('NYI');
