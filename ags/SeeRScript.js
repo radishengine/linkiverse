@@ -616,7 +616,7 @@ define(['modeval', './util'], function(modeval, util) {
               var copyValue;
               if (terp.arg2IsPointer) switch (terp.arg2PointerBase) {
                 case BASE_LOCAL_STACK:
-                  copyValue = terp.arg2Value + ctx.localBase;
+                  copyValue = terp.arg2Value;
                   break;
                 default:
                   copyValue = 0;
@@ -717,16 +717,15 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_ENTER:
               ctx.stackTop -= 4;
               ctx.localBase = ctx.stackTop;
-              ctx.stackTop = 0;
-              console.log('enter', ctx.localBase + ctx.stackTop);
+              console.log('enter', ctx.stackTop);
               continue reading;
             case OP_LEAVE:
               ctx.stackTop += 4;
-              console.log('leave', ctx.localBase + ctx.stackTop);
+              console.log('leave', ctx.stackTop);
               continue reading;
             case OP_PUSH:
               ctx.stackTop -= 4;
-              console.log('push', ctx.localBase + ctx.stackTop);
+              console.log('push', ctx.stackTop);
               if (terp.arg1IsPointer) {
               }
               else if (terp.arg1IsRegister) {
@@ -741,7 +740,7 @@ define(['modeval', './util'], function(modeval, util) {
                 throw new Error('NYI');
               }
               ctx.stackTop -= 4;
-              console.log('pushadr', ctx.localBase + ctx.stackTop);
+              console.log('pushadr', ctx.stackTop);
               continue reading;
             case OP_POP:
               if (terp.arg1IsPointer) {
@@ -758,7 +757,7 @@ define(['modeval', './util'], function(modeval, util) {
                   break;
               }
               ctx.stackTop += 4;
-              console.log('pop', ctx.localBase + ctx.stackTop);
+              console.log('pop', ctx.stackTop);
               continue reading;
             case OP_CALLEX:
               var external = def.importsByRef[terp.callexImportRef];
@@ -767,7 +766,7 @@ define(['modeval', './util'], function(modeval, util) {
               console.log(
                 'callex',
                 external.name,
-                ctx.localBase + ctx.stackTop);
+                ctx.stackTop);
               continue reading;
             case OP_CALL:
               var symbol = def.symbolsByEntryPoint[terp.arg1Value];
@@ -775,7 +774,7 @@ define(['modeval', './util'], function(modeval, util) {
               console.log(
                 'call',
                 symbol.name,
-                ctx.localBase + ctx.stackTop);
+                ctx.stackTop);
               continue reading;
           }
           return;
@@ -810,9 +809,10 @@ define(['modeval', './util'], function(modeval, util) {
       }
       for (var entryPoint in flow) {
         var symbol = this.def.symbolsByEntryPoint[entryPoint];
+        var initStack = -(symbol ? symbol.argAllocation : 0) - 4;
         doPart(flow[entryPoint], {
-          localBase: -(symbol ? symbol.argAllocation : 0) - 4,
-          stackTop: 0,
+          localBase: 0,
+          stackTop: initStack,
         });
       }
     },
