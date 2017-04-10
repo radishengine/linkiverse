@@ -767,6 +767,14 @@ define(['modeval', './util'], function(modeval, util) {
                 external.name,
                 ctx.localBase + ctx.stackTop);
               continue reading;
+            case OP_CALL:
+              var symbol = def.symbolsByEntryPoint[terp.arg1Value];
+              ctx.r0 = 0;
+              console.log(
+                'call',
+                symbol.name,
+                ctx.localBase + ctx.stackTop);
+              continue reading;
           }
           return;
         }
