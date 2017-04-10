@@ -633,7 +633,7 @@ define(['modeval', './util'], function(modeval, util) {
               }
               else if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 default:
-                  ctx['r' + terp.arg2Register] = copyValue;
+                  ctx['r' + terp.arg1Register] = copyValue;
                   break;
                 case 5:
                   throw new Error('NYI');
