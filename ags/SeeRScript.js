@@ -704,6 +704,9 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_PUSH:
               ctx.stackTop -= 4;
               console.log('push', ctx.localBase + ctx.stackTop);
+              if (!terp.arg1IsRegister && !terp.arg1IsPointer) {
+                ctx['s' + ctx.stackTop] = terp.arg1Value;
+              }
               continue reading;
             case OP_PUSHADR:
               if (terp.arg1PointerBase === BASE_LOCAL_STACK) {
@@ -713,6 +716,19 @@ define(['modeval', './util'], function(modeval, util) {
               console.log('pushadr', ctx.localBase + ctx.stackTop);
               continue reading;
             case OP_POP:
+              if (terp.arg1IsPointer) {
+              }
+              else if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                default:
+                  ctx['r' + terp.arg1Register] = ctx['s' + ctx.stackTop];
+                  break;
+                case 5:
+                  throw new Error('NYI');
+                  break;
+                case 6:
+                  throw new Error('NYI');
+                  break;
+              }
               ctx.stackTop += 4;
               console.log('pop', ctx.localBase + ctx.stackTop);
               continue reading;
