@@ -647,6 +647,7 @@ define(['modeval', './util'], function(modeval, util) {
                 case REG_LOCAL_STACK_POS:
                   if (isNaN(copyValue)) throw new Error('untraced value');
                   ctx.stackTop = copyValue;
+                  console.log('stack = ' + ctx.stackTop);
                   break;
                 case REG_LOCAL_STACK_BASE:
                   throw new Error('NYI');
