@@ -643,9 +643,7 @@ define(['modeval', './util'], function(modeval, util) {
                   ctx['r' + terp.arg1Register] = copyValue;
                   break;
                 case REG_LOCAL_STACK_POS:
-                  if (isNaN(copyValue)) throw new Error('untraced value');
-                  ctx.stackTop = copyValue;
-                  console.log('stack = ' + ctx.stackTop);
+                  console.log('MOV to stack top');
                   break;
                 case REG_LOCAL_STACK_BASE:
                   throw new Error('NYI');
