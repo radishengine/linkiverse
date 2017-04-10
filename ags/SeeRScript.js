@@ -653,6 +653,7 @@ define(['modeval', './util'], function(modeval, util) {
               else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 default:
                   addValue = ctx['r' + terp.arg2Register];
+                  break;
                 case REG_LOCAL_STACK_POS:
                   //throw new Error('NYI');
                   console.warn('ADD from reg 5');
