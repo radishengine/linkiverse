@@ -658,6 +658,11 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_ADD:
               var addValue;
               if (terp.arg2IsPointer) {
+                if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                  case REG_LOCAL_STACK_POS:
+                    copyValue = ctx.stackTop;
+                    break;
+                }
               }
               else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 default:
@@ -675,17 +680,22 @@ define(['modeval', './util'], function(modeval, util) {
                 addValue = terp.arg2Value;
               }
               if (terp.arg1IsPointer) {
+                if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                  case REG_LOCAL_STACK_POS:
+                    if (isNaN(addValue)) {
+                      throw new Error('addValue is not found');
+                    }
+                    ctx.stackTop += addValue;
+                    console.log('stack + ' + addValue + ' = ' + ctx.stackTop);
+                    break;
+                }
               }
               else if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 default:
                   ctx['r' + terp.arg1Register] += addValue;
                   break;
                 case REG_LOCAL_STACK_POS:
-                  if (isNaN(addValue)) {
-                    throw new Error('addValue is not found');
-                  }
-                  ctx.stackTop += addValue;
-                  console.log('stack + ' + terp.arg2Value + ' = ' + ctx.stackTop);
+                  console.log('add to stack top: ' + addValue);
                   break;
                 case REG_LOCAL_STACK_BASE:
                   throw new Error('NYI');
