@@ -610,7 +610,11 @@ define(['modeval', './util'], function(modeval, util) {
           reading: for (;;) switch (terp.next()) {
             case OP_EOF: break reading;
             case OP_MOV:
-              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+              var copyValue;
+              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                default:
+                  copyValue = ctx['r' + terp.arg2Register];
+                  break;
                 case 5:
                   throw new Error('NYI');
                   break;
@@ -618,7 +622,15 @@ define(['modeval', './util'], function(modeval, util) {
                   throw new Error('NYI');
                   break;
               }
-              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+              else if (terp.arg2IsPointer) {
+              }
+              else {
+                copyValue = terp.arg2Value;
+              }
+              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                default:
+                  ctx['r' + terp.arg2Register] = copyValue;
+                  break;
                 case 5:
                   throw new Error('NYI');
                   break;
