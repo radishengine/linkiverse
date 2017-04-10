@@ -618,10 +618,12 @@ define(['modeval', './util'], function(modeval, util) {
                   copyValue = ctx['r' + terp.arg2Register];
                   break;
                 case 5:
-                  throw new Error('NYI');
+                  //throw new Error('NYI');
+                  console.warn('MOV from reg 5');
                   break;
                 case 6:
-                  throw new Error('NYI');
+                  //throw new Error('NYI');
+                  console.warn('MOV from reg 6');
                   break;
               }
               else {
@@ -646,10 +648,12 @@ define(['modeval', './util'], function(modeval, util) {
               }
               else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 case 5:
-                  throw new Error('NYI');
+                  //throw new Error('NYI');
+                  console.warn('ADD from reg 5');
                   break;
                 case 6:
-                  throw new Error('NYI');
+                  //throw new Error('NYI');
+                  console.warn('ADD from reg 6');
                   break;
               }
               if (terp.arg1IsPointer) {
@@ -669,10 +673,10 @@ define(['modeval', './util'], function(modeval, util) {
               }
               else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 case 5:
-                  throw new Error('NYI');
+                  console.warn('SUB from reg 5');
                   break;
                 case 6:
-                  throw new Error('NYI');
+                  console.warn('SUB from reg 6');
                   break;
               }
               if (terp.arg1IsPointer) {
