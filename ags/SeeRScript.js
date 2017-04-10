@@ -761,6 +761,7 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_CALLEX:
               var external = def.importsByRef[terp.callexImportRef];
               ctx.stackTop += terp.callexArgAllocation;
+              ctx.r0 = 0;
               console.log(
                 'callex',
                 external.name,
