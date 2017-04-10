@@ -719,7 +719,12 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_PUSH:
               ctx.stackTop -= 4;
               console.log('push', ctx.localBase + ctx.stackTop);
-              if (!terp.arg1IsRegister && !terp.arg1IsPointer) {
+              if (terp.arg1IsPointer) {
+              }
+              else if (terp.arg1IsRegister) {
+                ctx['s' + ctx.stackTop] = ctx['r' + terp.arg1Register];
+              }
+              else {
                 ctx['s' + ctx.stackTop] = terp.arg1Value;
               }
               continue reading;
