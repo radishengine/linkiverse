@@ -644,6 +644,9 @@ define(['modeval', './util'], function(modeval, util) {
                   break;
                 case REG_LOCAL_STACK_POS:
                   console.log('MOV to stack top');
+                  if (!terp.arg2IsRegister && !terp.arg2IsPointer) {
+                    ctx.stackTop = ctx.localBase + copyValue;
+                  }
                   break;
                 case REG_LOCAL_STACK_BASE:
                   throw new Error('NYI');
