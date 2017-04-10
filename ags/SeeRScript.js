@@ -614,7 +614,13 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_EOF: break reading;
             case OP_MOV:
               var copyValue;
-              if (terp.arg2IsPointer) {
+              if (terp.arg2IsPointer) switch (terp.arg2PointerBase) {
+                case BASE_LOCAL_STACK:
+                  copyValue = terp.arg2Value + ctx.localBase;
+                  break;
+                default:
+                  copyValue = 0;
+                  break;
               }
               else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 default:
