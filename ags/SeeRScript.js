@@ -614,66 +614,117 @@ define(['modeval', './util'], function(modeval, util) {
             case OP_EOF: break reading;
             case OP_MOV:
               var copyValue;
-              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+              if (terp.arg2IsPointer) {
+                if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                  default:
+                    if (terp.arg2Register > 4) {
+                      throw new Error('NYI: register ' + terp.arg2Register);
+                    }
+                    copyValue = ctx['r' + terp.arg2Register];
+                    break;
+                  case REG_LOCAL_STACK_POS:
+                    copyValue = ctx.stackTop;
+                    break;
+                  case REG_LOCAL_STACK_BASE:
+                    copyValue = ctx.localBase;
+                    break;
+                }
+                else {
+                  copyValue = NaN;
+                }
+              }
+              else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 default:
+                  if (terp.arg2Register > 4) {
+                    throw new Error('NYI: register ' + terp.arg2Register);
+                  }
                   copyValue = ctx['r' + terp.arg2Register];
                   break;
                 case REG_LOCAL_STACK_POS:
-                  console.warn('MOV from reg 5');
-                  copyValue = ctx.stackPos;
+                  copyValue = +ctx['s' + ctx.stackTop];
                   break;
                 case REG_LOCAL_STACK_BASE:
-                  console.warn('MOV from reg 6');
-                  copyValue = ctx.localBase;
-                  break;
-              }
-              else if (terp.arg2IsPointer) switch (terp.arg2PointerBase) {
-                case BASE_LOCAL_STACK:
-                  copyValue = ctx.localBase + terp.arg2Value;
-                  break;
-                default:
-                  copyValue = 0;
+                  copyValue = +ctx['s' + ctx.localBase];
                   break;
               }
               else {
                 copyValue = terp.arg2Value;
               }
-              if (terp.arg1IsRegister) switch (terp.arg1Register) {
+              if (terp.arg1IsPointer) {
+                if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                  default:
+                    if (terp.arg2Register > 4) {
+                      throw new Error('NYI: register ' + terp.arg2Register);
+                    }
+                    copyValue = ctx['r' + terp.arg2Register];
+                    break;
+                  case REG_LOCAL_STACK_POS:
+                    if (isNaN(copyValue)) {
+                      throw new Error('NYI');
+                    }
+                    if (!terp.arg2IsRegister && !terp.arg2IsPointer) {
+                      ctx.stackTop = ctx.localBase + copyValue;
+                    }
+                    else {
+                      ctx.stackTop = copyValue;
+                    }
+                    break;
+                  case REG_LOCAL_STACK_BASE:
+                    if (isNaN(copyValue)) {
+                      throw new Error('NYI');
+                    }
+                    ctx.localBase = copyValue;
+                    break;
+                }
+                else {
+                  console.log('write to pointer');
+                }
+              }
+              else if (terp.arg1IsRegister) switch (terp.arg1Register) {
                 default:
                   ctx['r' + terp.arg1Register] = copyValue;
                   break;
                 case REG_LOCAL_STACK_POS:
-                  console.log('MOV to stack top');
-                  if (!terp.arg2IsRegister && !terp.arg2IsPointer) {
-                    ctx.stackTop = ctx.localBase + copyValue;
-                  }
+                  ctx['s' + ctx.stackTop] = copyValue;
                   break;
                 case REG_LOCAL_STACK_BASE:
-                  throw new Error('NYI');
+                  ctx['s' + ctx.localBase] = copyValue;
                   break;
               }
-              else if (terp.arg1IsPointer) {
-              }
+              else throw new Error('NYI');
               continue reading;
             case OP_ADD:
               var addValue;
               if (terp.arg2IsPointer) {
                 if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                  default:
+                    addValue = +ctx['r' + terp.arg2Register];
+                    break;
                   case REG_LOCAL_STACK_POS:
-                    copyValue = ctx.stackTop;
+                    addValue = ctx.stackTop;
+                    break;
+                  case REG_LOCAL_STACK_BASE:
+                    addValue = ctx.localBase;
+                    break;
+                }
+                else switch (terp.arg2PointerBase) {
+                  case BASE_LOCAL_STACK:
+                    addValue = ctx.localBase + terp.arg2Value;
+                    break;
+                  default:
+                    addValue = terp.arg2Value;
                     break;
                 }
               }
               else if (terp.arg2IsRegister) switch (terp.arg2Register) {
                 default:
-                  addValue = ctx['r' + terp.arg2Register];
+                  addValue = +ctx['r' + terp.arg2Register];
                   break;
                 case REG_LOCAL_STACK_POS:
-                  //throw new Error('NYI');
-                  console.warn('ADD from reg 5');
+                  addValue = +ctx['s' + ctx.stackTop];
                   break;
                 case REG_LOCAL_STACK_BASE:
-                  addValue = ctx.localBase;
+                  addValue = +ctx['s' + ctx.localBase];
                   break;
               }
               else {
@@ -687,6 +738,11 @@ define(['modeval', './util'], function(modeval, util) {
                     }
                     ctx.stackTop += addValue;
                     console.log('stack + ' + addValue + ' = ' + ctx.stackTop);
+                    break;
+                }
+                else switch (terp.arg1PointerBase) {
+                  case BASE_LOCAL_STACK:
+                    ctx['s' + (ctx.localBase + terp.arg1Value)] += addValue;
                     break;
                 }
               }
@@ -704,28 +760,59 @@ define(['modeval', './util'], function(modeval, util) {
               continue reading;
             case OP_SUB:
               var subValue;
-              if (terp.arg2IsRegister) switch (terp.arg2Register) {
+              if (terp.arg2IsPointer) {
+                if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                  default:
+                    subValue = +ctx['r' + terp.arg2Register];
+                    break;
+                  case REG_LOCAL_STACK_POS:
+                    subValue = ctx.stackTop;
+                    break;
+                  case REG_LOCAL_STACK_BASE:
+                    subValue = ctx.localBase;
+                    break;
+                }
+              }
+              else if (terp.arg2IsRegister) switch (terp.arg2Register) {
+                default:
+                  subValue = +ctx['r' + terp.arg2Register];
+                  break;
                 case REG_LOCAL_STACK_POS:
-                  console.warn('SUB from reg 5');
+                  subValue = +ctx['s' + ctx.stackTop];
                   break;
                 case REG_LOCAL_STACK_BASE:
-                  console.warn('SUB from reg 6');
+                  subValue = +ctx['s' + ctx.localBase];
                   break;
-              }
-              else if (terp.arg2IsPointer) {
               }
               else {
                 subValue = terp.arg2Value;
               }
               if (terp.arg1IsPointer) {
+                if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                  case REG_LOCAL_STACK_POS:
+                    if (isNaN(subValue)) throw new Error('NYI');
+                    ctx.stackTop -= subValue;
+                    console.log('stack - ' + subValue + ' = ' + ctx.stackTop);
+                    break;
+                  case REG_LOCAL_STACK_BASE:
+                    throw new Error('NYI');
+                    break;
+                }
+                else switch (terp.arg1PointerBase) {
+                  case BASE_LOCAL_STACK:
+                    ctx['s' + (ctx.localBase + terp.arg1Value)] -= subValue;
+                    break;
+                }
               }
               else if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                default:
+                  ctx['r' + terp.arg1Register] -= subValue;
+                  break;
                 case REG_LOCAL_STACK_POS:
-                  ctx.stackTop -= subValue;
-                  console.log('stack - ' + subValue + ' = ' + ctx.stackTop);
+                  ctx['s' + ctx.stackTop] -= subValue;
                   break;
                 case REG_LOCAL_STACK_BASE:
-                  throw new Error('NYI');
+                  ctx['s' + ctx.localBase] -= subValue;
                   break;
               }
               continue reading;
@@ -742,6 +829,19 @@ define(['modeval', './util'], function(modeval, util) {
               ctx.stackTop -= 4;
               console.log('push', ctx.stackTop);
               if (terp.arg1IsPointer) {
+                if (terp.arg1IsRegister) switch (terp.arg1Register) {
+                  default:
+                    throw new Error('NYI');
+                  case REG_LOCAL_STACK_POS:
+                    ctx[ctx.stackTop] = ctx.stackTop + 4;
+                    break;
+                  case REG_LOCAL_STACK_BASE:
+                    ctx[ctx.stackTop] = ctx.localBase;
+                    break;
+                }
+                else {
+                  throw new Error('NYI');
+                }
               }
               else if (terp.arg1IsRegister) {
                 ctx['s' + ctx.stackTop] = ctx['r' + terp.arg1Register];
