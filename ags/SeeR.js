@@ -322,12 +322,12 @@ define(function() {
       return op;
     },
     pushValue: function(v) {
-      this.getStackSlot(this._stackTop -= 4).value = v;
+      this.getStackSlot(this._stackPos -= 4).value = v;
     },
     popValue: function() {
-      var v = this.getStackValue(this._stackTop);
-      delete this.stack[this._stackTop];
-      this._stackTop += 4;
+      var v = this.getStackValue(this._stackPos);
+      delete this.stack[this._stackPos];
+      this._stackPos += 4;
       return v;
     },
     process: function() {
@@ -354,10 +354,10 @@ define(function() {
           return true;
         case OP_ENTER:
           this.pushValue(this.callStackBase);
-          this.callStackBase = this.stackTop;
+          this.callStackBase = this.stackPos;
           return true;
         case OP_LEAVE:
-          this.stackTop = this.callStackBase;
+          this.stackPos = this.callStackBase;
           this.callStackBase = this.popValue();
           return true;
         case OP_NOP:
@@ -370,7 +370,7 @@ define(function() {
           this.pushValue(this.operands[0]);
           return true;
         case OP_DPUSH:
-          this.stackTop -= 4;
+          this.stackPos -= 4;
           this.pushValue(this.operands[0].value);
           return true;
         case OP_POP:
