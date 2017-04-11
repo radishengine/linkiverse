@@ -37,18 +37,20 @@ define(function() {
     BASE_STACK = 3;
     
   function Ref(expert, base, offset) {
-    this.expert = expert;
+    this.expert;
     this.base = base;
-    this.offset = offset;
+    this.offset = isNaN(offset) ? 0 : offset;
+    if (expert) {
+      Object.defineProperty(this, 'value', {
+        get: expert.getRef.bind(expert, base, offset),
+        set: expert.setRef.bind(expert, base, offset),
+        enumerable: true,
+      });
+    }
     Object.freeze(this);
   }
   Ref.prototype = {
-    get value() {
-      return this.expert.getRef(this.base, this.offset);
-    },
-    set value(v) {
-      this.expert.setRef(this.base, this.offset, v);
-    },
+    value: 0,
     add: function(n) {
       return new Ref(this.expert, this.base, this.offset + n);
     },
@@ -91,7 +93,41 @@ define(function() {
     this.code = code;
     if (!isNaN(code)) this.nextPos = pos;
     this.operands = [];
-    this.registers = {};
+    var self = this;
+    this.registers = {
+      '240': new Ref(this, '@code', 0),
+      '241': new Ref(this, '@data', 0),
+      '242': new Ref(this, '@const', 0),
+      '243': new Ref(this, '@stack', 0),
+      '244': {
+        get value() { return self.nextPos; },
+        set value(v) { self.nextPos = v; },
+      },
+      '245': {
+        get value() { return self.stackPos; },
+        set value(v) { self.stackPos = v; },
+      },
+      '246': {
+        get value() { return self.callStackBase; },
+        set value(v) { self.callStackBase = v; },
+      },
+      '247': {
+        get value() { return self.copyByteLength; },
+        set value(v) { self.copyByteLength = v; },
+      },
+      '248': {
+        get value() { return self.instanceStackBase; },
+        set value(v) { self.instanceStackBase = v; },
+      },
+      '249': {
+        get value() { return self.interruptBlockLevel; },
+        set value(v) { self.interruptBlockLevel = v; },
+      },
+      '251': {
+        get value() { return self.nextOpIsUnsigned ? 1 : 0; },
+        set value(v) { self.nextOpIsUnsigned = !!(v & 1); },
+      },
+    };
     this.stack = {};
     this.literalSlot1 = new ValueSlot;
     this.literalSlot2 = new ValueSlot;
@@ -106,19 +142,25 @@ define(function() {
     /*OVERRIDEME*/ setRef: function(base, offset, value) {
     },
     
+    interruptBlockLevel: 0,
+    get interruptsEnabled() {
+      return this.interruptBlockLevel === 0;
+    },
+    copyByteLength: 0,
     currentPos: -1,
     nextPos: 0,
+    nextOpIsUnsigned: false,
     currentOperator: OP_EOF,
     getRegisterSlot: function(n) {
-      return n in this.registers ? this.registers[n] : this.registers[n] = new ValueSlot;
+      return n in this.registers ? this.registers[n] : this.registers[n] = new Ref(null, '@register', n);
     },
     getStackValue: function(n) {
-      n += this.stackBase;
+      n += this.callStackBase;
       return n in this.stack ? this.stack[n].value : 0;
     },
     getStackSlot: function(n) {
-      n += this.stackBase;
-      return n in this.stack ? this.stack[n] : this.stack[n] = new ValueSlot;
+      n += this.callStackBase;
+      return n in this.stack ? this.stack[n] : this.stack[n] = new Ref(null, '@stack', n);
     },
     get code() {
       return this._code;
@@ -127,7 +169,23 @@ define(function() {
       this._code = v;
       this.dv = new DataView(v.buffer, v.byteOffset, v.byteLength);
     },
-    stackBase: 0,
+    callStackBase: 0,
+    instanceStackBase: 0,
+    _stackPos: 0,
+    get stackPos() {
+      return this._stackPos;
+    },
+    set stackPos(v) {
+      if (isNaN(v) || !isFinite(v) || v > 0 || v !== (v | 0)) {
+        throw new TypeError('invalid stack pos: ' + v);
+      }
+      if (v > this._stackPos) {
+        Object.keys(this.stack).forEach(function(key) {
+          if (!isNaN(key) && v > key) delete this[key];
+        }, this.stack);
+      }
+      this._stackPos = v;
+    },
     next: function() {
       var pos;
       if ((pos = this.currentPos = this.nextPos) >= this.code.length) {
@@ -285,6 +343,391 @@ define(function() {
           throw new Error('unknown opcode: 0x' + op.toString(16));
       }
       return op;
+    },
+    pushValue: function(v) {
+      this.getStackSlot(this._stackTop -= 4).value = v;
+    },
+    popValue: function() {
+      var v = this.getStackValue(this._stackTop);
+      delete this.stack[this._stackTop];
+      this._stackTop += 4;
+      return v;
+    },
+    process: function() {
+      switch (this.currentOperator) {
+        case OP_EOF:
+          return false;
+        case OP_RET:
+          if (this.stackPos === this.instanceStackBase) {
+            return false;
+          }
+          this.nextPos = this.popValue();
+          return true;
+        case OP_CLI:
+          this.interruptBlockLevel++;
+          return true;
+        case OP_STI:
+          if (--this.interruptBlockLevel < 0) {
+            this.interruptBlockLevel = 0;
+            console.error('multitasking violation');
+          }
+          return true;
+        case OP_WAIT:
+          // NYI
+          return true;
+        case OP_ENTER:
+          this.pushValue(this.callStackBase);
+          this.callStackBase = this.stackTop;
+          return true;
+        case OP_LEAVE:
+          this.stackTop = this.callStackBase;
+          this.callStackBase = this.popValue();
+          return true;
+        case OP_NOP:
+          return true;
+          
+        case OP_PUSH:
+          this.pushValue(this.operands[0].value);
+          return true;
+        case OP_PUSHADR:
+          this.pushValue(this.operands[0]);
+          return true;
+        case OP_DPUSH:
+          this.stackTop -= 4;
+          this.pushValue(this.operands[0].value);
+          return true;
+        case OP_POP:
+          this.operands[0].value = this.popValue();
+          return true;
+        case OP_NEG:
+        case OP_DNEG:
+          this.operands[0].value = -this.operands[0].value;
+          return true;
+        case OP_NOT:
+          this.operands[0].value = !this.operands[0].value;
+          return true;
+        case OP_OPTIONS:
+          this.nextOpIsUnsigned = !!(this.operands[0] & 1);
+          return true;
+        case OP_JMP:
+          this.nextPos += this.operands[0].value;
+          return true;
+        case OP_CALL:
+          this.pushValue(this.nextPos);
+          this.nextPos = this.operands[0].value;
+          return true;
+          
+        case OP_CALLEX:
+          var importNumber = this.operands[0], callInfo = this.operands[1].value;
+          var argAllocation = callInfo & 0xffff;
+          var isVoid = callInfo & 0x400000;
+          var structMode = (callInfo >> 23) & 7;
+          structMode = (structMode < 2) ? !!structMode : 1 << (structMode - 2);
+          var callingFromOtherInstance = callInfo & 0x4000000;
+          var resultType = (callInfo & 0x8000000) ? 'double' : 'int';
+          var isMember = callInfo & 0x10000000;
+          var dispatcher = callInfo >>> 29;
+          var args = [];
+          for (var i = 0; i < argAllocation; i += 4) {
+            args.push(this.getStackSlot(this.stackPos + i));
+          }
+          var result = this.callRef('@import', importNumber, args);
+          if (!isVoid) {
+            this.getRegisterSlot(0).value = result;
+          }
+          return true;
+        case OP_COPY:
+          if (this.copyByteLength > 0) {
+            throw new Error('NYI: OP_COPY');
+          }
+          return true;
+        case OP_MOV:
+        case OP_CMOV:
+        case OP_WMOV:
+        case OP_DMOV:
+          this.operands[0].value = this.operands[1].value;
+          return true;
+        case OP_ADD:
+        case OP_DADD:
+          if (typeof this.operands[0].value.operate === 'function') {
+            this.operands[0].value = this.operands[0].value.operate('+', this.operands[1].value);
+          }
+          else if (typeof this.operands[1].value.operate === 'function') {
+            this.operands[0].value = this.operands[1].value.operate('+', this.operands[0].value);
+          }
+          else {
+            this.operands[0].value += this.operands[1].value;
+          }
+          return true;
+        case OP_SUB:
+        case OP_DSUB:
+          if (typeof this.operands[0].value.operate === 'function') {
+            this.operands[0].value = this.operands[0].value.operate('-', this.operands[1].value);
+          }
+          else {
+            this.operands[0].value -= this.operands[1].value;
+          }
+          return true;
+        case OP_CMPE:
+          if (typeof this.operands[0].value.operate === 'function') {
+            this.operands[0].value = this.operands[0].value.operate('===', this.operands[1].value);
+          }
+          else {
+            this.operands[0].value = this.operands[0].value === this.operands[1].value;
+          }
+          return true;
+        case OP_CMPG:
+          var value1 = this.operands[0].value, value2 = this.operands[1].value;
+          if (this.nextOpIsUnsigned) {
+            this.nextOpIsUnsigned = false;
+            if (typeof value1.operate === 'function') {
+              value1 = value1.operate('>>>', 0);
+            }
+            else {
+              value1 >>>= 0;
+            }
+            if (typeof value2.operate === 'function') {
+              value2 = value2.operate('>>>', 0);
+            }
+            else {
+              value2 >>>= 0;
+            }
+          }
+          if (typeof value1.operate === 'function') {
+            this.operands[0].value = value1.operate('>', value2);
+          }
+          else if (typeof value2.operate === 'function') {
+            this.operands[0].value = value2.operate('<', value1);
+          }
+          else {
+            this.operands[0].value = value1 > value2;
+          }
+          return true;
+        case OP_CMPL:
+          var value1 = this.operands[0].value, value2 = this.operands[1].value;
+          if (this.nextOpIsUnsigned) {
+            this.nextOpIsUnsigned = false;
+            if (typeof value1.operate === 'function') {
+              value1 = value1.operate('>>>', 0);
+            }
+            else {
+              value1 >>>= 0;
+            }
+            if (typeof value2.operate === 'function') {
+              value2 = value2.operate('>>>', 0);
+            }
+            else {
+              value2 >>>= 0;
+            }
+          }
+          if (typeof value1.operate === 'function') {
+            this.operands[0].value = value1.operate('<', value2);
+          }
+          else if (typeof value2.operate === 'function') {
+            this.operands[0].value = value2.operate('>', value1);
+          }
+          else {
+            this.operands[0].value = value1 < value2;
+          }
+          return true;
+        case OP_CMPNG:
+          var value1 = this.operands[0].value, value2 = this.operands[1].value;
+          if (this.nextOpIsUnsigned) {
+            this.nextOpIsUnsigned = false;
+            if (typeof value1.operate === 'function') {
+              value1 = value1.operate('>>>', 0);
+            }
+            else {
+              value1 >>>= 0;
+            }
+            if (typeof value2.operate === 'function') {
+              value2 = value2.operate('>>>', 0);
+            }
+            else {
+              value2 >>>= 0;
+            }
+          }
+          if (typeof value1.operate === 'function') {
+            this.operands[0].value = value1.operate('<=', value2);
+          }
+          else if (typeof value2.operate === 'function') {
+            this.operands[0].value = value2.operate('>', value1);
+          }
+          else {
+            this.operands[0].value = value1 <= value2;
+          }
+          return true;
+        case OP_CMPNL:
+          var value1 = this.operands[0].value, value2 = this.operands[1].value;
+          if (this.nextOpIsUnsigned) {
+            this.nextOpIsUnsigned = false;
+            if (typeof value1.operate === 'function') {
+              value1 = value1.operate('>>>', 0);
+            }
+            else {
+              value1 >>>= 0;
+            }
+            if (typeof value2.operate === 'function') {
+              value2 = value2.operate('>>>', 0);
+            }
+            else {
+              value2 >>>= 0;
+            }
+          }
+          if (typeof value1.operate === 'function') {
+            this.operands[0].value = value1.operate('>=', value2);
+          }
+          else if (typeof value2.operate === 'function') {
+            this.operands[0].value = value2.operate('<', value1);
+          }
+          else {
+            this.operands[0].value = value1 >= value2;
+          }
+          return true;
+        case OP_MUL:
+        case OP_DMUL:
+          if (typeof this.operands[0].value.operate === 'function') {
+            this.operands[0].value = this.operands[0].value.operate('*', this.operands[1].value);
+          }
+          else if (typeof this.operands[1].value.operate === 'function') {
+            this.operands[0].value = this.operands[1].value.operate('*', this.operands[0].value);
+          }
+          else {
+            this.operands[0].value *= this.operands[1].value;
+          }
+          return true;
+        case OP_DIV:
+          if (this.nextOpIsUnsigned) {
+            var value1 = this.operands[0].value, value2 = this.operands[1].value;
+            this.nextOpIsUnsigned = false;
+            if (typeof value1.operate === 'function') {
+              value1 = value1.operate('>>>', 0);
+            }
+            else {
+              value1 >>>= 0;
+            }
+            if (typeof value2.operate === 'function') {
+              value2 = value2.operate('>>>', 0);
+            }
+            else {
+              value2 >>>= 0;
+            }
+            if (typeof value1.operate === 'function') {
+              this.operands[0].value = value1.operate('(int)/', this.operands[1].value);
+            }
+            else {
+              this.operands[0].value = (value1 / value2) >>> 0;
+            }
+          }
+          else {
+            if (typeof this.operands[0].value.operate === 'function') {
+              this.operands[0].value = this.operands[0].value.operate('(int)/', this.operands[1].value);
+            }
+            else {
+              this.operands[0].value = (this.operands[0].value / this.operands[1].value) | 0;
+            }
+          }
+          return true;
+        case OP_DDIV:
+          if (typeof this.operands[0].value.operate === 'function') {
+            this.operands[0].value = this.operands[0].value.operate('/', this.operands[1].value);
+          }
+          else {
+            this.operands[0].value /= this.operands[1].value;
+          }
+          return true;
+        case OP_FIXMUL:
+        case OP_FIXDIV:
+        case OP_DFIX:
+        case OP_FIXDBL:
+          throw new Error('NYI: fixed point');
+        case OP_DCMPE:
+          this.operands[0].value = this.operands[0].value === this.operands[1].value;
+          return true;
+        case OP_DCMPG:
+          this.operands[0].value = this.operands[0].value > this.operands[1].value;
+          return true;
+        case OP_DCMPL:
+          this.operands[0].value = this.operands[0].value < this.operands[1].value;
+          return true;
+        case OP_DCMPNG:
+          this.operands[0].value = this.operands[0].value <= this.operands[1].value;
+          return true;
+        case OP_DCMPNL:
+          this.operands[0].value = this.operands[0].value >= this.operands[1].value;
+          return true;
+        case OP_MOD:
+          var value1 = this.operands[0].value, value2 = this.operands[1].value;
+          if (this.nextOpIsUnsigned) {
+            this.nextOpIsUnsigned = false;
+            if (typeof value1.operate === 'function') {
+              value1 = value1.operate('>>>', 0);
+            }
+            else {
+              value1 >>>= 0;
+            }
+            if (typeof value2.operate === 'function') {
+              value2 = value2.operate('>>>', 0);
+            }
+            else {
+              value2 >>>= 0;
+            }
+          }
+          if (typeof this.operands[0].value.operate === 'function') {
+            this.operands[0].value = value1.operate('%', value2);
+          }
+          else {
+            this.operands[0].value = value1 % value2;
+          }
+          return true;
+        case OP_AND:
+          this.operands[0].value &= this.operands[1].value;
+          return true;
+        case OP_OR:
+          this.operands[0].value |= this.operands[1].value;
+          return true;
+        case OP_XOR:
+          this.operands[0].value ^= this.operands[1].value;
+          return true;
+        case OP_ANDL:
+          this.operands[0].value = this.operands[0].value && this.operands[1].value;
+          return true;
+        case OP_ORL:
+          this.operands[0].value = this.operands[0].value || this.operands[1].value;
+          return true;
+        case OP_SHR:
+          if (this.nextOpIsUnsigned) {
+            this.nextOpIsUnsigned = false;
+            this.operands[0].value >>>= this.operands[1].value;
+          }
+          else {
+            this.operands[0].value >>= this.operands[1].value;
+          }
+          return true;
+        case OP_SHL:
+          this.operands[0].value <<= this.operands[1].value;
+          return true;
+        case OP_IDBL:
+        case OP_FDBL:
+        case OP_DFLT:
+          this.operands[0].value = this.operands[1].value;
+          return true;
+        case OP_DINT:
+          this.operands[0].value = this.operands[1].value | 0;
+          return true;
+        case OP_JTRUE:
+          if (this.operands[0].value) {
+            this.nextPos += this.operands[1].value;
+          }
+          return true;
+        case OP_JFALSE:
+          if (this.operands[0].value) {
+            this.nextPos += this.operands[1].value;
+          }
+          return true;
+        case OP_FORK:
+          throw new Error('NYI: OP_FORK');
+      }
     },
   };
   
