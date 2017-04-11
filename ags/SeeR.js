@@ -203,7 +203,7 @@ define(function() {
                 ptr = new ValueSlot(this, '@const', ptr, true);
                 break;
               case BASE_STACK:
-                ptr = this.getStackSlot(ptr);
+                ptr = this.getStackSlot(this.callStackBase + ptr);
                 break;
             }
             this.operands[0] = ptr;
@@ -249,7 +249,7 @@ define(function() {
                 ptr = new ValueSlot(this, '@const', ptr, true);
                 break;
               case BASE_STACK:
-                ptr = this.getStackSlot(ptr);
+                ptr = this.getStackSlot(this.callStackBase + ptr);
                 break;
             }
             this.operands[0] = ptr;
@@ -289,7 +289,7 @@ define(function() {
                 ptr = new ValueSlot(this, '@const', ptr, true);
                 break;
               case BASE_STACK:
-                ptr = this.getStackSlot(ptr);
+                ptr = this.getStackSlot(this.callStackBase + ptr);
                 break;
             }
             this.operands[1] = ptr;
@@ -320,6 +320,12 @@ define(function() {
           throw new Error('unknown opcode: 0x' + op.toString(16));
       }
       return op;
+    },
+    pushValues: function() {
+      var pos = this._stackPos -= 4 * arguments.length;
+      for (var i = 0; i < arguments.length; i++) {
+        this.getStackSlot(pos + i * 4).value = arguments[i];
+      }
     },
     pushValue: function(v) {
       this.getStackSlot(this._stackPos -= 4).value = v;
