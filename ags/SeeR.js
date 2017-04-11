@@ -262,7 +262,7 @@ define(function() {
             nextPos += 8;
           }
           else {
-            (this.operands[0] = this.literalSlot1).value = this.dv.getInt32(pos + 4, true);
+            (this.operands[0] = this.literalSlot1).value = this.dv.getInt32(nextPos, true);
             nextPos += 4;
           }
           var v2IsPointer = full & 0x80;
@@ -301,11 +301,11 @@ define(function() {
             case OP_DADD: case OP_DSUB: case OP_DMUL: case OP_DDIV:
             case OP_DCMPE: case OP_DCMPG: case OP_DCMPL: case OP_DCMPNG: case OP_DCMPNL:
             case OP_DFIX: case OP_DMOV:
-              (this.operands[1] = this.literalSlot2).value = this.dv.getFloat64(pos + 4, true);
+              (this.operands[1] = this.literalSlot2).value = this.dv.getFloat64(nextPos, true);
               nextPos += 8;
               break;
             default:
-              (this.operands[1] = this.literalSlot2).value = this.dv.getInt32(pos + 4, true);
+              (this.operands[1] = this.literalSlot2).value = this.dv.getInt32(nextPos, true);
               nextPos += 4;
               break;
           }
