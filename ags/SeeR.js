@@ -130,11 +130,9 @@ define(function() {
       return this.registers[n] = new ValueSlot(this, '@register', n, false);
     },
     getStackValue: function(n) {
-      n += this.callStackBase;
       return n in this.stack ? this.stack[n].value : 0;
     },
     getStackSlot: function(n) {
-      n += this.callStackBase;
       if (n in this.stack) return this.stack[n];
       return this.stack[n] = new ValueSlot(this, '@stack', n, false);
     },
