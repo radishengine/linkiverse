@@ -68,6 +68,7 @@ define(function() {
     this.code = code;
     if (!isNaN(code)) this.nextPos = pos;
     this.operands = [];
+    this.stack = {};
     var self = this;
     this.registers = {
       '240': new ValueSlot(this, '@code', 0, true),
@@ -103,7 +104,6 @@ define(function() {
         set value(v) { self.nextOpIsUnsigned = !!(v & 1); },
       },
     };
-    this.stack = {};
     this.literalSlot1 = new ValueSlot(this, '@literal', 0, false);
     this.literalSlot2 = new ValueSlot(this, '@literal', 1, false);
   }
