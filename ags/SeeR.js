@@ -36,14 +36,15 @@ define(function() {
     BASE_DATA = 2,
     BASE_STACK = 3;
     
-  function ValueSlot(expert, base, offset) {
-    this.expert;
+  function ValueSlot(expert, base, offset, defer) {
+    this.expert = expert;
     this.base = base;
     this.offset = isNaN(offset) ? 0 : offset;
-    if (expert) {
+    this.defer = !!defer;
+    if (defer) {
       Object.defineProperty(this, 'value', {
-        get: expert.getRef.bind(expert, base, offset),
-        set: expert.setRef.bind(expert, base, offset),
+        get: function() { return expert.getRef(base, offset); },
+        set: function(v) { expert.setRef(base, offset, v); },
         enumerable: true,
       });
       Object.freeze(this);
@@ -56,8 +57,8 @@ define(function() {
     value: 0,
     operate: function(operator, value) {
       switch (operator) {
-        case '+': return new ValueSlot(this.expert, this.base, this.offset + value);
-        case '-': return new ValueSlot(this.expert, this.base, this.offset - value);
+        case '+': return new ValueSlot(this.expert, this.base, this.offset + value, this.defer);
+        case '-': return new ValueSlot(this.expert, this.base, this.offset - value, this.defer);
         default: return NaN;
       }
     },
@@ -69,10 +70,10 @@ define(function() {
     this.operands = [];
     var self = this;
     this.registers = {
-      '240': new ValueSlot(this, '@code', 0),
-      '241': new ValueSlot(this, '@data', 0),
-      '242': new ValueSlot(this, '@const', 0),
-      '243': new ValueSlot(this, '@stack', 0),
+      '240': new ValueSlot(this, '@code', 0, true),
+      '241': new ValueSlot(this, '@data', 0, true),
+      '242': new ValueSlot(this, '@const', 0, true),
+      '243': this.getStackSlot(0),
       '244': {
         get value() { return self.nextPos; },
         set value(v) { self.nextPos = v; },
@@ -103,8 +104,8 @@ define(function() {
       },
     };
     this.stack = {};
-    this.literalSlot1 = new ValueSlot(this, '@literal', 0);
-    this.literalSlot2 = new ValueSlot(this, '@literal', 1);
+    this.literalSlot1 = new ValueSlot(this, '@literal', 0, false);
+    this.literalSlot2 = new ValueSlot(this, '@literal', 1, false);
   }
   SeeR.prototype = {
     /*OVERRIDEME*/ getBaseName: function(n) {
@@ -126,7 +127,8 @@ define(function() {
     nextOpIsUnsigned: false,
     currentOperator: OP_EOF,
     getRegisterSlot: function(n) {
-      return n in this.registers ? this.registers[n] : this.registers[n] = new ValueSlot(null, '@register', n);
+      if (n in this.registers) return this.registers[n];
+      return this.registers[n] = new ValueSlot(this, '@register', n, false);
     },
     getStackValue: function(n) {
       n += this.callStackBase;
@@ -134,7 +136,8 @@ define(function() {
     },
     getStackSlot: function(n) {
       n += this.callStackBase;
-      return n in this.stack ? this.stack[n] : this.stack[n] = new ValueSlot(null, '@stack', n);
+      if (n in this.stack) return this.stack[n];
+      return this.stack[n] = new ValueSlot(this, '@stack', n, false);
     },
     get code() {
       return this._code;
@@ -191,13 +194,13 @@ define(function() {
             var v1PointerBase = (full >> 10) & 3;
             if (typeof ptr === number) switch (v1PointerBase) {
               case BASE_IMPORT:
-                ptr = new ValueSlot(this, this.getBaseName(ptr), 0);
+                ptr = new ValueSlot(this, this.getBaseName(ptr), 0, true);
                 break;
               case BASE_DATA:
-                ptr = new ValueSlot(this, '@data', ptr);
+                ptr = new ValueSlot(this, '@data', ptr, true);
                 break;
               case BASE_CONST:
-                ptr = new ValueSlot(this, '@const', ptr);
+                ptr = new ValueSlot(this, '@const', ptr, true);
                 break;
               case BASE_STACK:
                 ptr = this.getStackSlot(ptr);
@@ -237,13 +240,13 @@ define(function() {
             var v1PointerBase = (full >> 10) & 3;
             if (typeof ptr === number) switch (v1PointerBase) {
               case BASE_IMPORT:
-                ptr = new ValueSlot(this, this.getBaseName(ptr), 0);
+                ptr = new ValueSlot(this, this.getBaseName(ptr), 0, true);
                 break;
               case BASE_DATA:
-                ptr = new ValueSlot(this, '@data', ptr);
+                ptr = new ValueSlot(this, '@data', ptr, true);
                 break;
               case BASE_CONST:
-                ptr = new ValueSlot(this, '@const', ptr);
+                ptr = new ValueSlot(this, '@const', ptr, true);
                 break;
               case BASE_STACK:
                 ptr = this.getStackSlot(ptr);
@@ -277,13 +280,13 @@ define(function() {
             var v2PointerBase = (full >> 13) & 3;
             if (typeof ptr === number) switch (v2PointerBase) {
               case BASE_IMPORT:
-                ptr = new ValueSlot(this, this.getBaseName(ptr), 0);
+                ptr = new ValueSlot(this, this.getBaseName(ptr), 0, true);
                 break;
               case BASE_DATA:
-                ptr = new ValueSlot(this, '@data', ptr);
+                ptr = new ValueSlot(this, '@data', ptr, true);
                 break;
               case BASE_CONST:
-                ptr = new ValueSlot(this, '@const', ptr);
+                ptr = new ValueSlot(this, '@const', ptr, true);
                 break;
               case BASE_STACK:
                 ptr = this.getStackSlot(ptr);
