@@ -644,7 +644,7 @@ define(function() {
             continue codeLoop;
           case 38: // THISBASE
             var value = code[offset++];
-            console.error('NYI: THISBASE');
+            //console.error('NYI: THISBASE');
             continue codeLoop;
           case 39: // NUMFUNCARGS
             var value = code[offset++];
