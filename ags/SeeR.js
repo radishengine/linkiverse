@@ -239,8 +239,8 @@ define(function() {
             nextPos += 8;
           }
           else {
-            (this.operands[0] = this.literalSlot1).value = this.dv.getInt32(pos + 4, true);
-            nextPos += 8;
+            (this.operands[0] = this.literalSlot1).value = this.dv.getInt32(nextPos, true);
+            nextPos += 4;
           }
           this.nextPos = nextPos;
           break;
