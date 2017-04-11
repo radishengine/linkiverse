@@ -1,4 +1,4 @@
-define(['SeeR', 'modeval', './util'], function(SeeR, modeval, util) {
+define(['./SeeR', 'modeval', './util'], function(SeeR, modeval, util) {
 
   'use strict';
   
