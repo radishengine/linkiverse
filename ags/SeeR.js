@@ -414,6 +414,7 @@ define(function() {
           for (var i = 0; i < argAllocation; i += 4) {
             args.push(this.getStackSlot(this.stackPos + i));
           }
+          this.stackPos += argAllocation;
           var result = this.callRef('@import', importNumber, args);
           if (!isVoid) {
             this.getRegisterSlot(0).value = result;
