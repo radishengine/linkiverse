@@ -192,7 +192,7 @@ define(function() {
               nextPos += 4;
             }
             var v1PointerBase = (full >> 10) & 3;
-            if (typeof ptr === number) switch (v1PointerBase) {
+            if (typeof ptr === 'number') switch (v1PointerBase) {
               case BASE_IMPORT:
                 ptr = new ValueSlot(this, this.getBaseName(ptr), 0, true);
                 break;
@@ -238,7 +238,7 @@ define(function() {
               nextPos += 4;
             }
             var v1PointerBase = (full >> 10) & 3;
-            if (typeof ptr === number) switch (v1PointerBase) {
+            if (typeof ptr === 'number') switch (v1PointerBase) {
               case BASE_IMPORT:
                 ptr = new ValueSlot(this, this.getBaseName(ptr), 0, true);
                 break;
@@ -278,7 +278,7 @@ define(function() {
               nextPos += 4;
             }
             var v2PointerBase = (full >> 13) & 3;
-            if (typeof ptr === number) switch (v2PointerBase) {
+            if (typeof ptr === 'number') switch (v2PointerBase) {
               case BASE_IMPORT:
                 ptr = new ValueSlot(this, this.getBaseName(ptr), 0, true);
                 break;
