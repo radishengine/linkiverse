@@ -395,7 +395,7 @@ define(function() {
           return true;
           
         case OP_CALLEX:
-          var importNumber = this.operands[0], callInfo = this.operands[1].value;
+          var importNumber = this.operands[0].value, callInfo = this.operands[1].value;
           var argAllocation = callInfo & 0xffff;
           var isVoid = callInfo & 0x400000;
           var structMode = (callInfo >> 23) & 7;
