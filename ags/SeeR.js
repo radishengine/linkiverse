@@ -37,24 +37,23 @@ define(function() {
     BASE_STACK = 3;
     
   function ValueSlot(expert, base, offset, defer) {
-    this.expert = expert;
-    this.base = base;
-    this.offset = isNaN(offset) ? 0 : offset;
-    this.defer = !!defer;
+    this.value = 0;
+    Object.defineProperties(this, {
+      expert: {value:expert, enumerable:true},
+      base: {value:expert, enumerable:true},
+      offset: {value:isNaN(offset) ? 0 : offset, enumerable:true},
+      defer: {value:!!defer, enumerable:true},
+    });
     if (defer) {
       Object.defineProperty(this, 'value', {
         get: function() { return expert.getRef(base, offset); },
         set: function(v) { expert.setRef(base, offset, v); },
         enumerable: true,
       });
-      Object.freeze(this);
     }
-    else {
-      Object.seal(this);
-    }
+    Object.seal(this);
   }
   ValueSlot.prototype = {
-    value: 0,
     operate: function(operator, value) {
       switch (operator) {
         case '+': return new ValueSlot(this.expert, this.base, this.offset + value, this.defer);
