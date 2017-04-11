@@ -115,6 +115,9 @@ define(function() {
     },
     /*OVERRIDEME*/ setRef: function(base, offset, value) {
     },
+    /*OVERRIDEME*/ callRef: function(base, offset, args) {
+      return 0;
+    },
     
     interruptBlockLevel: 0,
     get interruptsEnabled() {
