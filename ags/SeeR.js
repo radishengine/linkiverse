@@ -40,7 +40,7 @@ define(function() {
     this.value = 0;
     Object.defineProperties(this, {
       expert: {value:expert, enumerable:true},
-      base: {value:expert, enumerable:true},
+      base: {value:base, enumerable:true},
       offset: {value:isNaN(offset) ? 0 : offset, enumerable:true},
       defer: {value:!!defer, enumerable:true},
     });
