@@ -412,7 +412,7 @@ define(function() {
           var dispatcher = callInfo >>> 29;
           var args = [];
           for (var i = 0; i < argAllocation; i += 4) {
-            args.push(this.getStackSlot(this.stackPos + i));
+            args.push(this.getStackValue(this.stackPos + i));
           }
           this.stackPos += argAllocation;
           var result = this.callRef('@import', importNumber, args);
