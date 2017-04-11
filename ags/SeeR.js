@@ -132,12 +132,15 @@ define(function() {
       if (n in this.registers) return this.registers[n];
       return this.registers[n] = new ValueSlot(this, '@register', n, false);
     },
-    getStackValue: function(n) {
-      return n in this.stack ? this.stack[n].value : 0;
+    getRegisterValue: function(n) {
+      return (n in this.registers) ? this.registers[n].value : 0;
     },
     getStackSlot: function(n) {
       if (n in this.stack) return this.stack[n];
       return this.stack[n] = new ValueSlot(this, '@stack', n, false);
+    },
+    getStackValue: function(n) {
+      return n in this.stack ? this.stack[n].value : 0;
     },
     get code() {
       return this._code;
