@@ -716,6 +716,15 @@ define(function() {
           throw new Error('NYI: OP_FORK');
       }
     },
+    get jumpOffset() {
+      switch (this.currentOpcode) {
+        default: return NaN;
+        case OP_JTRUE: case OP_JFALSE:
+          return this.operands[1].value;
+        case OP_JMP:
+          return this.operands[0].value;
+      }
+    },
   };
   
   return Object.assign(SeeR, {ValueSlot:ValueSlot});
