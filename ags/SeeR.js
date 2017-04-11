@@ -240,10 +240,10 @@ define(function() {
                 ptr = new ValueSlot(this, this.getBaseName(ptr), 0);
                 break;
               case BASE_DATA:
-                ptr = new Ref(this, '@data', ptr);
+                ptr = new ValueSlot(this, '@data', ptr);
                 break;
               case BASE_CONST:
-                ptr = new Ref(this, '@const', ptr);
+                ptr = new ValueSlot(this, '@const', ptr);
                 break;
               case BASE_STACK:
                 ptr = this.getStackSlot(ptr);
