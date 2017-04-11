@@ -127,7 +127,7 @@ define(function() {
     currentPos: -1,
     nextPos: 0,
     nextOpIsUnsigned: false,
-    currentOperator: OP_EOF,
+    currentOpcode: OP_EOF,
     getRegisterSlot: function(n) {
       if (n in this.registers) return this.registers[n];
       return this.registers[n] = new ValueSlot(this, '@register', n, false);
@@ -169,14 +169,14 @@ define(function() {
     next: function() {
       var pos;
       if ((pos = this.currentPos = this.nextPos) >= this.code.length) {
-        return this.currentOperator = OP_EOF;
+        return this.currentOpcode = OP_EOF;
       }
       var op = this.code[pos] & 0x3F;
       if (op === 0) {
         this.operands.length = 0;
-        return this.currentOperator = this.dv.getInt32(pos, true);
+        return this.currentOpcode = this.dv.getInt32(pos, true);
       }
-      switch (this.currentOperator = op) {
+      switch (this.currentOpcode = op) {
         case OP_PUSH: case OP_PUSHADR: case OP_DPUSH: case OP_POP: case OP_NEG:
         case OP_DNEG: case OP_NOT:  case OP_OPTIONS: case OP_JMP: case OP_CALL:
           this.operands.length = 1;
@@ -340,7 +340,7 @@ define(function() {
       return v;
     },
     process: function() {
-      switch (this.currentOperator) {
+      switch (this.currentOpcode) {
         case OP_EOF:
           return false;
         case OP_RET:
