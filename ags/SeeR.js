@@ -51,8 +51,12 @@ define(function() {
   }
   Ref.prototype = {
     value: 0,
-    add: function(n) {
-      return new Ref(this.expert, this.base, this.offset + n);
+    operate: function(operator, value) {
+      switch (operator) {
+        case '+': return new Ref(this.expert, this.base, this.offset + value);
+        case '-': return new Ref(this.expert, this.base, this.offset - value);
+        default: return NaN;
+      }
     },
   };
   
@@ -62,31 +66,6 @@ define(function() {
   }
   ValueSlot.prototype = {
     value: 0,
-    perform: function(operator, value) {
-      switch (operator) {
-        case '=': this.value = value; break;
-        case '+=':
-          if (typeof this.value.add === 'function') {
-            this.value = this.value.add(value);
-          }
-          elseif (typeof value.add === 'function') {
-            this.value = value.add(this.value);
-          }
-          else this.value += value;
-          break;
-        case '-=':
-          if (typeof this.value.sub === 'function') {
-            this.value = this.value.sub(value);
-          }
-          elseif (typeof value.sub === 'function') {
-            this.value = value.sub(this.value);
-          }
-          else this.value += value;
-          break;
-        case '*=': this.value *= value; break;
-        case '/=': this.value /= value; break;
-      }
-    },
   };
   
   function SeeR(code, pos) {
