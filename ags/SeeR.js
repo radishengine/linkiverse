@@ -223,7 +223,7 @@ define(function() {
           break;
         default:
           this.operands.length = 2;
-          var full = this.dv.getInt32(this.pos, true);
+          var full = this.dv.getInt32(pos, true);
           var nextPos = pos + 4;
           var v1IsPointer = full & 0x40;
           var v1IsRegister = full & 0x100;
