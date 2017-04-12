@@ -32,7 +32,7 @@ define(function() {
         file.buffer = result;
         resolve(result.subarray(0, length));
       });
-      fr.loadAsArrayBuffer(file.slice(offset, Math.min(file.size, offset + Math.max(length, BUFFER_SIZE))));
+      fr.readAsArrayBuffer(file.slice(offset, Math.min(file.size, offset + Math.max(length, BUFFER_SIZE))));
     });
   }
   
