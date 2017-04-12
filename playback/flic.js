@@ -978,13 +978,13 @@ define(function() {
                 return nextChunk(stream, offset + length, endOffset);
               });
             }
-            return bufferedFileRead(file, offset, offset + length)
+            return bufferedFileRead(file, offset, length)
             .then(function(raw) {
               stream.push(new chunkType.TChunk(raw.buffer, raw.byteOffset, raw.byteLength));
               return nextChunk(stream, offset + length, endOffset);
             });
           }
-          return bufferedFileRead(file, offset, offset + length)
+          return bufferedFileRead(file, offset, length)
           .then(function(raw) {
             raw.chunkTypeCode = typeCode;
             stream.push(raw);
