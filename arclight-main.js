@@ -1,6 +1,6 @@
 require(
-['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/midi', 'specify'],
-function(inflate, GameView, RoomView, Runtime, midi, specify) {
+['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/midi', 'playback/flic', 'specify'],
+function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
 
   'use strict';
   
@@ -9,6 +9,8 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
   }
   
   window.midi = midi;
+  
+  window.flic = flic;
   
   window.specify = specify;
   
