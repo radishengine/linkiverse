@@ -997,7 +997,10 @@ define(function() {
         .then(function(raw) {
           var stream = [];
           stream.header = new THeader(raw.buffer, raw.byteOffset, raw.byteLength);
-          return nextChunk(stream, offset + THeader.byteLength, offset + streamHeader.totalByteLength);
+          return nextChunk(
+            stream,
+            offset + THeader.byteLength,
+            offset + stream.header.totalByteLength);
         });
       }
       return chunkStream(0, file.size, FileHeaderView);
