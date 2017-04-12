@@ -966,7 +966,7 @@ define(function() {
         if (offset >= endOffset) return stream;
         return bufferedFileRead(file, offset, 6)
         .then(function(raw) {
-          var dv = new DataView(raw, 0, 6);
+          var dv = new DataView(raw.buffer, raw.byteOffset, 6);
           var length = dv.getUint32(0, true);
           var typeCode = dv.getUint16(4, true);
           if (typeCode in chunkTypesById) {
