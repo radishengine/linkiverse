@@ -86,7 +86,7 @@ function(inflate, GameView, RoomView, Runtime, midi, specify) {
             + 'collection:' + self.identifier
             + ' mediatype:software'
             + ' -subject:"game+creation-software"'
-            + ' ags_format_version:12'
+            + ' ags_format_version:(7 OR 9)'
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
           + '&rows=100'
