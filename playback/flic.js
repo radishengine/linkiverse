@@ -933,8 +933,8 @@ define(function() {
     {id:0x0007, name:'delta/rle-by-word', TChunk:WordDeltaView},
     {id:0x000B, name:'palette/vga', TChunk:PaletteView},
     {id:0x000C, name:'delta/rle-by-byte', TChunk:ByteDeltaView},
-    {id:0x000D, name:'full/black', TChunk:EmptyChunkView};
-    {id:0x000F, name:'full/rle-by-byte', TChunk:ByteRunView};
+    {id:0x000D, name:'full/black', TChunk:EmptyChunkView},
+    {id:0x000F, name:'full/rle-by-byte', TChunk:ByteRunView},
     {id:0x0010, name:'full/by-byte', TChunk:UncompressedView},
     {id:0x0012, name:'postage-stamp', isStream:true, TChunk:PostageStampHeaderView},
     {id:0x0019, name:'full/rle-by-pixel', TChunk:PixelRunView},
@@ -945,7 +945,7 @@ define(function() {
     {id:0x0021, name:'multilevel-mask', TChunk:MaskView},
     {id:0x0022, name:'segment', TChunk:SegmentView},
     {id:0x0023, name:'key-image', TChunk:KeyImageView},
-    {id:0x0024, name:'key-palette'; TChunk:Palette},
+    {id:0x0024, name:'key-palette', TChunk:PaletteView},
     {id:0x0025, name:'dirty-rects', TChunk:DirtyRectsView},
     {id:0x0026, name:'audio', TChunk:AudioView},
     {id:0x0027, name:'text', TChunk:TextView},
@@ -966,11 +966,11 @@ define(function() {
         if (offset >= endOffset) return stream;
         return bufferedFileRead(file, offset, 6)
         .then(function(raw) {
-          var dv = new DataView(chunkHeader, 0, 6);
+          var dv = new DataView(raw, 0, 6);
           var length = dv.getUint32(0, true);
           var typeCode = dv.getUint16(4, true);
           if (typeCode in chunkTypesById) {
-            var chunKType = chunkTypesById[typeCode];
+            var chunkType = chunkTypesById[typeCode];
             if (chunkType.isStream) {
               return chunkStream(offset, offset + length, chunkType.THeader)
               .then(function(subStream) {
