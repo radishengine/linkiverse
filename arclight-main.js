@@ -352,6 +352,58 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
     });
   }
   
+  function playGame(files) {
+    var fileSystem = {
+      getName: function(name) {
+        if (name instanceof RegExp) {
+          for (var k in files) {
+            if (name.test(k)) return k;
+          }
+          return null;
+        }
+        if (name in files) return name;
+        name = name.toUpperCase();
+        if (name in files) return name;
+        for (var k in files) {
+          if (k.toUpperCase() === name) return k;
+        }
+        return null;
+      },
+      getNames: function(regex) {
+        var list = [];
+        for (var k in files) {
+          if (regex.test(k)) list.push(k);
+        }
+        return list;
+      },
+      loadAsBlob: function(name) {
+        name = this.getName(name);
+        return name ? Promise.resolve(files[name]) : Promise.reject('file not found');
+      },
+      loadAsArrayBuffer: function(name) {
+        return this.loadAsBlob(name).then(function(blob) {
+          return new Promise(function(resolve, reject) {
+            var fr = new FileReader();
+            fr.addEventListener('load', function() {
+              resolve(this.result);
+            });
+            fr.readAsArrayBuffer(blob);
+          });
+        });
+      },
+    };
+    var runtime = new Runtime(audioContext, fileSystem);
+    runtime.element.style.position = 'fixed';
+    runtime.element.style.right = 0;
+    runtime.element.style.top = 0;
+    var ctx = runtime.element.getContext('2d');
+    document.body.appendChild(runtime.element);
+    runtime.element.focus();
+    runtime.begin();
+    window.runtime = runtime;
+    console.dir(window.files = files);
+  }
+  
   function fromZip(zipRecords) {
     var filenames = Object.keys(zipRecords);
     var gameFiles = [];
@@ -402,57 +454,7 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
         return record.getUncompressedBlob();
       });
     })
-    .then(function(files) {
-      var fileSystem = {
-        getName: function(name) {
-          if (name instanceof RegExp) {
-            for (var k in files) {
-              if (name.test(k)) return k;
-            }
-            return null;
-          }
-          if (name in files) return name;
-          name = name.toUpperCase();
-          if (name in files) return name;
-          for (var k in files) {
-            if (k.toUpperCase() === name) return k;
-          }
-          return null;
-        },
-        getNames: function(regex) {
-          var list = [];
-          for (var k in files) {
-            if (regex.test(k)) list.push(k);
-          }
-          return list;
-        },
-        loadAsBlob: function(name) {
-          name = this.getName(name);
-          return name ? Promise.resolve(files[name]) : Promise.reject('file not found');
-        },
-        loadAsArrayBuffer: function(name) {
-          return this.loadAsBlob(name).then(function(blob) {
-            return new Promise(function(resolve, reject) {
-              var fr = new FileReader();
-              fr.addEventListener('load', function() {
-                resolve(this.result);
-              });
-              fr.readAsArrayBuffer(blob);
-            });
-          });
-        },
-      };
-      var runtime = new Runtime(audioContext, fileSystem);
-      runtime.element.style.position = 'fixed';
-      runtime.element.style.right = 0;
-      runtime.element.style.top = 0;
-      var ctx = runtime.element.getContext('2d');
-      document.body.appendChild(runtime.element);
-      runtime.element.focus();
-      runtime.begin();
-      window.runtime = runtime;
-      console.dir(window.files = files);
-    });
+    .then(playGame);
   }
   
   function getWindowsExeParts(blob) {
@@ -530,7 +532,8 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
       if (String.fromCharCode.apply(null, new Uint8Array(suffix, suffix.byteLength - 12, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
         return loadGame(blob, function getRelativeBlob() {
           return Promise.reject('file not found');
-        });
+        })
+        .then(playGame);
       }
       suffix = new DataView(suffix);
       for (var i = suffix.byteLength - 4; i >= 0; i--) {
