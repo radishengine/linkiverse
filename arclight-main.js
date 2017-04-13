@@ -88,7 +88,7 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
             + 'collection:' + self.identifier
             + ' mediatype:software'
             + ' -subject:"game+creation-software"'
-            + ' has_flic:true' // ' ags_format_version:(7 OR 9)'
+            + ' -ags_format_version:*'
           + '&fl[]=identifier'
           + '&sort[]=date+asc'
           + '&rows=100'
@@ -523,7 +523,9 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
   }
   
   function fromExe(blob) {
-    return readBlob(blob.slice(blob.size - 256 - 22)).then(function(suffix) {
+    var suffixOffset = blob.size - 22;
+    suffixOffset -= suffixOffset & 0x1FF;
+    return readBlob(blob.slice(suffixOffset)).then(function(suffix) {
       if (String.fromCharCode.apply(null, new Uint8Array(suffix, suffix.byteLength - 12, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
         return loadGame(blob, function getRelativeBlob() {
           return Promise.reject('file not found');
