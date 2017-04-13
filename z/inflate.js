@@ -710,7 +710,7 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
           }
           else {
             // copy from output
-            from = new Uint8Array(put.buffer, put.byteOffset - this.offset, put.length + this.offset);
+            from = new Uint8Array(put.buffer, put.byteOffset - this.offset, this.offset);
             copy = this.length;
           }
           if (copy > put.length) copy = put.length;
