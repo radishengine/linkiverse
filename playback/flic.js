@@ -925,7 +925,7 @@ define(function() {
     {id:0xAF44, name:'flic/not-8-bit', isStream:true, THeader:FileHeaderView},
     {id:0xAF30, name:'flic/huffman-or-bwt-compressed', isStream:true, THeader:FileHeaderView},
     {id:0xAF31, name:'flic/frame-shift-compressed', isStream:true, THeader:FileHeaderView},
-    {id:0xF100, name:'prefix', isStream:true, THeader:PrefixHeaderView},
+    {id:0xF100, name:'prefix', TChunk:PrefixHeaderView}, // TODO: CEL files, EGI files
     {id:0xF1FA, name:'frame', isStream:true, THeader:FrameHeaderView},
     {id:0xF1FB, name:'segment-table', isStream:true, THeader:SegmentTableHeaderView},
     {id:0x0003, name:'cel', TChunk:CelView},
