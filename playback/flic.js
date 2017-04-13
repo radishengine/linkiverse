@@ -1026,8 +1026,9 @@ define(function() {
             if (chunkType.isStream) {
               return chunkStream(offset, offset + length, chunkType.THeader)
               .then(function(subStream) {
-                if (subStream.length === 0
-                && chunkType.THeader === FrameHeaderView
+                if (chunkType.THeader === FrameHeaderView
+                && !('pixels' in subStream)
+                && !('palette' in subStream)
                 && !subStream.overrideDuration
                 && !subStream.overrideWidth
                 && !subStream.overrideHeight) {
