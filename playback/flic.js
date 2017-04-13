@@ -136,7 +136,7 @@ define(function() {
       canvas.width = defaultWidth;
       canvas.height = defaultHeight;
       var i_frame = -1;
-      var ctx = canvas.createContext('2d');
+      var ctx = canvas.getContext('2d');
       var imageData = ctx.createImageData(defaultWidth, defaultHeight);
       var pixels = new Uint32Array(
         imageData.data.buffer,
