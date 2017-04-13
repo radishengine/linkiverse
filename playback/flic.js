@@ -1028,9 +1028,9 @@ define(function() {
               .then(function(subStream) {
                 if (subStream.length === 0
                 && chunkType.THeader === FrameHeaderView
-                && !subStream.header.overrideDuration
-                && !subStream.header.overrideWidth
-                && !subStream.header.overrideHeight) {
+                && !subStream.overrideDuration
+                && !subStream.overrideWidth
+                && !subStream.overrideHeight) {
                   addTo[addAt] = null;
                 }
                 else {
@@ -1061,7 +1061,7 @@ define(function() {
           return nextChunk(
             stream,
             offset + THeader.byteLength,
-            offset + stream.header.totalByteLength);
+            offset + stream.totalByteLength);
         });
       }
       return chunkStream(0, file.size, FileHeaderView);
