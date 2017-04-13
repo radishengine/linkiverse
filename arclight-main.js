@@ -523,10 +523,10 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
   }
   
   function fromExe(blob) {
-    // cropping off 10 bits is for self-extracting zip .exes
+    // cropping off 12 bits is for self-extracting zip .exes
     // they have the zip trailer at the end, but with a bunch of padding after it
     // (padding is not accounted for by zip trailer comment)
-    return readBlob(blob.slice( (blob.size - 22) & ~0x3ff )).then(function(suffix) {
+    return readBlob(blob.slice( (blob.size - 22) & ~0xfff )).then(function(suffix) {
       if (String.fromCharCode.apply(null, new Uint8Array(suffix, suffix.byteLength - 12, 12)) === 'CLIB\x01\x02\x03\x04SIGE') {
         return loadGame(blob, function getRelativeBlob() {
           return Promise.reject('file not found');
