@@ -149,31 +149,64 @@ define(function() {
       }
       var nextTime = startAt || performance.now();
       return new Promise(function(resolve, reject) {
+        var doAgain = null;
+        function onStop(e) {
+          if (e.detail.movie !== self) return;
+          if (doAgain !== null) {
+            cancelAnimationFrame(doAgain);
+            doAgain = null;
+            this.dispatchEvent(new CustomEvent('fmv-stopped', {detail:e.detail}));
+          }
+        }
+        function onStopped(e) {
+          if (e.detail.movie !== self) return;
+          this.removeEventListener('fmv-stop', onStop);
+          this.removeEventListener('fmv-stopped', onStopped);
+          if (e.detail.reason === 'error') {
+            reject(e.detail.error);
+          }
+          else {
+            resolve(e.detail.reason);
+          }
+        }
+        canvas.addEventListener('fmv-stop', onStop);
+        canvas.addEventListener('fmv-stopped', onStopped);
+        canvas.fmvStop = function() {
+          if (doAgain === null) return false;
+          this.dispatchEvent(new CustomEvent('fmv-stop', {detail:{
+            movie: self,
+            reason: 'intervention',
+          }}));
+          return true;
+        };
         function next() {
-          var doAgain = requestAnimationFrame(next);
+          doAgain = requestAnimationFrame(next);
           var now = performance.now();
           var diff = now - nextTime;
           if (diff < 0) return;
           var frame = frames[++i_frame];
           if (!frame) {
-            cancelAnimationFrame(doAgain);
-            canvas.dispatchEvent(new CustomEvent('fmv-finished', {detail:{movie:self}}));
-            resolve();
+            canvas.dispatchEvent(new CustomEvent('fmv-stop', {detail:{
+              movie: self,
+              reason: 'complete',
+            }}));
             return;
           }
           nextTime += frame.overrideDuration || defaultDuration;
           if (!frame.changes) return;
           if (frame.overrideWidth || frame.overrideHeight) {
-            cancelAnimationFrame(doAgain);
-            canvas.dispatchEvent(new CustomEvent('fmv-finished', {detail:{movie:self}}));
-            reject('NYI: custom frame dimensions');
+            canvas.dispatchEvent(new CustomEvent('fmv-stop', {detail:{
+              movie: self,
+              reason: 'error',
+              error: 'NYI: custom frame dimensions',
+            }}));
             return;
           }
           frame.apply(bitsPerPixel, defaultWidth, defaultHeight, pixels, palette, palettePixels);
           ctx.putImageData(imageData, 0, 0);
           canvas.dispatchEvent(new CustomEvent('fmv-frame', {detail:{movie:self}}));
         }
-        requestAnimationFrame(next);
+        doAgain = requestAnimationFrame(next);
       });
     },
   };
