@@ -1145,6 +1145,7 @@ define(function() {
         .then(function(raw) {
           var dv = new DataView(raw.buffer, raw.byteOffset, 6);
           var length = dv.getUint32(0, true);
+          if (length === 0) length = endOffset - offset;
           var typeCode = dv.getUint16(4, true);
           var addTo, addAt;
           if (typeCode in chunkTypesById) {
