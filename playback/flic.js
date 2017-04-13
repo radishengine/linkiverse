@@ -485,7 +485,7 @@ define(function() {
         }
         var next_i_out = i_out + width; 
         while (packetCount-- > 0) {
-          i_out += bytes[i++] * 2;
+          i_out += bytes[i++];
           var count = bytes[i++] << 24 >> 24;
           if (count < 0) {
             var repPalette1 = bytes[i++];
