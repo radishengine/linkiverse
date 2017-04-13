@@ -14,6 +14,11 @@ define(function() {
         return ((r << 24) | (g << 16) | (b << 8) | 0xff) >>> 0;
       };
   
+  const NO_CHANGES = Object.freeze({
+    changes: false,
+    apply: function() { },
+  });
+  
   function bufferedFileRead(file, offset, length) {
     if ('buffer' in file) {
       if (offset >= file.buffer.bufferOffset
@@ -159,6 +164,11 @@ define(function() {
     },
     get overrideHeight() {
       return this.dv.getUint16(14, true) || false;
+    },
+    pixels: NO_CHANGES,
+    palette: NO_CHANGES,
+    get changes() {
+      return !!(this.pixels.changes || this.palette.changes);
     },
   };
   FrameChunk.subchunkOffset = 16;
@@ -338,9 +348,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return false;
-    },
+    changes: 'total',
     get topLineY() {
       return this.dv.getUint16(6, true);
     },
@@ -381,9 +389,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return false;
-    },
+    changes: 'partial',
     get lineCount() {
       return this.dv.getUint16(6, true);
     },
@@ -443,9 +449,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return true;
-    },
+    changes: 'total',
     apply: function(output) {
       output.set(new Uint8Array(output.length));
     },
@@ -462,9 +466,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return true;
-    },
+    changes: 'total',
     apply: function(output, stride) {
       if (stride < 1) return;
       var bytes = new Uint8Array(
@@ -503,9 +505,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return true;
-    },
+    changes: 'total',
     apply: function(output, bpp) {
       if (bpp === 8) {
         output.set(this.bytes);
@@ -554,9 +554,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return true;
-    },
+    changes: 'total',
     apply: function(output, bpp, stride) {
       if (stride < 1) return;
       var bytes = new Uint8Array(
@@ -616,9 +614,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return true;
-    },
+    changes: 'total',
     apply: function(output, bpp, stride) {
       if (stride < 1) return;
       var bytes = new Uint8Array(
@@ -662,9 +658,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return false;
-    },
+    changes: 'partial',
     get lineCount() {
       return this.dv.getUint16(6, true);
     },
@@ -788,9 +782,7 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get isFullReplacement() {
-      return true;
-    },
+    changes: 'total',
     apply: function(output, bpp, stride) {
       if (bpp === 8) return ByteRunChunk.prototype.apply.call(this, output, stride);
       return PixelRunChunk.prototype.apply.call(this, output, bpp, stride);
@@ -1020,16 +1012,13 @@ define(function() {
             }
             if ('subchunkOffset' in chunkType.TChunk) {
               return chunkStream(offset, offset + length, chunkType.TChunk)
-              .then(function(subStream) {
-                if (chunkType.TChunk === FrameChunk
-                && !('pixels' in subStream)
-                && !('palette' in subStream)
-                && !subStream.overrideDuration
-                && !subStream.overrideWidth
-                && !subStream.overrideHeight) {
-                  subStream = null;
+              .then(function(subchunk) {
+                if (subchunk instanceof FrameChunk
+                && !subchunk.changes
+                && !subchunk.overrideDuration) {
+                  subchunk = null;
                 }
-                addTo[addAt] = subStream;
+                addTo[addAt] = subchunk;
                 return nextChunk(stream, offset + length, endOffset);
               });
             }
