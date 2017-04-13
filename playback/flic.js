@@ -1014,7 +1014,7 @@ define(function() {
           var addTo, addAt;
           if (typeCode in chunkTypesById) {
             var chunkType = chunkTypesById[typeCode];
-            if (chunkType.name.slice(-2)) {
+            if (chunkType.name.slice(-2) === '[]') {
               var arrayName = chunkType.name.slice(0, -2);
               addTo = arrayName in stream ? stream[arrayName] : stream[arrayName] = [];
               addAt = addTo.length++;
