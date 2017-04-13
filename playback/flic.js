@@ -973,7 +973,16 @@ define(function() {
             if (chunkType.isStream) {
               return chunkStream(offset, offset + length, chunkType.THeader)
               .then(function(subStream) {
-                stream.push(subStream);
+                if (subStream.length === 0
+                && chunkType.THeader === FrameHeaderView
+                && !subStream.header.overrideDuration
+                && !subStream.header.overrideWidth
+                && !subStream.header.overrideHeight) {
+                  stream.push(null);
+                }
+                else {
+                  stream.push(subStream);
+                }
                 return nextChunk(stream, offset + length, endOffset);
               });
             }
