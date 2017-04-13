@@ -16,8 +16,11 @@ define(function() {
   
   function bufferedFileRead(file, offset, length) {
     if ('buffer' in file) {
-      if (offset >= file.buffer.bufferOffset && (offset + length) <= (file.buffer.bufferOffset + file.buffer.byteLength)) {
-        return Promise.resolve(file.buffer.subarray(offset - file.buffer.bufferOffset, offset - file.buffer.bufferOffset + length));
+      if (offset >= file.buffer.bufferOffset
+      && (offset + length) <= (file.buffer.bufferOffset + file.buffer.byteLength)) {
+        return Promise.resolve(file.buffer.subarray(
+          offset - file.buffer.bufferOffset,
+          offset - file.buffer.bufferOffset + length));
       }
     }
     return new Promise(function(resolve, reject) {
@@ -32,7 +35,10 @@ define(function() {
         file.buffer = result;
         resolve(result.subarray(0, length));
       });
-      fr.readAsArrayBuffer(file.slice(offset, Math.min(file.size, offset + Math.max(length, BUFFER_SIZE))));
+      fr.readAsArrayBuffer(file.slice(
+        offset,
+        Math.min(file.size, offset + Math.max(length, BUFFER_SIZE))
+      ));
     });
   }
   
@@ -46,6 +52,13 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
+    get compressionMode() {
+      switch (this.chunkTypeCode) {
+        case 0xAF30: return 'huffman-or-bwt';
+        case 0xAF31: return 'frame-shift';
+        default: return null;
+      }
+    },
     get frameCountInFirstSegment() {
       return this.dv.getUint16(6, true);
     },
@@ -56,7 +69,7 @@ define(function() {
       return this.dv.getUint16(10, true);
     },
     get bitsPerPixel() {
-      return this.dv.getUint16(12, true);
+      return this.dv.getUint16(12, true) || 8;
     },
     get flags() {
       return this.dv.getUint16(14, true);
@@ -69,7 +82,7 @@ define(function() {
     get createdAt() {
       return dosUtil.getTimeAndDate(this.dv, 22); // FLC only
     },
-    get creatorID() {
+    get creatorId() {
       return this.dv.getUint32(26, true); // FLC only
     },
     get updatedAt() {
@@ -330,6 +343,9 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
+    get isFullReplacement() {
+      return false;
+    },
     get topLineY() {
       return this.dv.getUint16(6, true);
     },
@@ -369,6 +385,9 @@ define(function() {
     },
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
+    },
+    get isFullReplacement() {
+      return false;
     },
     get lineCount() {
       return this.dv.getUint16(6, true);
@@ -429,6 +448,9 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
+    get isFullReplacement() {
+      return true;
+    },
     apply: function(output) {
       output.set(new Uint8Array(output.length));
     },
@@ -444,6 +466,9 @@ define(function() {
     },
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
+    },
+    get isFullReplacement() {
+      return true;
     },
     apply: function(output, stride) {
       if (stride < 1) return;
@@ -483,6 +508,9 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
+    get isFullReplacement() {
+      return true;
+    },
     apply: function(output, bpp) {
       if (bpp === 8) {
         output.set(this.bytes);
@@ -491,11 +519,11 @@ define(function() {
     }
   };
   
-  function PostageStampHeaderView(buffer, byteOffset, byteLength) {
+  function ThumbnailHeaderView(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
-  PostageStampHeaderView.prototype = {
+  ThumbnailHeaderView.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -512,7 +540,7 @@ define(function() {
       return this.dv.getUint16(10, true);
     },
   };
-  PostageStampHeaderView.byteLength = 12;
+  ThumbnailHeaderView.byteLength = 12;
   
   var postageStampPalette = new Uint32Array(256);
   
@@ -530,6 +558,9 @@ define(function() {
     },
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
+    },
+    get isFullReplacement() {
+      return true;
     },
     apply: function(output, bpp, stride) {
       if (stride < 1) return;
@@ -590,6 +621,9 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
+    get isFullReplacement() {
+      return true;
+    },
     apply: function(output, bpp, stride) {
       if (stride < 1) return;
       var bytes = new Uint8Array(
@@ -632,6 +666,9 @@ define(function() {
     },
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
+    },
+    get isFullReplacement() {
+      return false;
     },
     get lineCount() {
       return this.dv.getUint16(6, true);
@@ -726,6 +763,9 @@ define(function() {
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
+    get bitsPerPixel() {
+      return (this.chunkTypeCode === 0x0020) ? 1 : 8;
+    },
     get x() {
       return this.dv.getInt16(6, true);
     },
@@ -752,6 +792,9 @@ define(function() {
     },
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
+    },
+    get isFullReplacement() {
+      return true;
     },
     apply: function(output, bpp, stride) {
       if (bpp === 8) return ByteRunView.prototype.apply.call(this, output, stride);
@@ -920,39 +963,39 @@ define(function() {
   };
   
   var chunkTypes = [
-    {id:0xAF11, name:'fli', isStream:true, THeader:FileHeaderView},
-    {id:0xAF12, name:'flic/8-bit', isStream:true, THeader:FileHeaderView},
-    {id:0xAF44, name:'flic/not-8-bit', isStream:true, THeader:FileHeaderView},
-    {id:0xAF30, name:'flic/huffman-or-bwt-compressed', isStream:true, THeader:FileHeaderView},
-    {id:0xAF31, name:'flic/frame-shift-compressed', isStream:true, THeader:FileHeaderView},
+    {id:0xAF11, name:'file', isStream:true, THeader:FileHeaderView},
+    {id:0xAF12, name:'file', isStream:true, THeader:FileHeaderView},
+    {id:0xAF44, name:'file', isStream:true, THeader:FileHeaderView},
+    {id:0xAF30, name:'file', isStream:true, THeader:FileHeaderView},
+    {id:0xAF31, name:'file', isStream:true, THeader:FileHeaderView},
     {id:0xF100, name:'prefix', TChunk:PrefixHeaderView}, // TODO: CEL files, EGI files
-    {id:0xF1FA, name:'frame', isStream:true, THeader:FrameHeaderView},
-    {id:0xF1FB, name:'segment-table', isStream:true, THeader:SegmentTableHeaderView},
+    {id:0xF1FA, name:'frames[]', isStream:true, THeader:FrameHeaderView},
+    {id:0xF1FB, name:'segments[]', isStream:true, THeader:SegmentTableHeaderView},
     {id:0x0003, name:'cel', TChunk:CelView},
     {id:0x0004, name:'palette', TChunk:PaletteView},
-    {id:0x0007, name:'delta/rle-by-word', TChunk:WordDeltaView},
-    {id:0x000B, name:'palette/vga', TChunk:PaletteView},
-    {id:0x000C, name:'delta/rle-by-byte', TChunk:ByteDeltaView},
-    {id:0x000D, name:'full/black', TChunk:EmptyChunkView},
-    {id:0x000F, name:'full/rle-by-byte', TChunk:ByteRunView},
-    {id:0x0010, name:'full/by-byte', TChunk:UncompressedView},
-    {id:0x0012, name:'postage-stamp', isStream:true, THeader:PostageStampHeaderView},
-    {id:0x0019, name:'full/rle-by-pixel', TChunk:PixelRunView},
-    {id:0x001A, name:'full/by-pixel', TChunk:PixelCopyView},
-    {id:0x001B, name:'delta-rle/by-pixel', TChunk:PixelDeltaView},
-    {id:0x001F, name:'frame-label', TChunk:LabelView},
-    {id:0x0020, name:'bitmap-mask', TChunk:MaskView},
-    {id:0x0021, name:'multilevel-mask', TChunk:MaskView},
+    {id:0x0007, name:'pixels', TChunk:WordDeltaView},
+    {id:0x000B, name:'palette', TChunk:PaletteView},
+    {id:0x000C, name:'pixels', TChunk:ByteDeltaView},
+    {id:0x000D, name:'pixels', TChunk:EmptyChunkView},
+    {id:0x000F, name:'pixels', TChunk:ByteRunView},
+    {id:0x0010, name:'pixels', TChunk:UncompressedView},
+    {id:0x0012, name:'thumbnail', isStream:true, THeader:ThumbnailHeaderView},
+    {id:0x0019, name:'pixels', TChunk:PixelRunView},
+    {id:0x001A, name:'pixels', TChunk:PixelCopyView},
+    {id:0x001B, name:'pixels', TChunk:PixelDeltaView},
+    {id:0x001F, name:'label', TChunk:LabelView},
+    {id:0x0020, name:'mask', TChunk:MaskView},
+    {id:0x0021, name:'mask', TChunk:MaskView},
     {id:0x0022, name:'segment', TChunk:SegmentView},
-    {id:0x0023, name:'key-image', TChunk:KeyImageView},
-    {id:0x0024, name:'key-palette', TChunk:PaletteView},
-    {id:0x0025, name:'dirty-rects', TChunk:DirtyRectsView},
+    {id:0x0023, name:'pixels', TChunk:KeyImageView},
+    {id:0x0024, name:'palette', TChunk:PaletteView},
+    {id:0x0025, name:'dirtyRects', TChunk:DirtyRectsView},
     {id:0x0026, name:'audio', TChunk:AudioView},
     {id:0x0027, name:'text', TChunk:TextView},
-    {id:0x0028, name:'region-mask', TChunk:MaskView},
-    {id:0x0029, name:'frame-label/extended', TChunk:LabelView},
-    {id:0x002A, name:'frame-shift', TChunk:FrameShiftView},
-    {id:0x002B, name:'path-map', TChunk:PathMapView},
+    {id:0x0028, name:'mask', TChunk:MaskView},
+    {id:0x0029, name:'label', TChunk:LabelView},
+    {id:0x002A, name:'frameShift', TChunk:FrameShiftView},
+    {id:0x002B, name:'pathMap', TChunk:PathMapView},
   ];
   
   var chunkTypesById = {};
@@ -968,8 +1011,18 @@ define(function() {
           var dv = new DataView(raw.buffer, raw.byteOffset, 6);
           var length = dv.getUint32(0, true);
           var typeCode = dv.getUint16(4, true);
+          var addTo, addAt;
           if (typeCode in chunkTypesById) {
             var chunkType = chunkTypesById[typeCode];
+            if (chunkType.name.slice(-2)) {
+              var arrayName = chunkType.name.slice(0, -2);
+              addTo = arrayName in stream ? stream[arrayName] : stream[arrayName] = [];
+              addAt = addTo.length++;
+            }
+            else {
+              addTo = stream;
+              addAt = chunkType.name;
+            }
             if (chunkType.isStream) {
               return chunkStream(offset, offset + length, chunkType.THeader)
               .then(function(subStream) {
@@ -978,24 +1031,25 @@ define(function() {
                 && !subStream.header.overrideDuration
                 && !subStream.header.overrideWidth
                 && !subStream.header.overrideHeight) {
-                  stream.push(null);
+                  addTo[addAt] = null;
                 }
                 else {
-                  stream.push(subStream);
+                  addTo[addAt] = subStream;
                 }
                 return nextChunk(stream, offset + length, endOffset);
               });
             }
             return bufferedFileRead(file, offset, length)
             .then(function(raw) {
-              stream.push(new chunkType.TChunk(raw.buffer, raw.byteOffset, raw.byteLength));
+              addTo[addAt] = new chunkType.TChunk(raw.buffer, raw.byteOffset, raw.byteLength);
               return nextChunk(stream, offset + length, endOffset);
             });
           }
+          stream.unknown = stream.unknown || [];
           return bufferedFileRead(file, offset, length)
           .then(function(raw) {
             raw.chunkTypeCode = typeCode;
-            stream.push(raw);
+            stream.unknown.push(raw);
             return nextChunk(stream, offset + length, endOffset);
           });
         });
@@ -1003,8 +1057,7 @@ define(function() {
       function chunkStream(offset, endOffset, THeader) {
         return bufferedFileRead(file, offset, THeader.byteLength)
         .then(function(raw) {
-          var stream = [];
-          stream.header = new THeader(raw.buffer, raw.byteOffset, raw.byteLength);
+          var stream = new THeader(raw.buffer, raw.byteOffset, raw.byteLength);
           return nextChunk(
             stream,
             offset + THeader.byteLength,
