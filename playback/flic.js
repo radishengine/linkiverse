@@ -936,7 +936,7 @@ define(function() {
     {id:0x000D, name:'full/black', TChunk:EmptyChunkView},
     {id:0x000F, name:'full/rle-by-byte', TChunk:ByteRunView},
     {id:0x0010, name:'full/by-byte', TChunk:UncompressedView},
-    {id:0x0012, name:'postage-stamp', isStream:true, TChunk:PostageStampHeaderView},
+    {id:0x0012, name:'postage-stamp', isStream:true, THeader:PostageStampHeaderView},
     {id:0x0019, name:'full/rle-by-pixel', TChunk:PixelRunView},
     {id:0x001A, name:'full/by-pixel', TChunk:PixelCopyView},
     {id:0x001B, name:'delta-rle/by-pixel', TChunk:PixelDeltaView},
