@@ -715,6 +715,11 @@ define(['./util', './CodeTableView'], function(zutil, CodeTableView) {
           }
           if (copy > put.length) copy = put.length;
           this.length -= copy;
+          while (copy > from.length) {
+            put.set(from);
+            put = put.subarray(from.length);
+            copy -= from.length;
+          }
           put.set(from.subarray(0, copy));
           put = put.subarray(copy);
           if (this.length === 0) mode = 20 /* LEN */;
