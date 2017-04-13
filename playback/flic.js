@@ -458,7 +458,9 @@ define(function() {
     get lineCount() {
       return this.dv.getUint16(6, true);
     },
-    apply: function(output, stride) {
+    apply: function(bpp, width, height, pixels, palette, palettePixels) {
+      if (bpp !== 8) throw new Error('NYI');
+      var bytes = new Uint8Array(this.dv.buffer, this.dv.byteOffset, this.dv.byteLength);
       var i_out = 0;
       var i = 8;
       for (var left = this.lineCount; left > 0; --left) {
@@ -477,33 +479,42 @@ define(function() {
               lastByte = opcode & 0xff;
               continue opcoding;
             case 3:
-              out_i += stride * -opcode;
+              i_out += width * -opcode;
               continue opcoding;
           }
         }
-        var bytes = new Uint8Array(this.dv.buffer, this.dv.byteOffset, this.dv.byteLength);
-        var next_i_out = i_out + stride; 
+        var next_i_out = i_out + width; 
         while (packetCount-- > 0) {
           i_out += bytes[i++] * 2;
           var count = bytes[i++] << 24 >> 24;
           if (count < 0) {
-            var rep1 = bytes[i++];
-            var rep2 = bytes[i++];
+            var repPalette1 = bytes[i++];
+            var repPalette2 = bytes[i++];
+            var repPixel1 = palette[repPalette1];
+            var repPixel2 = palette[repPalette2];
             do {
-              output[i_out++] = rep1;
-              output[i_out++] = rep2;
+              pixels[i_out] = repPixel1;
+              palettePixels[i_out] = repPalette1;
+              i_out++;
+              pixels[i_out] = repPixel2;
+              palettePixels[i_out] = repPalette2;
+              i_out++;
             } while (++count < 0);
           }
           else if (count > 0) {
             count <<= 1;
-            output.set(bytes.subarray(i, i + count), i_out);
-            i_out += count;
-            i += count;
+            do {
+              pixels[i_out] = palette[palettePixels[i_out] = bytes[i++]];
+              i_out++;
+            } while (--count > 0);
           }
         }
         i_out = next_i_out;
-        if (lastByte >= 0) output[i_out - 1] = lastByte;
+        if (lastByte >= 0) {
+          pixels[i_out - 1] = palette[palettePixels[i_out] = lastByte];
+        }
       }
+      return true;
     },
   };
   
