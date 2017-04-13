@@ -1021,7 +1021,7 @@ define(function() {
             if ('subchunkOffset' in chunkType.TChunk) {
               return chunkStream(offset, offset + length, chunkType.TChunk)
               .then(function(subStream) {
-                if (chunkType.TChunk === FrameHeaderView
+                if (chunkType.TChunk === FrameChunk
                 && !('pixels' in subStream)
                 && !('palette' in subStream)
                 && !subStream.overrideDuration
