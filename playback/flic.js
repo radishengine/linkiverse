@@ -42,10 +42,10 @@ define(function() {
     });
   }
   
-  function FileHeaderView(buffer, byteOffset, byteLength) {
+  function FileChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  FileHeaderView.prototype = {
+  FileChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -123,12 +123,13 @@ define(function() {
     },
     // reserved: 40 bytes
   };
-  FileHeaderView.byteLength = 128;
-  
-  function PrefixHeaderView(buffer, byteOffset, byteLength) {
+  FileChunk.byteLength = 128;
+  FileChunk.hasSubchunks = true;
+
+  function PrefixChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  PrefixHeaderView.prototype = {
+  PrefixChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -140,12 +141,12 @@ define(function() {
     },
     // reserved: 8 bytes
   };
-  PrefixHeaderView.byteLength = 16;
+  PrefixChunk.byteLength = 16;
   
-  function FrameHeaderView(buffer, byteOffset, byteLength) {
+  function FrameChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  FrameHeaderView.prototype = {
+  FrameChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -166,12 +167,13 @@ define(function() {
       return this.dv.getUint16(14, true) || false;
     },
   };
-  FrameHeaderView.byteLength = 16;
+  FrameChunk.byteLength = 16;
+  FrameChunk.hasSubchunks = true;
   
-  function SegmentTableHeaderView(buffer, byteOffset, byteLength) {
+  function SegmentTableChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  SegmentTableHeaderView.prototype = {
+  SegmentTableChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -182,12 +184,13 @@ define(function() {
       return this.dv.getUint16(6, true);
     },
   };
-  SegmentTableHeaderView.byteLength = 8;
+  SegmentTableChunk.byteLength = 8;
+  SegmentTableChunk.hasSubchunks = true;
   
-  function SegmentView(buffer, byteOffset, byteLength) {
+  function SegmentChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  SegmentView.prototype = {
+  SegmentChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -236,12 +239,12 @@ define(function() {
     },
     // reserved: 2 bytes
   };
-  SegmentView.byteLength = 32;
+  SegmentChunk.byteLength = 32;
   
-  function CelView(buffer, byteOffset, byteLength) {
+  function CelChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  CelView.prototype = {
+  CelChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -285,12 +288,12 @@ define(function() {
       return list;
     },
   };
-  CelView.byteLength = 64;
+  CelChunk.byteLength = 64;
   
-  function PaletteView(buffer, byteOffset, byteLength) {
+  function PaletteChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  PaletteView.prototype = {
+  PaletteChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -333,10 +336,10 @@ define(function() {
     },
   };
   
-  function ByteDeltaView(buffer, byteOffset, byteLength) {
+  function ByteDeltaChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  ByteDeltaView.prototype = {
+  ByteDeltaChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -376,10 +379,10 @@ define(function() {
     },
   };
   
-  function WordDeltaView(buffer, byteOffset, byteLength) {
+  function WordDeltaChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  WordDeltaView.prototype = {
+  WordDeltaChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -438,10 +441,10 @@ define(function() {
     },
   };
   
-  function EmptyChunkView(buffer, byteOffset, byteLength) {
+  function EmptyChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  EmptyChunkView.prototype = {
+  EmptyChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -455,12 +458,12 @@ define(function() {
       output.set(new Uint8Array(output.length));
     },
   };
-  EmptyChunkView.byteLength = 6;
+  EmptyChunk.byteLength = 6;
   
-  function ByteRunView(buffer, byteOffset, byteLength) {
+  function ByteRunChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  ByteRunView.prototype = {
+  ByteRunChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -497,11 +500,11 @@ define(function() {
     },
   };
   
-  function UncompressedView(buffer, byteOffset, byteLength) {
+  function UncompressedChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
-  UncompressedView.prototype = {
+  UncompressedChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -519,11 +522,11 @@ define(function() {
     }
   };
   
-  function ThumbnailHeaderView(buffer, byteOffset, byteLength) {
+  function ThumbnailChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
-  ThumbnailHeaderView.prototype = {
+  ThumbnailChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -540,7 +543,8 @@ define(function() {
       return this.dv.getUint16(10, true);
     },
   };
-  ThumbnailHeaderView.byteLength = 12;
+  ThumbnailChunk.byteLength = 12;
+  ThumbnailChunk.hasSubchunks = true;
   
   var postageStampPalette = new Uint32Array(256);
   
@@ -549,10 +553,10 @@ define(function() {
   for (var b = 0; b < 6; b++)
     postageStampPalette[r*6*6 + g*6 + b] = RGB((r*255)/5, (g*255)/5, (b*255)/5);
   
-  function PixelRunView(buffer, byteOffset, byteLength) {
+  function PixelRunChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  PixelRunView.prototype = {
+  PixelRunChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -611,10 +615,10 @@ define(function() {
     },
   };
   
-  function PixelCopyView(buffer, byteOffset, byteLength) {
+  function PixelCopyChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  PixelCopyView.prototype = {
+  PixelCopyChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -657,10 +661,10 @@ define(function() {
     },
   };
   
-  function PixelDeltaView(buffer, byteOffset, byteLength) {
+  function PixelDeltaChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  PixelDeltaView.prototype = {
+  PixelDeltaChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -732,11 +736,11 @@ define(function() {
     },
   };
   
-  function LabelView(buffer, byteOffset, byteLength) {
+  function LabelChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
-  LabelView.prototype = {
+  LabelChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -753,10 +757,10 @@ define(function() {
     },
   };
   
-  function MaskView(buffer, byteOffset, byteLength) {
+  function MaskChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  MaskView.prototype = {
+  MaskChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -783,10 +787,10 @@ define(function() {
     },
   };
   
-  function KeyImageView(buffer, byteOffset, byteLength) {
+  function KeyImageChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  KeyImageView.prototype = {
+  KeyImageChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -797,15 +801,15 @@ define(function() {
       return true;
     },
     apply: function(output, bpp, stride) {
-      if (bpp === 8) return ByteRunView.prototype.apply.call(this, output, stride);
-      return PixelRunView.prototype.apply.call(this, output, bpp, stride);
+      if (bpp === 8) return ByteRunChunk.prototype.apply.call(this, output, stride);
+      return PixelRunChunk.prototype.apply.call(this, output, bpp, stride);
     },
   };
   
-  function DirtyRectsView(buffer, byteOffset, byteLength) {
+  function DirtyRectsChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  DirtyRectsView.prototype = {
+  DirtyRectsChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -825,10 +829,10 @@ define(function() {
     },
   };
   
-  function AudioView(buffer, byteOffset, byteLength) {
+  function AudioChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  AudioView.prototype = {
+  AudioChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -901,11 +905,11 @@ define(function() {
     },
   };
   
-  function TextView(buffer, byteOffset, byteLength) {
+  function TextChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
-  TextView.prototype = {
+  TextChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -917,11 +921,11 @@ define(function() {
     },
   };
   
-  function FrameShiftView(buffer, byteOffset, byteLength) {
+  function FrameShiftChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
-  FrameShiftView.prototype = {
+  FrameShiftChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -946,11 +950,11 @@ define(function() {
     },
   };
   
-  function PathMapView(buffer, byteOffset, byteLength) {
+  function PathMapChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
     this.stride = Math.sqrt(this.totalByteLength - 6);
   }
-  PathMapView.prototype = {
+  PathMapChunk.prototype = {
     get totalByteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -963,39 +967,39 @@ define(function() {
   };
   
   var chunkTypes = [
-    {id:0xAF11, name:'file', isStream:true, THeader:FileHeaderView},
-    {id:0xAF12, name:'file', isStream:true, THeader:FileHeaderView},
-    {id:0xAF44, name:'file', isStream:true, THeader:FileHeaderView},
-    {id:0xAF30, name:'file', isStream:true, THeader:FileHeaderView},
-    {id:0xAF31, name:'file', isStream:true, THeader:FileHeaderView},
-    {id:0xF100, name:'prefix', TChunk:PrefixHeaderView}, // TODO: CEL files, EGI files
-    {id:0xF1FA, name:'frames[]', isStream:true, THeader:FrameHeaderView},
-    {id:0xF1FB, name:'segments[]', isStream:true, THeader:SegmentTableHeaderView},
-    {id:0x0003, name:'cel', TChunk:CelView},
-    {id:0x0004, name:'palette', TChunk:PaletteView},
-    {id:0x0007, name:'pixels', TChunk:WordDeltaView},
-    {id:0x000B, name:'palette', TChunk:PaletteView},
-    {id:0x000C, name:'pixels', TChunk:ByteDeltaView},
-    {id:0x000D, name:'pixels', TChunk:EmptyChunkView},
-    {id:0x000F, name:'pixels', TChunk:ByteRunView},
-    {id:0x0010, name:'pixels', TChunk:UncompressedView},
-    {id:0x0012, name:'thumbnail', isStream:true, THeader:ThumbnailHeaderView},
-    {id:0x0019, name:'pixels', TChunk:PixelRunView},
-    {id:0x001A, name:'pixels', TChunk:PixelCopyView},
-    {id:0x001B, name:'pixels', TChunk:PixelDeltaView},
-    {id:0x001F, name:'label', TChunk:LabelView},
-    {id:0x0020, name:'mask', TChunk:MaskView},
-    {id:0x0021, name:'mask', TChunk:MaskView},
-    {id:0x0022, name:'segment', TChunk:SegmentView},
-    {id:0x0023, name:'pixels', TChunk:KeyImageView},
-    {id:0x0024, name:'palette', TChunk:PaletteView},
-    {id:0x0025, name:'dirtyRects', TChunk:DirtyRectsView},
-    {id:0x0026, name:'audio', TChunk:AudioView},
-    {id:0x0027, name:'text', TChunk:TextView},
-    {id:0x0028, name:'mask', TChunk:MaskView},
-    {id:0x0029, name:'label', TChunk:LabelView},
-    {id:0x002A, name:'frameShift', TChunk:FrameShiftView},
-    {id:0x002B, name:'pathMap', TChunk:PathMapView},
+    {id:0xAF11, name:'file', TChunk:FileChunk},
+    {id:0xAF12, name:'file', TChunk:FileChunk},
+    {id:0xAF44, name:'file', TChunk:FileChunk},
+    {id:0xAF30, name:'file', TChunk:FileChunk},
+    {id:0xAF31, name:'file', TChunk:FileChunk},
+    {id:0xF100, name:'prefix', TChunk:PrefixChunk}, // TODO: CEL files, EGI files
+    {id:0xF1FA, name:'frames[]', TChunk:FrameChunk},
+    {id:0xF1FB, name:'segments[]', TChunk:SegmentTableChunk},
+    {id:0x0003, name:'cel', TChunk:CelChunk},
+    {id:0x0004, name:'palette', TChunk:PaletteChunk},
+    {id:0x0007, name:'pixels', TChunk:WordDeltaChunk},
+    {id:0x000B, name:'palette', TChunk:PaletteChunk},
+    {id:0x000C, name:'pixels', TChunk:ByteDeltaChunk},
+    {id:0x000D, name:'pixels', TChunk:EmptyChunk},
+    {id:0x000F, name:'pixels', TChunk:ByteRunChunk},
+    {id:0x0010, name:'pixels', TChunk:UncompressedChunk},
+    {id:0x0012, name:'thumbnail', TChunk:ThumbnailChunk},
+    {id:0x0019, name:'pixels', TChunk:PixelRunChunk},
+    {id:0x001A, name:'pixels', TChunk:PixelCopyChunk},
+    {id:0x001B, name:'pixels', TChunk:PixelDeltaChunk},
+    {id:0x001F, name:'label', TChunk:LabelChunk},
+    {id:0x0020, name:'mask', TChunk:MaskChunk},
+    {id:0x0021, name:'mask', TChunk:MaskChunk},
+    {id:0x0022, name:'segment', TChunk:SegmentChunk},
+    {id:0x0023, name:'pixels', TChunk:KeyImageChunk},
+    {id:0x0024, name:'palette', TChunk:PaletteChunk},
+    {id:0x0025, name:'dirtyRects', TChunk:DirtyRectsChunk},
+    {id:0x0026, name:'audio', TChunk:AudioChunk},
+    {id:0x0027, name:'text', TChunk:TextChunk},
+    {id:0x0028, name:'mask', TChunk:MaskChunk},
+    {id:0x0029, name:'label', TChunk:LabelChunk},
+    {id:0x002A, name:'frameShift', TChunk:FrameShiftChunk},
+    {id:0x002B, name:'pathMap', TChunk:PathMapChunk},
   ];
   
   var chunkTypesById = {};
@@ -1023,11 +1027,10 @@ define(function() {
               addTo = stream;
               addAt = chunkType.name;
             }
-            if (chunkType.isStream) {
-              return chunkStream(offset, offset + length, chunkType.THeader)
+            if (chunkType.TChunk.hasSubchunks) {
+              return chunkStream(offset, offset + length, chunkType.TChunk)
               .then(function(subStream) {
-                /*
-                if (chunkType.THeader === FrameHeaderView
+                if (chunkType.TChunk === FrameHeaderView
                 && !('pixels' in subStream)
                 && !('palette' in subStream)
                 && !subStream.overrideDuration
@@ -1035,7 +1038,6 @@ define(function() {
                 && !subStream.overrideHeight) {
                   subStream = null;
                 }
-                */
                 addTo[addAt] = subStream;
                 return nextChunk(stream, offset + length, endOffset);
               });
@@ -1055,17 +1057,17 @@ define(function() {
           });
         });
       }
-      function chunkStream(offset, endOffset, THeader) {
-        return bufferedFileRead(file, offset, THeader.byteLength)
+      function chunkStream(offset, endOffset, TChunk) {
+        return bufferedFileRead(file, offset, TChunk.byteLength)
         .then(function(raw) {
-          var stream = new THeader(raw.buffer, raw.byteOffset, raw.byteLength);
+          var stream = new TChunk(raw.buffer, raw.byteOffset, raw.byteLength);
           return nextChunk(
             stream,
-            offset + THeader.byteLength,
+            offset + TChunk.byteLength,
             offset + stream.totalByteLength);
         });
       }
-      return chunkStream(0, file.size, FileHeaderView);
+      return chunkStream(0, file.size, FileChunk);
     },
   };
 
