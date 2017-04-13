@@ -420,21 +420,24 @@ define(function() {
               continue opcoding;
           }
         }
+        var bytes = new Uint8Array(this.dv.buffer, this.dv.byteOffset, this.dv.byteLength);
         var next_i_out = i_out + stride; 
         while (packetCount-- > 0) {
-          i_out += bytes[pos++] * 2;
-          var count = bytes[pos++] << 24 >> 24;
+          i_out += bytes[i++] * 2;
+          var count = bytes[i++] << 24 >> 24;
           if (count < 0) {
-            var rep1 = bytes[pos++];
-            var rep2 = bytes[pos++];
+            var rep1 = bytes[i++];
+            var rep2 = bytes[i++];
             do {
               output[i_out++] = rep1;
               output[i_out++] = rep2;
             } while (++count < 0);
           }
           else if (count > 0) {
-            output.set(bytes.subarray(pos, pos + count * 2), i_out);
-            i_out += count * 2;
+            count <<= 1;
+            output.set(bytes.subarray(i, i + count), i_out);
+            i_out += count;
+            i += count;
           }
         }
         i_out = next_i_out;
@@ -538,15 +541,15 @@ define(function() {
     get colorTranslation() {
       return this.dv.getUint16(10, true);
     },
+    palette: (function(thumbnailPalette) {
+      for (var r = 0; r < 6; r++)
+      for (var g = 0; g < 6; g++)
+      for (var b = 0; b < 6; b++)
+        thumbnailPalette[r*6*6 + g*6 + b] = RGB(r*255/5, g*255/5, b*255/5);
+      return thumbnailPalette;
+    })(new Uint32Array(256)),
   };
   ThumbnailChunk.subchunkOffset = 12;
-  
-  var postageStampPalette = new Uint32Array(256);
-  
-  for (var r = 0; r < 6; r++)
-  for (var g = 0; g < 6; g++)
-  for (var b = 0; b < 6; b++)
-    postageStampPalette[r*6*6 + g*6 + b] = RGB((r*255)/5, (g*255)/5, (b*255)/5);
   
   function PixelRunChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
@@ -572,7 +575,10 @@ define(function() {
           var lo = bytes[i], hi = bytes[i+1];
           i += 2;
           var r = hi >>> 2, g = ((hi & 3) << 3) | (lo >>> 5), b = lo & 0x1F;
-          return RGB((r << 3) | (r >> 2), (g << 3) | (g >> 2), (b << 3) | (b >> 2));
+          return RGB(
+            (r << 3) | (r >> 2),
+            (g << 3) | (g >> 2),
+            (b << 3) | (b >> 2));
         };
       }
       else if (bpp === 16) {
@@ -580,7 +586,10 @@ define(function() {
           var lo = bytes[i], hi = bytes[i+1];
           i += 2;
           var r = hi >>> 3, g = ((hi & 7) << 3) | (lo >>> 5), b = lo & 0x1F;
-          return RGB((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2));
+          return RGB(
+            (r << 3) | (r >> 2),
+            (g << 2) | (g >> 4),
+            (b << 3) | (b >> 2));
         };
       }
       else if (bpp === 24) {
@@ -631,7 +640,10 @@ define(function() {
           var lo = bytes[i], hi = bytes[i+1];
           i += 2;
           var r = hi >>> 2, g = ((hi & 3) << 3) | (lo >>> 5), b = lo & 0x1F;
-          output[i_out++] = RGB((r << 3) | (r >> 2), (g << 3) | (g >> 2), (b << 3) | (b >> 2));
+          output[i_out++] = RGB(
+            (r << 3) | (r >> 2),
+            (g << 3) | (g >> 2),
+            (b << 3) | (b >> 2));
         }
       }
       else if (bpp === 16) {
@@ -639,7 +651,10 @@ define(function() {
           var lo = bytes[i], hi = bytes[i+1];
           i += 2;
           var r = hi >>> 3, g = ((hi & 7) << 3) | (lo >>> 5), b = lo & 0x1F;
-          output[i_out++] = RGB((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2));
+          output[i_out++] = RGB(
+            (r << 3) | (r >> 2),
+            (g << 2) | (g >> 4),
+            (b << 3) | (b >> 2));
         }
       }
       else if (bpp === 24) {
@@ -872,13 +887,19 @@ define(function() {
       }
       else {
         if (this.isSigned) {
-          var data = new Int8Array(this.dv.buffer, this.dv.byteOffset + 20, this.dv.byteLength - 20);
+          var data = new Int8Array(
+            this.dv.buffer,
+            this.dv.byteOffset + 20,
+            this.dv.byteLength - 20);
           for (var j = 0; j < channels.length; j++)
           for (var i = 0; i < sampleCount; i++)
             channels[j][i] = data[i*j + j] / 128;
         }
         else {
-          var data = new Uint8Array(this.dv.buffer, this.dv.byteOffset + 20, this.dv.byteLength - 20);
+          var data = new Uint8Array(
+            this.dv.buffer,
+            this.dv.byteOffset + 20,
+            this.dv.byteLength - 20);
           for (var j = 0; j < channels.length; j++)
           for (var i = 0; i < sampleCount; i++)
             channels[j][i] = (data[i*j + j] - 128) / 128;
@@ -993,7 +1014,6 @@ define(function() {
   chunkTypes.forEach(function(ct){ chunkTypesById[ct.id] = ct; });
   
   return {
-    postageStampPalette: postageStampPalette,
     open: function(file) {
       function nextChunk(stream, offset, endOffset) {
         if (offset >= endOffset) return stream;
