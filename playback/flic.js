@@ -16,7 +16,7 @@ define(function() {
   
   const NO_CHANGES = Object.freeze({
     changes: false,
-    apply: function() { },
+    apply: function() { return false; },
   });
   
   function bufferedFileRead(file, offset, length) {
@@ -79,9 +79,9 @@ define(function() {
     get flags() {
       return this.dv.getUint16(14, true);
     },
-    get frameDuration() {
+    get defaultFrameDuration() {
       var value = this.dv.getUint32(16, true);
-      return this.fileType === 'fli' ? (value * 1000)/70 : value; // millisecond conversion
+      return this.chunkTypeCode === 0xAF11 ? (value * 1000)/70 : value; // millisecond conversion
     },
     // 2 reserved bytes
     get createdAt() {
@@ -127,6 +127,55 @@ define(function() {
       return this.dv.getUint32(84, true); // FLC only
     },
     // reserved: 40 bytes
+    play: function(canvas, startAt) {
+      const self = this,
+        bitsPerPixel = this.bitsPerPixel,
+        defaultDuration = this.defaultFrameDuration,
+        frames = this.frames,
+        defaultWidth = this.width, defaultHeight = this.height;
+      canvas.width = defaultWidth;
+      canvas.height = defaultHeight;
+      var i_frame = -1;
+      var ctx = canvas.createContext('2d');
+      var imageData = ctx.createImageData(defaultWidth, defaultHeight);
+      var pixels = new Uint32Array(
+        imageData.data.buffer,
+        imageData.data.byteOffset,
+        imageData.data.byteLength/4);
+      var palette, palettePixels;
+      if (bitsPerPixel === 8) {
+        palette = new Uint32Array(256);
+        palettePixels = new Uint8Array(defaultWidth * defaultHeight);
+      }
+      var nextTime = startAt || performance.now();
+      return new Promise(function(resolve, reject) {
+        function next() {
+          var doAgain = requestAnimationFrame(next);
+          var now = performance.now();
+          var diff = now - nextTime;
+          if (diff < 0) return;
+          var frame = frames[++i_frame];
+          if (!frame) {
+            cancelAnimationFrame(doAgain);
+            canvas.dispatchEvent(new CustomEvent('fmv-finished', {detail:{movie:self}}));
+            resolve();
+            return;
+          }
+          nextTime += frame.overrideDuration || defaultDuration;
+          if (!frame.changes) return;
+          if (frame.overrideWidth || frame.overrideHeight) {
+            cancelAnimationFrame(doAgain);
+            canvas.dispatchEvent(new CustomEvent('fmv-finished', {detail:{movie:self}}));
+            reject('NYI: custom frame dimensions');
+            return;
+          }
+          frame.apply(bitsPerPixel, defaultWidth, defaultHeight, pixels, palette, palettePixels);
+          ctx.putImageData(imageData, 0, 0);
+          canvas.dispatchEvent('fmv-frame', {detail:{movie:self}});
+        }
+        requestAnimationFrame(next);
+      });
+    },
   };
   FileChunk.subchunkOffset = 128;
 
@@ -170,9 +219,13 @@ define(function() {
     get changes() {
       return !!(this.pixels.changes || this.palette.changes);
     },
-    apply: function(bpp, width, height) {
-      this.palette.apply(bpp, width, height);
-      this.pixels.apply(bpp, width, height);
+    apply: function(bpp, width, height, pixels, palette, palettePixels) {
+      if (this.palette.apply(bpp, width, height, pixels, palette, palettePixels) && this.pixels.changes !== 'total') {
+        for (var i = 0; i < pixels.length; i++) {
+          pixels[i] = palette[palettePixels[i]];
+        }
+      }
+      this.pixels.apply(bpp, width, height, pixels, palette, palettePixels);
     },
   };
   FrameChunk.subchunkOffset = 16;
@@ -312,33 +365,32 @@ define(function() {
     get packetCount() {
       return this.dv.getUint16(6, true);
     },
-    apply: function(toRGBAs) {
-      toRGBAs = toRGBAs || new Uint32Array(256);
-      var packets = new Array(this.packetCount);
+    apply: function(bpp, width, height, pixels, palette, palettePixels) {
+      var remainingPackets = this.packetCount;
+      if (remainingPackets === 0) return false;
       var bytes = new Uint8Array(this.dv.buffer, this.dv.byteOffset + 8, this.dv.byteLength - 8);
       var pos = 0;
       var lshift, rshift;
       if (this.isVgaMode) {
-        lshift = 2;
-        rshift = 4;
+        lshift = 2; rshift = 4;
       }
       else {
-        lshift = 0;
-        rshift = 8;
+        lshift = 0; rshift = 8;
       }
-      for (var i_pk = 0, i_col = 0; i_pk < packets.length; i_pk++) {
+      var i_col = 0;
+      do {
         i_col += bytes[pos++];
         for (var j_col = i_col + bytes[pos++]; i_col < j_col; i_col++) {
           var r = bytes[pos++];
           var g = bytes[pos++];
           var b = bytes[pos++];
-          toRGBAs[i_col] = RGB(
+          palette[i_col] = RGB(
             (r << lshift) | (r >> rshift),
             (g << lshift) | (g >> rshift),
             (b << lshift) | (b >> rshift));
         }
-      }
-      return toRGBAs;
+      } while (--remainingPackets > 0);
+      return true;
     },
   };
   
@@ -359,27 +411,36 @@ define(function() {
     get lineCount() {
       return this.dv.getUint16(8, true);
     },
-    apply: function(output, stride) {
-      var i_out = this.topLineY * stride;
-      var bytes = new Uint8Array(buffer, byteOffset + 10, byteLength - 10);
+    apply: function(bpp, width, height, pixels, palette, palettePixels) {
+      if (bpp !== 8) throw new Error('NYI');
+      var i_out = this.topLineY * width;
+      var bytes = new Uint8Array(this.dv.buffer, this.dv.byteOffset + 10, this.dv.byteLength - 10);
       var pos = 0;
       for (var i_line = 0, j_line = this.lineCount; i_line < j_line; i_line++) {
         var packetCount = bytes[pos++];
-        var next_i_out = i_out + stride;
+        var next_i_out = i_out + width;
         while (packetCount-- > 0) {
           i_out += bytes[pos++];
           var count = bytes[pos++] << 24 >> 24;
           if (count < 0) {
-            var rep = bytes[pos++];
-            do { output[i_out++] = rep; } while (++count < 0);
+            var repPalette = bytes[pos++];
+            var repPixel = palette[repPalette];
+            do {
+              pixels[i_out] = repPixel;
+              palettePixels[i_out] = repPalette;
+              i_out++;
+            } while (++count < 0);
           }
           else if (count > 0) {
-            output.set(bytes.subarray(pos, pos + count), i_out);
-            i_out += count;
+            do {
+              pixels[i_out] = palette[palettePixels[i_out] = bytes[pos++]];
+              i_out++;
+            } while (--count > 0);
           }
         }
         i_out = next_i_out;
       }
+      return true;
     },
   };
   
@@ -446,10 +507,10 @@ define(function() {
     },
   };
   
-  function EmptyChunk(buffer, byteOffset, byteLength) {
+  function ClearChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
-  EmptyChunk.prototype = {
+  ClearChunk.prototype = {
     get byteLength() {
       return this.dv.getUint32(0, true);
     },
@@ -457,11 +518,24 @@ define(function() {
       return this.dv.getUint16(4, true);
     },
     changes: 'total',
-    apply: function(output) {
-      output.set(new Uint8Array(output.length));
+    apply: function(bpp, width, height, pixels, palette, palettePixels) {
+      if (bpp === 8) {
+        palettePixels.set(new Uint8Array(palettePixels.length));
+        const color0 = palette[0];
+        for (var i = 0; i < pixels.length; i++) {
+          pixels[i] = color0;
+        }
+      }
+      else {
+        const color0 = RGB(0, 0, 0);
+        for (var i = 0; i < pixels.length; i++) {
+          pixels[i] = color0;
+        }
+      }
+      return true;
     },
   };
-  EmptyChunk.byteLength = 6;
+  ClearChunk.byteLength = 6;
   
   function ByteRunChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
@@ -474,30 +548,36 @@ define(function() {
       return this.dv.getUint16(4, true);
     },
     changes: 'total',
-    apply: function(output, stride) {
-      if (stride < 1) return;
+    apply: function(bpp, width, height, pixels, palette, palettePixels) {
+      if (bpp !== 8) throw new Error('NYI');
+      if (width < 1) return false;
       var bytes = new Uint8Array(
         this.dv.buffer,
         this.dv.byteOffset + 6,
         this.dv.byteLength - 6);
       var i = 0, i_out = 0;
       while (++i < bytes.length) {
-        var remaining = stride;
+        var next_i_out = i_out + width;
         do {
           var count = bytes[i++] << 24 >> 24;
           if (count < 0) {
-            count = -count;
-            output.set(bytes.subarray(i, i + count), i_out);
-            i += count;
-            i_out += count;
+            do {
+              pixels[i_out] = palette[palettePixels[i_out] = bytes[i++]];
+              i_out++;
+            } while (++count < 0);
           }
           else if (count > 0) {
-            var rep = bytes[i++];
-            while (count-- > 0) output[i_out++] = rep;
+            var repPalette = bytes[i++];
+            var repPixel = palette[repPalette];
+            do {
+              palettePixels[i_out] = repPalette;
+              pixels[i_out] = repPixel;
+              i_out++;
+            } while (--count > 0);
           }
-          remaining -= count;
-        } while (remaining > 0);
+        } while (i_out < next_i_out);
       }
+      return true;
     },
   };
   
