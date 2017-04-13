@@ -46,7 +46,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   FileChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -123,31 +123,25 @@ define(function() {
     },
     // reserved: 40 bytes
   };
-  FileChunk.byteLength = 128;
-  FileChunk.hasSubchunks = true;
+  FileChunk.subchunkOffset = 128;
 
   function PrefixChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   PrefixChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
       return this.dv.getUint16(4, true);
     },
-    get subchunkCount() {
-      return this.dv.getUint16(6, true);
-    },
-    // reserved: 8 bytes
   };
-  PrefixChunk.byteLength = 16;
   
   function FrameChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   FrameChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -167,14 +161,13 @@ define(function() {
       return this.dv.getUint16(14, true) || false;
     },
   };
-  FrameChunk.byteLength = 16;
-  FrameChunk.hasSubchunks = true;
+  FrameChunk.subchunkOffset = 16;
   
   function SegmentTableChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   SegmentTableChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -184,14 +177,13 @@ define(function() {
       return this.dv.getUint16(6, true);
     },
   };
-  SegmentTableChunk.byteLength = 8;
-  SegmentTableChunk.hasSubchunks = true;
+  SegmentTableChunk.subchunkOffset = 8;
   
   function SegmentChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   SegmentChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -245,7 +237,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   CelChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -294,7 +286,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   PaletteChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -340,7 +332,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   ByteDeltaChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -383,7 +375,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   WordDeltaChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -445,7 +437,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   EmptyChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -464,7 +456,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   ByteRunChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -505,7 +497,7 @@ define(function() {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   UncompressedChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -527,7 +519,7 @@ define(function() {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   ThumbnailChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -543,8 +535,7 @@ define(function() {
       return this.dv.getUint16(10, true);
     },
   };
-  ThumbnailChunk.byteLength = 12;
-  ThumbnailChunk.hasSubchunks = true;
+  ThumbnailChunk.subchunkOffset = 12;
   
   var postageStampPalette = new Uint32Array(256);
   
@@ -557,7 +548,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   PixelRunChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -619,7 +610,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   PixelCopyChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -665,7 +656,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   PixelDeltaChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -741,7 +732,7 @@ define(function() {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   LabelChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -761,7 +752,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   MaskChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -791,7 +782,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   KeyImageChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -810,7 +801,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   DirtyRectsChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -833,7 +824,7 @@ define(function() {
     this.dv = new DataView(buffer, byteOffset, byteLength);
   }
   AudioChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -866,19 +857,19 @@ define(function() {
     // reserved: 6 bytes
     createBufferSource: function(audioContext) {
       var channels = new Array(this.isStereo ? 2 : 1);
-      var sampleCount = (this.totalByteLength - 20) / (channels.length * this.bytesPerSample);
+      var sampleCount = (this.byteLength - 20) / (channels.length * this.bytesPerSample);
       var buffer = audioContext.createBuffer(channels.length, sampleCount, this.sampleFrequency);
       for (var i = 0; i < channels.length; i++) {
         channels[i] = new Float32Array(sampleCount);
       }
       if (this.bytesPerSample === 16) {
         if (this.isSigned) {
-          for (var j = 0; j < channelCount; j++)
+          for (var j = 0; j < channels.length; j++)
           for (var i = 0; i < sampleCount; i++)
             channels[j][i] = this.dv.getInt16(20 + (i*j + j) * 2, true) / 32768;
         }
         else {
-          for (var j = 0; j < channelCount; j++)
+          for (var j = 0; j < channels.length; j++)
           for (var i = 0; i < sampleCount; i++)
             channels[j][i] = (this.dv.getUint16(20 + (i*j + j) * 2, true) - 32768) / 32768;
         }
@@ -886,18 +877,18 @@ define(function() {
       else {
         if (this.isSigned) {
           var data = new Int8Array(this.dv.buffer, this.dv.byteOffset + 20, this.dv.byteLength - 20);
-          for (var j = 0; j < channelCount; j++)
+          for (var j = 0; j < channels.length; j++)
           for (var i = 0; i < sampleCount; i++)
             channels[j][i] = data[i*j + j] / 128;
         }
         else {
           var data = new Uint8Array(this.dv.buffer, this.dv.byteOffset + 20, this.dv.byteLength - 20);
-          for (var j = 0; j < channelCount; j++)
+          for (var j = 0; j < channels.length; j++)
           for (var i = 0; i < sampleCount; i++)
             channels[j][i] = (data[i*j + j] - 128) / 128;
         }
       }
-      for (var i = 0; i < channelCount; i++) {
+      for (var i = 0; i < channels.length; i++) {
         buffer.copyToChannel(channels[i], i);
       }
       buffer.overlapDuration = this.overlapSamples / this.sampleFrequency;
@@ -910,7 +901,7 @@ define(function() {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   TextChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -926,7 +917,7 @@ define(function() {
     this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   }
   FrameShiftChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -952,10 +943,10 @@ define(function() {
   
   function PathMapChunk(buffer, byteOffset, byteLength) {
     this.dv = new DataView(buffer, byteOffset, byteLength);
-    this.stride = Math.sqrt(this.totalByteLength - 6);
+    this.stride = Math.sqrt(this.byteLength - 6);
   }
   PathMapChunk.prototype = {
-    get totalByteLength() {
+    get byteLength() {
       return this.dv.getUint32(0, true);
     },
     get chunkTypeCode() {
@@ -1027,7 +1018,7 @@ define(function() {
               addTo = stream;
               addAt = chunkType.name;
             }
-            if (chunkType.TChunk.hasSubchunks) {
+            if ('subchunkOffset' in chunkType.TChunk) {
               return chunkStream(offset, offset + length, chunkType.TChunk)
               .then(function(subStream) {
                 if (chunkType.TChunk === FrameHeaderView
@@ -1057,14 +1048,17 @@ define(function() {
           });
         });
       }
-      function chunkStream(offset, endOffset, TChunk) {
-        return bufferedFileRead(file, offset, TChunk.byteLength)
+      function chunkStream(offset, endOffset, TContainerChunk) {
+        return bufferedFileRead(file, offset, TContainerChunk.subchunkOffset)
         .then(function(raw) {
-          var stream = new TChunk(raw.buffer, raw.byteOffset, raw.byteLength);
+          var container = new TContainerChunk(
+            raw.buffer,
+            raw.byteOffset,
+            raw.byteLength);
           return nextChunk(
-            stream,
-            offset + TChunk.byteLength,
-            offset + stream.totalByteLength);
+            container,
+            offset + TContainerChunk.subchunkOffset,
+            offset + container.byteLength);
         });
       }
       return chunkStream(0, file.size, FileChunk);
