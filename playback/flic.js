@@ -1068,7 +1068,7 @@ define(function() {
     {id:0x0007, name:'pixels', TChunk:WordDeltaChunk},
     {id:0x000B, name:'palette', TChunk:PaletteChunk},
     {id:0x000C, name:'pixels', TChunk:ByteDeltaChunk},
-    {id:0x000D, name:'pixels', TChunk:EmptyChunk},
+    {id:0x000D, name:'pixels', TChunk:ClearChunk},
     {id:0x000F, name:'pixels', TChunk:ByteRunChunk},
     {id:0x0010, name:'pixels', TChunk:UncompressedChunk},
     {id:0x0012, name:'thumbnail', TChunk:ThumbnailChunk},
