@@ -171,7 +171,7 @@ define(function() {
           }
           frame.apply(bitsPerPixel, defaultWidth, defaultHeight, pixels, palette, palettePixels);
           ctx.putImageData(imageData, 0, 0);
-          canvas.dispatchEvent('fmv-frame', {detail:{movie:self}});
+          canvas.dispatchEvent(new CustomEvent('fmv-frame', {detail:{movie:self}}));
         }
         requestAnimationFrame(next);
       });
