@@ -131,7 +131,7 @@ define(function() {
       const self = this,
         bitsPerPixel = this.bitsPerPixel,
         defaultDuration = this.defaultFrameDuration,
-        frames = this.frames,
+        frames = this.frames.slice(0, -2), // last frame reconstructs the first. TODO: maybe check?
         defaultWidth = this.width, defaultHeight = this.height;
       canvas.width = defaultWidth;
       canvas.height = defaultHeight;
