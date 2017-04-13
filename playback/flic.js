@@ -7,12 +7,12 @@ define(function() {
   const LITTLE_ENDIAN = (new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1);
   
   const RGB = LITTLE_ENDIAN
-    ? function(r,g,b) {
-        return (r | (g << 8) | (b << 16) | (0xff << 24)) >>> 0;
-      }
-    : function(r,g,b) {
-        return ((r << 24) | (g << 16) | (b << 8) | 0xff) >>> 0;
-      };
+  ? function RGB(r, g, b) {
+      return (r | (g << 8) | (b << 16) | (0xff << 24)) >>> 0;
+    }
+  : function RGB(r, g, b) {
+      return ((r << 24) | (g << 16) | (b << 8) | 0xff) >>> 0;
+    };
   
   const NO_CHANGES = Object.freeze({
     changes: false,
@@ -169,6 +169,10 @@ define(function() {
     palette: NO_CHANGES,
     get changes() {
       return !!(this.pixels.changes || this.palette.changes);
+    },
+    apply: function(bpp, width, height) {
+      this.palette.apply(bpp, width, height);
+      this.pixels.apply(bpp, width, height);
     },
   };
   FrameChunk.subchunkOffset = 16;
@@ -1016,7 +1020,7 @@ define(function() {
                 if (subchunk instanceof FrameChunk
                 && !subchunk.changes
                 && !subchunk.overrideDuration) {
-                  subchunk = null;
+                  subchunk = NO_CHANGES;
                 }
                 addTo[addAt] = subchunk;
                 return nextChunk(stream, offset + length, endOffset);
