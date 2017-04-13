@@ -962,7 +962,6 @@ define(function() {
     postageStampPalette: postageStampPalette,
     open: function(file) {
       function nextChunk(stream, offset, endOffset) {
-        offset += offset % 2; // TODO: support misaligned chunk streams
         if (offset >= endOffset) return stream;
         return bufferedFileRead(file, offset, 6)
         .then(function(raw) {
