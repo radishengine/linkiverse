@@ -380,7 +380,7 @@ define(function() {
       var i_col = 0;
       do {
         i_col += bytes[pos++];
-        for (var j_col = i_col + bytes[pos++]; i_col < j_col; i_col++) {
+        for (var j_col = i_col + (bytes[pos++] || 256); i_col < j_col; i_col++) {
           var r = bytes[pos++];
           var g = bytes[pos++];
           var b = bytes[pos++];
