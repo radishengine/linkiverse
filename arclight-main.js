@@ -587,7 +587,12 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
         return item.pullBlob(exes[0]).then(fromExe);
       }
       if (zips.length > 1) {
-        return Promise.reject('more than one zip found');
+        var base = zips[0].toLowerCase().replace(/[\-_]?(dos|win)\.zip$/, '');
+        for (var i = 1; i < zips.length; i++) {
+          if (zips[i].toLowerCase().replace(/[\-_]?(dos|win)\.zip$/, '') !== base) {
+            return Promise.reject('more than one zip found');
+          }
+        }
       }
       return item.pullBlob(zips[0]).then(ZipRecord.getAll).then(fromZip);
     });
