@@ -443,6 +443,7 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
           path = path.toUpperCase();
           for (var k in zipRecords) {
             if (k.toUpperCase() === path) {
+              path = k;
               record = zipRecords[path];
               break;
             }
