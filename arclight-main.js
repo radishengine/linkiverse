@@ -417,7 +417,7 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
     }
     if (gameFiles.length > 1) {
       gameFiles = gameFiles.filter(function(path) {
-        return !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|uninstal(l|ler)?|startup|launch(er)?)\.exe$/i.test(path);
+        return !/(^|\/)((win)?setup|ac(win|dos)?|cwsdpmi|flash32|uninstal(l|ler)?|startup|launch(er)?)\.exe$/i.test(path);
       });
       if (gameFiles.length > 1) {
         for (var i = 1; i < gameFiles.length; i++) {
