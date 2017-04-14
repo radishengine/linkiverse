@@ -251,7 +251,7 @@ define(['./note'], function(noteData) {
     play: function() {
       return midi.load.apply(midi, arguments).then(midi.resume);
     },
-    load: function(source, selectTrackNumber, keepInitialSilence) {
+    load: function(source, selectTrackNumber) {
       if (source instanceof Blob) {
         var fr = new FileReader();
         return new Promise(function(resolve, reject) {
@@ -322,17 +322,10 @@ define(['./note'], function(noteData) {
       if (trackMode === 'separate' && trackCount > 1) {
         foundTracks = [foundTracks[selectTrackNumber]];
       }
-      var minDelta = Infinity;
       for (var i = 0; i < foundTracks.length; i++) {
         foundTracks[i].pos = 0;
         foundTracks[i].nextVarint = nextVarint;
         foundTracks[i].remainingDelta = foundTracks[i].nextVarint();
-        minDelta = Math.min(minDelta, foundTracks[i].remainingDelta);
-      }
-      if (!keepInitialSilence && isFinite(minDelta)) {
-        for (var i = 0; i < foundTracks.length; i++) {
-          foundTracks[i].remainingDelta -= minDelta;
-        }
       }
       activeTracks = foundTracks;
       return Promise.resolve();
