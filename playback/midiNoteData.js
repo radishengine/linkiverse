@@ -3,6 +3,8 @@ define(['require'], function(require) {
   'use strict';
 
   const LITTLE_ENDIAN = new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
+  
+  const DEFAULT_SAMPLE_RATE = 22050;
 
   const SOUND_SPRITE_SHEETS = [
     [], // 0 unused
@@ -290,7 +292,7 @@ define(['require'], function(require) {
     ],
     [ // 31
       {note:55, once:6769},
-      {note:57, once:251, loop: 9710, extra:1},
+      {note:57, once:251, loop: 9710, extra:1, hz:24000},
       {note:71, once:147, loop:11272, extra:1},
       {note:88, once:136, loop: 7411, extra:1},
     ],
@@ -312,7 +314,7 @@ define(['require'], function(require) {
     ],
     [ // 36
       {once:  21, loop:6246, extra:1, note:84},
-      {once:5013, loop:  84, extra:1, note:60},
+      {once:5013, loop:  84, extra:1, note:60, hz:24000},
       {once:3175, loop:  21, extra:1, note:84},
       {once:5542, loop:  42, extra:1, note:72},
       {once:5913, loop:  22, extra:1, note:83},
@@ -321,7 +323,7 @@ define(['require'], function(require) {
       {once:1446, loop:   48, extra:1, note:70},
       {once:2661, loop:  461, extra:1, note:83},
       {once:2033, loop:  148, extra:1, note:96},
-      {once: 553, loop:17648, extra:1, note:67},
+      {once: 553, loop:17648, extra:1, note:67, hz:24000},
     ],
     [ // 38
       {once:4115, loop: 67, extra:1, note:64},
@@ -1981,18 +1983,11 @@ define(['require'], function(require) {
         var offset = 0;
         var parts = new Array(info.length);
         for (var i = 0; i < info.length; i++) {
-          var onceLength, loopLength, afterLength;
-          if (typeof info[i] === 'number') {
-            onceLength = info[i];
-            loopLength = afterLength = 0;
-          }
-          else {
-            onceLength = info[i][0];
-            loopLength = info[i][1] || 0;
-            afterLength = info[i][2] || 0;
-          }
+          var onceLength = info.once || 0,
+              loopLength = info.loop || 0,
+              extraLength = info.extra || 0,
+              sampleRate = info.hz || DEFAULT_SAMPLE_RATE;
           var part = samples.subarray(offset, offset + onceLength + loopLength);
-          var sampleRate = 22050;
           var buffer = parts[i] = audioContext.createBuffer(1, part.length, sampleRate);
           buffer.copyToChannel(0, part);
           buffer.sourceSettings = {};
@@ -2000,7 +1995,7 @@ define(['require'], function(require) {
             buffer.sourceSettings.loopStart = sampleRate * onceLength;
             buffer.sourceSettings.loopEnd = sampleRate * (onceLength + loopLength);
           }
-          offset += onceLength + loopLength + afterLength;
+          offset += onceLength + loopLength + extraLength;
         }
         return parts;
       }
