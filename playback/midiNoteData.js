@@ -2066,7 +2066,7 @@ define(['require'], function(require) {
         if ('$c' in info[i]) sourceNode.detune.value = info[i].$c;
         unity_i = info[i].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
       }
-      sourceNode.playbackRate = noteOffsetAsPlaybackRate(key_i - unity_i);
+      sourceNode.playbackRate = sourceNode.notePlaybackRate = noteOffsetAsPlaybackRate(key_i - unity_i);
       sourceNode.ready = this.getSoundSpriteSheet(audioContext, spriteSheet).then(function(buffers) {
         var buffer = buffers[sprite];
         var source = audioContext.createBufferSource();
