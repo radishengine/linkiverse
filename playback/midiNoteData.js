@@ -5,6 +5,11 @@ define(['require'], function(require) {
   const LITTLE_ENDIAN = new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
   
   const DEFAULT_SAMPLE_RATE = 22050;
+  
+  const NOTE_OFFSET_DENOMINATOR = Math.pow(2, -9/12);
+  function noteOffsetAsPlaybackRate(offset) {
+    return Math.pow(2, ((offset - 9) / 12)) / NOTE_OFFSET_DENOMINATOR;
+  }
 
   const SOUND_SPRITE_SHEETS = [
     [], // 0 unused
@@ -2041,7 +2046,7 @@ define(['require'], function(require) {
       }
       return this.getSoundSpriteSheet(audioContext, spriteSheet);
     },
-    createNoteSource: function(destination, isPercussion, programNumber, bankNumber, keyNumber) {
+    createNoteSource: function(destination, isPercussion, programNumber, bankNumber, key_i) {
       var audioContext = destination.context;
       var gainNode = audioContext.createGain();
       var sourceNode = audioContext.createBufferSource();
@@ -2052,13 +2057,16 @@ define(['require'], function(require) {
       if ('dB' in info[0]) gainNode.gain.value = Math.pow(10, info[0].dB / 20);
       if ('$c' in info[0]) sourceNode.detune.value = info[0].$c;
       var i = 0, spriteSheet = info[0].file, sprite = info[0].i || 0;
-      while ((info[i].max || 127) < keyNumber) {
+      var unity_i = info[0].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
+      while ((info[i].max || 127) < key_i) {
         i++;
         if ('file' in info[i]) spriteSheet = info[i].file;
         sprite = 'i' in info[i] ? info[i].i : sprite + 1;
         if ('dB' in info[i]) gainNode.gain.value = Math.pow(10, info[i].dB / 20);
         if ('$c' in info[i]) sourceNode.detune.value = info[i].$c;
+        unity_i = info[i].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
       }
+      sourceNode.playbackRate = noteOffsetAsPlaybackRate(key_i - unity_i);
       sourceNode.ready = this.getSoundSpriteSheet(audioContext, spriteSheet).then(function(buffers) {
         var buffer = buffers[sprite];
         var source = audioContext.createBufferSource();
