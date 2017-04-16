@@ -1,4 +1,4 @@
-define(['./midiNoteData'], function(midiNoteData) {
+define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects) {
 
   'use strict';
   
