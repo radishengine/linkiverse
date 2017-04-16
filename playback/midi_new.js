@@ -3,33 +3,66 @@ define(['./midiNoteData'], function(midiNoteData) {
   'use strict';
   
   const CC14_HI = 0, CC14_LO = 32,
-        CC14_BANK = 0,
-        CC14_MOD_WHEEL = 1,
-        CC14_BREATH = 2,
-        // 3 undefined
-        CC14_FOOT = 4,
-        CC14_PORTAMENTO_TIME = 5,
-        CC14_DATA_ENTRY = 6,
-        CC14_VOLUME = 7,
-        CC14_BALANCE = 8,
-        // 9 undefined
-        CC14_PAN = 10,
-        CC14_EXPRESSION = 11,
+        CC14_START = 0, CC14_END = 64,
+          CC14_BANK = 0,
+          CC14_MOD_WHEEL = 1,
+          CC14_BREATH = 2,
+          // 3 undefined
+          CC14_FOOT = 4,
+          CC14_PORTAMENTO_TIME = 5,
+          CC14_DATA_ENTRY = 6,
+          CC14_VOLUME = 7,
+          CC14_BALANCE = 8,
+          // 9 undefined
+          CC14_PAN = 10,
+          CC14_EXPRESSION = 11,
         
-        CC_DAMPER_PEDAL_ON = 64,
-        CC_PORTAMENTO_ON = 65,
-        CC_SOSTENUTO_ON = 66,
-        CC_SOFT_PEDAL_ON = 67,
-        CC_LEGATO_ON = 68,
-        CC_HOLD_2_ON = 69,
-        MM_ALL_SOUND_OFF = 120,
-        MM_RESET_ALL_CONTROLLERS = 121,
-        MM_LOCAL_CONTROL_ON = 122,
-        MM_ALL_NOTES_OFF = 123,
-        MM_OMNI_OFF = 124,
-        MM_OMNI_ON = 125,
-        MM_MONO_ON = 126,
-        MM_POLY_ON = 127;
+        CCBOOL_START = 64, CCBOOL_END = 70,
+          CCBOOL_SUSTAIN = 64,
+          CCBOOL_PORTAMENTO = 65,
+          CCBOOL_SOSTENUTO = 66,
+          CCBOOL_SOFT_PEDAL = 67,
+          CCBOOL_LEGATO = 68,
+          CCBOOL_HOLD_2 = 69,
+       
+        CC_SOUND_VARIATION = 70,
+        CC_TIMBRE_HARMONIC_INTENSITY = 71,
+        CC_RELEASE_TIME = 72,
+        CC_ATTACK_TIME = 73,
+        CC_BRIGHTNESS = 74,
+        CC_DECAY_TIME = 75,
+        CC_VIBRATO_RATE = 76,
+        CC_VIBRATO_DEPTH = 77,
+        CC_VIBRATO_DELAY = 78,
+        //
+        CC_GENERAL_5 = 80,
+        CC_GENERAL_6 = 81,
+        CC_GENERAL_7 = 82,
+        CC_GENERAL_8 = 83,
+        CC_PORTAMENTO_TIME = 84,
+        //
+        CC_PREFIX_VELOCITY_LO = 88,
+        //
+        CC_REVERB_SEND_LEVEL = 91,
+        CC_TREMOLO_DEPTH = 92,
+        CC_CHORUS_DEPTH = 93,
+        CC_DETUNE_DEPTH = 94,
+        CC_PHASER_DEPTH = 95,
+        //
+        CC_NRPN_LO = 98,
+        CC_NRPN_HI = 99,
+        CC_RPN_LO = 100,
+        CC_RPN_HI = 101,
+        
+        MM_START = 120, MM_END = 128,
+          MM_ALL_SOUND_OFF = 120,
+          MM_RESET_ALL_CONTROLLERS = 121,
+          MM_LOCAL_CONTROL_ON = 122,
+          MM_ALL_NOTES_OFF = 123,
+          MM_OMNI_OFF = 124,
+          MM_OMNI_ON = 125,
+          MM_MONO_ON = 126,
+          MM_POLY_ON = 127;
   
   const CHANNEL_COMMANDS = Object.freeze([
     'note-off',
@@ -143,6 +176,9 @@ define(['./midiNoteData'], function(midiNoteData) {
       if (mode === 'fine') return v / 0x3fff;
       return v;
     },
+    getCCBool(v) {
+      return this.controlValues[v] >= 64;
+    },
     get bank()                { return this.getCC14(CC14_BANK               ); },
     get modWheelCoarse()      { return this.getCC14(CC14_MOD_WHEEL, 'coarse'); },
     get modWheelFine()        { return this.getCC14(CC14_MOD_WHEEL, 'fine'  ); },
@@ -158,24 +194,13 @@ define(['./midiNoteData'], function(midiNoteData) {
     get panFine()             { return this.getCC14(CC14_PAN,       'fine'  ); },
     get expressionCoarse()    { return this.getCC14(CC14_EXPRESSION,'coarse'); },
     get expressionFine()      { return this.getCC14(CC14_EXPRESSION,'fine'  ); },
-    get damperPedalOn() {
-      return this.controlValues[CC_DAMPER_PEDAL_ON] >= 64;
-    },
-    get portamentoOn() {
-      return this.controlValues[CC_PORTAMENTO_ON] >= 64;
-    },
-    get sostenutoOn() {
-      return this.controlValues[CC_SOSTENUTO_ON] >= 64;
-    },
-    get softPedalOn() {
-      return this.controlValues[CC_SOFT_PEDAL_ON] >= 64;
-    },
-    get legatoOn() {
-      return this.controlValues[CC_LEGATO_ON] >= 64;
-    },
-    get hold2On() {
-      return this.controlValues[CC_HOLD_2_ON] >= 64;
-    },
+    get sustainOn()    { return this.getCCBool(CCBOOL_SUSTAIN); },
+    get portamentoOn() { return this.getCCBool(CCBOOL_PORTAMENTO); },
+    get sostenutoOn()  { return this.getCCBool(CCBOOL_SOSTENUTO); },
+    get softPedalOn()  { return this.getCCBool(CCBOOL_SOFT_PEDAL); },
+    get legatoOn()     { return this.getCCBool(CCBOOL_LEGATO); },
+    get hold2On()      { return this.getCCBool(CCBOOL_HOLD_2); },
+    get soundVariation() { return this.controlValues[CC_SOUND_VARIATION] / 0x7F; },
   };
   
   function PlayState() {
