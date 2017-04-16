@@ -75,11 +75,15 @@ define(['./midiNoteData'], function(midiNoteData) {
   ]);
   
   function TrackReader(bytes) {
-    this.bytes = bytes;
-    this.pos = 0;
-    this.command = -1;
+    if (bytes) this.init(bytes);
   }
   TrackReader.prototype = {
+    init: function(bytes) {
+      this.bytes = bytes;
+      this.pos = 0;
+      this.command = null;
+      return this;
+    },
     initFrom: function(trackReader) {
       return Object.assign(this, trackReader);
     },
@@ -327,8 +331,8 @@ define(['./midiNoteData'], function(midiNoteData) {
           break;
       }
     },
-  }:
-
+  };
+  
   return {
   };
 
