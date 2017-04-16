@@ -2,11 +2,40 @@ define(['./midiNoteData'], function(midiNoteData) {
 
   'use strict';
   
+  const CC14_HI = 0, CC14_LO = 32,
+        CC14_BANK = 0,
+        CC14_MOD_WHEEL = 1,
+        CC14_BREATH = 2,
+        // 3 undefined
+        CC14_FOOT = 4,
+        CC14_PORTAMENTO_TIME = 5,
+        CC14_DATA_ENTRY = 6,
+        CC14_VOLUME = 7,
+        CC14_BALANCE = 8,
+        // 9 undefined
+        CC14_PAN = 10,
+        CC14_EXPRESSION = 11,
+        
+        CC_DAMPER_PEDAL_ON = 64,
+        CC_PORTAMENTO_ON = 65,
+        CC_SOSTENUTO_ON = 66,
+        CC_SOFT_PEDAL_ON = 67,
+        CC_LEGATO_ON = 68,
+        CC_HOLD_2_ON = 69,
+        MM_ALL_SOUND_OFF = 120,
+        MM_RESET_ALL_CONTROLLERS = 121,
+        MM_LOCAL_CONTROL_ON = 122,
+        MM_ALL_NOTES_OFF = 123,
+        MM_OMNI_OFF = 124,
+        MM_OMNI_ON = 125,
+        MM_MONO_ON = 126,
+        MM_POLY_ON = 127;
+  
   const CHANNEL_COMMANDS = Object.freeze([
     'note-off',
     'note-on',
     'key-aftertouch',
-    'control',
+    'control-change',
     'set-program',
     'channel-aftertouch',
     'pitch-bend',
@@ -73,7 +102,7 @@ define(['./midiNoteData'], function(midiNoteData) {
           this.key = this.bytes[this.pos++];
           this.aftertouch = this.bytes[this.pos++];
           break;
-        case 'command':
+        case 'control-change':
           this.control = this.bytes[this.pos++];
           this.value = this.bytes[this.pos++];
           break;
@@ -97,16 +126,55 @@ define(['./midiNoteData'], function(midiNoteData) {
   function ChannelState(isPercussion) {
     this.isPercussion = isPercussion;
     this.keyVelocities = new Uint8Array(128);
-    this.controlValues = new Uint8Array(128);
-    this.program = 0;
-    this.pitchBendRange = 0;
+    this.controlValues = new Uint8Array(120);
   }
   ChannelState.prototype = {
+    program: 0,
+    pitchBendRange: 0,
     initFrom: function(channelState) {
       this.keyVelocities.set(channelState.keyVelocities);
       this.controlValues.set(channelState.controlValues);
       this.program = channelState.program;
       this.pitchBendRange = channelState.pitchBendRange;
+    },
+    getCC14(v, mode) {
+      if (mode === 'coarse') return this.controlValues[CC14_HI | v] / 0x7f;
+      var v = (this.controlValues[CC14_HI | v] << 7) | this.controlValues[CC14_LO | v];
+      if (mode === 'fine') return v / 0x3fff;
+      return v;
+    },
+    get bank()                { return this.getCC14(CC14_BANK               ); },
+    get modWheelCoarse()      { return this.getCC14(CC14_MOD_WHEEL, 'coarse'); },
+    get modWheelFine()        { return this.getCC14(CC14_MOD_WHEEL, 'fine'  ); },
+    get breathControlCoarse() { return this.getCC14(CC14_BREATH,    'coarse'); },
+    get breathControlFine()   { return this.getCC14(CC14_BREATH,    'fine'  ); },
+    get footControlCoarse()   { return this.getCC14(CC14_FOOT,      'coarse'); },
+    get footControlFine()     { return this.getCC14(CC14_FOOT,      'fine'  ); },
+    get volumeCoarse()        { return this.getCC14(CC14_VOLUME,    'coarse'); },
+    get volumeFine()          { return this.getCC14(CC14_VOLUME,    'fine'  ); },
+    get balanceCoarse()       { return this.getCC14(CC14_BALANCE,   'coarse'); },
+    get balanceFine()         { return this.getCC14(CC14_BALANCE,   'fine'  ); },
+    get panCoarse()           { return this.getCC14(CC14_PAN,       'coarse'); },
+    get panFine()             { return this.getCC14(CC14_PAN,       'fine'  ); },
+    get expressionCoarse()    { return this.getCC14(CC14_EXPRESSION,'coarse'); },
+    get expressionFine()      { return this.getCC14(CC14_EXPRESSION,'fine'  ); },
+    get damperPedalOn() {
+      return this.controlValues[CC_DAMPER_PEDAL_ON] >= 64;
+    },
+    get portamentoOn() {
+      return this.controlValues[CC_PORTAMENTO_ON] >= 64;
+    },
+    get sostenutoOn() {
+      return this.controlValues[CC_SOSTENUTO_ON] >= 64;
+    },
+    get softPedalOn() {
+      return this.controlValues[CC_SOFT_PEDAL_ON] >= 64;
+    },
+    get legatoOn() {
+      return this.controlValues[CC_LEGATO_ON] >= 64;
+    },
+    get hold2On() {
+      return this.controlValues[CC_HOLD_2_ON] >= 64;
     },
   };
   
@@ -125,6 +193,9 @@ define(['./midiNoteData'], function(midiNoteData) {
     ticksPerFrame: 2,
     speedRatio: 1,
     secondsElapsed: 0,
+    omniMode: false,
+    monoMode: false,
+    polyMode: false,
     get secondsPerTick() {
       switch (this.timingUnit) {
         case 'beat':
@@ -146,10 +217,55 @@ define(['./midiNoteData'], function(midiNoteData) {
       this.speedRatio = playState.speedRatio;
       this.secondsElapsed = playState.secondsElapsed;
     },
-    onNoteDown: function(ch, key, velocity) { },
-    onNoteUp: function(ch, key) { },
-    onProgram: function(ch, prog) { },
-    onControl: function(ch, ctrl, v) { },
+    onNoteDown: function(channel_i, key, velocity) {
+    },
+    onNoteUp: function(channel_i, key) {
+    },
+    onProgram: function(channel_i, prog) {
+    },
+    onControlChange: function(channel_i, cc, v) {
+      switch (cc) {
+        case CC_DAMPER_PEDAL_ON:
+          this.channels[channel_i].damperPedal = true;
+          break;
+      }
+    },
+    onPitchBendChange: function(channel_i, newRange) {
+    },
+    onModeMessage: function(channel_i, mm, v) {
+      switch (mm) {
+        case MM_ALL_NOTES_OFF:
+          this.allNotesOff();
+          break;
+        case MM_OMNI_ON:
+          this.omniMode = true;
+          this.allNotesOff();
+          break;
+        case MM_OMNI_OFF:
+          this.omniMode = false;
+          this.allNotesOff();
+          break;
+        case MM_MONO_ON:
+          this.monoMode = true;
+          this.polyMode = false;
+          this.allNotesOff();
+          break;
+        case MM_POLY_ON:
+          this.polyMode = true;
+          this.monoMode = false;
+          this.allNotesOff();
+          break;
+      }
+    },
+    allNotesOff: function(channel_i) {
+      var channel = this.channels[channel_i];
+      for (var key_i = 0; key_i < channel.keyVelocities.length; key_i++) {
+        if (channel.keyVelocities[key_i] !== 0) {
+          channel.keyVelocities[key_i] = 0;
+          this.onNoteUp(channel_i, key_i);
+        }
+      }
+    },
     advanceTrack: function(tkRdr) {
       this.secondsElapsed += tkRdr.delay * this.secondsPerTick;
       switch (tkRdr.command) {
@@ -171,13 +287,18 @@ define(['./midiNoteData'], function(midiNoteData) {
           this.channels[tkRdr.channel].program = tkRdr.program;
           this.onProgram(tkRdr.channel, tkRdr.program);
           break;
-        case 'control':
-          this.channels[tkRdr.channel].controlValues[tkRdr.control] = tkRdr.value;
-          this.onControl(tkRdr.channel, tkRdr.control, tkRdr.value);
+        case 'control-change':
+          if (tkRdr.control >= 120) {
+            this.onModeMessage(tkRdr.channel, tkRdr.control, tkRdr.value);
+          }
+          else {
+            this.channels[tkRdr.channel].controlValues[tkRdr.control] = tkRdr.value;
+            this.onControlChange(tkRdr.channel, tkRdr.control, tkRdr.value);
+          }
           break;
         case 'pitch-bend':
           this.channels[tkRdr.channel].pitchBendRange = tkRdr.pitchBendRange;
-          this.onPitchBend(tkRdr.channel, tkRdr.pitchBendRange);
+          this.onPitchBendChange(tkRdr.channel, tkRdr.pitchBendRange);
           break;
       }
     },
