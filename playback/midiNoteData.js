@@ -2030,7 +2030,7 @@ define(['require'], function(require) {
       promise = promise.then(splitParts);
       return audioContext.midiNoteData[fileNumber] = promise;
     },
-    preloadNote: function(isPercussion, programNumber, bankNumber, keyNumber) {
+    preloadNote: function(audioContext, isPercussion, programNumber, bankNumber, keyNumber) {
       var info = (isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS)[programNumber];
       if ('*' in info) info = info[bankNumber >> 7] || info['*'];
       var spriteSheet = info[0].file;
@@ -2039,7 +2039,7 @@ define(['require'], function(require) {
         i++;
         if ('file' in info[i]) spriteSheet = info[i].file;
       }
-      return this.getSoundSpriteSheet(spriteSheet);
+      return this.getSoundSpriteSheet(audioContext, spriteSheet);
     },
     createNoteSource: function(destination, isPercussion, programNumber, bankNumber, keyNumber) {
       var audioContext = destination.context;
@@ -2059,7 +2059,7 @@ define(['require'], function(require) {
         if ('dB' in info[i]) gainNode.gain.value = Math.pow(10, info[i].dB / 20);
         if ('$c' in info[i]) sourceNode.detune.value = info[i].$c;
       }
-      sourceNode.ready = this.getSoundSpriteSheet(spriteSheet).then(function(buffers) {
+      sourceNode.ready = this.getSoundSpriteSheet(audioContext, spriteSheet).then(function(buffers) {
         var buffer = buffers[sprite];
         var source = audioContext.createBufferSource();
         source.buffer = buffer;
