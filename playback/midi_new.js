@@ -55,10 +55,10 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         CC_RPN_HI = 101,
         
         MM_START = 120, MM_END = 128,
-          MM_ALL_SOUND_OFF = 120,
+          MM_ALL_SOUND_OFF = 120, // ignore release time & sustain
           MM_RESET_ALL_CONTROLLERS = 121,
           MM_LOCAL_CONTROL_ON = 122,
-          MM_ALL_NOTES_OFF = 123,
+          MM_ALL_NOTES_OFF = 123, // maintain release time & sustain
           MM_OMNI_OFF = 124,
           MM_OMNI_ON = 125,
           MM_MONO_ON = 126,
