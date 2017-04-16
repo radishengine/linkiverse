@@ -466,92 +466,95 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       }
       var self = this;
       var tempReader = new SongReader;
-      function next() {
-        const sinceStarting = audioContext.currentTime - baseTime;
-        const frontierTime = sinceStarting + 3;
-        var doAgain = window.setTimeout(next, (3 - 0.5) * 1000);
-        do {
-          switch (self.track.command) {
-            // note-off: handled by note-on
-            case 'note-on':
-              var channel_i = self.track.channel;
-              var channel = self.playState.channels[channel_i];
-              var channelNode = channelNodes[channel_i];
-              var program_i = channel.program;
-              var bank_i = channel.bank;
-              var key_i = self.track.key;
-              var holding2 = channel.hold2On;
-              var velocityNode = audioContext.createGain();
-              velocityNode.gain.value = self.track.velocity/127;
-              var source = midiNoteData.createNoteSource(velocityNode, channel_i === 9, program_i, bank_i, key_i);
-              source.detune.value = source.noteDetune + channel.pitchBend*200;
-              channelNode.vibratoWave.amplitude.connect(source.detune);
-              source.start(self.secondsElapsed - baseTime);
-              tempReader.initFrom(self);
-              var tempChannel = tempReader.playState.channels[channel_i];
-              while (tempReader.next()) {
-                if (tempReader.playState.isStoppingNote(channel_i, key_i)) {
-                  if (tempChannel.sustainOn) {
-                    do { } while (tempReader.next() && tempChannel.sustainOn);
+      return new Promise(function(resolve, reject) {
+        function next() {
+          const sinceStarting = audioContext.currentTime - baseTime;
+          const frontierTime = sinceStarting + 3;
+          var doAgain = window.setTimeout(next, (3 - 0.5) * 1000);
+          do {
+            switch (self.track.command) {
+              // note-off: handled by note-on
+              case 'note-on':
+                var channel_i = self.track.channel;
+                var channel = self.playState.channels[channel_i];
+                var channelNode = channelNodes[channel_i];
+                var program_i = channel.program;
+                var bank_i = channel.bank;
+                var key_i = self.track.key;
+                var holding2 = channel.hold2On;
+                var velocityNode = audioContext.createGain();
+                velocityNode.gain.value = self.track.velocity/127;
+                var source = midiNoteData.createNoteSource(velocityNode, channel_i === 9, program_i, bank_i, key_i);
+                source.detune.value = source.noteDetune + channel.pitchBend*200;
+                channelNode.vibratoWave.amplitude.connect(source.detune);
+                source.start(self.secondsElapsed - baseTime);
+                tempReader.initFrom(self);
+                var tempChannel = tempReader.playState.channels[channel_i];
+                while (tempReader.next()) {
+                  if (tempReader.playState.isStoppingNote(channel_i, key_i)) {
+                    if (tempChannel.sustainOn) {
+                      do { } while (tempReader.next() && tempChannel.sustainOn);
+                    }
+                    if (holding2) {
+                      do { } while (tempReader.next() && tempChannel.hold2On);
+                    }
+                    break;
                   }
-                  if (holding2) {
-                    do { } while (tempReader.next() && tempChannel.hold2On);
+                  if (tempReader.track.channel !== channel_i) continue;
+                  switch (tempReader.track.command) {
+                    case 'control-change':
+                      if (holding2 && tempReader.track.command === CCBOOL_HOLD_2) {
+                        holding2 = holding2 && tempChannel.hold2On;
+                      }
+                      break;
+                    case 'pitch-bend':
+                      source.detune.setValueAtTime(
+                        source.noteDetune + tempReader.track.pitchBend*200,
+                        baseTime + tempReader.secondsElapsed);
+                      break;
+                  }
+                }
+                source.stop(baseTime + tempReader.secondsElapsed);
+                break;
+              case 'control-change':
+                if (self.track.control >= CC14_START && self.track.control < CC14_END) {
+                  var cc14 = self.track.control & 31;
+                  var value = channel.getCC14(cc14, precision);
+                  switch (cc14) {
+                    case CC14_VOLUME:
+                      channelNode.mainVolume.gain.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      break;
+                    case CC14_EXPRESSION:
+                      channelNode.expression.gain.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      break;
+                    case CC14_PAN:
+                      channelNode.panning.pan.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      break;
+                    case CC14_BALANCE:
+                      masterPanning.pan.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      break;
                   }
                   break;
                 }
-                if (tempReader.track.channel !== channel_i) continue;
-                switch (tempReader.track.command) {
-                  case 'control-change':
-                    if (holding2 && tempReader.track.command === CCBOOL_HOLD_2) {
-                      holding2 = holding2 && tempChannel.hold2On;
-                    }
-                    break;
-                  case 'pitch-bend':
-                    source.detune.setValueAtTime(
-                      source.noteDetune + tempReader.track.pitchBend*200,
-                      baseTime + tempReader.secondsElapsed);
-                    break;
-                }
-              }
-              source.stop(baseTime + tempReader.secondsElapsed);
-              break;
-            case 'control-change':
-              if (self.track.control >= CC14_START && self.track.control < CC14_END) {
-                var cc14 = self.track.control & 31;
-                var value = channel.getCC14(cc14, precision);
-                switch (cc14) {
-                  case CC14_VOLUME:
-                    channelNode.mainVolume.gain.setValueAtTime(value, baseTime + self.secondsElapsed);
-                    break;
-                  case CC14_EXPRESSION:
-                    channelNode.expression.gain.setValueAtTime(value, baseTime + self.secondsElapsed);
-                    break;
-                  case CC14_PAN:
-                    channelNode.panning.pan.setValueAtTime(value, baseTime + self.secondsElapsed);
-                    break;
-                  case CC14_BALANCE:
-                    masterPanning.pan.setValueAtTime(value, baseTime + self.secondsElapsed);
-                    break;
-                }
                 break;
-              }
+              // pitch-bend: handled by note-on
+            }
+            if (!self.next()) {
+              window.cancelTimeout(doAgain);
+              window.setTimeout(
+                function() {
+                  audioContext.dispatchEvent(new CustomEvent('song-stopped', {
+                    detail:{song:self, reason:'complete'},
+                  }));
+                  resolve();
+                },
+                (self.playState.secondsElapsed - sinceStarting) * 1000);
               break;
-            // pitch-bend: handled by note-on
-          }
-          if (!self.next()) {
-            window.cancelTimeout(doAgain);
-            window.setTimeout(
-              function() {
-                audioContext.dispatchEvent(new CustomEvent('song-stopped', {
-                  detail:{song:self, reason:'complete'},
-                }));
-              },
-              (self.playState.secondsElapsed - sinceStarting) * 1000);
-            break;
-          }
-        } while (self.playState.secondsElapsed < frontierTime);
-      }
-      return next();
+            }
+          } while (self.playState.secondsElapsed < frontierTime);
+        }
+        next();
+      });
     },
   };
   
