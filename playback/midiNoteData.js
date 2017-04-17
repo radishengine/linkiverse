@@ -61,7 +61,9 @@ define(['require'], function(require) {
       {once: 303, loop: 50, extra:1, note:88},
       {once: 190, loop: 95, extra:1, note:96},
     ],
-    [ {once:1365, loop:3682, extra:1, note:78} ], // 7
+    [ // 7
+      {once:1365, loop:3682, extra:1, note:78},
+    ],
     [ // 8
       {once:5506, loop:1180, extra:1, note:48},
       {once:4501, loop: 674, extra:1, note:60},
@@ -108,7 +110,9 @@ define(['require'], function(require) {
       {once:2264, loop:118, extra:1, note: 88},
       {once:2428, loop: 59, extra:1, note:100},
     ],
-    [ {once:903, loop:3766, extra:0, note:90}, ], // 12
+    [ // 12
+      {once:903, loop:3766, extra:0, note:90},
+    ],
     [ // 13
       {once:3682, loop:253, extra:1, note:53},
       {once:1663, loop:107, extra:1, note:68},
@@ -312,7 +316,9 @@ define(['require'], function(require) {
       {once:2901, loop:1852, extra:1, note:67},
       {once:2237, loop:1660, extra:1, note:91},
     ],
-    [ {once:13377, loop:2014, extra:1, note:68} ], // 34
+    [ // 34
+      {once:13377, loop:2014, extra:1, note:68},
+    ],
     [ // 35
       {once:8409, loop:3376, extra:1, note:60},
       {once:6590, loop:2902, extra:1, note:84},
