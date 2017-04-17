@@ -791,6 +791,8 @@ define(['require'], function(require) {
         {file:58, i: 5, dB: -0.4, $c: +0, max:32, note:32},
         {max:33},
         {file:58, i: 6, dB: -1.0, $c: +0, max:34, note:34},
+        {max:38},
+        {file:57, i:13, dB: +0.0, $c: +0, max:39, note:40},
         {max:81},
         {file:58, i: 7, dB: -1.5, $c: +0, max:82, note:82},
         {file:58, i: 8, dB: -1.1, $c: +0, max:83, note:85},
