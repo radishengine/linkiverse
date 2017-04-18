@@ -662,14 +662,14 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         channelNode.panning.connect(destination);
         
         var tremoloWave = channelNode.tremoloWave = audioContext.createOscillator();
-        tremoloWave.frequency = 5;
+        tremoloWave.frequency.value = 5;
         tremoloWave.start(baseTime);
         tremoloWave.amplitude = audioContext.createGain();
         tremoloWave.amplitude.gain.value = 0;
         tremoloWave.connect(tremoloWave.amplitude);
         
         var vibratoWave = channelNode.vibratoWave = audioContext.createOscillator();
-        vibratoWave.frequency = 5;
+        vibratoWave.frequency.value = 5;
         vibratoWave.start(baseTime);
         vibratoWave.amplitude = audioContext.createGain();
         vibratoWave.amplitude.gain.value = 0;
