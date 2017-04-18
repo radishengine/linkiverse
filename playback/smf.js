@@ -348,7 +348,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       controlValues[CC_PHASER_DEPTH] = this.controlValues[CC_PHASER_DEPTH];
       this.controlValues.set(controlValues);
     },
-    update: function(tkRdr) {
+    applyCommand: function(tkRdr) {
       // NOTE: does NOT check channel_i (e.g. for omni mode)
       switch (tkRdr.command_i) {
         case CMD_KEY_UP:
@@ -400,7 +400,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         this.channels[i].allNotesOff();
       }
     },
-    update: function(tkRdr) {
+    applyCommand: function(tkRdr) {
       switch (tkRdr.command_i) {
         case CMD_CONTROL_CHANGE:
           var control_i = tkRdr.control_i;
@@ -440,11 +440,11 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         case CMD_PITCH_BEND:
           if (this.omniMode) {
             for (var i = 0; i < this.channels.length; i++) {
-              this.channels[i].update(tkRdr);
+              this.channels[i].applyCommand(tkRdr);
             }
           }
           else {
-            this.channels[tkRdr.channel_i].update(tkRdr);
+            this.channels[tkRdr.channel_i].applyCommand(tkRdr);
           }
           break;
       }
@@ -560,8 +560,8 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       }
       this.secondsElapsed += delay * this.playState.secondsPerTick;
     },
-    update: function(track) {
-      this.playState.update(track);
+    applyCommand: function(track) {
+      this.playState.applyCommand(track);
       switch (track.command_i) {
         case META_TEMPO:
           this.beatsPerMinute = track.beatsPerMinute;
@@ -587,7 +587,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       var track;
       while (track = tempReader.chooseNextTrack()) {
         tempReader.advanceTime(track);
-        tempReader.update(track);
+        tempReader.applyCommand(track);
         tempReader.advanceTrack(track);
       }
       Object.defineProperty(this, 'totalSeconds', {value:tempReader.secondsElapsed, enumerable:true});
@@ -676,7 +676,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
           var track;
           while (track = mainReader.chooseNextTrack()) {
             mainReader.advanceTime(track);
-            mainReader.update(track);
+            mainReader.applyCommand(track);
             switch (track.command_i) {
               case CMD_KEY_DOWN:
                 // TODO: omni mode?
@@ -702,13 +702,13 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                 var tempTrack;
                 while (tempTrack = tempReader.chooseNextTrack()) {
                   tempReader.advanceTime(tempTrack);
-                  tempReader.update(tempTrack);
+                  tempReader.applyCommand(tempTrack);
                   if (tempReader.isKeyBeingReleased(tempTrack, channel_i, key_i)) {
                     if (tempTrack.killSustain) break;
                     if (tempChannel.sustainOn) {
                       while (tempTrack = tempReader.chooseNextTrack()) {
                         tempReader.advanceTime(tempTrack);
-                        tempReader.update(tempTrack);
+                        tempReader.applyCommand(tempTrack);
                         if (!tempChannel.sustainOn || !tempTrack.killSustain) {
                           break;
                         }
@@ -718,7 +718,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                     if (holding2) {
                       while (tempTrack = tempReader.chooseNextTrack()) {
                         tempReader.advanceTime(tempTrack);
-                        tempReader.update(tempTrack);
+                        tempReader.applyCommand(tempTrack);
                         if (!tempChannel.hold2On || !tempTrack.killSustain) {
                           break;
                         }
@@ -809,7 +809,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       var track;
       while ((track = songReader.chooseNextTrack()) && !songReader.isKeyBeingPressed(track)) {
         songReader.advanceTime(track);
-        songReader.update(track);
+        songReader.applyCommand(track);
         songReader.advanceTrack(track);
       }
       return songReader;
