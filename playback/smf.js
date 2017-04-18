@@ -566,7 +566,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       for (var i = 0; i < this.tracks.length; i++) {
         this.tracks[i].delay -= delay;
       }
-      this.secondsElapsed += delay * this.playState.secondsPerTick;
+      this.secondsElapsed += delay * this.secondsPerTick;
     },
     applyCommand: function(track) {
       this.playState.applyCommand(track);
@@ -833,7 +833,13 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         return this.open(file)
         .then(function(smf) {
           var song = smf.openSong(songNumber || 0);
-          if (!preservePrelude) song.playState.secondsElapsed = 0;
+          if (!preservePrelude) {
+            var track = song.chooseNextTrack();
+            if (track) {
+              song.advanceTime(track);
+            }
+            song.secondsElapsed = 0;
+          }
           return song.preloadNotes(destination.context)
           .then(function() {
             return song.play(destination);
