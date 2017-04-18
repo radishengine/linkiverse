@@ -764,6 +764,20 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
   };
   
   return {
+    
+    play:
+      function play(destination, file, songNumber, preservePrelude) {
+        return this.open(file)
+        .then(function(smf) {
+          var song = smf.openSong(songNumber || 0);
+          if (!preservePrelude) song.playState.secondsElapsed = 0;
+          return song.preloadNotes(destination.context)
+          .then(function() {
+            return song.play(destination);
+          });
+        });
+      },
+    
     open:
       function open(file) {
         if (file instanceof Blob) {
@@ -833,6 +847,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         }
         return new StandardMidiFile(playSettings, songs);
       },
+    
   };
 
 });
