@@ -2682,7 +2682,7 @@ define(['require'], function(require) {
       while (range_min <= range_max) {
         range_i = (range_min + range_max) >> 1;
         if (key_i > info[range_i].max) {
-          range_max = range_i + 1;
+          range_min = range_i + 1;
           continue;
         }
         if (range_i > 0 && key_i <= info[range_i-1].max) {
