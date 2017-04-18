@@ -83,8 +83,9 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         META_END = CMD_META + 0x2F,
         META_TEMPO = CMD_META + 0x51,
         META_SMPTE_OFFSET = CMD_META + 0x54,
-        META_TIME_SIGNATURE = CMD_META + 0x59,
-        META_KEY_SIGNATURE = CMD_META + 0x7F;
+        META_TIME_SIGNATURE = CMD_META + 0x58,
+        META_KEY_SIGNATURE = CMD_META + 0x59,
+        META_CUSTOM = CMD_META + 0x7F;
   
   function TrackReader(bytes) {
     this.args = [];
