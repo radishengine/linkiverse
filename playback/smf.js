@@ -135,7 +135,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         this.byte_i--;
         command_i = this.command_i;
       }
-      else if (command_i & 0xf0 === 0xf0) {
+      else if ((command_i & 0xf0) === 0xf0) {
         if (command_i === 0xff) {
           command_i = this.command_i = CMD_META + this.bytes[this.byte_i++];
           var metaDataLen = this.readVarint();
