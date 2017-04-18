@@ -87,6 +87,11 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         META_KEY_SIGNATURE = CMD_META + 0x59,
         META_CUSTOM = CMD_META + 0x7F;
   
+  const DEFAULT_CC = new Uint8Array(120);
+  DEFAULT_CC[CC14_HI | CC14_VOLUME] = 100;
+  DEFAULT_CC[CC14_HI | CC14_EXPRESSION] = 127;
+  DEFAULT_CC[CC14_HI | CC14_PAN] = 64;
+  
   function TrackReader(bytes) {
     this.args = [];
     if (bytes) this.init(bytes);
@@ -233,7 +238,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
 
   function ChannelState() {
     this.keyVelocities = new Uint8Array(128);
-    this.controlValues = new Uint8Array(120);
+    this.controlValues = new Uint8Array(DEFAULT_CC);
   }
   ChannelState.prototype = {
     program_i: 0,
@@ -334,7 +339,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       this.keyVelocities.set(new Uint8Array(this.keyVelocities.length));
     },
     controllerReset: function() {
-      var controlValues = new Uint8Array(this.controlValues.length);
+      var controlValues = new Uint8Array(DEFAULT_CC);
       controlValues[CC14_HI | CC14_BANK] = this.controlValues[CC14_HI | CC14_BANK];
       controlValues[CC14_LO | CC14_BANK] = this.controlValues[CC14_LO | CC14_BANK];
       
@@ -383,17 +388,20 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
   PlayState.prototype = {
     omniMode: false,
     mutexKeyMode: false,
+    pitchBendCents: 200, // TODO: support RPN 0
     initFrom: function(playState) {
       for (var i = 0; i < this.channels.length; i++) {
         this.channels[i].initFrom(playState.channels[i]);
       }
       this.omniMode = playState.omniMode;
       this.mutexKeyMode = playState.mutexKeyMode;
+      this.pitchBendCents = playState.pitchBendCents;
     },
     controllerReset: function() {
       for (var i = 0; i < this.channels.length; i++) {
         this.channels[i].controllerReset();
       }
+      this.pitchBendCents = 200;
     },
     allNotesOff: function() {
       for (var i = 0; i < this.channels.length; i++) {
@@ -694,7 +702,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                   channel.program_i,
                   channel.bank_i,
                   key_i);
-                source.detune.value = source.noteDetune + channel.pitchBend*200;
+                source.detune.value = source.noteDetune + channel.pitchBend * tempReader.playState.pitchBendCents;
                 channelNode.vibratoWave.amplitude.connect(source.detune);
                 source.start(mainReader.secondsElapsed - baseTime);
                 tempReader.initFrom(mainReader);
@@ -736,7 +744,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                         break;
                       case CMD_PITCH_BEND:
                         source.detune.setValueAtTime(
-                          source.noteDetune + tempReader.track.pitchBend*200,
+                          source.noteDetune + tempReader.track.pitchBend * tempReader.playState.pitchBendCents,
                           baseTime + tempReader.secondsElapsed);
                         break;
                     }
