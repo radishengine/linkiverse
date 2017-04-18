@@ -2669,14 +2669,14 @@ define(['require'], function(require) {
     },
     createNoteSource: function(destination, isPercussion, programNumber, bankNumber, key_i) {
       var audioContext = destination.context;
-      var gainNode = audioContext.createGain();
       var sourceNode = audioContext.createBufferSource();
-      sourceNode.connect(gainNode);
-      gainNode.connect(destination);
+      sourceNode.volume = audioContext.createGain();
+      sourceNode.connect(sourceNode.volume);
+      sourceNode.volume.connect(destination);
       var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
       info = info[programNumber] || info[0];
       info = info[bankNumber] || info[0];
-      if ('dB' in info[0]) gainNode.gain.value = Math.pow(10, info[0].dB / 20);
+      if ('dB' in info[0]) sourceNode.volume.gain.value = Math.pow(10, info[0].dB / 20);
       if ('$c' in info[0]) sourceNode.detune.value = info[0].$c;
       var i = 0, spriteSheet = info[0].file, sprite = info[0].i || 0;
       var unity_i = info[0].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
@@ -2684,7 +2684,7 @@ define(['require'], function(require) {
         i++;
         if ('file' in info[i]) spriteSheet = info[i].file;
         sprite = 'i' in info[i] ? info[i].i : sprite + 1;
-        if ('dB' in info[i]) gainNode.gain.value = Math.pow(10, info[i].dB / 20);
+        if ('dB' in info[i]) sourceNode.volume.gain.value = Math.pow(10, info[i].dB / 20);
         if ('$c' in info[i]) sourceNode.detune.value = info[i].$c;
         unity_i = info[i].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
       }
@@ -2692,10 +2692,9 @@ define(['require'], function(require) {
       sourceNode.noteDetune = sourceNode.detune.value;
       sourceNode.ready = this.getSoundSpriteSheet(audioContext, spriteSheet).then(function(buffers) {
         var buffer = buffers[sprite];
-        var source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        Object.assign(source, buffer.sourceSettings);
-        return source;
+        sourceNode.buffer = buffer;
+        Object.assign(sourceNode, buffer.sourceSettings);
+        return sourceNode;
       });
       return sourceNode;
     },
