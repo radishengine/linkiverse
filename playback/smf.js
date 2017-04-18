@@ -163,7 +163,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
               metaData = {
                 numerator: metaData[0],
                 denominator: Math.pow(2, metaData[1]),
-                ticksPerBeat: metaData[2],
+                metronomeSpeed: metaData[2],
                 speedRatio: metaData[3] / 8,
               };
               break;
@@ -466,18 +466,18 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
   }
   SongReader.prototype = {
     timingUnit: 'beat',
-    ticksPerBeat: 24,
+    pulsesPerBeat: 24,
     beatsPerMinute: 120,
     framesPerSecond: 25,
-    ticksPerFrame: 2,
+    pulsesPerFrame: 2,
     speedRatio: 1,
     secondsElapsed: 0,
-    get secondsPerTick() {
+    get secondsPerPulse() {
       switch (this.timingUnit) {
         case 'beat':
-          return this.ticksPerBeat * (this.beatsPerMinute/60) / this.speedRatio;
+          return 60 / (this.beatsPerMinute * this.pulsesPerBeat * this.speedRatio);
         case 'frame':
-          return this.ticksPerFrame * this.framesPerSecond / this.speedRatio;
+          return 1 / (this.framesPerSecond * this.pulsesPerFrame *  this.speedRatio);
       }
       throw new Error('invalid timing unit: must be beat or frame');
     },
@@ -497,10 +497,10 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         trackReader.initFrom(songReader.tracks[i]);
       }
       this.timingUnit = songReader.timingUnit;
-      this.ticksPerBeat = songReader.ticksPerBeat;
+      this.pulsesPerBeat = songReader.pulsesPerBeat;
       this.beatsPerMinute = songReader.beatsPerMinute;
       this.framesPerSecond = songReader.framesPerSecond;
-      this.ticksPerFrame = songReader.ticksPerFrame;
+      this.pulsesPerFrame = songReader.pulsesPerFrame;
       this.speedRatio = songReader.speedRatio;
       this.secondsElapsed = songReader.secondsElapsed;      
     },
@@ -566,7 +566,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       for (var i = 0; i < this.tracks.length; i++) {
         this.tracks[i].delay -= delay;
       }
-      this.secondsElapsed += delay * this.secondsPerTick;
+      this.secondsElapsed += delay * this.secondsPerPulse;
     },
     applyCommand: function(track) {
       this.playState.applyCommand(track);
@@ -889,11 +889,11 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         var deltaTimeValue = dv.getInt16(12, false);
         if (deltaTimeValue < 0) {
           playSettings.timingUnit = 'frame';
-          playSettings.ticksPerFrame = -deltaTimeValue;
+          playSettings.pulsesPerFrame = -deltaTimeValue;
         }
         else {
           playSettings.timingUnit = 'beat';
-          playSettings.ticksPerBeat = deltaTimeValue;
+          playSettings.pulsesPerBeat = deltaTimeValue;
         }
         var pos = 14;
         for (var tracksLeft = dv.getUint16(10, false); tracksLeft > 0; --tracksLeft) {
