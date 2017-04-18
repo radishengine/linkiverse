@@ -133,7 +133,8 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       else if (command_i & 0xf0 === 0xf0) {
         if (command_i === 0xff) {
           command_i = this.command_i = CMD_META + this.bytes[this.byte_i++];
-          var metaData = this.bytes.subarray(this.byte_i, this.byte_i + this.readVarint());
+          var metaDataLen = this.readVarint();
+          var metaData = this.bytes.subarray(this.byte_i, this.byte_i + metaDataLen);
           this.byte_i += metaData.length;
           switch (command_i) {
             case META_SEQUENCE_NUMBER:
