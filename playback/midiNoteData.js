@@ -2696,7 +2696,7 @@ define(['require'], function(require) {
       }
       info = info[range_i];
       sourceNode.volume.gain.value = Math.pow(10, (info.dB || 0) / 20);
-      sourceNode.noteDetune = sourceNode.detune.value = (info[0].$c || 0);
+      sourceNode.noteDetune = sourceNode.detune.value = (info.$c || 0);
       var unity_i = info.note || SOUND_SPRITE_SHEETS[info.file][info.i].note;
       sourceNode.playbackRate.value = sourceNode.notePlaybackRate = noteOffsetAsPlaybackRate(key_i - unity_i);
       sourceNode.ready = this.getSoundSpriteSheet(audioContext, info.file).then(function(buffers) {
