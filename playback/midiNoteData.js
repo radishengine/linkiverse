@@ -2677,22 +2677,29 @@ define(['require'], function(require) {
       var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
       info = info[programNumber] || info[0];
       info = info[bankNumber] || info[0];
-      if ('dB' in info[0]) sourceNode.volume.gain.value = Math.pow(10, info[0].dB / 20);
-      if ('$c' in info[0]) sourceNode.detune.value = info[0].$c;
-      var i = 0, spriteSheet = info[0].file, sprite = info[0].i || 0;
-      var unity_i = info[0].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
-      while ((info[i].max || 127) < key_i) {
-        i++;
-        if ('file' in info[i]) spriteSheet = info[i].file;
-        sprite = 'i' in info[i] ? info[i].i : sprite + 1;
-        if ('dB' in info[i]) sourceNode.volume.gain.value = Math.pow(10, info[i].dB / 20);
-        if ('$c' in info[i]) sourceNode.detune.value = info[i].$c;
-        unity_i = info[i].note || SOUND_SPRITE_SHEETS[spriteSheet][sprite].note;
+      var range_min = 0, range_max = info.length - 1;
+      while (range_min <= range_max) {
+        var range_i = (range_min + range_max) >> 1;
+        if (key_i > info[range_i].max) {
+          range_max = range_i + 1;
+          continue;
+        }
+        if (range_i > 0 && key_i <= info[range_i-1].max) {
+          range_max = range_i - 1;
+          continue;
+        }
+        break;
       }
+      if (range_max < range_min) {
+        throw new RangeError('program/bank/key out of range');
+      }
+      info = info[range_i];
+      sourceNode.volume.gain.value = Math.pow(10, (info.dB || 0) / 20);
+      sourceNode.noteDetune = sourceNode.detune.value = (info[0].$c || 0);
+      var unity_i = info.note || SOUND_SPRITE_SHEETS[info.file][info.i].note;
       sourceNode.playbackRate.value = sourceNode.notePlaybackRate = noteOffsetAsPlaybackRate(key_i - unity_i);
-      sourceNode.noteDetune = sourceNode.detune.value;
-      sourceNode.ready = this.getSoundSpriteSheet(audioContext, spriteSheet).then(function(buffers) {
-        var buffer = buffers[sprite];
+      sourceNode.ready = this.getSoundSpriteSheet(audioContext, info.file).then(function(buffers) {
+        var buffer = buffers[info.i];
         sourceNode.buffer = buffer;
         Object.assign(sourceNode, buffer.sourceSettings);
         return sourceNode;
