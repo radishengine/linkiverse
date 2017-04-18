@@ -839,7 +839,7 @@ define(['require'], function(require) {
         {file:58, i:15, dB: +0.0, $c: +0, max:38, note:44},
         {file:63, i: 5, dB: -4.3, $c: +0, max:39, note:39},
         {file:63, i: 0, dB: -2.2, $c: +0, max:40, note:40},
-        {file:57, i: 5, dB: -3,3, $c:+50, max:41, note:66},
+        {file:57, i: 5, dB: -3.3, $c:+50, max:41, note:66},
         {file:59, i: 5, dB: -5.0, $c: +0, max:42, note:42},
         {file:57, i: 5, dB: +3.3, $c:+50, max:43, note:62},
         {file:59, i: 5, dB: -8.0, $c:-100,max:44, note:43},
