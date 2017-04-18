@@ -94,7 +94,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
     init: function(bytes) {
       this.bytes = bytes;
       this.byte_i = 0;
-      this.command = null;
+      this.command_i = META_END;
       this.args.length = 0;
       return this;
     },
