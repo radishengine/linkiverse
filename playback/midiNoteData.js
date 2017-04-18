@@ -1898,7 +1898,7 @@ define(['require'], function(require) {
       {file:31, i:0, max: 88, dB:-25.07, $c:-44},
       {file:31, i:0, max: 95, dB:-34.93, $c:-44},
       {file:31, i:0, max:127, dB:-96.00, $c:-44},
-    ],
+    ]],
     { // 0x30
       0x0000: [
         {file:31, i:1, max: 55, dB:-5.04, $c:-7},
