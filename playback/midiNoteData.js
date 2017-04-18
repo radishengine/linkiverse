@@ -2609,7 +2609,7 @@ define(['require'], function(require) {
   return {
     getSoundSpriteSheet: function(audioContext, fileNumber) {
       if (!('midiNoteData' in audioContext)) audioContext.midiNoteData = {};
-      if (fileNumber in audioContext.midiNoteData) return audioContext.midiNoteData;
+      else if (fileNumber in audioContext.midiNoteData) return audioContext.midiNoteData[fileNumber];
       const storageCacheKey = 'midiNote' + fileNumber;
       function splitParts(samples) {
         var info = SOUND_SPRITE_SHEETS[fileNumber];
