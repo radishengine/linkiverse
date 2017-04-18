@@ -2610,7 +2610,6 @@ define(['require'], function(require) {
     getSoundSpriteSheet: function(audioContext, fileNumber) {
       if (!('midiNoteData' in audioContext)) audioContext.midiNoteData = {};
       else if (fileNumber in audioContext.midiNoteData) return audioContext.midiNoteData[fileNumber];
-      const storageCacheKey = 'midiNote' + fileNumber;
       function splitParts(samples) {
         var info = SOUND_SPRITE_SHEETS[fileNumber];
         var offset = 0;
@@ -2649,17 +2648,10 @@ define(['require'], function(require) {
               samples[i] = dv.getInt16(44 + i * 2, true) / 32768;
             }
           }
-          localStorage.setItem(storageCacheKey, URL.createObjectURL(new Blob([samples])));
           return samples;
         });
       }
-      var cachedURL = localStorage.getItem(storageCacheKey);
-      function samplesFromCache() {
-        return fetch(cachedURL)
-        .then(function(req) {  return req.arrayBuffer();  })
-        .then(function(data) {  return new Float32Array(data);  });
-      }
-      var promise = cachedURL ? samplesFromCache().then(null, samplesFromServer) : samplesFromServer();
+      var promise = samplesFromServer();
       promise = promise.then(splitParts);
       return audioContext.midiNoteData[fileNumber] = promise;
     },
