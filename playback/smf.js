@@ -816,8 +816,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
           default: return Promise.reject('unknown playback mode');
         }
         var playSettings = {};
-        var songs = [];
-        if (trackMode !== 'allAtOnce') songs.push([]);
+        var songs = (trackMode === 'allAtOnce') ? [[]] : [];
         var deltaTimeValue = dv.getInt16(12, false);
         if (deltaTimeValue < 0) {
           playSettings.timingUnit = 'frame';
