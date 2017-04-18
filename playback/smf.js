@@ -39,7 +39,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         CC_GENERAL_8 = 83,
         CC_PORTAMENTO_TIME = 84,
         //
-        CC_PREFIX_VELOCITY_LO = 88,
+        CC_PREFIX_VELOCITY_LO = 88, // introduced circa 2010, probably ok to ignore?
         //
         CC_REVERB_DEPTH = 91,
         CC_TREMOLO_DEPTH = 92,
@@ -244,37 +244,44 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       this.program_i = channelState.program_i;
       this.pitchBend = channelState.pitchBend;
     },
-    getCC14: function(v, mode) {
-      if (mode === 'coarse') return this.controlValues[CC14_HI | v] / 0x7f;
-      var v = (this.controlValues[CC14_HI | v] << 7) | this.controlValues[CC14_LO | v];
-      if (mode === 'fine') return v / 0x3fff;
-      return v;
+    getCC14: function(cc14) {
+      var hi = this.controlValues[CC14_HI | cc14] & 0x7F;
+      var lo = this.controlValues[CC14_LO | cc14] & 0x7F;
+      return (hi << 7) | lo;
     },
-    get bank()                { return this.getCC14(CC14_BANK               ); },
-    get modWheelCoarse()      { return this.getCC14(CC14_MOD_WHEEL, 'coarse'); },
-    get modWheelFine()        { return this.getCC14(CC14_MOD_WHEEL, 'fine'  ); },
-    get breathControlCoarse() { return this.getCC14(CC14_BREATH,    'coarse'); },
-    get breathControlFine()   { return this.getCC14(CC14_BREATH,    'fine'  ); },
-    get footControlCoarse()   { return this.getCC14(CC14_FOOT,      'coarse'); },
-    get footControlFine()     { return this.getCC14(CC14_FOOT,      'fine'  ); },
-    get volumeCoarse()        { return this.getCC14(CC14_VOLUME,    'coarse'); },
-    get volumeFine()          { return this.getCC14(CC14_VOLUME,    'fine'  ); },
-    get balanceCoarse()       { return this.getCC14(CC14_BALANCE,   'coarse'); },
-    get balanceFine()         { return this.getCC14(CC14_BALANCE,   'fine'  ); },
-    get panCoarse()           { return this.getCC14(CC14_PAN,       'coarse'); },
-    get panFine()             { return this.getCC14(CC14_PAN,       'fine'  ); },
-    get expressionCoarse()    { return this.getCC14(CC14_EXPRESSION,'coarse'); },
-    get expressionFine()      { return this.getCC14(CC14_EXPRESSION,'fine'  ); },
+    getCC14Ratio: function(cc14, offset) {
+      var hi = this.controlValues[CC14_HI | cc14] & 0x7F;
+      var lo = this.controlValues[CC14_LO | cc14];
+      if (lo & 0x80) {
+        return ((hi << 7) | (lo & 0x7F)) / 0x3FFF;
+      }
+      return hi / 0x7F;
+    },
     getCCBool: function(v) {
-      return this.controlValues[v] >= 64;
+      return !!(this.controlValues[v] & 0x40);
     },
+    get bank_i()       { return this.getCC14(CC14_BANK); },
+    get modWheel()     { return this.getCC14Ratio(CC14_MOD_WHEEL); },
+    get breath()       { return this.getCC14Ratio(CC14_BREATH); },
+    get foot()         { return this.getCC14Ratio(CC14_FOOT); },
+    get volume()       { return this.getCC14Ratio(CC14_VOLUME); },
+    get balance() {
+      var hi = this.controlValues[CC14_HI | CC14_BALANCE] & 0x7F;
+      var lo = this.controlValues[CC14_LO | CC14_BALANCE];
+      if (lo & 0x80) {
+        return (((hi << 7) | (lo & 0x7F)) - 0x2000) / 0x2000;
+      }
+      return ((hi / 0x7F) - 0x40) / 0x40;
+    },
+    get pan()          { return this.getCC14Ratio(CC14_PAN); },
+    get expression()   { return this.getCC14Ratio(CC14_EXPRESSION); },
     get sustainOn()    { return this.getCCBool(CCBOOL_SUSTAIN); },
     get portamentoOn() { return this.getCCBool(CCBOOL_PORTAMENTO); },
     get sostenutoOn()  { return this.getCCBool(CCBOOL_SOSTENUTO); },
     get softPedalOn()  { return this.getCCBool(CCBOOL_SOFT_PEDAL); },
     get legatoOn()     { return this.getCCBool(CCBOOL_LEGATO); },
     get hold2On()      { return this.getCCBool(CCBOOL_HOLD_2); },
-    get soundVariation() { return this.controlValues[CC_SOUND_VARIATION] / 0x7F; },
+    get variation()    { return this.controlValues[CC_SOUND_VARIATION] / 0x7F; },
     get timbreHarmonicIntensity() {
       return this.controlValues[CC_TIMBRE_HARMONIC_INTENSITY];
     },
@@ -341,6 +348,29 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       controlValues[CC_PHASER_DEPTH] = this.controlValues[CC_PHASER_DEPTH];
       this.controlValues.set(controlValues);
     },
+    update: function(tkRdr) {
+      // NOTE: does NOT check channel_i (e.g. for omni mode)
+      switch (tkRdr.command_i) {
+        case CMD_KEY_UP:
+          this.keyVelocities[tkRdr.key_i] = 0;
+          break;
+        case CMD_KEY_DOWN:
+        case CMD_KEY_AFTERTOUCH:
+          this.keyVelocities[tkRdr.key_i] = tkRdr.velocity;
+          break;
+        case CMD_SET_PROGRAM:
+          this.program_i = tkRdr.program_i;
+          break;
+        case CMD_CONTROL_CHANGE:
+          var control_i = tkRdr.control_i, controlValue = tkRdr.controlValue;
+          if (control_i >= 32 && control_i < 64) controlValue |= 0x80;
+          this.controlValues[control_i] = controlValue;
+          break;
+        case CMD_PITCH_BEND:
+          this.pitchBend = tkRdr.pitchBend;
+          break;
+      }
+    },
   };
   
   function PlayState() {
@@ -351,35 +381,12 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
     Object.freeze(this.channels);
   }
   PlayState.prototype = {
-    timingUnit: 'beat',
-    ticksPerBeat: 24,
-    beatsPerMinute: 120,
-    framesPerSecond: 25,
-    ticksPerFrame: 2,
-    speedRatio: 1,
-    secondsElapsed: 0,
     omniMode: false,
     mutexKeyMode: false,
-    get secondsPerTick() {
-      switch (this.timingUnit) {
-        case 'beat':
-          return this.ticksPerBeat * (this.beatsPerMinute/60) / this.speedRatio;
-        case 'frame':
-          return this.ticksPerFrame * this.framesPerSecond / this.speedRatio;
-      }
-      throw new Error('invalid timing unit: must be beat or frame');
-    },
     initFrom: function(playState) {
       for (var i = 0; i < this.channels.length; i++) {
         this.channels[i].initFrom(playState.channels[i]);
       }
-      this.timingUnit = playState.timingUnit;
-      this.ticksPerBeat = playState.ticksPerBeat;
-      this.beatsPerMinute = playState.beatsPerMinute;
-      this.framesPerSecond = playState.framesPerSecond;
-      this.ticksPerFrame = playState.ticksPerFrame;
-      this.speedRatio = playState.speedRatio;
-      this.secondsElapsed = playState.secondsElapsed;
       this.omniMode = playState.omniMode;
       this.mutexKeyMode = playState.mutexKeyMode;
     },
@@ -393,44 +400,10 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         this.channels[i].allNotesOff();
       }
     },
-    advanceTrack: function(tkRdr) {
-      this.secondsElapsed += tkRdr.delay * this.secondsPerTick;
+    update: function(tkRdr) {
       switch (tkRdr.command_i) {
-        case CMD_KEY_UP:
-          var key_i = tkRdr.key_i;
-          if (this.omniMode) {
-            for (var i = 0; i < this.channels.length; i++) {
-              this.channels[i].keyVelocities[key_i] = 0;
-            }
-          }
-          else {
-            this.channels[tkRdr.channel_i].keyVelocities[key_i] = 0;
-          }
-          break;
-        case CMD_KEY_DOWN:
-          var key_i = tkRdr.key_i, velocity = tkRdr.velocity;
-          if (this.omniMode) {
-            for (var i = 0; i < this.channels.length; i++) {
-              this.channels[i].keyVelocities[key_i] = velocity;
-            }
-          }
-          else {
-            this.channels[tkRdr.channel_i].keyVelocities[key_i] = velocity;
-          }
-          break;
-        case CMD_SET_PROGRAM:
-          var program_i = tkRdr.program_i;
-          if (this.omniMode) {
-            for (var i = 0; i < this.channels.length; i++) {
-              this.channels[i].program_i = program_i;
-            }
-          }
-          else {
-            this.channels[tkRdr.channel_i].program_i = program_i;
-          }
-          break;
         case CMD_CONTROL_CHANGE:
-          var control_i = tkRdr.control_i, controlValue = tkRdr.controlValue;
+          var control_i = tkRdr.control_i;
           if (control_i >= MM_START && control_i < MM_END) {
             switch (control_i) {
               case MM_CONTROLLER_RESET:
@@ -457,31 +430,24 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                 this.mutexKeyMode = false;
                 break;
             }
+            break;
           }
-          else if (this.omniMode) {
+          // FALL THROUGH:
+        case CMD_KEY_UP:
+        case CMD_KEY_DOWN:
+        case CMD_KEY_AFTERTOUCH:
+        case CMD_SET_PROGRAM:
+        case CMD_PITCH_BEND:
+          if (this.omniMode) {
             for (var i = 0; i < this.channels.length; i++) {
-              this.channels[i].controlValues[control_i] = controlValue;
+              this.channels[i].update(tkRdr);
             }
           }
           else {
-            this.channels[tkRdr.channel_i].controlValues[control_i] = controlValue;
+            this.channels[tkRdr.channel_i].update(tkRdr);
           }
           break;
-        case CMD_PITCH_BEND:
-          this.channels[tkRdr.channel_i].pitchBend = tkRdr.pitchBend;
-          break;
-        case META_END:
-          return false;
-        case META_TEMPO:
-          this.beatsPerMinute = tkRdr.beatsPerMinute;
-          this.timingUnit = 'beat';
-          break;
-        case META_TIME_SIGNATURE:
-          this.speedRatio = tkRdr.speedRatio;
-          this.timingUnit = 'beat';
-          break;
       }
-      return true;
     },
   };
   
@@ -491,6 +457,22 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
     if (tracks) this.init(tracks);
   }
   SongReader.prototype = {
+    timingUnit: 'beat',
+    ticksPerBeat: 24,
+    beatsPerMinute: 120,
+    framesPerSecond: 25,
+    ticksPerFrame: 2,
+    speedRatio: 1,
+    secondsElapsed: 0,
+    get secondsPerTick() {
+      switch (this.timingUnit) {
+        case 'beat':
+          return this.ticksPerBeat * (this.beatsPerMinute/60) / this.speedRatio;
+        case 'frame':
+          return this.ticksPerFrame * this.framesPerSecond / this.speedRatio;
+      }
+      throw new Error('invalid timing unit: must be beat or frame');
+    },
     init: function(tracks) {
       this.tracks.length = tracks.length;
       for (var track_i = 0; track_i < tracks.length; track_i++) {
@@ -498,7 +480,6 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         trackReader.init(tracks[track_i]);
         trackReader.next();
       }
-      this.track_i = -1;
     },
     initFrom: function(songReader) {
       this.playState.initFrom(songReader.playState);
@@ -507,22 +488,32 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         var trackReader = this.tracks[i] = this.tracks[i] || new TrackReader;
         trackReader.initFrom(songReader.tracks[i]);
       }
-      this.track_i = songReader.track_i;
+      this.timingUnit = songReader.timingUnit;
+      this.ticksPerBeat = songReader.ticksPerBeat;
+      this.beatsPerMinute = songReader.beatsPerMinute;
+      this.framesPerSecond = songReader.framesPerSecond;
+      this.ticksPerFrame = songReader.ticksPerFrame;
+      this.speedRatio = songReader.speedRatio;
+      this.secondsElapsed = songReader.secondsElapsed;      
     },
-    track_i: -1,
-    get track() {
-      return this.tracks[this.track_i] || null;
-    },
-    isKeyReleased: function(channel_i, key_i) {
-      var track = this.track, playState = this.playState;
+    isKeyBeingPressed: function(track, channel_i, key_i) {
       switch (track.command_i) {
         case CMD_KEY_DOWN:
-          if (track.channel_i !== channel_i && !playState.omniMode) return false;
-          if (playState.mutexKeyMode) return true;
-          return track.key_i === key_i && track.velocity === 0;
+          if (!isNaN(channel_i) && track.channel_i !== channel_i && !this.playState.omniMode) return false;
+          return (isNaN(key_i) || track.key_i === key_i) && track.velocity !== 0;
+        default:
+          return false;
+      }
+    },
+    isKeyBeingReleased: function(track, channel_i, key_i) {
+      switch (track.command_i) {
+        case CMD_KEY_DOWN:
+          if (!isNaN(channel_i) && track.channel_i !== channel_i && !this.playState.omniMode) return false;
+          if (this.playState.mutexKeyMode) return true;
+          return (isNaN(key_i) || track.key_i === key_i) && track.velocity === 0;
         case CMD_KEY_UP:
-          if (track.channel_i !== channel_i && !playState.omniMode) return false;
-          return track.key_i === key_i;
+          if (!isNaN(channel_i) && track.channel_i !== channel_i && !this.playState.omniMode) return false;
+          return isNaN(key_i) || (track.key_i === key_i);
         case CMD_CONTROL_CHANGE:
           switch (track.command_i) {
             case MM_ALL_SOUND_OFF:
@@ -541,63 +532,66 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
           return false;
       }
     },
-    advance: function() {
-      if (this.track_i !== -1) {
-        this.track.next();
+    chooseNextTrack: function() {
+      var tracks = this.tracks;
+      if (tracks.length === 0) {
+        return null;
       }
-      for (;;) {
-        if (this.tracks.length === 0) {
-          this.track_i = -1;
-          return false;
-        }
-        this.track_i = 0;
-        // find the track with the earliest delay time,
-        //   or if there are several equally-early candidates,
-        //   prioritize other commands ahead of CMD_KEY_DOWN
-        if ((this.track.delay > 0 || this.track.command === CMD_KEY_DOWN)
-            && this.tracks.length > 1) {
-          for (var track_j = 1; track_j < this.tracks.length; track_j++) {
-            var diff = this.tracks[track_j].delay - this.track.delay;
-            if (diff < 0 || (diff === 0 && this.track.command_i === CMD_KEY_DOWN)) {
-              this.track_i = track_j;
-              if (this.track.delay === 0 && this.track.command_i !== CMD_KEY_DOWN) break;
-            }
-          }
-          var minDelay = this.track.delay;
-          if (minDelay > 0) for (var track_j = 0; track_j < this.tracks.length; track_j++) {
-            if (track_j === this.track_i) continue;
-            this.tracks[track_j].delay -= minDelay;
+      // find the track with the earliest delay time,
+      //   or if there are several equally-early candidates,
+      //   prioritize other commands ahead of CMD_KEY_DOWN
+      var track_i = 0;
+      if (tracks[track_i].delay || tracks[track_i] === CMD_KEY_DOWN) {
+        for (var track_j = 1; track_j < tracks.length; track_j++) {
+          var diff = tracks[track_j].delay - tracks[track_i].delay;
+          if (diff < 0 || (diff === 0 && tracks[track_i].command_i === CMD_KEY_DOWN)) {
+            track_i = track_j;
+            if (tracks[track_i].delay === 0 && tracks[track_i].command_i !== CMD_KEY_DOWN) break;
           }
         }
-        if (this.playState.advanceTrack(this.track)) {
-          return true;
-        }
-        else {
-          this.tracks.splice(this.track_i, 1);
-          continue;
-        }
+      }
+      return tracks[track_i];
+    },
+    advanceTime: function(track) {
+      var delay = track.delay;
+      if (delay === 0) return;
+      for (var i = 0; i < this.tracks.length; i++) {
+        this.tracks[i].delay -= delay;
+      }
+      this.secondsElapsed += delay * this.playState.secondsPerTick;
+    },
+    update: function(track) {
+      this.playState.update(track);
+      switch (track.command_i) {
+        case META_TEMPO:
+          this.beatsPerMinute = track.beatsPerMinute;
+          this.timingUnit = 'beat';
+          break;
+        case META_TIME_SIGNATURE:
+          this.speedRatio = track.speedRatio;
+          this.timingUnit = 'beat';
+          break;
+      }
+    },
+    advanceTrack: function(track) {
+      if (track.command_i === META_END) {
+        this.tracks.splice(this.tracks.indexOf(track), 1);
+      }
+      else {
+        track.next();
       }
     },
     get totalSeconds() {
       var tempReader = new SongReader;
       tempReader.initFrom(this);
-      do { } while (tempReader.advance());
+      var track;
+      while (track = tempReader.chooseNextTrack()) {
+        tempReader.advanceTime(track);
+        tempReader.update(track);
+        tempReader.advanceTrack(track);
+      }
       Object.defineProperty(this, 'totalSeconds', {value:tempReader.secondsElapsed, enumerable:true});
       return tempReader.secondsElapsed;
-    },
-    get controlPrecision() {
-      var tempReader = new SongReader;
-      tempReader.initFrom(this);
-      var precision = 'coarse';
-      do {
-        if (tempReader.track.command !== 'control-change') continue;
-        if (tempReader.track.control >= 32 && tempReader.track.control < 64) {
-          precision = 'fine';
-          break;
-        }
-      } while (tempReader.advance());
-      Object.defineProperty(this, 'controlPrecision', {value:precision, enumerable:true});
-      return precision;
     },
     get isFinished() {
       return this.tracks.length === 0;
@@ -605,27 +599,48 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
     preloadNotes: function(audioContext) {
       var tempReader = new SongReader;
       tempReader.initFrom(this);
-      var temp = [Promise.resolve(), null];
-      do {
-        if (!tempReader.track.isNoteOn) continue;
-        var channel_i = tempReader.track.channel_i;
-        var isPercussion = (channel_i === 9);
-        var program_i = tempReader.channels[channel_i].program_i;
-        var bank_i = tempReader.channels[channel_i].bank_i;
-        var key_i = tempReader.track.key_i;
-        temp[1] = midiNoteData.preloadNote(audioContext, isPercussion, program_i, bank_i, key_i);
-        temp[0] = Promise.all(temp);
-      } while (tempReader.advance());
-      return temp[0];
+      var playState = tempReader.playState;
+      var promiseBuffer = [Promise.resolve(), null];
+      var track;
+      while (track = tempReader.chooseNextTrack()) {
+        tempReader.advanceTime(track);
+        if (tempReader.isKeyBeingPressed(track)) {
+          var channel_start, channel_end;
+          if (playState.omniMode) {
+            channel_start = 0;
+            channel_end = playState.channels.length;
+          }
+          else {
+            channel_start = track.channel_i;
+            channel_end = channel_start + 1;
+          }
+          for (var channel_i = channel_start; channel_i < channel_end; channel_i++) {
+            var isPercussion = (channel_i === 9);
+            var program_i = playState.channels[channel_i].program_i;
+            var bank_i = playState.channels[channel_i].bank_i;
+            var key_i = track.key_i;
+            promiseBuffer[1] = midiNoteData.preloadNote(audioContext, isPercussion, program_i, bank_i, key_i);
+            promiseBuffer[0] = Promise.all(promiseBuffer);
+          }
+        }
+        tempReader.advanceTrack(track);
+      }
+      return promiseBuffer[0];
     },
     play: function(destination, startAt) {
-      const precision = this.controlPrecision;
       const audioContext = destination.context;
       const baseTime = isNaN(startAt) ? audioContext.currentTime : startAt;
       const channelNodes = new Array(this.playState.channels.length);
-      var masterPanning = audioContext.createStereoPanner();
-      masterPanning.connect(destination);
-      destination = masterPanning;
+      var balanceSplitter = audioContext.createChannelSplitter(2);
+      balanceSplitter.left = audioContext.createGain();
+      balanceSplitter.right = audioContext.createGain();
+      balanceSplitter.connect(balanceSplitter.left, 0);
+      balanceSplitter.connect(balanceSplitter.right, 1);
+      balanceSplitter.merge = audioContext.createChannelMerger(2);
+      balanceSplitter.left.connect(balanceSplitter.merge, 0, 0);
+      balanceSplitter.right.connect(balanceSplitter.merge, 0, 1);
+      balanceSplitter.connect(destination);
+      destination = balanceSplitter;
       for (var i = 0; i < channelNodes.length; i++) {
         var channelNode = channelNodes[i] = audioContext.createGain();
         channelNode.expression = channelNode;
@@ -650,7 +665,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         vibratoWave.amplitude.gain.value = 0;
         vibratoWave.connect(vibratoWave.amplitude);
       }
-      const self = this;
+      const mainReader = this;
       const playState = this.playState;
       const tempReader = new SongReader;
       return new Promise(function(resolve, reject) {
@@ -658,89 +673,120 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
           const sinceStarting = audioContext.currentTime - baseTime;
           const frontierTime = sinceStarting + 3;
           var doAgain = window.setTimeout(next, (3 - 0.5) * 1000);
-          do {
-            var track = self.track;
+          var track;
+          while (track = mainReader.chooseNextTrack()) {
+            mainReader.advanceTime(track);
+            mainReader.update(track);
             switch (track.command_i) {
               case CMD_KEY_DOWN:
+                // TODO: omni mode?
                 if (track.velocity === 0) break;
-                var channel_i = self.track.channel_i;
-                var channel = self.playState.channels[channel_i];
+                var channel_i = track.channel_i;
+                var key_i = track.key_i;
+                var channel = mainReader.playState.channels[channel_i];
                 var channelNode = channelNodes[channel_i];
-                var program_i = channel.program;
-                var bank_i = channel.bank;
-                var key_i = self.track.key;
                 var holding2 = channel.hold2On;
                 var velocityNode = audioContext.createGain();
-                velocityNode.gain.value = self.track.velocity/127;
-                var source = midiNoteData.createNoteSource(velocityNode, channel_i === 9, program_i, bank_i, key_i);
+                velocityNode.gain.value = track.velocity/127;
+                var source = midiNoteData.createNoteSource(
+                  velocityNode,
+                  channel_i === 9,
+                  channel.program_i,
+                  channel.bank_i,
+                  key_i);
                 source.detune.value = source.noteDetune + channel.pitchBend*200;
                 channelNode.vibratoWave.amplitude.connect(source.detune);
-                source.start(self.secondsElapsed - baseTime);
-                tempReader.initFrom(self);
+                source.start(mainReader.secondsElapsed - baseTime);
+                tempReader.initFrom(mainReader);
                 var tempChannel = tempReader.playState.channels[channel_i];
-                while (tempReader.advance()) {
-                  if (tempReader.isKeyReleased(channel_i, key_i)) {
-                    if (tempReader.track.killSustain) break;
+                var tempTrack;
+                while (tempTrack = tempReader.chooseNextTrack()) {
+                  tempReader.advanceTime(tempTrack);
+                  tempReader.updateState(tempTrack);
+                  if (tempReader.isKeyBeingReleased(tempTrack, channel_i, key_i)) {
+                    if (tempTrack.killSustain) break;
                     if (tempChannel.sustainOn) {
-                      do { } while (tempReader.advance() && tempChannel.sustainOn && !tempReader.track.killSustain);
+                      while (tempTrack = tempReader.chooseNextTrack()) {
+                        tempReader.advanceTime(tempTrack);
+                        tempReader.updateState(tempTrack);
+                        if (!tempChannel.sustainOn || !tempTrack.killSustain) {
+                          break;
+                        }
+                        tempReader.advanceTrack(tempTrack);
+                      }
                     }
                     if (holding2) {
-                      do { } while (tempReader.advance() && tempChannel.hold2On && !tempReader.track.killSustain);
+                      while (tempTrack = tempReader.chooseNextTrack()) {
+                        tempReader.advanceTime(tempTrack);
+                        tempReader.updateState(tempTrack);
+                        if (!tempChannel.hold2On || !tempTrack.killSustain) {
+                          break;
+                        }
+                        tempReader.advanceTrack(tempTrack);
+                      }
                     }
                     break;
                   }
-                  if (tempReader.track.channel !== channel_i) continue;
-                  switch (tempReader.track.command_i) {
-                    case CMD_CONTROL_CHANGE:
-                      if (holding2 && tempReader.track.command_i === CCBOOL_HOLD_2) {
-                        holding2 = holding2 && tempChannel.hold2On;
-                      }
-                      break;
-                    case 'pitch-bend':
-                      source.detune.setValueAtTime(
-                        source.noteDetune + tempReader.track.pitchBend*200,
-                        baseTime + tempReader.secondsElapsed);
-                      break;
+                  if (tempTrack.channel === channel_i || tempReader.playState.omniMode) {
+                    switch (tempTrack.command_i) {
+                      case CMD_CONTROL_CHANGE:
+                        if (holding2 && tempTrack.command_i === CCBOOL_HOLD_2) {
+                          holding2 = holding2 && tempChannel.hold2On;
+                        }
+                        break;
+                      case CMD_PITCH_BEND:
+                        source.detune.setValueAtTime(
+                          source.noteDetune + tempReader.track.pitchBend*200,
+                          baseTime + tempReader.secondsElapsed);
+                        break;
+                    }
                   }
+                  tempReader.advanceTrack(tempTrack);
                 }
                 source.stop(baseTime + tempReader.secondsElapsed);
                 break;
               case CMD_CONTROL_CHANGE:
-                if (self.track.control >= CC14_START && self.track.control < CC14_END) {
-                  var cc14 = self.track.control & 31;
-                  var value = channel.getCC14(cc14, precision);
+                if (track.control >= CC14_START && track.control < CC14_END) {
+                  var cc14 = track.control & 31;
+                  var channel = mainReader.playState.channels[track.channel_i];
+                  var value = channel.getCC14(cc14);
                   switch (cc14) {
                     case CC14_VOLUME:
-                      channelNode.mainVolume.gain.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      channelNode.mainVolume.gain.setValueAtTime(value, baseTime + mainReader.secondsElapsed);
                       break;
                     case CC14_EXPRESSION:
-                      channelNode.expression.gain.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      channelNode.expression.gain.setValueAtTime(value, baseTime + mainReader.secondsElapsed);
                       break;
                     case CC14_PAN:
-                      channelNode.panning.pan.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      channelNode.panning.pan.setValueAtTime(value, baseTime + mainReader.secondsElapsed);
                       break;
                     case CC14_BALANCE:
-                      masterPanning.pan.setValueAtTime(value, baseTime + self.secondsElapsed);
+                      var leftValue = 1, rightValue = 1;
+                      if (channel.balance < 0) {
+                        rightValue += channel.balance;
+                      }
+                      else if (channel.balance < 0) {
+                        leftValue -= channel.balance;
+                      }
+                      balanceSplitter.left.gain.setValueAtTime(leftValue, baseTime + mainReader.secondsElapsed);
+                      balanceSplitter.right.gain.setValueAtTime(rightValue, baseTime + mainReader.secondsElapsed);
                       break;
                   }
                   break;
                 }
                 break;
             }
-            if (!self.advance()) {
-              window.cancelTimeout(doAgain);
-              window.setTimeout(
-                function() {
-                  audioContext.dispatchEvent(new CustomEvent('song-stopped', {
-                    detail:{song:self, reason:'complete'},
-                  }));
-                  resolve();
-                },
-                (playState.secondsElapsed - sinceStarting) * 1000
-              );
-              break;
-            }
-          } while (playState.secondsElapsed < frontierTime);
+            if (mainReader.secondsElapsed >= frontierTime) return;
+          }
+          window.cancelTimeout(doAgain);
+          window.setTimeout(
+            function() {
+              audioContext.dispatchEvent(new CustomEvent('song-stopped', {
+                detail:{song:mainReader, reason:'complete'},
+              }));
+              resolve();
+            },
+            (mainReader.secondsElapsed - sinceStarting) * 1000);
         }
         next();
       });
@@ -759,8 +805,12 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         throw new RangeError('song number out of range');
       }
       var songReader = new SongReader(song);
-      Object.assign(songReader.playState, this.playSettings);
-      do { } while (!songReader.track.isKeyDown && songReader.advance());
+      Object.assign(songReader, this.playSettings);
+      while (songReader.chooseNextTrack() && !songReader.isKeyBeingPressed()) {
+        songReader.advanceTime();
+        songReader.updateState();
+        songReader.advanceTrack();
+      }
       return songReader;
     },
   };
