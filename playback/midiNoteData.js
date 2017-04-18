@@ -2615,11 +2615,11 @@ define(['require'], function(require) {
         var info = SOUND_SPRITE_SHEETS[fileNumber];
         var offset = 0;
         var parts = new Array(info.length);
-        for (var i = 0; i < info.length; i++) {
-          var onceLength = info.once || 0,
-              loopLength = info.loop || 0,
-              extraLength = info.extra || 0,
-              sampleRate = info.hz || DEFAULT_SAMPLE_RATE;
+        for (var i = 0; i < parts.length; i++) {
+          var onceLength = info[i].once || 0,
+              loopLength = info[i].loop || 0,
+              extraLength = info[i].extra || 0,
+              sampleRate = info[i].hz || DEFAULT_SAMPLE_RATE;
           var part = samples.subarray(offset, offset + onceLength + loopLength);
           var buffer = parts[i] = audioContext.createBuffer(1, part.length, sampleRate);
           buffer.copyToChannel(0, part);
