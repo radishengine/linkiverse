@@ -549,7 +549,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       //   or if there are several equally-early candidates,
       //   prioritize other commands ahead of CMD_KEY_DOWN
       var track_i = 0;
-      if (tracks[track_i].delay || tracks[track_i] === CMD_KEY_DOWN) {
+      if (tracks[track_i].delay || tracks[track_i].command_i === CMD_KEY_DOWN) {
         for (var track_j = 1; track_j < tracks.length; track_j++) {
           var diff = tracks[track_j].delay - tracks[track_i].delay;
           if (diff < 0 || (diff === 0 && tracks[track_i].command_i === CMD_KEY_DOWN)) {
