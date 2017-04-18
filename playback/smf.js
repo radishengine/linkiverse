@@ -807,7 +807,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       var songReader = new SongReader(song);
       Object.assign(songReader, this.playSettings);
       var track;
-      while (track = songReader.chooseNextTrack() && !songReader.isKeyBeingPressed(track)) {
+      while ((track = songReader.chooseNextTrack()) && !songReader.isKeyBeingPressed(track)) {
         songReader.advanceTime(track);
         songReader.updateState(track);
         songReader.advanceTrack(track);
