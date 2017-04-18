@@ -2681,8 +2681,9 @@ define(['require'], function(require) {
       var sourceNode = audioContext.createBufferSource();
       sourceNode.connect(gainNode);
       gainNode.connect(destination);
-      var info = (isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS)[programNumber];
-      if ('*' in info) info = info[bankNumber >> 7] || info['*'];
+      var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
+      info = info[programNumber] || info[0];
+      info = info[bankNumber] || info[0];
       if ('dB' in info[0]) gainNode.gain.value = Math.pow(10, info[0].dB / 20);
       if ('$c' in info[0]) sourceNode.detune.value = info[0].$c;
       var i = 0, spriteSheet = info[0].file, sprite = info[0].i || 0;
