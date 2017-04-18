@@ -1,6 +1,6 @@
 define(
-['./RuntimeGraphics', './GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/midi', 'playback/xm'],
-function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
+['./RuntimeGraphics', './GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/smf', 'playback/xm'],
+function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
 
   'use strict';
   
@@ -902,8 +902,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, midi, xm) {
       this.playingMusic = musicTrack;
       var fileName = this.fileSystem.getName('music' + musicTrack + '.mid');
       if (fileName) {
-        midi.stop();
-        this.fileSystem.loadAsArrayBuffer(fileName).then(midi.play);
+        smf.play(this.audioContext.destination, this.fileSystem.loadAsBlob(fileName));
       }
     },
     redraw: function() {
