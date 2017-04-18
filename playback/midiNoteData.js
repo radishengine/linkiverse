@@ -2633,7 +2633,7 @@ define(['require'], function(require) {
         return parts;
       }
       function samplesFromServer() {
-        return fetch(require.toUrl('note' + fileNumber + '.wav'), {cache:'force-cache'})
+        return fetch(require.toUrl('./note' + fileNumber + '.wav'), {cache:'force-cache'})
         .then(function(req) {  return req.arrayBuffer();  })
         .then(function(data) {
           var samples = new Float32Array((data.byteLength - 44) / 2);
