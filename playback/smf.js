@@ -122,7 +122,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       return this.command_i === CMD_CONTROL_CHANGE && this.control_i !== MM_ALL_SOUND_OFF;
     },
     next: function() {
-      this.delay = this.nextVarint();
+      this.delay = this.readVarint();
       var command_i = this.bytes[this.byte_i++];
       if (isNaN(command_i)) return this.command_i = META_END;
       if (command_i < 0x80) {
