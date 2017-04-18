@@ -2621,7 +2621,7 @@ define(['require'], function(require) {
               sampleRate = info[i].hz || DEFAULT_SAMPLE_RATE;
           var part = samples.subarray(offset, offset + onceLength + loopLength);
           var buffer = parts[i] = audioContext.createBuffer(1, part.length, sampleRate);
-          buffer.copyToChannel(0, part);
+          buffer.copyToChannel(part, 0);
           buffer.sourceSettings = {};
           if (loopLength !== 0) {
             buffer.sourceSettings.loopStart = sampleRate * onceLength;
