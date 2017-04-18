@@ -844,7 +844,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
           }
           pos += 8 + trackLength;
         }
-        return new StandardMidiFile(playSettings, songs);
+        return Promise.resolve(new StandardMidiFile(playSettings, songs));
       },
     
   };
