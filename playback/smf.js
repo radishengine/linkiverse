@@ -702,13 +702,13 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                 var tempTrack;
                 while (tempTrack = tempReader.chooseNextTrack()) {
                   tempReader.advanceTime(tempTrack);
-                  tempReader.updateState(tempTrack);
+                  tempReader.update(tempTrack);
                   if (tempReader.isKeyBeingReleased(tempTrack, channel_i, key_i)) {
                     if (tempTrack.killSustain) break;
                     if (tempChannel.sustainOn) {
                       while (tempTrack = tempReader.chooseNextTrack()) {
                         tempReader.advanceTime(tempTrack);
-                        tempReader.updateState(tempTrack);
+                        tempReader.update(tempTrack);
                         if (!tempChannel.sustainOn || !tempTrack.killSustain) {
                           break;
                         }
@@ -718,7 +718,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                     if (holding2) {
                       while (tempTrack = tempReader.chooseNextTrack()) {
                         tempReader.advanceTime(tempTrack);
-                        tempReader.updateState(tempTrack);
+                        tempReader.update(tempTrack);
                         if (!tempChannel.hold2On || !tempTrack.killSustain) {
                           break;
                         }
@@ -809,7 +809,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       var track;
       while ((track = songReader.chooseNextTrack()) && !songReader.isKeyBeingPressed(track)) {
         songReader.advanceTime(track);
-        songReader.updateState(track);
+        songReader.update(track);
         songReader.advanceTrack(track);
       }
       return songReader;
