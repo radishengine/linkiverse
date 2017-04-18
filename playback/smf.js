@@ -652,7 +652,9 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       for (var i = 0; i < channelNodes.length; i++) {
         var channelNode = channelNodes[i] = audioContext.createGain();
         channelNode.expression = channelNode;
+        channelNode.expression.gain.value = this.playState.channels[i].expression;
         channelNode.mainVolume = audioContext.createGain();
+        channelNode.mainVolume.gain.value = this.playState.channels[i].volume;
         channelNode.panning = audioContext.createStereoPanner();
         
         channelNode.expression.connect(channelNode.mainVolume);
