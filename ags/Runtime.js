@@ -902,7 +902,11 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
       this.playingMusic = musicTrack;
       var fileName = this.fileSystem.getName('music' + musicTrack + '.mid');
       if (fileName) {
-        smf.play(this.audioContext.destination, this.fileSystem.loadAsBlob(fileName));
+        var self = this;
+        this.fileSystem.loadAsArrayBuffer(fileName)
+        .then(function(ab) {
+          smf.play(self.audioContext.destination, ab);
+        });
       }
     },
     redraw: function() {
