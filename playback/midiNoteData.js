@@ -2624,6 +2624,7 @@ define(['require'], function(require) {
           buffer.copyToChannel(part, 0);
           buffer.sourceSettings = {};
           if (loopLength !== 0) {
+            buffer.sourceSettings.loop = true;
             buffer.sourceSettings.loopStart = onceLength / sampleRate;
             buffer.sourceSettings.loopEnd = (onceLength + loopLength) / sampleRate;
           }
