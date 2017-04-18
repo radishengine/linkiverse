@@ -2677,9 +2677,10 @@ define(['require'], function(require) {
       var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
       info = info[programNumber] || info[0];
       info = info[bankNumber] || info[0];
+      var range_i;
       var range_min = 0, range_max = info.length - 1;
       while (range_min <= range_max) {
-        var range_i = (range_min + range_max) >> 1;
+        range_i = (range_min + range_max) >> 1;
         if (key_i > info[range_i].max) {
           range_max = range_i + 1;
           continue;
