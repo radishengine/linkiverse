@@ -2605,6 +2605,33 @@ define(['require'], function(require) {
       0x0180: [ {file:56, i:23, max:127, dB:-1.72, $c:+45, note:108} ],
     },
   ];
+  
+  function getInfo(isPercussion, program_i, bank_i, key_i) {
+    var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
+    info = info[program_i] || info[0];
+    info = info[bank_i] || info[0];
+    var range_i;
+    var range_min = 0, range_max = info.length - 1;
+    while (range_min <= range_max) {
+      range_i = (range_min + range_max) >> 1;
+      if (key_i > info[range_i].max) {
+        if (range_i === range_max) {
+          throw new RangeError('program/bank/key out of range');
+        }
+        range_min = range_i + 1;
+        continue;
+      }
+      if (range_i > 0 && key_i <= info[range_i-1].max) {
+        range_max = range_i - 1;
+        continue;
+      }
+      break;
+    }
+    if (range_max < range_min) {
+      throw new RangeError('program/bank/key out of range');
+    }
+    return info[range_i];
+  }
 
   return {
     getSoundSpriteSheet: function(audioContext, fileNumber) {
@@ -2657,16 +2684,8 @@ define(['require'], function(require) {
       return audioContext.midiNoteData[fileNumber] = promise;
     },
     preloadNote: function(audioContext, isPercussion, programNumber, bankNumber, keyNumber) {
-      var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
-      info = info[programNumber] || info[0];
-      info = info[bankNumber] || info[0];
-      var spriteSheet = info[0].file;
-      var i = 0;
-      while ((info[i].max || 127) < keyNumber) {
-        i++;
-        if ('file' in info[i]) spriteSheet = info[i].file;
-      }
-      return this.getSoundSpriteSheet(audioContext, spriteSheet);
+      var info = getInfo(isPercussion, programNumber, bankNumber, keyNumber);
+      return this.getSoundSpriteSheet(audioContext, info.file);
     },
     createNoteSource: function(destination, isPercussion, programNumber, bankNumber, key_i) {
       var audioContext = destination.context;
@@ -2674,27 +2693,7 @@ define(['require'], function(require) {
       sourceNode.volume = audioContext.createGain();
       sourceNode.connect(sourceNode.volume);
       sourceNode.volume.connect(destination);
-      var info = isPercussion ? PERCUSSION_INSTRUMENTS : MELODY_INSTRUMENTS;
-      info = info[programNumber] || info[0];
-      info = info[bankNumber] || info[0];
-      var range_i;
-      var range_min = 0, range_max = info.length - 1;
-      while (range_min <= range_max) {
-        range_i = (range_min + range_max) >> 1;
-        if (key_i > info[range_i].max) {
-          range_min = range_i + 1;
-          continue;
-        }
-        if (range_i > 0 && key_i <= info[range_i-1].max) {
-          range_max = range_i - 1;
-          continue;
-        }
-        break;
-      }
-      if (range_max < range_min) {
-        throw new RangeError('program/bank/key out of range');
-      }
-      info = info[range_i];
+      var info = getInfo(isPercussion, programNumber, bankNumber, key_i);
       sourceNode.volume.gain.value = Math.pow(10, (info.dB || 0) / 20);
       sourceNode.noteDetune = sourceNode.detune.value = (info.$c || 0);
       var unity_i = info.note || SOUND_SPRITE_SHEETS[info.file][info.i].note;
