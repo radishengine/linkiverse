@@ -905,12 +905,21 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
       if (musicTrack === this.playingMusic) return;
       this.playingMusic = musicTrack;
       var fileName = this.fileSystem.getName('music' + musicTrack + '.mid');
+      var self = this;
       if (fileName) {
-        var self = this;
         this.fileSystem.loadAsArrayBuffer(fileName)
         .then(function(ab) {
           smf.play(self.audioContext.destination, ab);
         });
+        return;
+      }
+      fileName = this.fileSystem.getName('music' + musicTrack + '.xm');
+      if (fileName) {
+        this.fileSystem.loadAsBlob(fileName)
+        .then(function(blob) {
+          new xm.Module(blob).play(self.audioContext.destination);
+        });
+        return;
       }
     },
     redraw: function() {
