@@ -484,9 +484,21 @@ define(function() {
         return addInstrument(0, patterns.endOffset);
       });
     },
+    stop: function() {
+      if ('playTimeout' in this) {
+        window.clearTimeout(this.playTimeout);
+        delete this.playTimeout;
+      }
+      if ('playNode' in this) {
+        this.playNode.setTargetAtTime(0, this.playNode.context.currentTime, 0.05);
+        delete this.playNode;
+      }
+    },
     play: function(destinationNode, fromRestartPoint) {
       var audioContext = destinationNode.context;
-      var globalVolume = audioContext.createGain();
+      if ('playNode' in this) this.stop();
+      var self = this;
+      var globalVolume = this.playNode = audioContext.createGain();
       globalVolume.connect(destinationNode);
       return Promise.all([ this.getHeader(), this.getPatterns(), this.getInstruments() ])
       .then(function(values) {
@@ -527,6 +539,7 @@ define(function() {
         var cuedToTime = audioContext.currentTime;
         var lastGlobalVolume = 1;
         function nextStep() {
+          delete self.playTimeout;
           var frontierTime = audioContext.currentTime + 3;
           while (cuedToTime < frontierTime) {
             rowData.set(emptyRowData);
@@ -577,7 +590,7 @@ define(function() {
           }
           console.log('pattern ' + readRow.patternNumber + ', pos ' + readRow.pos);
           return new Promise(function(resolve, reject) {
-            window.setTimeout(resolve, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
+            self.playTimeout = window.setTimeout(resolve, ((frontierTime - 0.5) - audioContext.currentTime) * 1000);
           })
           .then(nextStep);
         }
