@@ -635,6 +635,16 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       }
       return promiseBuffer[0];
     },
+    stop: function() {
+      if ('playTimeout' in this) {
+        window.clearTimeout(this.playTimeout);
+        delete this.playTimeout;
+      }
+      if ('playNode' in this) {
+        this.playNode.gain.setTargetAtTime(0, this.playNode.context.currentTime, 0.05);
+        delete this.playNode;
+      }
+    },
     play: function(destination, startAt) {
       const audioContext = destination.context;
       const baseTime = isNaN(startAt) ? audioContext.currentTime : startAt;
@@ -648,7 +658,9 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       balanceSplitter.left.connect(balanceSplitter.merge, 0, 0);
       balanceSplitter.right.connect(balanceSplitter.merge, 0, 1);
       balanceSplitter.connect(destination);
-      destination = balanceSplitter;
+      this.playNode = audioContext.createGain();
+      balanceSplitter.connect(this.playNode);
+      destination = this.playNode;
       for (var i = 0; i < channelNodes.length; i++) {
         var channelNode = channelNodes[i] = audioContext.createGain();
         channelNode.expression = channelNode;
@@ -682,7 +694,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         function next() {
           const sinceStarting = audioContext.currentTime - baseTime;
           const frontierTime = sinceStarting + 3;
-          var doAgain = window.setTimeout(next, (3 - 0.5) * 1000);
+          mainReader.playTimeout = window.setTimeout(next, (3 - 0.5) * 1000);
           var track;
           while (track = mainReader.chooseNextTrack()) {
             mainReader.advanceTime(track);
@@ -790,7 +802,8 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
             mainReader.advanceTrack(track);
             if (mainReader.secondsElapsed >= frontierTime) return;
           }
-          window.clearTimeout(doAgain);
+          window.clearTimeout(mainReader.playTimeout);
+          delete mainReader.playTimeout;
           window.setTimeout(
             function() {
               audioContext.dispatchEvent(new CustomEvent('song-stopped', {
