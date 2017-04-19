@@ -787,6 +787,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                 }
                 break;
             }
+            mainReader.advanceTrack(track);
             if (mainReader.secondsElapsed >= frontierTime) return;
           }
           window.cancelTimeout(doAgain);
