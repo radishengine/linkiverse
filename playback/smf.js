@@ -691,6 +691,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       const playState = this.playState;
       const tempReader = new SongReader;
       return new Promise(function(resolve, reject) {
+        audioContext.dispatchEvent(new CustomEvent('song-start', {detail:{song:mainReader}}));
         function next() {
           const sinceStarting = audioContext.currentTime - baseTime;
           const frontierTime = sinceStarting + 3;
