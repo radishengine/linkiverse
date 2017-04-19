@@ -1,6 +1,6 @@
 require(
-['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/midi', 'playback/flic', 'specify'],
-function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
+['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/smf', 'playback/flic', 'specify'],
+function(inflate, GameView, RoomView, Runtime, smf, flic, specify) {
 
   'use strict';
   
@@ -8,7 +8,7 @@ function(inflate, GameView, RoomView, Runtime, midi, flic, specify) {
     require(['keyboardevent-key-polyfill'], function(lib){ lib.polyfill(); });
   }
   
-  window.midi = midi;
+  window.smf = smf;
   
   window.flic = flic;
   
