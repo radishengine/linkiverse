@@ -738,7 +738,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                     }
                     break;
                   }
-                  if (tempTrack.channel === channel_i || tempReader.playState.omniMode) {
+                  if (tempTrack.channel_i === channel_i || tempReader.playState.omniMode) {
                     switch (tempTrack.command_i) {
                       case CMD_CONTROL_CHANGE:
                         if (holding2 && tempTrack.command_i === CCBOOL_HOLD_2) {
@@ -747,7 +747,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                         break;
                       case CMD_PITCH_BEND:
                         source.detune.setValueAtTime(
-                          source.noteDetune + tempReader.track.pitchBend * tempReader.playState.pitchBendCents,
+                          source.noteDetune + tempTrack.pitchBend * tempReader.playState.pitchBendCents,
                           baseTime + tempReader.secondsElapsed);
                         break;
                     }
