@@ -790,7 +790,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
             mainReader.advanceTrack(track);
             if (mainReader.secondsElapsed >= frontierTime) return;
           }
-          window.cancelTimeout(doAgain);
+          window.clearTimeout(doAgain);
           window.setTimeout(
             function() {
               audioContext.dispatchEvent(new CustomEvent('song-stopped', {
