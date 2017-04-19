@@ -500,6 +500,7 @@ define(function() {
       var self = this;
       var globalVolume = this.playNode = audioContext.createGain();
       globalVolume.connect(destinationNode);
+      audioContext.dispatchEvent(new CustomEvent('song-start', {detail:{song:this}}));
       return Promise.all([ this.getHeader(), this.getPatterns(), this.getInstruments() ])
       .then(function(values) {
         var header = values[0], patterns = values[1].order, instruments = values[2];
