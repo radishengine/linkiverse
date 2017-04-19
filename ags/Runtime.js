@@ -144,6 +144,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
     });
     this.fonts = [];
     this.overlays = [];
+    audioContext.addEventListener('song-start', function(e) {
+      if ('song' in self) self.song.stop();
+      self.song = e.detail.song;
+    });
   }
   Runtime.prototype = {
     on_key_press: function() { },
