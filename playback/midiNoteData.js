@@ -1,4 +1,4 @@
-define(['require'], function(require) {
+define(['module', 'require'], function(module, require) {
 
   'use strict';
 
@@ -2634,6 +2634,14 @@ define(['require'], function(require) {
   }
 
   return {
+    getAndFree: function() {
+      require.undef(module.id);
+      return {
+        soundSprites: SOUND_SPRITE_SHEETS,
+        melody: MELODY_INSTRUMENTS,
+        percussion: PERCUSSION_INSTRUMENTS,
+      };
+    },
     getSoundSpriteSheet: function(audioContext, fileNumber) {
       if (!('midiNoteData' in audioContext)) audioContext.midiNoteData = {};
       else if (fileNumber in audioContext.midiNoteData) return audioContext.midiNoteData[fileNumber];
