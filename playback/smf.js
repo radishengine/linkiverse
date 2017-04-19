@@ -649,6 +649,10 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       const audioContext = destination.context;
       const baseTime = isNaN(startAt) ? audioContext.currentTime : startAt;
       const channelNodes = new Array(this.playState.channels.length);
+      if ('playNode' in this) this.stop();
+      this.playNode = audioContext.createGain();
+      this.playNode.connect(destination);
+      destination = this.playNode;
       var balanceSplitter = audioContext.createChannelSplitter(2);
       balanceSplitter.left = audioContext.createGain();
       balanceSplitter.right = audioContext.createGain();
@@ -657,10 +661,8 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       balanceSplitter.merge = audioContext.createChannelMerger(2);
       balanceSplitter.left.connect(balanceSplitter.merge, 0, 0);
       balanceSplitter.right.connect(balanceSplitter.merge, 0, 1);
-      balanceSplitter.connect(destination);
-      this.playNode = audioContext.createGain();
-      balanceSplitter.connect(this.playNode);
-      destination = this.playNode;
+      balanceSplitter.merge.connect(destination);
+      destination = balanceSplitter;
       for (var i = 0; i < channelNodes.length; i++) {
         var channelNode = channelNodes[i] = audioContext.createGain();
         channelNode.expression = channelNode;
