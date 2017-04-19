@@ -111,6 +111,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       this.command_i = trackReader.command_i;
       this.channel_i = trackReader.channel_i;
       this.args = trackReader.args.slice();
+      return this;
     },
     readVarint: function() {
       var value = 0;
@@ -248,6 +249,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       this.controlValues.set(channelState.controlValues);
       this.program_i = channelState.program_i;
       this.pitchBend = channelState.pitchBend;
+      return this;
     },
     getCC14: function(cc14) {
       var hi = this.controlValues[CC14_HI | cc14] & 0x7F;
@@ -396,6 +398,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       this.omniMode = playState.omniMode;
       this.mutexKeyMode = playState.mutexKeyMode;
       this.pitchBendCents = playState.pitchBendCents;
+      return this;
     },
     controllerReset: function() {
       for (var i = 0; i < this.channels.length; i++) {
@@ -502,7 +505,8 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
       this.framesPerSecond = songReader.framesPerSecond;
       this.pulsesPerFrame = songReader.pulsesPerFrame;
       this.speedRatio = songReader.speedRatio;
-      this.secondsElapsed = songReader.secondsElapsed;      
+      this.secondsElapsed = songReader.secondsElapsed;
+      return this;
     },
     isKeyBeingPressed: function(track, channel_i, key_i) {
       switch (track.command_i) {
