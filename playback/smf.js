@@ -657,23 +657,23 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
         channelNode.mainVolume.gain.value = this.playState.channels[i].volume;
         channelNode.panning = audioContext.createStereoPanner();
         
+        channelNode.tremolo = audioContext.createGain();
+        channelNode.tremolo.gain.value = 0;
+        channelNode.tremolo.wave = audioContext.createOscillator();
+        channelNode.tremolo.wave.frequency.value = 5;
+        channelNode.tremolo.wave.start(baseTime);
+        channelNode.tremolo.wave.connect(channelNode.tremolo);
+        
+        channelNode.vibrato = audioContext.createGain();
+        channelNode.vibrato.gain.value = 0;
+        channelNode.vibrato.wave = audioContext.createOscillator();
+        channelNode.vibrato.wave.frequency.value = 5;
+        channelNode.vibrato.wave.start(baseTime);
+        channelNode.vibrato.connect(channelNode.vibrato);
+        
         channelNode.expression.connect(channelNode.mainVolume);
         channelNode.mainVolume.connect(channelNode.panning);
         channelNode.panning.connect(destination);
-        
-        var tremoloWave = channelNode.tremoloWave = audioContext.createOscillator();
-        tremoloWave.frequency.value = 5;
-        tremoloWave.start(baseTime);
-        tremoloWave.amplitude = audioContext.createGain();
-        tremoloWave.amplitude.gain.value = 0;
-        tremoloWave.connect(tremoloWave.amplitude);
-        
-        var vibratoWave = channelNode.vibratoWave = audioContext.createOscillator();
-        vibratoWave.frequency.value = 5;
-        vibratoWave.start(baseTime);
-        vibratoWave.amplitude = audioContext.createGain();
-        vibratoWave.amplitude.gain.value = 0;
-        vibratoWave.connect(vibratoWave.amplitude);
       }
       const mainReader = this;
       const playState = this.playState;
@@ -698,6 +698,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                 var holding2 = channel.hold2On;
                 var velocityNode = audioContext.createGain();
                 velocityNode.gain.value = track.velocity/127;
+                velocityNode.connect(channelNode);
                 var source = midiNoteData.createNoteSource(
                   velocityNode,
                   channel_i === 9,
@@ -705,8 +706,8 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                   channel.bank_i,
                   key_i);
                 source.detune.value = source.noteDetune + channel.pitchBend * tempReader.playState.pitchBendCents;
-                channelNode.vibratoWave.amplitude.connect(source.detune);
-                source.start(mainReader.secondsElapsed - baseTime);
+                channelNode.vibrato.connect(source.detune);
+                source.start(baseTime + mainReader.secondsElapsed);
                 tempReader.initFrom(mainReader);
                 var tempChannel = tempReader.playState.channels[channel_i];
                 var tempTrack;
