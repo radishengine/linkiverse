@@ -604,13 +604,16 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
     get isFinished() {
       return this.tracks.length === 0;
     },
-    preloadNotes: function(audioContext) {
+    preloadNotes: function(audioContext, maxSeconds) {
+      var preloadReader;
+      if (this.preloadReader) preloadReader = this.preloadReader;
+      else preloadReader = this.preloadReader = new SongReader().initFrom(this);
       var tempReader = new SongReader;
       tempReader.initFrom(this);
       var playState = tempReader.playState;
       var promiseBuffer = [Promise.resolve(), null];
       var track;
-      while (track = tempReader.chooseNextTrack()) {
+      while (track = tempReader.chooseNextTrack() && tempReader.elapsedSeconds < maxSeconds) {
         tempReader.advanceTime(track);
         if (tempReader.isKeyBeingPressed(track)) {
           var channel_start, channel_end;
@@ -803,7 +806,10 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
                 break;
             }
             mainReader.advanceTrack(track);
-            if (mainReader.secondsElapsed >= frontierTime) return;
+            if (mainReader.secondsElapsed >= frontierTime) {
+              mainReader.preloadNotes(audioContext, frontierTime + 5);
+              return;
+            }
           }
           window.clearTimeout(mainReader.playTimeout);
           delete mainReader.playTimeout;
@@ -858,7 +864,7 @@ define(['./midiNoteData', './audioEffects'], function(midiNoteData, audioEffects
             }
             song.secondsElapsed = 0;
           }
-          return song.preloadNotes(destination.context)
+          return song.preloadNotes(destination.context, 3)
           .then(function() {
             return song.play(destination);
           });
