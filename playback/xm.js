@@ -331,12 +331,19 @@ define(function() {
     },
     createBuffer: function(audioContext) {
       var raw = this.data;
-      var buffer = audioContext.createBuffer(1, raw.length, 8363);
+      var bufferLength = raw.length;
+      if (this.loopMode === 'ping-pong') bufferLength += this.loopLength;
+      var buffer = audioContext.createBuffer(1, bufferLength, 8363);
       var samples = buffer.getChannelData(0);
       var div = 1 << (((raw.byteLength / raw.length) * 8) - 1);
       div /= this.volume / 64;
-      for (var i = 0; i < samples.length; i++) {
+      for (var i = 0; i < raw.length; i++) {
         samples[i] = raw[i] / div;
+      }
+      if (this.loopMode === 'ping-pong') {
+        for (var i = 0; i < this.loopLength; i++) {
+          samples[raw.length + i] = samples[raw.length - 1 - i];
+        }
       }
       return buffer;
     },
@@ -371,7 +378,10 @@ define(function() {
           sourceNode.loop = true;
           break;
         case 'ping-pong':
-          throw new Error('NYI');
+          sourceNode.loopStart = this.loopStart / 8363;
+          sourceNode.loopEnd = (this.loopStart + this.loopLength*2) / 8363;
+          sourceNode.loop = true;
+          break;
       }
     },
   };
