@@ -61,7 +61,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
   
   function Runtime(audioContext, fileSystem) {
     this.fileSystem = fileSystem;
-    this.graphics = new Graphics(this);
+    var screenCanvas = document.createElement('CANVAS');
+    this.eventTarget = screenCanvas;
+    this.graphics = new Graphics(this, screenCanvas);
     this.graphics.setViewport(640, 400, 2);
     this.element = this.graphics.screen;
     this.element.tabIndex = 0;
