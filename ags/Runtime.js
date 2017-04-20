@@ -496,6 +496,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       var obj = this.room.objects[object_i];
       return this.characters[character_i].walkTo(obj.x, obj.y);
     },
+    MoveObjectDirect: function(object_i, x, y, speed) {
+      var obj = this.room.objects[object_i];
+      obj.moveTo(x, y, speed);
+    },
     RemoveOverlay: function(id) {
       var overlay = this.idMap[id];
       if (overlay instanceof RuntimeOverlay) {
@@ -1258,6 +1262,55 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     set y(y) { this.sprite.y = y; },
     get on() { return this.sprite.visible; },
     set on(v) { this.sprite.visible = v; },
+    moveTo: function(x, y, speed) {
+      this.isWalking = true;
+      if (this.cancelWalk) {
+        this.cancelWalk();
+      }
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        function onUpdate(e) {
+          if (!e.detail.animate) return;
+          var ang = Math.atan2(y - self.y, x - self.x);
+          // TODO: animation
+          // TODO: use walk speed
+          // TODO: anti glide mode
+          var offsetX = Math.cos(ang) * speed;
+          var offsetY = Math.sin(ang) * speed;
+          var newX, newY;
+          if (offsetX < 0) {
+            newX = Math.max(x, self.x + Math.floor(offsetX));
+          }
+          else {
+            newX = Math.min(x, self.x + Math.ceil(offsetX));
+          }
+          if (offsetY < 0) {
+            newY = Math.max(y, self.y + Math.floor(offsetY));
+          }
+          else {
+            newY = Math.min(y, self.y + Math.ceil(offsetY));
+          }
+          self.x = newX;
+          self.y = newY;
+          if (newX === x && newY === y) {
+            self.isWalking = false;
+            delete self.cancelWalk;
+            this.removeEventListener('update', onUpdate);
+            this.removeEventListener('leaving-room', cancelWalk);
+            resolve();
+          }
+        }
+        function cancelWalk() {
+          this.removeEventListener('leaving-room', cancelWalk);
+          this.removeEventListener('update', onUpdate);
+          delete self.cancelWalk;
+          // is it OK to never resolve/reject the promise...?
+        }
+        self.cancelWalk = cancelWalk;
+        self.runtime.eventTarget.addEventListener('update', onUpdate);
+        self.runtime.eventTarget.addEventListener('leaving-room', cancelWalk);
+      });
+    },    
   };
   
   function RuntimeCharacter(runtime, n) {
