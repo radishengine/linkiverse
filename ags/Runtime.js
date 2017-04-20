@@ -488,6 +488,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     MoveCharacter: function(character_i, x, y) {
       this.characters[character_i].walkTo(x, y);
     },
+    MoveCharacterDirect: function(character_i, x, y) {
+      this.characters[character_i].walkTo(x, y);
+    },
     MoveCharacterToHotspot: function(character_i, hotspot_i) {
       var point = this.room.def.main.hotspotWalkToPoints[hotspot_i];
       return this.characters[character_i].walkTo(point.x, point.y);
