@@ -92,7 +92,7 @@ define(function() {
           var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
           switch (this.bytesPerPixel) {
             case 1:
-              var pal4 = new Int32Array(this.palette.buffer, this.palette.byteOffset, 256);
+              var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
               for (var y = 0; y < this.height; y++) {
                 for (var x = 0; x < this.width; x++) {
                   pix4[y*w + x] = pal4[data[y*w + x]];
