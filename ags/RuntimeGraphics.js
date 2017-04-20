@@ -42,7 +42,6 @@ define(function() {
   
   function RuntimeGraphics(runtime) {
     this.runtime = runtime;
-    this.spriteStore = runtime.sprites;
     this.screen = document.createElement('CANVAS');
     this.screenCtx = this.screen.getContext('2d');
     this.scratchpad = document.createElement('CANVAS');
