@@ -1257,7 +1257,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     this.room = room;
     this.number = n;
     var def = this.def = room.def.main.objects[n];
-    this.sprite = runtime.graphics.createSceneSprite(def.sprite, def.x, def.y, 0, 0, 0, 1.0);
+    this.sprite = runtime.graphics.createSceneSprite(def.sprite, def.x, def.y, 0, 0, 0, 0);
     this.sprite.visible = def.on;
   }
   RuntimeRoomObject.prototype = {
