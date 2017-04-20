@@ -1276,7 +1276,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
     get on() {
       return this._on;
     },
-    set: function(v) {
+    set on(v) {
       v = !!v;
       if (v === this._on) return;
       this._on = v;
@@ -1285,7 +1285,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
     get room() {
       return this._room;
     },
-    set: function(v) {
+    set room(v) {
       v = Math.floor(v);
       if (isNaN(v)) throw new TypeError('room must be a number');
       if (v === this._room) return;
