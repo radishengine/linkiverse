@@ -522,7 +522,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
           self.game = new GameView(buffer, 0, buffer.byteLength);
           self.title = self.game.title;
           self.totalScore = self.game.totalScore;
-          self.palette = self.game.palette.subarray();
+          self.graphics.palette = self.game.palette.subarray();
           self.script = self.game.globalScript.instantiate(self);
           self.dialogScript = self.game.dialogScript.instantiate(self);
           for (var k in self.script.exports) {
@@ -616,7 +616,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
         return (self.room = new RuntimeRoom(self, roomDef)).loaded;
       })
       .then(function(room) {
-        self.palette = room.backgroundBitmap.palette;
+        self.graphics.palette = room.backgroundBitmap.palette.subarray();
         self.graphics.background = room.background;
       });
     },
@@ -756,7 +756,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
         return loading.then(function(room) {
           self.graphics.background = room.background;
           self.room = room;
-          self.palette = room.backgroundBitmap.palette;
+          self.graphics.palette = room.backgroundBitmap.palette.subarray();
           self.eventTarget.dispatchEvent(new CustomEvent('entering-room'));
         });
       });
@@ -870,14 +870,14 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
       return (Math.random() * (max + 1)) | 0;
     },
     getColorStyle: function(colorCode) {
-      var palette = this.palette;
+      var palette = this.graphics.palette;
       var r = palette[colorCode * 4];
       var g = palette[colorCode * 4 + 1];
       var b = palette[colorCode * 4 + 2];
       return 'rgb('+r+','+g+','+b+')';
     },
     getColorRGBA: function(colorCode) {
-      var palette = this.palette;
+      var palette = this.graphics.palette;
       return getRGBA(
         palette[colorCode * 4],
         palette[colorCode * 4 + 1],
