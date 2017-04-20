@@ -148,6 +148,13 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       if ('song' in self) self.song.stop();
       self.song = e.detail.song;
     });
+    this.eventTarget.addEventListener('entering-room', function() {
+      for (var i = 0; i < self.characters.length; i++) {
+        if (self.characters[i].room === self.room.number) {
+          self.graphics.showSceneSprite(self.characters[i].sprite);
+        }
+      }
+    });
   }
   Runtime.prototype = {
     on_key_press: function() { },
