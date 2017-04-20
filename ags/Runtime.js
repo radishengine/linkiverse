@@ -1208,7 +1208,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     if (this.def.main.graphicalScript) {
       this.graphicalScript = this.def.main.graphicalScript.instantiate(runtime);
     }
-    this.objects = [];
+    this.objects = new Array(def.main.objects.length);
     for (var i = 0; i < def.main.objects.length; i++) {
       this.objects[i] = new RuntimeRoomObject(runtime, this, i);
     }
