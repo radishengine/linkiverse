@@ -146,7 +146,9 @@ define(function() {
       this._mo = mo;
     },
     createSceneSprite: function(number, x, y, xOffset, yOffset, xRatio, yRatio) {
-      this.sceneSprites.push(new Sprite(this, number, x, y, xOffset, yOffset, xRatio, yRatio));
+      var spr = new Sprite(this, number, x, y, xOffset, yOffset, xRatio, yRatio);
+      this.sceneSprites.push(spr);
+      return spr;
     },
   };
   
