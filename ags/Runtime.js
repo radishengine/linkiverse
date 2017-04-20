@@ -1,10 +1,8 @@
 define(
-['./RuntimeGraphics', './GameView', './RoomView', './SpriteStore', './WGTFontView', 'playback/smf', 'playback/xm'],
-function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
+['./RuntimeGraphics', './GameView', './RoomView', './SpriteStore', './WGTFontView'],
+function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
 
   'use strict';
-  
-  window.xm = xm;
   
   const updateEventWithAnim = new CustomEvent('update', {detail:{animate:true}});
   const updateEventNoAnim = new CustomEvent('update', {detail:{animate:false}});
@@ -907,16 +905,24 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
       var fileName = this.fileSystem.getName('music' + musicTrack + '.mid');
       var self = this;
       if (fileName) {
-        this.fileSystem.loadAsArrayBuffer(fileName)
-        .then(function(ab) {
+        var getSmf = new Promise(function(resolve, reject) {
+          require(['playback/smf'], resolve);
+        });
+        Promise.all([getSmf, this.fileSystem.loadAsArrayBuffer(fileName)])
+        .then(function(values) {
+          var smf = values[0], ab = values[1];
           smf.play(self.audioContext.destination, ab);
         });
         return;
       }
       fileName = this.fileSystem.getName('music' + musicTrack + '.xm');
       if (fileName) {
-        this.fileSystem.loadAsBlob(fileName)
-        .then(function(blob) {
+        var getXm = new Promise(function(resolve, reject) {
+          require(['playback/xm'], resolve);
+        });
+        Promise.all([getXm, this.fileSystem.loadAsBlob(fileName)])
+        .then(function(values) {
+          var xm = values[0], blob = values[1];
           new xm.Module(blob).play(self.audioContext.destination);
         });
         return;
