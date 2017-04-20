@@ -726,11 +726,11 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       // TODO
       console.error('NYI: StopMoving');
     },
-    ObjectOff: function(roomObject) {
-      console.error('NYI: ObjectOff');
+    ObjectOff: function(object_i) {
+      this.room.objects[object_i].on = false;
     },
-    ObjectOn: function(roomObject) {
-      console.error('NYI: ObjectOn');
+    ObjectOn: function(object_i) {
+      this.room.objects[object_i].on = true;
     },
     AddInventory: function(item) {
       console.error('NYI: AddInventory');
@@ -740,12 +740,6 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     },
     RunAnimation: function(anim) {
       console.error('NYI: RunAnimation');
-    },
-    ObjectOn: function(object_i) {
-      this.room.objects[object_i].on = true;
-    },
-    ObjectOff: function(object_i) {
-      this.room.objects[object_i].on = false;
     },
     onNthLoop: function(n) {
       // TODO: set up a counter
