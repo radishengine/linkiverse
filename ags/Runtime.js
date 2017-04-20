@@ -1281,7 +1281,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
             newY = Math.max(y, self.y + Math.floor(offsetY));
           }
           else {
-            newX = Math.min(y, self.y + Math.ceil(offsetY));
+            newY = Math.min(y, self.y + Math.ceil(offsetY));
           }
           self.x = newX;
           self.y = newY;
