@@ -328,6 +328,7 @@ function(util, ScomScript, SeeRScript, DialogScript) {
           }
           views[i] = loops;
         }
+        return views;
       };
     });
     this.member('characters', function() {
