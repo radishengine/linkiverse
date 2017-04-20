@@ -153,6 +153,17 @@ define(function() {
       this.sceneSprites.push(spr);
       return spr;
     },
+    showSceneSprite: function(sprite) {
+      if (this.sceneSprites.indexOf(sprite) === -1) {
+        this.sceneSprites.push(sprite);
+      }
+    },
+    hideSceneSprite: function(sprite) {
+      var i = this.sceneSprites.indexOf(sprite);
+      if (i !== -1) {
+        this.sceneSprites.splice(i, 1);
+      }
+    },
   };
   
   function Sprite(graphics, number, x, y, xOffset, yOffset, xRatio, yRatio) {
