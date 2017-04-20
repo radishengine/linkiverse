@@ -492,6 +492,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       var point = this.room.def.main.hotspotWalkToPoints[hotspot_i];
       return this.characters[character_i].walkTo(point.x, point.y);
     },
+    MoveCharacterToObject: function(character_i, object_i) {
+      var obj = this.room.objects[object_i];
+      return this.characters[character_i].walkTo(obj.x, obj.y);
+    },
     RemoveOverlay: function(id) {
       var overlay = this.idMap[id];
       if (overlay instanceof RuntimeOverlay) {
@@ -1204,6 +1208,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     if (this.def.main.graphicalScript) {
       this.graphicalScript = this.def.main.graphicalScript.instantiate(runtime);
     }
+    this.objects = [];
+    for (var i = 0; i < def.main.objects.length; i++) {
+      this.objects[i] = new RuntimeRoomObject(runtime, this, i);
+    }
   }
   RuntimeRoom.prototype = {
     loaded: Promise.resolve(),
@@ -1233,6 +1241,23 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     get scriptCompiled_v2() {
       return this.def.scriptCompiled_v2;
     },
+  };
+  
+  function RuntimeRoomObject(runtime, room, n) {
+    this.runtime = runtime;
+    this.room = room;
+    this.number = n;
+    var def = this.def = room.def.objects[n];
+    this.sprite = runtime.graphics.createSceneSprite(def.sprite, def.x, def.y, 0, 0, 0, 1.0);
+    this.sprite.visible = def.on;
+  }
+  RuntimeRoomObject.prototype = {
+    get x() { return this.sprite.x; },
+    get y() { return this.sprite.y; },
+    set x(x) { this.sprite.x = x; },
+    set y(y) { this.sprite.y = y; },
+    get on() { return this.sprite.visible; },
+    set on(v) { this.sprite.visible = v; },
   };
   
   function RuntimeCharacter(runtime, n) {
@@ -1394,4 +1419,3 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
   return Runtime;
 
 });
-
