@@ -86,8 +86,9 @@ define(function() {
       return this.getData(n)
       .then(function(buffer) {
         buffer.data = new Uint8Array(buffer);
-        buffer.setImageData = function (imageData) {
+        buffer.setImageData = function (imageData, palette) {
           var w = this.width, h = this.height, data = this.data;
+          palette = palette || this.palette;
           var pix4 = new Int32Array(imageData.data.buffer, imageData.data.byteOffset, this.width * this.height);
           switch (this.bytesPerPixel) {
             case 1:
