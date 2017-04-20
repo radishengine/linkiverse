@@ -741,6 +741,12 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     RunAnimation: function(anim) {
       console.error('NYI: RunAnimation');
     },
+    ObjectOn: function(object_i) {
+      this.room.objects[object_i].on = true;
+    },
+    ObjectOff: function(object_i) {
+      this.room.objects[object_i].on = false;
+    },
     onNthLoop: function(n) {
       // TODO: set up a counter
       console.error('NYI: onNthLoop');
