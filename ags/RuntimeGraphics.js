@@ -58,7 +58,10 @@ define(function() {
     this.screen.addEventListener('mouseleave', function() {
       self.mouseOver = false;
     });
-    this.sceneSprites = [];
+    var sceneSprites = this.sceneSprites = [];
+    runtime.eventTarget.addEventListener('leaving-room', function() {
+      sceneSprites.splice(0, sceneSprites.length);
+    });
   }
   RuntimeGraphics.prototype = {
     viewportScale: 1,
