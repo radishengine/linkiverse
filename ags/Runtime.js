@@ -933,7 +933,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
     },
     onEnteringRoom: function() {
       this.player.room = this.room.number;
-      this.player.on = !this.room.def.hidesPlayerCharacter;
+      this.player.on = !this.room.hidesPlayerCharacter;
       var musicTrack = this.room.startupMusic;
       if (musicTrack !== 0) {
         this.playMusic(musicTrack);
@@ -1196,6 +1196,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
     loaded: Promise.resolve(),
     get number() {
       return this.def.number;
+    },
+    get hidesPlayerCharacter() {
+      return this.def.main.hidesPlayerCharacter;
     },
     get messages() {
       var flags = this.def.main.messageFlags;
