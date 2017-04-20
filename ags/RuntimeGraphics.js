@@ -42,6 +42,7 @@ define(function() {
   
   function RuntimeGraphics(runtime) {
     this.runtime = runtime;
+    this.spriteStore = runtime.sprites;
     this.screen = document.createElement('CANVAS');
     this.screenCtx = this.screen.getContext('2d');
     this.scratchpad = document.createElement('CANVAS');
@@ -145,17 +146,56 @@ define(function() {
     set mouseOver(mo) {
       this._mo = mo;
     },
+    createSceneSprite: function(number, x, y, xOffset, yOffset, xRatio, yRatio) {
+      this.sceneSprites.add(new Sprite(this, number, x, y, xOffset, yOffset, xRatio, yRatio));
+    },
   };
   
-  function Sprite(graphics, number, x, y, viewportScale) {
+  function Sprite(graphics, number, x, y, xOffset, yOffset, xRatio, yRatio) {
     this.graphics = graphics;
     this.number = number;
     this.x = x;
     this.y = y;
-    this.viewportScale = viewportScale;
+    this.xOffset = xOffset;
+    this.yOffset = yOffset;
+    this.xRatio = xRatio;
+    this.yRatio = yRatio;
   }
   Sprite.prototype = {
+    viewportScale: 2,
+    _n: -1,
+    get number() {
+      return this._n;
+    },
+    set number(n) {
+      this._n = n;
+      var info = this.graphics.spriteStore.getInfo(n);
+      this.width = info.width;
+      this.height = info.height;
+      this.pic = null;
+      if (n >= 0) {
+        var self = this;
+        this.graphics.spriteStore.getPic(n).then(function(pic) {
+          var canvas = document.createElement('CANVAS');
+          canvas.width = pic.width;
+          canvas.height = pic.height;
+          var imageData = canvas.createImageData(pic.width, pic.height);
+          pic.setImageData(imageData);
+          canvas.putImageData(imageData, 0, 0);
+          self.pic = canvas;
+        });
+      }
+    },
+    width: 0,
+    height: 0,
+    get actualX() {
+      return this.x - this.xOffset - (this.xRatio * this.width) | 0;
+    },
+    get actualY() {
+      return this.y - this.yOffset - (this.yRatio * this.height) | 0;
+    },
     drawTo: function(ctx, scratchCtx, scratchpad) {
+      if (this.pic) ctx.drawImage(this.pic, this.actualX, this.actualY);
     },
   };
   
