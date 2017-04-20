@@ -1323,9 +1323,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     this.number = n;
     var def = this.def = runtime.game.characters[n];
     var view = runtime.game.views[def.normal_view];
-    var loop = view[def.loop];
-    var frame = loop[def.frame];
-    this.sprite = runtime.graphics.createSceneSprite(frame.spriteNumber, def.x, def.y, 0, 0, 0.5, 1.0);
+    var loop = view && view[def.loop];
+    var frame = loop && loop[def.frame];
+    var sprite_i = frame ? frame.spriteNumber : -1;
+    this.sprite = runtime.graphics.createSceneSprite(-1, def.x, def.y, 0, 0, 0.5, 1.0);
     this._room = this.def.room;
     runtime.eventTarget.addEventListener('entering-room', this.updateVisible.bind(this));
   }
