@@ -175,13 +175,13 @@ define(function() {
       if (n >= 0) {
         var self = this;
         this.graphics.spriteStore.getPic(n).then(function(pic) {
-          var canvas = document.createElement('CANVAS');
+          var canvas = self.pic = document.createElement('CANVAS');
           canvas.width = pic.width;
           canvas.height = pic.height;
-          var imageData = canvas.createImageData(pic.width, pic.height);
+          var ctx = canvas.getContext('2d');
+          var imageData = ctx.createImageData(pic.width, pic.height);
           pic.setImageData(imageData);
-          canvas.putImageData(imageData, 0, 0);
-          self.pic = canvas;
+          ctx.putImageData(imageData, 0, 0);
         });
       }
     },
