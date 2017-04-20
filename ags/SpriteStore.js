@@ -28,13 +28,15 @@ define(function() {
     });
   }
   
+  const EMPTY_INFO = Object.freeze({width:0, height:0});
+  
   function SpriteStore(isCompressed, blobs) {
     this.isCompressed = isCompressed;
     this.blobs = blobs;
   }
   SpriteStore.prototype = {
     getInfo: function(n) {
-      return this.blobs[n];
+      return this.blobs[n] || EMPTY_INFO;
     },
     getData: function(n) {
       var blob = this.blobs[n];
