@@ -1353,6 +1353,18 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       this._room = v;
       this.updateVisible();
     },
+    get x() {
+      return this.sprite.x;
+    },
+    set x(x) {
+      this.sprite.x = x;
+    },
+    get y() {
+      return this.sprite.y;
+    },
+    set y(y) {
+      this.sprite.y = y;
+    },
     get z() {
       return this.sprite.yOffset;
     },
