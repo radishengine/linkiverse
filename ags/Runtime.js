@@ -485,6 +485,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
         text);
       return this.generateId(overlay);
     },
+    MoveCharacter: function(character_i, x, y) {
+      this.characters[character_i].walkTo(x, y);
+    },
     RemoveOverlay: function(id) {
       var overlay = this.idMap[id];
       if (overlay instanceof RuntimeOverlay) {
@@ -1245,6 +1248,54 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     },
     toString: function() {
       return this.def.name;
+    },
+    isWalking: false,
+    walkTo: function(x, y) {
+      if (this.room !== this.runtime.room.number) return;
+      this.isWalking = true;
+      if (this.cancelWalk) {
+        this.cancelWalk();
+      }
+      var self = this;
+      function onUpdate(e) {
+        if (!e.detail.animating) return;
+        var ang = Math.atan2(y - self.y, x - self.x);
+        // TODO: animation
+        // TODO: use walk speed
+        // TODO: anti glide mode
+        var offsetX = Math.cos(ang) * 5;
+        var offsetY = Math.sin(ang) * 5;
+        var newX, newY;
+        if (offsetX < 0) {
+          newX = Math.max(x, self.x + Math.floor(offsetX));
+        }
+        else {
+          newX = Math.min(x, self.x + Math.ceil(offsetX));
+        }
+        if (offsetY < 0) {
+          newY = Math.max(y, self.y + Math.floor(offsetY));
+        }
+        else {
+          newX = Math.min(y, self.y + Math.ceil(offsetY));
+        }
+        self.x = newX;
+        self.y = newY;
+        if (newX === x && newY === y) {
+          self.isWalking = false;
+          delete self.cancelWalk;
+          this.removeEventListener('update', onUpdate);
+          this.removeEventListener('leaving-room', cancelWalk);
+          return;
+        }
+      }
+      function cancelWalk() {
+        this.removeEventListener('leaving-room', cancelWalk);
+        this.removeEventListener('update', onUpdate);
+        delete self.cancelWalk;
+      }
+      this.cancelWalk = cancelWalk;
+      this.runtime.eventTarget.addEventListener('update', onUpdate);
+      this.runtime.eventTarget.addEventListener('leaving-room', cancelWalk);
     },
     _on: true,
     updateVisible: function() {
