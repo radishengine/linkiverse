@@ -1258,7 +1258,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       }
       var self = this;
       function onUpdate(e) {
-        if (!e.detail.animating) return;
+        if (!e.detail.animate) return;
         var ang = Math.atan2(y - self.y, x - self.x);
         // TODO: animation
         // TODO: use walk speed
