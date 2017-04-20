@@ -146,7 +146,7 @@ define(function() {
       this._mo = mo;
     },
     createSceneSprite: function(number, x, y, xOffset, yOffset, xRatio, yRatio) {
-      this.sceneSprites.add(new Sprite(this, number, x, y, xOffset, yOffset, xRatio, yRatio));
+      this.sceneSprites.push(new Sprite(this, number, x, y, xOffset, yOffset, xRatio, yRatio));
     },
   };
   
@@ -180,7 +180,7 @@ define(function() {
           canvas.height = pic.height;
           var ctx = canvas.getContext('2d');
           var imageData = ctx.createImageData(pic.width, pic.height);
-          pic.setImageData(imageData);
+          pic.setImageData(imageData, self.graphics.palette);
           ctx.putImageData(imageData, 0, 0);
         });
       }
@@ -195,7 +195,9 @@ define(function() {
     },
     visible: true,
     drawTo: function(ctx, scratchCtx, scratchpad) {
-      if (this.visible && this.pic) ctx.drawImage(this.pic, this.actualX, this.actualY);
+      if (this.visible && this.pic) {
+        ctx.drawImage(this.pic, this.actualX, this.actualY);
+      }
     },
   };
   
