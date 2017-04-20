@@ -488,6 +488,10 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
     MoveCharacter: function(character_i, x, y) {
       this.characters[character_i].walkTo(x, y);
     },
+    MoveCharacterToHotspot: function(character_i, hotspot_i) {
+      var point = this.room.def.main.hotspotWalkToPoints[hotspot_i];
+      return this.characters[character_i].walkTo(point.x, point.y);
+    },
     RemoveOverlay: function(id) {
       var overlay = this.idMap[id];
       if (overlay instanceof RuntimeOverlay) {
@@ -1257,45 +1261,48 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
         this.cancelWalk();
       }
       var self = this;
-      function onUpdate(e) {
-        if (!e.detail.animate) return;
-        var ang = Math.atan2(y - self.y, x - self.x);
-        // TODO: animation
-        // TODO: use walk speed
-        // TODO: anti glide mode
-        var offsetX = Math.cos(ang) * 5;
-        var offsetY = Math.sin(ang) * 5;
-        var newX, newY;
-        if (offsetX < 0) {
-          newX = Math.max(x, self.x + Math.floor(offsetX));
+      return new Promise(function(resolve, reject) {
+        function onUpdate(e) {
+          if (!e.detail.animate) return;
+          var ang = Math.atan2(y - self.y, x - self.x);
+          // TODO: animation
+          // TODO: use walk speed
+          // TODO: anti glide mode
+          var offsetX = Math.cos(ang) * 5;
+          var offsetY = Math.sin(ang) * 5;
+          var newX, newY;
+          if (offsetX < 0) {
+            newX = Math.max(x, self.x + Math.floor(offsetX));
+          }
+          else {
+            newX = Math.min(x, self.x + Math.ceil(offsetX));
+          }
+          if (offsetY < 0) {
+            newY = Math.max(y, self.y + Math.floor(offsetY));
+          }
+          else {
+            newX = Math.min(y, self.y + Math.ceil(offsetY));
+          }
+          self.x = newX;
+          self.y = newY;
+          if (newX === x && newY === y) {
+            self.isWalking = false;
+            delete self.cancelWalk;
+            this.removeEventListener('update', onUpdate);
+            this.removeEventListener('leaving-room', cancelWalk);
+            resolve();
+          }
         }
-        else {
-          newX = Math.min(x, self.x + Math.ceil(offsetX));
-        }
-        if (offsetY < 0) {
-          newY = Math.max(y, self.y + Math.floor(offsetY));
-        }
-        else {
-          newX = Math.min(y, self.y + Math.ceil(offsetY));
-        }
-        self.x = newX;
-        self.y = newY;
-        if (newX === x && newY === y) {
-          self.isWalking = false;
-          delete self.cancelWalk;
-          this.removeEventListener('update', onUpdate);
+        function cancelWalk() {
           this.removeEventListener('leaving-room', cancelWalk);
-          return;
+          this.removeEventListener('update', onUpdate);
+          delete self.cancelWalk;
+          // is it OK to never resolve/reject the promise...?
         }
-      }
-      function cancelWalk() {
-        this.removeEventListener('leaving-room', cancelWalk);
-        this.removeEventListener('update', onUpdate);
-        delete self.cancelWalk;
-      }
-      this.cancelWalk = cancelWalk;
-      this.runtime.eventTarget.addEventListener('update', onUpdate);
-      this.runtime.eventTarget.addEventListener('leaving-room', cancelWalk);
+        self.cancelWalk = cancelWalk;
+        self.runtime.eventTarget.addEventListener('update', onUpdate);
+        self.runtime.eventTarget.addEventListener('leaving-room', cancelWalk);
+      });
     },
     _on: true,
     updateVisible: function() {
