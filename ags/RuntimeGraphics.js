@@ -194,8 +194,9 @@ define(function() {
     get actualY() {
       return this.y - this.yOffset - (this.yRatio * this.height) | 0;
     },
+    visible: true,
     drawTo: function(ctx, scratchCtx, scratchpad) {
-      if (this.pic) ctx.drawImage(this.pic, this.actualX, this.actualY);
+      if (this.visible && this.pic) ctx.drawImage(this.pic, this.actualX, this.actualY);
     },
   };
   
