@@ -715,7 +715,12 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       this.goToRoom(n);
     },
     NewRoomEx: function(n, x, y) {
-      // TODO: support player co-ords
+      var self = this;
+      this.eventTarget.addEventListener('entering-room', function setPlayerCoords() {
+        self.player.x = x;
+        self.player.y = y;
+        this.removeEventListener('entering-room', setPlayerCoords);
+      });
       this.goToRoom(n);
     },
     IsGamePaused: function() {
