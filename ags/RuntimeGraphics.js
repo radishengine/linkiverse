@@ -40,9 +40,9 @@ define(function() {
     });
   }
   
-  function RuntimeGraphics(runtime) {
+  function RuntimeGraphics(runtime, screenCanvas) {
     this.runtime = runtime;
-    this.screen = document.createElement('CANVAS');
+    this.screen = screenCanvas;
     this.screenCtx = this.screen.getContext('2d');
     this.scratchpad = document.createElement('CANVAS');
     this.scratchCtx = this.scratchpad.getContext('2d');
