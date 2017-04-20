@@ -1326,12 +1326,15 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
   function RuntimeCharacter(runtime, n) {
     this.runtime = runtime;
     this.number = n;
-    this.def = runtime.game.characters[n];
-    RuntimeSprite.call(this, runtime.sprites, runtime.eventTarget, 0, this.def.x, this.def.y);
+    var def = this.def = runtime.game.characters[n];
+    var view = runtime.game.views[def.normal_view];
+    var loop = view[def.loop];
+    var frame = loop[def.frame];
+    this.sprite = runtime.graphics.createSceneSprite(frame.spriteNumber, def.x, def.y, 0, 0, 0.5, 1.0);
     this._room = this.def.room;
     runtime.eventTarget.addEventListener('entering-room', this.updateVisible.bind(this));
   }
-  RuntimeCharacter.prototype = Object.assign(Object.create(RuntimeSprite.prototype), {
+  RuntimeCharacter.prototype = {
     valueOf: function() {
       return this.number;
     },
@@ -1339,11 +1342,8 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
       return this.def.name;
     },
     _on: true,
-    _offsetXRatio: -0.5,
-    _offsetYRatio: -1,
-    _baseline: -1,
     updateVisible: function() {
-      this.visible = (this._room === this.runtime.room.number) && this._on;
+      this.sprite.visible = (this._room === this.runtime.room.number) && this._on;
     },
     getInventoryCount: function(itemNumber) {
       // TODO
@@ -1359,8 +1359,8 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
         width = Math.max(width, font.getTextWidth(lines[i]));
       }
       var height = font.lineHeight * lines.length;
-      var x = Math.min(320 - width, Math.max(0, Math.floor(this.x - runtime.graphics.viewportX - width/2)));
-      var y = Math.min(200 - height, Math.max(0, this.y - runtime.graphics.viewportY - this.height - height));
+      var x = Math.min(320 - width, Math.max(0, Math.floor(this.sprite.x - runtime.graphics.viewportX - width/2)));
+      var y = Math.min(200 - height, Math.max(0, this.sprite.y - runtime.graphics.viewportY - this.sprite.height - height));
       var t1 = new RuntimeTextOverlay(runtime, x, y, width, height, outlineFont, 0, 0.5, 0, text);
       var t2 = new RuntimeTextOverlay(runtime, x, y, width, height, font, this.def.speechColor, 0.5, 0, text);
       if (background) {
@@ -1378,60 +1378,43 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
           return runtime.wait(1);
         });
     },
-  });
-  Object.defineProperties(RuntimeCharacter.prototype, {
-    on: {
-      get: function() {
-        return this._on;
-      },
-      set: function(v) {
-        v = !!v;
-        if (v === this._on) return;
-        this._on = v;
-        this.updateVisible();
-      },
-      enumerable: true,
+    get on() {
+      return this._on;
     },
-    room: {
-      get: function() {
-        return this._room;
-      },
-      set: function(v) {
-        v = Math.floor(v);
-        if (isNaN(v)) throw new TypeError('room must be a number');
-        if (v === this._room) return;
-        this._room = v;
-        this.updateVisible();
-      },
-      enumerable: true,
+    set: function(v) {
+      v = !!v;
+      if (v === this._on) return;
+      this._on = v;
+      this.updateVisible();
     },
-    z: {
-      get: function() {
-        return -this._offsetY;
-      },
-      set: function(v) {
-        this.offsetY = -v;
-      },
-      enumerable: true,
+    get room() {
+      return this._room;
     },
-    baseline: {
-      get: function() {
-        return this._baseline;
-      },
-      set: function(v) {
-        if (v === this._baseline) return;
-        this._baseline = v;
-      },
-      enumerable: true,
+    set: function(v) {
+      v = Math.floor(v);
+      if (isNaN(v)) throw new TypeError('room must be a number');
+      if (v === this._room) return;
+      this._room = v;
+      this.updateVisible();
     },
-    order: {
-      get: function() {
-        var baseline = this._baseline;
-        return this._baseline === -1 ? this._y : this._baseline;
-      },
-      enumerable: true,
+    get z() {
+      return this.sprite.yOffset;
     },
-  });
+    set z(z) {
+      this.sprite.yOffset = z;
+    },
+    get baseline() {
+      return this._baseline;
+    },
+    set baseline(v) {
+      if (v === this._baseline) return;
+      this._baseline = v;
+    },
+    get order() {
+      var baseline = this._baseline;
+      return this._baseline === -1 ? this.sprite.y : this._baseline;
+    },
+  };
   
   return Runtime;
 
