@@ -533,7 +533,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
         this.fileSystem.loadAsBlob('acsprset.spr')
         .then(SpriteStore.get)
         .then(function(sprites) {
-          self.sprites = sprites;
+          self.graphics.spriteStore = sprites;
         }),
         
         Promise.all(
@@ -1216,111 +1216,6 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView, smf, xm) {
     get scriptCompiled_v2() {
       return this.def.scriptCompiled_v2;
     },
-  };
-  
-  function RuntimeSprite(sprites, eventTarget, spriteNumber, x, y) {
-    this.sprites = sprites;
-    this.eventTarget = eventTarget;
-    this.spriteNumber = spriteNumber;
-    this._x = x;
-    this._y = y;
-    this.updateEvent = new CustomEvent('update-sprite', {detail:{sprite:this}});
-  }
-  RuntimeSprite.prototype = {
-    _spriteNumber: -1,
-    _x: 0,
-    _y: 0,
-    _offsetX: 0,
-    _offsetY: 0,
-    _offsetXRatio: 0,
-    _offsetYRatio: 0,
-    _visible: false,
-    get spriteNumber() {
-      return this._spriteNumber;
-    },
-    set spriteNumber(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) return new TypeError('spriteNumber must be a number');
-      if (v === this._spriteNumber) return;
-      this._spriteNumber = v;
-      this._info = this.sprites.getInfo(v);
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    get width() {
-      return this._info.width;
-    },
-    get height() {
-      return this._info.height;
-    },
-    get x() {
-      return this._x;
-    },
-    set x(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('x must be a number');
-      if (v === this._x) return;
-      this._x = v;
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    get y() {
-      return this._y;
-    },
-    set y(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('y must be a number');
-      if (v === this._y) return;
-      this._y = v;
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    get visible() {
-      return this._visible;
-    },
-    set visible(v) {
-      v = !!v;
-      if (v === this._visible) return;
-      this._visible = v;
-      this.eventTarget.dispatchEvent(new CustomEvent(
-        v ? 'add-sprite' : 'remove-sprite',
-        {detail:{sprite:this}}));
-    },
-    get offsetX() {
-      return this._offsetX;
-    },
-    set offsetX(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('offsetX must be a number');
-      if (v === this._offsetX) return;
-      this._offsetX = v;
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    set offsetY(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('offsetY must be a number');
-      if (v === this._offsetY) return;
-      this._offsetY = v;
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    set offsetXRatio(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('offsetXRatio must be a number');
-      if (v === this._offsetXRatio) return;
-      this._offsetXRatio = v;
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    set offsetYRatio(v) {
-      v = Math.floor(v);
-      if (isNaN(v)) throw new TypeError('offsetYRatio must be a number');
-      if (v === this._offsetY) return;
-      this._offsetY = v;
-      if (this._visible) this.eventTarget.dispatchEvent(this.updateEvent);
-    },
-    get actualX() {
-      return this.x + this.offsetX + Math.ceil(this.offsetXRatio * this.width);
-    },
-    get actualY() {
-      return this.y + this.offsetY + Math.ceil(this.offsetYRatio * this.height);
-    },
-    order: 0,
   };
   
   function RuntimeCharacter(runtime, n) {
