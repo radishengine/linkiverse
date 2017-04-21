@@ -401,6 +401,9 @@ define(function() {
         return keys;
       });
     },
+    getCollection: function(item) {
+      return new ItemSet('collection', item);
+    },
   };
   
   function ItemSetBase() {
@@ -415,13 +418,22 @@ define(function() {
     loadFromStore: function() {
       throw new Error('NYI');
     },
-    and: function(right) {
+    where: function(right) {
+      if (typeof arguments[0] === 'string') {
+        right = new ItemSet(arguments[0], arguments[1]);
+      }
       return new ItemSetOp(this, 'AND', right);
     },
     or: function(right) {
+      if (typeof arguments[0] === 'string') {
+        right = new ItemSet(arguments[0], arguments[1]);
+      }
       return new ItemSetOp(this, 'OR', right);
     },
-    andNot: function(right) {
+    except: function(right) {
+      if (typeof arguments[0] === 'string') {
+        right = new ItemSet(arguments[0], arguments[1]);
+      }
       return new ItemSetOp(this, 'AND NOT', right);
     },
   };
