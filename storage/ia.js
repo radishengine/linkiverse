@@ -59,6 +59,18 @@ define(function() {
     });
   }
 
+  function getAllStored(storeOrIndex, keyRange, count) {
+    return new Promise(function(resolve, reject) {
+      var retrieving = storeOrIndex.getAll(keyRange, count);
+      retrieving.onerror = function() {
+        reject('db error');
+      };
+      retrieving.onsuccess = function(e) {
+        resolve(e.target.result);
+      };
+    });
+  }
+
   function getAllStoredKeys(objectStore, keyRange, count) {
     return new Promise(function(resolve, reject) {
       var retrieving = objectStore.getAllKeys(keyRange, count);
@@ -95,6 +107,7 @@ define(function() {
         resolve(value);
       };
       script.type = 'text/javascript';
+      url += (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + callbackName;
       script.src = url;
       document.head.appendChild(script);
     });
@@ -387,15 +400,6 @@ define(function() {
         return keys;
       });
     },
-    getSearchResults: function(query) {
-      var pseudopath = 'search:'+query;
-      function getFromServer() {
-        return jsonp('//archive.org/advancedsearch.php');
-      }
-      return this.getStored('search', query).then(function(value) {
-
-      });
-    },
   };
   
   function ItemSetBase() {
@@ -403,8 +407,8 @@ define(function() {
   ItemSetBase.prototype = {
     load: function() {
       var self = this;
-      return iaStorage.inTransaction('readonly', 'item', function(itemStore) {
-        return self.loadFromStore(itemStore);
+      return iaStorage.inTransaction('readonly', ['item', 'search'], function(itemStore, searchStore) {
+        return self.loadFromStore(itemStore, searchStore);
       });
     },
     loadFromStore: function() {
@@ -469,14 +473,14 @@ define(function() {
     },
   });
 
-  function ItemSetFieldRange(fieldName, valueRange) {
+  function ItemSet(fieldName, valueRange) {
     this.fieldName = fieldName;
     if (!(valueRange instanceof IDBKeyRange)) {
       valueRange = IDBKeyRange.only(valueRange);
     }
     this.valueRange = valueRange;
   }
-  ItemSetFieldRange.prototype = Object.assign(new ItemSetBase, {
+  ItemSet.prototype = Object.assign(new ItemSetBase, {
     getRangeString: function(range) {
       function bound(v, mode) {
         v += '';
@@ -498,27 +502,116 @@ define(function() {
     toString: function() {
       var fieldPrefix = this.fieldName ? this.fieldName+':' : '';
       var rangeString = this.getRangeString(this.valueRange);
-      return fieldPrefix + range;
+      return fieldPrefix + rangeString;
     },
-    loadFromStore: function(itemStore) {
+    loadFromStore: function(itemStore, searchStore) {
       var self = this;
+      function downloadInfo(currentInfo) {
+        var query = self.toString();
+        var pseudopath = 'search:' + query;
+        if (pseudopath in loading) return loading[pseudopath];
+        return loading[pseudopath] = jsonp(
+          '//archive.org/advancedsearch.php'
+            + '?q=' + query
+            + '&output=json'
+            + '&rows=1'
+            + '&fl[]=identifier'
+            + '&sort=publicdate desc')
+        .then(function(returned) {
+          var last = returned.result.docs[0];
+          var updates = {search:{}};
+          updates.search[query] = {
+            received: new Date(),
+            query: query,
+            lastItem: last && last.identifier,
+            totalCount: returned.result.count,
+          };
+          if (currentInfo
+          && currentInfo.lastItem === updates.search[query].lastItem
+          && currentInfo.totalCount === updates.search[query].totalCount) {
+            // nothing seems to have changed. do a non-blocking update for the timestamp
+            iaStorage.updateStored(updates);
+            return updates.search[query];
+          }
+          return jsonp(
+            '//archive.org/advancedsearch.php'
+            + '?q=' + query
+            + '&output=json'
+            + '&rows=' + updates.search[query].totalCount
+            + '&fl[]=identifier,title,collection,subject'
+            + '&sort=publicdate desc')
+          .then(function(returned) {
+            updates.item = {};
+            for (var i = 0; i < returned.result.docs.length; i++) {
+              var doc = returned.result.docs[i];
+              updates.item[doc.identifier] = doc;
+            }
+            return iaStorage.updateStored(updates);
+          })
+          .then(function() {
+            return updates.search[query];
+          });
+        })
+        .then(
+          function(result) { delete loading[pseudopath]; return result; },
+          function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
+      }
       return new Promise(function(resolve, reject) {
-        var index = itemStore.index(self.itemName);
-        var req = index.getAllKeys(self.valueRange);
-        req.onerror = function(e) {
+        var req = itemStore.index(self.itemName).getAll(self.valueRange);
+        var req2 = searchStore.get(self.toString());
+        req.onerror = req2.onerror = function(e) {
           reject('db error');
         };
+        var result = {};
         req.onsuccess = function(e) {
           var itemNames = e.target.result;
           var set = {};
           for (var i = 0; i < itemNames.length; i++) {
             set[itemNames[i]] = true;
           }
-          resolve(set);
+          result.set = set;
+          if ('info' in result) {
+            resolve(result);
+          }
         };
+        req2.onsuccess = function(e) {
+          result.info = e.target.result;
+          if ('set' in result) {
+            resolve(result);
+          }
+        };
+      })
+      .then(function(result) {
+        if (result.info) {
+          if ((new Date() - result.info.received) > 1000*60*60*24) {
+            // if it's been 24 hours, do a non-blocking check to see
+            // if things have changed
+            downloadInfo(result.info);
+          }
+        }
+        else {
+          return downloadInfo(null)
+          .then(function() {
+            iaStorage.inTransaction('readonly', 'item', function(itemStore) {
+              return getAllStored(itemStore.index(self.fieldName), self.valueRange)
+              .then(function(itemNames) {
+                var set = {};
+                for (var i = 0; i < itemNames.length; i++) {
+                  set[itemNames[i]] = true;
+                }
+                return set;
+              });
+            });
+          });
+        }
+        return result.set;
       });
     },
   });
+  
+  iaStorage.ItemSet = ItemSet;
+  iaStorage.ItemSet.Base = ItemSetBase;
+  iaStorage.ItemSet.Op = ItemSetOp;
 
   return iaStorage;
 
