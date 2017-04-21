@@ -109,6 +109,9 @@ define(function() {
         var opening = indexedDB.open('iaCache');
         opening.onupgradeneeded = function(e) {
           var db = e.target.result;
+          var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
+          itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
+          itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
           db.createObjectStore('file', {keyPath:'path'});
           db.createObjectStore('search', {keyPath:'query'});
           resolve(db);
@@ -117,7 +120,7 @@ define(function() {
           reject('error opening db');
         };
         opening.onsuccess = function(e) {
-          resolve(db);
+          resolve(e.target.result);
         };
       });
     },
@@ -152,21 +155,34 @@ define(function() {
       });
     },
     updateStored: function(storeName) {
+      function applyPairs(store, pairs) {
+        return Promise.all(Object.keys(pairs).map(function(key) {
+          return getStored(store, key).then(function(record) {
+            if (!record) {
+              if (typeof store.keyPath !== 'string') {
+                throw new Error('NYI: update uninitialized record with non-string key');
+              }
+              record = {};
+              record[store.keyPath] = key;
+            }
+            return storePut(store, Object.assign(record, pairs[key]));
+          });
+        }));
+      }
+      if (arguments.length === 1) {
+        var pairSets = arguments[0];
+        var storeNames = Object.keys(pairSets);
+        return this.inTransaction('readwrite', storeNames, function() {
+          var stores = arguments;
+          return Promise.all(storeNames.map(function(storeName, i) {
+            return applyPairs(stores[i], pairSets[storeName]);
+          }));
+        });
+      }
       if (arguments.length === 2) {
         var pairs = arguments[1];
         return this.inTransaction('readwrite', storeName, function(store) {
-          return Promise.all(Object.keys(pairs).map(function(key) {
-            return getStored(store, key).then(function(record) {
-              if (!record) {
-                if (typeof store.keyPath !== 'string') {
-                  throw new Error('NYI: update uninitialized record with non-string key');
-                }
-                record = {};
-                record[store.keyPath] = key;
-              }
-              return storePut(store, Object.assign(record, pairs[key]));
-            });
-          }));
+          return applyPairs(store, pairs);
         });
       }
       var key = arguments[1];
@@ -197,25 +213,19 @@ define(function() {
         return deleteStored(store, key);
       });
     },
-    explode: function(item, path, components) {
-      var self = this;
-      return this.inTransaction('readwrite', 'file', function(fileStore) {
-        var filenames = Object.keys(components);
-        for (var i = 0; i < filenames.length; i++) {
-          fileStore.put(Object.assign(
-            {path:item+'/'+path+'/'+filenames[i]},
-            components[filenames[i]]
-          ));
-        }
-        getStored(fileStore, item+'/'+path).then(function(record) {
-          if (record && record.blob) {
-            record.blob = null;
-            fileStore.put(record);
-          }
-        });
-      });
+    explodeFile: function(item, path, components) {
+      var updates = {file:{}};
+      updates.file[item+'/'+path] = {blob:null};
+      var filenames = Object.keys(components);
+      for (var i = 0; i < filenames.length; i++) {
+        var componentPath = item+'/'+path+'/'+filenames[i];
+        updates.file[componentPath] = Object.assign(
+          {path:componentPath},
+          components[filenames[i]]});
+      }
+      return this.updateStored(updates);
     },
-    getFile: function(item, path, mustDownload) {
+    getFileBlob: function(item, path, mustDownload) {
       path = item + '/' + path;
       var self = this;
       function getFromServer() {
@@ -241,10 +251,9 @@ define(function() {
           function(reason) { delete loading[path]; return Promise.reject(reason); });
       });
     },
-    deleteFile: function(item, path) {
-      return this.assign('file', item+'/'+path, {blob:null});
+    deleteFileBlob: function(item, path) {
+      return this.updateStored('file', item+'/'+path, {blob:null});
     },
-    loadingItemFileInfo: {},
     loadAllFileInfo: function(item, mustDownload) {
       var xmlPath = item+'_files.xml';
       var pseudopath = 'files:'+item;
@@ -305,12 +314,12 @@ define(function() {
         requiredFields = [requiredFields];
       }
       else {
-        requiredFields = requiredFields || ['identifier'];
+        requiredFields = requiredFields || [];
       }
       var xmlPath = item+'_meta.xml';
       var pseudopath = 'meta:'+item;
       var self = this;
-      return this.getStored('file', item+'/'+xmlPath).then(function(record) {
+      return this.getStored('item', item).then(function(record) {
         if (!mustDownload) {
           for (var i = 0; i < requiredFields.length; i++) {
             if (!(requiredFields[i] in record)) {
@@ -325,35 +334,38 @@ define(function() {
         }
         return loading[pseudopath] = self.getFile(item, xmlPath)
         .then(readXmlBlob).then(function(xml) {
-          var updates = {blob:null};
-          const reservedNames = /^(blob|downloaded)$/;
+          var updates = {item:{}, file:{}};
+          updates.item[item] = {retrieved:new Date()};
+          updates.file[xmlPath] = {blob:null};
+          const reservedNames = /^(retrieved)$/;
           for (var node = xml.documentElement.firstChild; node; node = node.nextSibling) {
             if (node.nodeType !== 1) continue;
             var name = node.nodeName, value = node.textContent;
             if (reservedNames.test(name)) name = '$' + name;
-            if (Object.prototype.hasOwnProperty.call(updates, name)) {
-              if (typeof updates[name].push === 'function') {
-                updates[name].push(value);
+            if (Object.prototype.hasOwnProperty.call(updates.item, name)) {
+              if (typeof updates.item[name].push === 'function') {
+                updates.item[name].push(value);
               }
               else {
-                updates[name] = [updates[name], value];
+                updates.item[name] = [updates.item[name], value];
               }
             }
-            else updates[name] = value;
+            else updates.item[name] = value;
           }
           for (var i = 0; i < requiredFields.length; i++) {
             if (!(requiredFields[i] in updates)) {
               updates[requiredFields[i]] = [];
             }
           }
-          return self.assignStored('file', item+'/'+xmlPath, updates);
+          self.updateStored(updates);
+          return Object.assign({}, record, updates.item);
         })
         .then(
           function(result) { delete loading[pseudopath]; return result; },
           function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
       });
     },
-    getItemFileKeyRange: function(item) {
+    getFileKeyRange: function(item) {
       return IDBKeyRange.bound(
         item + '/',
         item.slice(0, -2) + String.fromCharCode(item.charCodeAt(item.length-1) + 1) + '/',
