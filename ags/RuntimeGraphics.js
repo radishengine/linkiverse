@@ -49,8 +49,9 @@ define(function() {
     this.setViewport(640, 400, 2);
     var self = this;
     this.screen.addEventListener('mousemove', function(e) {
-      self.mouseX = (e.clientX / self.viewportScale) | 0;
-      self.mouseY = (e.clientY / self.viewportScale) | 0;
+      var rect = self.getBoundingClientRect();
+      self.mouseX = ((e.clientX - rect.left) / self.viewportScale) | 0;
+      self.mouseY = ((e.clientY - rect.top) / self.viewportScale) | 0;
     });
     this.screen.addEventListener('mouseenter', function() {
       self.mouseOver = true;
