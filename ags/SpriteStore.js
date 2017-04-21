@@ -95,7 +95,10 @@ define(function() {
               var pal4 = new Int32Array(palette.buffer, palette.byteOffset, 256);
               for (var y = 0; y < this.height; y++) {
                 for (var x = 0; x < this.width; x++) {
-                  pix4[y*w + x] = pal4[data[y*w + x]];
+                  var pal = data[y*w + x];
+                  if (pal !== 0) {
+                    pix4[y*w + x] = pal4[pal];
+                  }
                 }
               }
               break;
