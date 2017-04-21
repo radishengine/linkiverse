@@ -197,6 +197,24 @@ define(function() {
         return deleteStored(store, key);
       });
     },
+    explode: function(item, path, components) {
+      var self = this;
+      return this.inTransaction('readwrite', 'file', function(fileStore) {
+        var filenames = Object.keys(components);
+        for (var i = 0; i < filenames.length; i++) {
+          fileStore.put(Object.assign(
+            {path:item+'/'+path+filenames[i]},
+            components[filenames[i]]
+          ));
+        }
+        getStored(fileStore, item+'/'+path).then(function(record) {
+          if (record && record.blob) {
+            record.blob = null;
+            fileStore.put(record);
+          }
+        });
+      });
+    },
     getFile: function(item, path, mustDownload) {
       path = item + '/' + path;
       var self = this;
