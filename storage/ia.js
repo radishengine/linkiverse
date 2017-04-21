@@ -166,7 +166,7 @@ define(function() {
               }
               return storePut(store, Object.assign(record, pairs[key]));
             });
-          });
+          }));
         });
       }
       var key = arguments[1];
@@ -492,14 +492,19 @@ define(function() {
     getTermString: function() {
       return this.terms.sort().join(' ');
     },
-    getParameters: function() {
+    getParameters: function(mode) {
       var parameters = [
         {name:'q', value:this.getTermString()},
-        {name:'fl[]', value:this.fields.join(',')},
         {name:'output', value:'json'},
-        {name:'rows', value:this.requestedCount},
-        {name:'page', value:1},
       ];
+      if (mode === 'stats') parameters.push(
+        {name:'fl[]', value:'identifier,publicdate'},
+        {name:'rows', value:1},
+      );
+      else parameters.push(
+        {name:'fl[]', value:this.fields.join(',')},
+        {name:'rows', value:this.requestedCount}
+      );
       return parameters;
     },
     sortBy: 'publicdate',
@@ -507,6 +512,7 @@ define(function() {
     startFrom: function(start) {
       if (this.sortDir === 'desc') {
         this.range(this.sortBy, null, start);
+      }
       else {
         this.range(this.sortBy, start, null);
       }
@@ -529,13 +535,13 @@ define(function() {
       }
       return this;
     },
-    getQueryString: function() {
-      return this.getParameters().map(function(param) {
+    getQueryString: function(mode) {
+      return this.getParameters(mode).map(function(param) {
         return encodeURIComponent(param.name) + '=' + encodeURIComponent(param.value);
       }).join('&');
     },
-    getURL: function() {
-      return '//archive.org/advancedsearch.php?' + this.getQueryString();
+    getURL: function(mode) {
+      return '//archive.org/advancedsearch.php?' + this.getQueryString(mode);
     },
     get key() {
       return this.sortBy + ' ' + this.sortDir + '/' + this.getTermString();
@@ -546,12 +552,32 @@ define(function() {
         throw new Error('NYI');
       });
     },
+    getStats: function() {
+      return jsonp(this.getURL('stats'))
+      .then(function(returned) {
+        var last = returned.response.docs[0] || {};
+        return {
+          lastIdentifier: last.identifier,
+          lastDate: last.publicdate,
+          totalCount: returned.response.numFound,
+        };
+      });
+    },
     getResults: function() {
       var self = this;
       return iaStorage.getStored('search', this.key)
       .then(function(savedSearch) {
         if (!savedSearch) return self.downloadResults();
         throw new Error('NYI');
+        self.getStats().then(function(stats) {
+          // if the set has changed, clear the cached results
+          // TODO: if it looks like additions only, attempt to incorporate
+          // them, using lastDate as the lower bound
+          if (stats.lastIdentifier !== savedSearch.lastIdentifier
+          || stats.totalCount !== savedSearch.totalCount) {
+            iaStorage.deleteStored('search', this.key);
+          }
+        });
       });
     },
   };
