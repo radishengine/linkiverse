@@ -397,222 +397,128 @@ define(function() {
       });
     },
   };
-
-  function Term(term) {
-    this.term = term;
+  
+  function ItemSetBase() {
   }
-  Term.prototype = {
-    toString: function() {
-      var str = this.term;
-      if (/ |(^(AND|OR|NOT)$)/i.test(str) str='"'+str+'"';
-      return str;
-    },
-  };
-
-  function FieldTerm(field, subterm) {
-    this.field = field;
-    this.subterm = subterm;
-  }
-  FieldTerm.prototype = {
-    toString: function() {
-      return this.field + ':' + subterm;
-    },
-  };
-
-  function RangeTerm(min, max) {
-    this.min = min;
-    this.max = max;
-  }
-  RangeTerm.prototype = {
-    toString: function() {
-      return '[' + this.min + '-' + this.max + ']';
-    },
-  };
-
-  function NotTerm(subterm) {
-    this.subterm = subterm;
-  }
-  NotTerm.prototype = {
-    toString: function() {
-      return 'NOT ' + this.subterm;
-    },
-  };
-
-  function GroupTerm(mode, subterms) {
-    this.mode = mode;
-    this.subterms = [];
-    for (var i = 1; i < subterms.length; i++) {
-      if (subterms[i] instanceof GroupTerm && subterms[i].)
-    }
-  }
-  GroupTerm.prototype = {
-    toString: function() {
-      if (this.subterms.length < 2) {
-        return '' + (this.subterms[0] || '');
-      }
-      return '(' + this.subterms.join(' ' + this.mode + ' ') + ')';
-    },
-  };
-
-  function Search() {
-    this.terms = [];
-    this.fields = ['identifier', 'date', 'title'];
-  }
-  Search.prototype = {
-    initFrom: function(search) {
-      this.terms = search.terms.slice();
-      this.fields = search.fields.slice();
-      this.sortBy = search.sortBy;
-      this.sortDir = search.sortDir;
-      this.requestedCount = search.requestedCount;
-      return this;
-    },
-    term: function(field, wordOrPhrase) {
-      if (arguments.length === 1) {
-        this.terms.push(new Term(arguments[0]));
-      }
-      else {
-        this.terms.push(new FieldTerm(field, new Term(wordOrPhrase)));
-      }
-      return this;
-    },
-    range: function(field, min, max) {
-      if (!min) switch (field) {
-        case 'identifier':
-          min = '.';
-          break;
-        case 'date':
-        case 'publicdate':
-          min = '0000';
-          break;
-      }
-      if (!max) switch (field) {
-        case 'identifier':
-          max = '~';
-          break;
-        case 'date':
-        case 'publicdate':
-          max = '9999';
-          break;
-      }
-      return new FieldTerm(field, new RangeTerm(min, max));
-    },
-    and: function() {
-      this.term.apply(this, arguments);
-      this.terms.push(new GroupTerm('AND', this.terms.splice(this.terms.length-2, 2)));
-      return this;
-    },
-    andNot: function() {
-      this.term.apply(this, arguments);
-      this.terms[this.terms.length-1] = new NotTerm(this.terms[this.terms.length-1]);
-      this.terms.push(new GroupTerm('AND', this.terms.splice(this.terms.length-2, 2)));
-      return this;
-    },
-    or: function() {
-      this.term.apply(this, arguments);
-      this.terms.push(new GroupTerm('OR', this.terms.splice(this.terms.length-2, 2)));
-      return this;
-    },
-    orNot: function() {
-      this.term.apply(this, arguments);
-      this.terms[this.terms.length-1] = new NotTerm(this.terms[this.terms.length-1]);
-      this.terms.push(new GroupTerm('OR', this.terms.splice(this.terms.length-2, 2)));
-      return this;
-    },
-    getTermString: function() {
-      return this.terms.sort().join(' ');
-    },
-    getParameters: function(mode) {
-      var parameters = [
-        {name:'q', value:this.getTermString()},
-        {name:'output', value:'json'},
-      ];
-      if (mode === 'stats') parameters.push(
-        {name:'fl[]', value:'identifier,publicdate'},
-        {name:'rows', value:1},
-      );
-      else parameters.push(
-        {name:'fl[]', value:this.fields.join(',')},
-        {name:'rows', value:this.requestedCount}
-      );
-      return parameters;
-    },
-    sortBy: 'publicdate',
-    sortDir: 'asc',
-    startFrom: function(start) {
-      if (this.sortDir === 'desc') {
-        this.range(this.sortBy, null, start);
-      }
-      else {
-        this.range(this.sortBy, start, null);
-      }
-      return this;
-    },
-    requestCount: function(count) {
-      this.requestedCount = count;
-    },
-    requestedCount: 200,
-    sort: function(field, dir) {
-      this.sortBy = field;
-      this.sortDir = dir;
-      return this.required(field);
-    },
-    required: function() {
-      for (var i = 0; i < arguments.length; i++) {
-        if (this.fields.indexOf(arguments[i]) === -1) {
-          this.fields.push(arguments[i]);
-        }
-      }
-      return this;
-    },
-    getQueryString: function(mode) {
-      return this.getParameters(mode).map(function(param) {
-        return encodeURIComponent(param.name) + '=' + encodeURIComponent(param.value);
-      }).join('&');
-    },
-    getURL: function(mode) {
-      return '//archive.org/advancedsearch.php?' + this.getQueryString(mode);
-    },
-    get key() {
-      return this.sortBy + ' ' + this.sortDir + '/' + this.getTermString();
-    },
-    downloadResults: function() {
-      return jsonp(this.getURL())
-      .then(function(data) {
-        throw new Error('NYI');
+  ItemSetBase.prototype = {
+    load: function() {
+      var self = this;
+      return iaStorage.inTransaction('readonly', 'item', function(itemStore) {
+        return self.loadFromStore(itemStore);
       });
     },
-    getStats: function() {
-      return jsonp(this.getURL('stats'))
-      .then(function(returned) {
-        var last = returned.response.docs[0] || {};
-        return {
-          lastIdentifier: last.identifier,
-          lastDate: last.publicdate,
-          totalCount: returned.response.numFound,
+    loadFromStore: function() {
+      throw new Error('NYI');
+    },
+    and: function(right) {
+      return new ItemSetOp(this, 'AND', right);
+    },
+    or: function(right) {
+      return new ItemSetOp(this, 'OR', right);
+    },
+    andNot: function(right) {
+      return new ItemSetOp(this, 'AND NOT', right);
+    },
+  };
+
+  function ItemSetOp(left, operator, right) {
+    if (typeof this[operator] !== 'function') {
+      throw new Error('operator undefined: ' + operator);
+    }
+    this.operator = operator;
+    this.left = left;
+    this.right = right;
+  }
+  ItemSetOp.prototype = Object.assign(new ItemSetBase, {
+    toString: function() {
+      return '(' + this.left + ' ' + this.operator + ' ' + this.right + ')';
+    },
+    AND: function(values) {
+      var left = values[0], right = values[1];
+      var leftKeys = Object.keys(left);
+      for (var i = 0; i < leftKeys.length; i++) {
+        if (!(leftKeys[i] in right)) {
+          delete left[leftKeys[i]];
+        }
+      }
+      return left;
+    },
+    OR: function(values) {
+      var left = values[0], right = values[1];
+      var rightKeys = Object.keys(right);
+      for (var i = 0; i < rightKeys.length; i++) {
+        if (!(rightKeys[i] in left)) {
+          left[rightKeys[i]] = right[rightKeys[i]];
+        }
+      }
+      return left;
+    },
+    'AND NOT': function(values) {
+      var left = values[0], right = values[1];
+      var rightKeys = Object.keys(right);
+      for (var i = 0; i < rightKeys.length; i++) {
+        delete left[rightKeys[i]];
+      }
+      return left;
+    },
+    loadFromStore: function(itemStore) {
+      return Promise.all([
+        this.left.loadFromStore(itemStore),
+        this.right.loadFromStore(itemStore)])
+      .then(this[this.operator]);
+    },
+  });
+
+  function ItemSetFieldRange(fieldName, valueRange) {
+    this.fieldName = fieldName;
+    if (!(valueRange instanceof IDBKeyRange)) {
+      valueRange = IDBKeyRange.only(valueRange);
+    }
+    this.valueRange = valueRange;
+  }
+  ItemSetFieldRange.prototype = Object.assign(new ItemSetBase, {
+    getRangeString: function(range) {
+      function bound(v, mode) {
+        v += '';
+        if (mode && v !== '') {
+          v = v.slice(0, -2) + String.fromCharCode(v.charCodeAt(v.length-1) + mode);
+        }
+        if (/[ \[\]\(\)]|(^(AND|OR|NOT|TO)$)|^\-|^$/.test(v)) {
+          v = '"' + v + '"';
+        }
+        return v;
+      }
+      if (!range.lowerOpen && !range.upperOpen && !indexedDB.cmp(range.lower, range.upper)) {
+        // single value
+        return bound(range.lower, 0);
+      }
+      return '[' + bound(range.lower, +range.lowerOpen) +
+          ' TO ' + bound(range.upper, -range.upperOpen) + ']';
+    },
+    toString: function() {
+      var fieldPrefix = this.fieldName ? this.fieldName+':' : '';
+      var rangeString = this.getRangeString(this.valueRange);
+      return fieldPrefix + range;
+    },
+    loadFromStore: function(itemStore) {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        var index = itemStore.index(self.itemName);
+        var req = index.getAllKeys(self.valueRange);
+        req.onerror = function(e) {
+          reject('db error');
+        };
+        req.onsuccess = function(e) {
+          var itemNames = e.target.result;
+          var set = {};
+          for (var i = 0; i < itemNames.length; i++) {
+            set[itemNames[i]] = true;
+          }
+          resolve(set);
         };
       });
     },
-    getResults: function() {
-      var self = this;
-      return iaStorage.getStored('search', this.key)
-      .then(function(savedSearch) {
-        if (!savedSearch) return self.downloadResults();
-        throw new Error('NYI');
-        self.getStats().then(function(stats) {
-          // if the set has changed, clear the cached results
-          // TODO: if it looks like additions only, attempt to incorporate
-          // them, using lastDate as the lower bound
-          if (stats.lastIdentifier !== savedSearch.lastIdentifier
-          || stats.totalCount !== savedSearch.totalCount) {
-            iaStorage.deleteStored('search', this.key);
-          }
-        });
-      });
-    },
-  };
-
-  iaStorage.Search = Search;
+  });
 
   return iaStorage;
 
