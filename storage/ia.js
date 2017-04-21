@@ -235,7 +235,7 @@ define(function() {
         var componentPath = item+'/'+path+'/'+filenames[i];
         updates.file[componentPath] = Object.assign(
           {path:componentPath},
-          components[filenames[i]]});
+          components[filenames[i]]);
       }
       return this.updateStored(updates);
     },
