@@ -447,8 +447,10 @@ define(function() {
     this.right = right;
   }
   ItemSetOp.prototype = Object.assign(new ItemSetBase, {
-    toString: function() {
-      return '(' + this.left + ' ' + this.operator + ' ' + this.right + ')';
+    toString: function(bare) {
+      var leftBare = this.operator.replace(/ NOT$/, '') === this.left.operator;
+      var str = this.left.toString(leftBare) + ' ' + this.operator + ' ' + this.right;
+      return bare ? str : '(' + str + ')';
     },
     AND: function(values) {
       var left = values[0], right = values[1];
