@@ -125,6 +125,7 @@ define(function() {
           var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
           itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
           itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
+          itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
           db.createObjectStore('file', {keyPath:'path'});
           db.createObjectStore('search', {keyPath:'query'});
           resolve(db);
@@ -542,11 +543,16 @@ define(function() {
             + '&sort=publicdate desc')
           .then(function(returned) {
             updates.item = {};
+            var set = {};
             for (var i = 0; i < returned.result.docs.length; i++) {
               var doc = returned.result.docs[i];
               updates.item[doc.identifier] = doc;
+              set[doc.identifier] = true;
             }
-            return iaStorage.updateStored(updates);
+            return iaStorage.updateStored(updates)
+            .then(function() {
+              return set;
+            });
           })
           .then(function() {
             return updates.search[query];
@@ -585,24 +591,16 @@ define(function() {
         if (result.info) {
           if ((new Date() - result.info.received) > 1000*60*60*24) {
             // if it's been 24 hours, do a non-blocking check to see
-            // if things have changed
-            downloadInfo(result.info);
+            // if things have changed (for next time)
+            downloadInfo(result.info, result.set);
           }
         }
         else {
-          return downloadInfo(null)
-          .then(function() {
-            iaStorage.inTransaction('readonly', 'item', function(itemStore) {
-              return getAllStored(itemStore.index(self.fieldName), self.valueRange)
-              .then(function(itemNames) {
-                var set = {};
-                for (var i = 0; i < itemNames.length; i++) {
-                  set[itemNames[i]] = true;
-                }
-                return set;
-              });
-            });
-          });
+          // do a full download
+          // TODO: create an 'info' based on stored results?
+          // e.g. for a child collection when the parent has already
+          // been processed
+          return downloadInfo(null);
         }
         return result.set;
       });
