@@ -656,6 +656,14 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       var font = this.fonts[fontNumber];
       font.put(this.ctx2d, str, px, py, rgba);
     },
+    _player: null,
+    get player() {
+      return this._player;
+    },
+    set player(player) {
+      this._player = player;
+      this.graphics.followSprite = player.sprite;
+    },
     playSound: function(n) {
       var audioContext = this.audioContext;
       this.fileSystem.loadAsArrayBuffer('sound' + n + '.wav')
