@@ -116,15 +116,24 @@ define(function() {
                   imageData.data[(y*w + x) * 4] = r;
                   imageData.data[(y*w + x) * 4 + 1] = g;
                   imageData.data[(y*w + x) * 4 + 2] = b;
+                  if (r !== 0xff || b !== 0xff || g !== 0) {
+                    imageData.data[(y*w + x) * 4 + 3] = 0xff;
+                  }
                 }
               }
               break;
             case 3:
               for (var y = 0; y < this.height; y++) {
                 for (var x = 0; x < this.width; x++) {
-                  imageData.data[(y*w + x) * 4] = data[(y*w + x) * 3];
-                  imageData.data[(y*w + x) * 4 + 1] = data[(y*w + x) * 3 + 1];
-                  imageData.data[(y*w + x) * 4 + 2] = data[(y*w + x) * 3 + 2];
+                  var r = data[(y*w + x) * 3];
+                  var g = data[(y*w + x) * 3 + 1];
+                  var b = data[(y*w + x) * 3 + 2];
+                  imageData.data[(y*w + x) * 4] = r;
+                  imageData.data[(y*w + x) * 4 + 1] = g;
+                  imageData.data[(y*w + x) * 4 + 2] = b;
+                  if (r !== 0xff || b !== 0xff || g !== 0) {
+                    imageData.data[(y*w + x) * 4 + 3] = 0xff;
+                  }
                 }
               }
               break;
@@ -133,9 +142,6 @@ define(function() {
               break;
             default:
               throw new Error('unknown pixel format: ' + (this.bytesPerPixel * 8) + 'bpp');
-          }
-          for (var i = 3; i < imageData.data.length; i += 4) {
-            imageData.data[i] = 0xff;
           }
         };
         return buffer;
