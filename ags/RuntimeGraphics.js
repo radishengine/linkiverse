@@ -120,6 +120,10 @@ define(function() {
       this.viewportY = cy - (this.viewportHeight/2) | 0;
     },
     redraw: function() {
+      if (this.followSprite) {
+        this.viewportCenterX = this.followSprite.x;
+        this.viewportCenterY = this.followSprite.y;
+      }
       this.screenCtx.save();
       this.screenCtx.scale(this.viewportScale, this.viewportScale);
       
