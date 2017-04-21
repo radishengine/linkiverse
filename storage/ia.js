@@ -243,7 +243,7 @@ define(function() {
       path = item + '/' + path;
       var self = this;
       function getFromServer() {
-        loading[path] = return fetch('//cors.archive.org/cors/' + path)
+        return loading[path] = fetch('//cors.archive.org/cors/' + path)
         .then(function(req) {
           if (req.status >= 200 && req.status < 300) return req.blob();
           // TODO: wait and try again a few times?
