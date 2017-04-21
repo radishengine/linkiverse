@@ -203,7 +203,7 @@ define(function() {
         var filenames = Object.keys(components);
         for (var i = 0; i < filenames.length; i++) {
           fileStore.put(Object.assign(
-            {path:item+'/'+path+filenames[i]},
+            {path:item+'/'+path+'/'+filenames[i]},
             components[filenames[i]]
           ));
         }
