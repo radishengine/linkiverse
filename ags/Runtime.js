@@ -814,7 +814,9 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
       console.error('NYI: InventoryScreen');
     },
     ProcessClick: function(x, y, mode) {
-      console.error('NYI: ProcessClick');
+      if (this.player.on) {
+        this.player.walkTo(x, y);
+      }
     },
     SaveGameDialog: function() {
       console.error('NYI: SaveGameDialog');
