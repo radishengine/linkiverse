@@ -416,19 +416,12 @@ define(function() {
           function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
       });
     },
-    getFileKeyRange: function(item) {
-      return IDBKeyRange.bound(
-        item + '/',
-        item + '~',
-        true,
-        true);
-    },
     getAllFilenames: function(item) {
       var self = this;
       return this.loadAllFileInfo(item).then(function() {
         return new Promise(function(resolve, reject) {
           self.inTransaction('readonly', 'file', function(fileStore) {
-            fileStore.getAllKeys(self.getItemFileKeyRange(item)).onsuccess = function(e) {
+            fileStore.getAllKeys(IDBKeyRange.bound(item+'/', item+'~')).onsuccess = function(e) {
               resolve(e.target.result);
             };
           }).then(null, reject);
