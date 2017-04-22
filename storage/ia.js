@@ -119,7 +119,7 @@ define(function() {
     deleteDB: function() {
       var self = this;
       return this._deleting = this._deleting || this.getDB().then(function(db) {
-        var req = indexedDB.delete(db);
+        var req = indexedDB.deleteDatabase(db);
         req.onsuccess = function() {
           delete self._deleting;
           delete self._db;
