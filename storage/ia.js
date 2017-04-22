@@ -8,10 +8,14 @@ define(function() {
       retrieving.onerror = function() {
         reject('db error');
       };
+      retrieving.onblocked = function() {
+        reject('db blocked');
+      };
       retrieving.onsuccess = function(e) {
         var value = cb(e.target.result);
         var putting = objectStore.put(value);
         putting.onerror = retrieving.onerror;
+        putting.onblocked = retrieving.onblocked;
         putting.onsuccess = function() {
           resolve(value);
         };
