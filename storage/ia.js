@@ -119,7 +119,7 @@ define(function() {
     getDB: function() {
       if (!('indexedDB' in window)) return Promise.reject('indexedDB not available');
       return this._db = this._db || new Promise(function(resolve, reject) {
-        var opening = indexedDB.open('iaCache');
+        var opening = indexedDB.open('iaStorage');
         opening.onupgradeneeded = function(e) {
           var db = e.target.result;
           var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
@@ -135,6 +135,9 @@ define(function() {
         };
         opening.onsuccess = function(e) {
           resolve(e.target.result);
+        };
+        opening.onblocked = function(e) {
+          reject('db blocked');
         };
       });
     },
