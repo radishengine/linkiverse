@@ -2,6 +2,8 @@ define(function() {
 
   'use strict';
   
+  const LITTLE_ENDIAN = new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
+  
   function readBlob(blob) {
     return new Promise(function(resolve, reject) {
       var fr = new FileReader();
@@ -123,18 +125,45 @@ define(function() {
               }
               break;
             case 3:
-              for (var y = 0; y < this.height; y++) {
-                for (var x = 0; x < this.width; x++) {
-                  var r = data[(y*w + x) * 3];
-                  var g = data[(y*w + x) * 3 + 1];
-                  var b = data[(y*w + x) * 3 + 2];
-                  imageData.data[(y*w + x) * 4] = r;
-                  imageData.data[(y*w + x) * 4 + 1] = g;
-                  imageData.data[(y*w + x) * 4 + 2] = b;
-                  if (r !== 0xff || b !== 0xff || g !== 0) {
-                    imageData.data[(y*w + x) * 4 + 3] = 0xff;
-                  }
+              var leftover = data.byteLength % 12;
+              var in4 = new Int32Array(data.buffer, data.byteOffset, (data.byteLength - leftover) / 4);
+              if (LITTLE_ENDIAN) {
+                // RR GG BB rr gg bb RR GG BB rr gg bb
+                //    rrBBGGRR    GGRRbbgg    bbggrrBB
+                for (var i = 0; i < in4.length; i += 3) {
+                  var p1 = (in4[i  ]       )                    | 0xff000000;
+                  var p2 = (in4[i  ] >>> 24) | (in4[i+1] <<  8) | 0xff000000;
+                  var p3 = (in4[i+1] >>> 16) | (in4[i+2] << 16) | 0xff000000;
+                  var p4 = (in4[i+2] >>>  8)                    | 0xff000000;
+                  pix4[4*i    ] = p1 !== 0xffff00ff && p1;
+                  pix4[4*i + 1] = p2 !== 0xffff00ff && p2;
+                  pix4[4*i + 2] = p3 !== 0xffff00ff && p3;
+                  pix4[4*i + 3] = p4 !== 0xffff00ff && p4;
                 }
+              }
+              else {
+                // RR GG BB rr gg bb RR GG BB rr gg bb
+                // RRGGBBrr    ggbbRRGG    BBrrggbb
+                for (var i = 0; i < in4.length; i += 3) {
+                  var p1 = (in4[i  ]      )                     | 0xff;
+                  var p2 = (in4[i  ] << 24) | (in4[i+1] >>>  8) | 0xff;
+                  var p3 = (in4[i+1] << 16) | (in4[i+2] >>> 16) | 0xff;
+                  var p4 = (in4[i+2] <<  8)                     | 0xff;
+                  pix4[4*i    ] = p1 !== 0xff00ffff && p1;
+                  pix4[4*i + 1] = p2 !== 0xff00ffff && p2;
+                  pix4[4*i + 2] = p3 !== 0xff00ffff && p3;
+                  pix4[4*i + 3] = p4 !== 0xff00ffff && p4;
+                }
+              }
+              leftover /= 3;
+              for (var i = 0; i < leftover; i++) {
+                var r = data[in4.byteLength + i*3    ];
+                var g = data[in4.byteLength + i*3 + 1];
+                var b = data[in4.byteLength + i*3 + 2];
+                imageData.data[(in4.length + i)*4    ] = r;
+                imageData.data[(in4.length + i)*4 + 1] = g;
+                imageData.data[(in4.length + i)*4 + 2] = b;
+                imageData.data[(in4.length + i)*4 + 3] = (r !== 0xff && g !== 0x00 && b !== 0xff) && 0xff;
               }
               break;
             case 4:
