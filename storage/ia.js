@@ -120,6 +120,7 @@ define(function() {
     onVersionChange: function(db, newVersion, oldVersion) {
       if (newVersion === null) {
         // deleting
+        db.close();
         delete this._db;
         return;
       }
@@ -135,21 +136,19 @@ define(function() {
     deleteDB: function() {
       var self = this;
       return this._deleting = this._deleting || new Promise(function(resolve, reject) {
-        self.getDB().then(function(db) {
-          var deleting = indexedDB.deleteDatabase(db);
-          deleting.onsuccess = function() {
-            delete self._deleting;
-            resolve();
-          };
-          deleting.onerror = function() {
-            delete self._deleting;
-            reject('db deletion failed');
-          };
-          deleting.onblocked = function() {
-            delete self._deleting;
-            reject('db deletion blocked');
-          };
-        });
+        var deleting = indexedDB.deleteDatabase('iaStorage');
+        deleting.onsuccess = function() {
+          delete self._deleting;
+          resolve();
+        };
+        deleting.onerror = function() {
+          delete self._deleting;
+          reject('db deletion failed');
+        };
+        deleting.onblocked = function() {
+          delete self._deleting;
+          reject('db deletion blocked');
+        };
       });
     },
     getDB: function() {
