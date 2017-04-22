@@ -294,8 +294,8 @@ define(function() {
         .then(function(blob) {
           var updates = {file:{}};
           updates.file[fullPath] = {blob:blob, retrieved:new Date()};
-          self.updateStored(updates).then(
-            function(result) { delete loading[fullPath]; return result; },
+          loading[fullPath] = self.updateStored(updates).then(
+            function(result) { delete loading[fullPath]; return blob; },
             function(reason) { delete loading[fullPath]; return Promise.reject(reason); });
           return blob;
         })
@@ -324,25 +324,28 @@ define(function() {
           return loading[pseudopath];
         }
         return loading[pseudopath] = self.getFileBlob(item, xmlPath)
-        .then(readXmlBlob).then(function(xml) {
-          var updates = {};
+        .then(readXmlBlob)
+        .then(function(xml) {
+          var updates = {file:{}};
           for (var node = xml.documentElement.firstChild; node; node = node.nextSibling) {
             if (node.nodeName !== 'file') continue;
-            var obj = {source: node.getAttribute('source')};
+            var path = node.getAttribute('name');
+            var obj = {path:item+'/'+path, source:node.getAttribute('source')};
             for (var node2 = node.firstChild; node2; node2 = node2.nextSibling) {
               if (node2.nodeType !== 1) continue;
               obj[node2.nodeName] = node2.textContent;
             }
-            updates[item + '/' + node.getAttribute('name')] = obj;
+            updates.file[item+'/'+path] = obj;
           }
-          updates[item+'/'+xmlPath] = Object.assign(updates[item+'/'+xmlPath] || {}, {
-            blob: null,
-            loaded: new Date(),
-          });
-          return self.assignStored('file', updates);
+          updates.file[item+'/'+xmlPath] = Object.assign(
+            updates.file[item+'/'+xmlPath] || {path:item+'/'+xmlPath},
+            {blob:null, loaded:new Date()});
+          loading[pseudopath] = self.updateStored(updates).then(
+            function(result) { delete loading[pseudopath]; },
+            function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
         })
         .then(
-          function(result) { delete loading[pseudopath]; return result; },
+          null,
           function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
       });
     },
@@ -395,34 +398,46 @@ define(function() {
         }
         return loading[pseudopath] = self.getFileBlob(item, xmlPath)
         .then(readXmlBlob).then(function(xml) {
-          var updates = {item:{}, file:{}};
-          updates.item[item] = {retrieved:new Date()};
-          updates.file[xmlPath] = {blob:null};
-          const reservedNames = /^(retrieved)$/;
+          record = record || {identifier:item};
+          record.retrieved = new Date();
+          if ('serverFields' in record) {
+            for (var i = 0; i < record.serverFields.length; i++) {
+              delete record[record.serverFields[i]];
+            }
+          }
+          const reservedNames = /^(retrieved|serverFields)$/;
+          var additions = {};
           for (var node = xml.documentElement.firstChild; node; node = node.nextSibling) {
             if (node.nodeType !== 1) continue;
             var name = node.nodeName, value = node.textContent;
-            if (reservedNames.test(name)) name = '$' + name;
-            if (Object.prototype.hasOwnProperty.call(updates.item, name)) {
-              if (typeof updates.item[name].push === 'function') {
-                updates.item[name].push(value);
+            if (reservedNames.test(name)) name = '$'+name;
+            if (Object.prototype.hasOwnProperty.call(additions, name)) {
+              if (typeof additions[name].push === 'function') {
+                additions[name].push(value);
               }
-              else {
-                updates.item[name] = [updates.item[name], value];
+              else if (additions[name] !== value) {
+                additions[name] = [additions[name], value];
               }
             }
-            else updates.item[name] = value;
+            else additions[name] = value;
           }
           for (var i = 0; i < requiredFields.length; i++) {
-            if (!(requiredFields[i] in updates)) {
-              updates[requiredFields[i]] = [];
+            if (!(requiredFields[i] in additions)) {
+              additions[requiredFields[i]] = [];
             }
           }
-          self.updateStored(updates);
-          return Object.assign({}, record, updates.item);
+          record = Object.assign(record, additions, {serverFields: Object.keys(additions)});
+          var updates = {item:{}, file:{}};
+          updates.item[item] = record;
+          updates.file[item+'/'+xmlPath] = {blob:null};
+          loading[pseudopath] = self.updateStored(updates)
+          .then(
+            function(result) { delete loading[pseudopath]; return result; },
+            function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
+          return record;
         })
         .then(
-          function(result) { delete loading[pseudopath]; return result; },
+          null,
           function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
       });
     },
