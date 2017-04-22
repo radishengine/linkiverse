@@ -301,7 +301,7 @@ define(function() {
         if (pseudopath in loading) {
           return loading[pseudopath];
         }
-        return loading[pseudopath] = self.getFile(item, xmlPath)
+        return loading[pseudopath] = self.getFileBlob(item, xmlPath)
         .then(readXmlBlob).then(function(xml) {
           var updates = {};
           for (var node = xml.documentElement.firstChild; node; node = node.nextSibling) {
