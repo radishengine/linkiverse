@@ -117,21 +117,35 @@ define(function() {
 
   var iaStorage = {
     _loading: loading,
+    onVersionChange: function(db, newVersion, oldVersion) {
+      if (newVersion === null) {
+        // deleting
+        delete this._db;
+        return;
+      }
+      if (oldVersion < 1) {
+        var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
+        var fileStore = db.createObjectStore('file', {keyPath:'path'});
+        var searchStore db.createObjectStore('search', {keyPath:'query'});
+        itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
+        itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
+        itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
+      }
+    },
     deleteDB: function() {
       var self = this;
       return this._deleting = this._deleting || new Promise(function(resolve, reject) {
         self.getDB().then(function(db) {
-          var req = indexedDB.deleteDatabase(db);
-          req.onsuccess = function() {
+          var deleting = indexedDB.deleteDatabase(db);
+          deleting.onsuccess = function() {
             delete self._deleting;
-            delete self._db;
             resolve();
           };
-          req.onerror = function() {
+          deleting.onerror = function() {
             delete self._deleting;
             reject('db deletion failed');
           };
-          req.onblocked = function() {
+          deleting.onblocked = function() {
             delete self._deleting;
             reject('db deletion blocked');
           };
@@ -141,22 +155,23 @@ define(function() {
     getDB: function() {
       if (!('indexedDB' in window)) return Promise.reject('indexedDB not available');
       return this._db = this._db || new Promise(function(resolve, reject) {
+        function initDB(db) {
+          db.onversionchange = function(e) {
+            iaStorage.onVersionChange(e.target, e.newVersion, e.oldVersion);
+          };
+          resolve(db);
+        }
         var opening = indexedDB.open('iaStorage');
         opening.onupgradeneeded = function(e) {
           var db = e.target.result;
-          var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
-          itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
-          itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
-          itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
-          db.createObjectStore('file', {keyPath:'path'});
-          db.createObjectStore('search', {keyPath:'query'});
-          resolve(db);
+          iaStorage.onDBVersion(db, e.newVersion, e.oldVersion);
+          initDB(db);
         };
         opening.onerror = function() {
           reject('error opening db');
         };
         opening.onsuccess = function(e) {
-          resolve(e.target.result);
+          initDB(e.target.result);
         };
         opening.onblocked = function(e) {
           reject('db blocked');
