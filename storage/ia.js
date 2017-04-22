@@ -129,7 +129,7 @@ define(function() {
           delete self._deleting;
           reject('db deletion failed');
         };
-      }):
+      });
     },
     getDB: function() {
       if (!('indexedDB' in window)) return Promise.reject('indexedDB not available');
