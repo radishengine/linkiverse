@@ -117,20 +117,28 @@ define(function() {
 
   var iaStorage = {
     _loading: loading,
-    onVersionChange: function(db, newVersion, oldVersion) {
-      if (newVersion === null) {
-        // deleting
-        db.close();
-        delete this._db;
-        return;
-      }
-      if (oldVersion < 1) {
-        var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
-        var fileStore = db.createObjectStore('file', {keyPath:'path'});
-        var searchStore = db.createObjectStore('search', {keyPath:'query'});
-        itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
-        itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
-        itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
+    onDBAction: function(db, mode, newVersion, oldVersion) {
+      switch (mode) {
+        case 'delete':
+          db.close();
+          delete this._db;
+          delete this.dbVersion;
+          console.info('db deleted');
+          break;
+        case 'versionchange':
+          this.dbVersion = newVersion;
+          console.info('db version: ' + newVersion);
+          break;
+        case 'upgradeneeded':
+          if (oldVersion < 1) {
+            var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
+            var fileStore = db.createObjectStore('file', {keyPath:'path'});
+            var searchStore = db.createObjectStore('search', {keyPath:'query'});
+            itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
+            itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
+            itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
+          }
+          break;
       }
     },
     deleteDB: function() {
@@ -156,14 +164,18 @@ define(function() {
       return this._db = this._db || new Promise(function(resolve, reject) {
         function initDB(db) {
           db.onversionchange = function(e) {
-            iaStorage.onVersionChange(e.target, e.newVersion, e.oldVersion);
+            iaStorage.updateDB(
+              e.target,
+              e.newVersion === null ? 'delete' : 'versionchange',
+              e.newVersion,
+              e.oldVersion);
           };
           resolve(db);
         }
         var opening = indexedDB.open('iaStorage');
         opening.onupgradeneeded = function(e) {
           var db = e.target.result;
-          iaStorage.onDBVersion(db, e.newVersion, e.oldVersion);
+          iaStorage.updateDB(db, 'upgrade', e.newVersion, e.oldVersion);
           initDB(db);
         };
         opening.onerror = function() {
