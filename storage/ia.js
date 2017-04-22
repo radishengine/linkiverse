@@ -126,7 +126,7 @@ define(function() {
       if (oldVersion < 1) {
         var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
         var fileStore = db.createObjectStore('file', {keyPath:'path'});
-        var searchStore db.createObjectStore('search', {keyPath:'query'});
+        var searchStore = db.createObjectStore('search', {keyPath:'query'});
         itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
         itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
         itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
