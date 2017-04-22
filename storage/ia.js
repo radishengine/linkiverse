@@ -308,7 +308,9 @@ define(function() {
           return Promise.reject('server returned ' + req.status);
         })
         .then(function(blob) {
-          self.updateStored('file', fullPath, {blob:blob, retrieved:new Date()});
+          var updates = {file:{}};
+          updates.file[fullPath] = {blob:blob, retrieved:new Date()};
+          self.updateStored(updates);
           return blob;
         })
         .then(
