@@ -116,6 +116,21 @@ define(function() {
   var loading = {};
 
   var iaStorage = {
+    deleteDB: function() {
+      var self = this;
+      return this._deleting = this._deleting || this.getDB().then(function(db) {
+        var req = indexedDB.delete(db);
+        req.onsuccess = function() {
+          delete self._deleting;
+          delete self._db;
+          resolve();
+        };
+        req.onerror = function() {
+          delete self._deleting;
+          reject('db deletion failed');
+        };
+      }):
+    },
     getDB: function() {
       if (!('indexedDB' in window)) return Promise.reject('indexedDB not available');
       return this._db = this._db || new Promise(function(resolve, reject) {
