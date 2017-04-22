@@ -210,8 +210,8 @@ define(function() {
           transaction.onerror = function() {
             reject('db error');
           };
-          transaction.onabort = function() {
-            reject('transaction aborted');
+          transaction.onabort = function(e) {
+            reject(e.target.error || 'transaction aborted');
           };
           if (typeof storeNames === 'string') {
             result = cb.call(transaction, transaction.objectStore(storeNames));
