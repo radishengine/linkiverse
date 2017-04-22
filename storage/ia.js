@@ -59,18 +59,6 @@ define(function() {
     });
   }
 
-  function getAllStoredKeys(objectStore, keyRange, count) {
-    return new Promise(function(resolve, reject) {
-      var retrieving = objectStore.getAllKeys(keyRange, count);
-      retrieving.onerror = function() {
-        reject('db error');
-      };
-      retrieving.onsuccess = function(e) {
-        resolve(e.target.result);
-      };
-    });
-  }
-
   function readXmlBlob(blob) {
     return new Promise(function(resolve, reject) {
       var fr = new FileReader();
@@ -437,10 +425,13 @@ define(function() {
     },
     getAllFilenames: function(item) {
       var self = this;
-      return this.loadAllFileInfo(item)
-      .then(function() {
-        return self.inTransaction('readonly', 'file', function(fileStore) {
-          return getAllStoredKeys(fileStore, self.getItemFileKeyRange(item));
+      return this.loadAllFileInfo(item).then(function() {
+        return new Promise(function(resolve, reject) {
+          self.inTransaction('readonly', 'file', function(fileStore) {
+            fileStore.getAllKeys(self.getItemFileKeyRange(item)).onsuccess = function(e) {
+              resolve(e.target.result);
+            };
+          }).then(null, reject);
         });
       })
       .then(function(keys) {
