@@ -1298,6 +1298,7 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
         this.cancelWalk();
       }
       var self = this;
+      var runtime = this.runtime;
       return new Promise(function(resolve, reject) {
         function onUpdate(e) {
           if (!e.detail.animate) return;
@@ -1331,8 +1332,8 @@ function(Graphics, GameView, RoomView, SpriteStore, WGTFontView) {
           }
         }
         function cancelWalk() {
-          this.removeEventListener('leaving-room', cancelWalk);
-          this.removeEventListener('update', onUpdate);
+          runtime.eventTarget.removeEventListener('leaving-room', cancelWalk);
+          runtime.eventTarget.removeEventListener('update', onUpdate);
           delete self.cancelWalk;
           // is it OK to never resolve/reject the promise...?
         }
