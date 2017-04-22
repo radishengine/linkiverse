@@ -116,6 +116,7 @@ define(function() {
   var loading = {};
 
   var iaStorage = {
+    _loading: loading,
     deleteDB: function() {
       var self = this;
       return this._deleting = this._deleting || new Promise(function(resolve, reject) {
