@@ -328,7 +328,7 @@ define(function() {
       // TODO: mustDownload option
       var self = this;
       function tryNow(elseTry) {
-        return this.getStored('file', item+'/'+path).then(function(info) {
+        return self.getStored('file', item+'/'+path).then(function(info) {
           if ('size' in info) return info;
           return elseTry();
         });
