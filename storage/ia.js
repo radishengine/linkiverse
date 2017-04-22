@@ -209,8 +209,8 @@ define(function() {
           transaction.onerror = function() {
             reject('db error');
           };
-          transaction.onblocked = function() {
-            reject('db blocked');
+          transaction.onabort = function() {
+            reject('transaction aborted');
           };
           if (typeof storeNames === 'string') {
             result = cb.call(transaction, transaction.objectStore(storeNames));
