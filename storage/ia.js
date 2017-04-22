@@ -129,7 +129,7 @@ define(function() {
           this.dbVersion = newVersion;
           console.info('db version: ' + newVersion);
           break;
-        case 'upgradeneeded':
+        case 'upgrade':
           if (oldVersion < 1) {
             var itemStore = db.createObjectStore('item', {keyPath:'identifier'});
             var fileStore = db.createObjectStore('file', {keyPath:'path'});
@@ -138,6 +138,9 @@ define(function() {
             itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
             itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
           }
+          break;
+        default:
+          console.warn('unhandled db admin event: ' + mode);
           break;
       }
     },
