@@ -117,7 +117,7 @@ define(function() {
 
   var iaStorage = {
     _loading: loading,
-    onDBAction: function(db, mode, newVersion, oldVersion) {
+    dbAdmin: function(db, mode, newVersion, oldVersion) {
       switch (mode) {
         case 'delete':
           db.close();
@@ -164,7 +164,7 @@ define(function() {
       return this._db = this._db || new Promise(function(resolve, reject) {
         function initDB(db) {
           db.onversionchange = function(e) {
-            iaStorage.updateDB(
+            iaStorage.dbAdmin(
               e.target,
               e.newVersion === null ? 'delete' : 'versionchange',
               e.newVersion,
@@ -175,7 +175,7 @@ define(function() {
         var opening = indexedDB.open('iaStorage');
         opening.onupgradeneeded = function(e) {
           var db = e.target.result;
-          iaStorage.updateDB(db, 'upgrade', e.newVersion, e.oldVersion);
+          iaStorage.dbAdmin(db, 'upgrade', e.newVersion, e.oldVersion);
           initDB(db);
         };
         opening.onerror = function() {
