@@ -2,14 +2,19 @@ define(function() {
   
   'use strict';
 
-  function storePut(objectStore, record) {
+  function updateStored(objectStore, key, cb) {
     return new Promise(function(resolve, reject) {
-      var storing = objectStore.put(record);
-      storing.onerror = function() {
+      var retrieving = objectStore.get(key);
+      retrieving.onerror = function() {
         reject('db error');
       };
-      storing.onsuccess = function(e) {
-        resolve(e.target.result); // key
+      retrieving.onsuccess = function(e) {
+        var value = cb(e.target.result);
+        var putting = objectStore.put(value);
+        putting.onerror = retrieving.onerror;
+        putting.onsuccess = function() {
+          resolve(value);
+        };
       };
     });
   }
@@ -227,8 +232,8 @@ define(function() {
     },
     updateStored: function(storeName) {
       function applyPairs(store, pairs) {
-        return Promise.all(Object.keys(pairs).map(function(key) {
-          return getStored(store, key).then(function(record) {
+        Object.keys(pairs).forEach(function(key) {
+          updateStored(store, key, function(record) {
             if (!record) {
               if (typeof store.keyPath !== 'string') {
                 throw new Error('NYI: update uninitialized record with non-string key');
@@ -236,47 +241,30 @@ define(function() {
               record = {};
               record[store.keyPath] = key;
             }
-            return storePut(store, Object.assign(record, pairs[key]));
+            return Object.assign(record, pairs[key]);
           });
-        }));
+        });
       }
       if (arguments.length === 1) {
         var pairSets = arguments[0];
         var storeNames = Object.keys(pairSets);
         return this.inTransaction('readwrite', storeNames, function() {
           var stores = arguments;
-          return Promise.all(storeNames.map(function(storeName, i) {
-            return applyPairs(stores[i], pairSets[storeName]);
-          }));
-        });
-      }
-      if (arguments.length === 2) {
-        var pairs = arguments[1];
-        return this.inTransaction('readwrite', storeName, function(store) {
-          return applyPairs(store, pairs);
-        });
-      }
-      var key = arguments[1];
-      if (typeof arguments[2] === 'function') {
-        var cb = arguments[2];
-        return this.inTransaction('readwrite', storeName, function(store) {
-          return getStored(store, key).then(function(record) {
-            store.put(cb(record));
+          storeNames.forEach(function(storeName, i) {
+            applyPairs(stores[i], pairSets[storeName]);
           });
         });
       }
-      var value = arguments[2];
+      var pairs;
+      if (arguments.length === 2) {
+        pairs = arguments[1];
+      }
+      else {
+        pairs = {};
+        pairs[arguments[1]] = arguments[2];
+      }
       return this.inTransaction('readwrite', storeName, function(store) {
-        return getStored(store, key).then(function(record) {
-          if (!record) {
-            if (typeof store.keyPath !== 'string') {
-              throw new Error('NYI: assign to uninitialized record with non-string key');
-            }
-            record = {};
-            record[store.keyPath] = key;
-          }
-          store.put(Object.assign(record, pairs[key]));
-        });
+        applyPairs(store, pairs);
       });
     },
     deleteStored: function(storeName, key) {
@@ -310,11 +298,13 @@ define(function() {
         .then(function(blob) {
           var updates = {file:{}};
           updates.file[fullPath] = {blob:blob, retrieved:new Date()};
-          self.updateStored(updates);
+          self.updateStored(updates).then(
+            function(result) { delete loading[fullPath]; return result; },
+            function(reason) { delete loading[fullPath]; return Promise.reject(reason); });
           return blob;
         })
         .then(
-          function(result) { delete loading[fullPath]; return result; },
+          null,
           function(reason) { delete loading[fullPath]; return Promise.reject(reason); });
       }
       if (mustDownload) return getFromServer();
