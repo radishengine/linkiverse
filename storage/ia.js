@@ -118,17 +118,19 @@ define(function() {
   var iaStorage = {
     deleteDB: function() {
       var self = this;
-      return this._deleting = this._deleting || this.getDB().then(function(db) {
-        var req = indexedDB.deleteDatabase(db);
-        req.onsuccess = function() {
-          delete self._deleting;
-          delete self._db;
-          resolve();
-        };
-        req.onerror = function() {
-          delete self._deleting;
-          reject('db deletion failed');
-        };
+      return this._deleting = this._deleting || new Promise(function(resolve, reject) {
+        self.getDB().then(function(db) {
+          var req = indexedDB.deleteDatabase(db);
+          req.onsuccess = function() {
+            delete self._deleting;
+            delete self._db;
+            resolve();
+          };
+          req.onerror = function() {
+            delete self._deleting;
+            reject('db deletion failed');
+          };
+        });
       });
     },
     getDB: function() {
