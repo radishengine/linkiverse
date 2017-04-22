@@ -131,6 +131,10 @@ define(function() {
             delete self._deleting;
             reject('db deletion failed');
           };
+          req.onblocked = function() {
+            delete self._deleting;
+            reject('db deletion blocked');
+          };
         });
       });
     },
