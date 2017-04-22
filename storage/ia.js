@@ -89,7 +89,7 @@ define(function() {
       fr.onload = function() {
         resolve(new DOMParser().parseFromString(this.result, 'application/xml'));
       };
-      fr.loadAsText(blob);
+      fr.readAsText(blob);
     });
   }
 
