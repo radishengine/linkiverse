@@ -106,22 +106,18 @@ define(function() {
               break;
             case 2:
               var dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
-              for (var y = 0; y < this.height; y++) {
-                for (var x = 0; x < this.width; x++) {
-                  var rgb = dv.getUint16(2 * (y*w + x), true);
-                  var b = rgb & ((1 << 5) - 1);
-                  var g = (rgb >> 5) & ((1 << 6) - 1);
-                  var r = rgb >> 11;
-                  b = (b << 3) | (b >> 2);
-                  g = (g << 2) | (g >> 4);
-                  r = (r << 3) | (r >> 2);
-                  imageData.data[(y*w + x) * 4] = r;
-                  imageData.data[(y*w + x) * 4 + 1] = g;
-                  imageData.data[(y*w + x) * 4 + 2] = b;
-                  if (r !== 0xff || b !== 0xff || g !== 0) {
-                    imageData.data[(y*w + x) * 4 + 3] = 0xff;
-                  }
-                }
+              for (var i = 0; i < data.byteLength/2; i++) {
+                var rgb = dv.getUint16(2 * i, true);
+                var b = (rgb      ) & ((1 << 5) - 1);
+                var g = (rgb >>  5) & ((1 << 6) - 1);
+                var r = (rgb >> 11);
+                b = (b << 3) | (b >> 2);
+                g = (g << 2) | (g >> 4);
+                r = (r << 3) | (r >> 2);
+                imageData.data[4*i    ] = r;
+                imageData.data[4*i + 1] = g;
+                imageData.data[4*i + 2] = b;
+                imageData.data[4*i + 3] = (r !== 0xff || g !== 0 || b !== 0xff) && 0xff;
               }
               break;
             case 3:
