@@ -264,29 +264,30 @@ define(function() {
       return this.updateStored(updates);
     },
     getFileBlob: function(item, path, mustDownload) {
-      path = item + '/' + path;
+      var fullPath = item+'/'+path;
       var self = this;
       function getFromServer() {
-        return loading[path] = fetch('//cors.archive.org/cors/' + path)
+        if (fullPath in loading) return loading[fullPath];
+        return loading[fullPath] = fetch('//cors.archive.org/cors/'+fullPath)
         .then(function(req) {
           if (req.status >= 200 && req.status < 300) return req.blob();
           // TODO: wait and try again a few times?
           return Promise.reject('server returned ' + req.status);
         })
         .then(function(blob) {
-          self.assignStored('file', item+'/'+path, {blob:blob, downloaded:new Date()});
+          self.updateStored('file', fullPath, {blob:blob, retrieved:new Date()});
           return blob;
-        });
+        })
+        .then(
+          function(result) { delete loading[fullPath]; return result; },
+          function(reason) { delete loading[fullPath]; return Promise.reject(reason); });
       }
       if (mustDownload) return getFromServer();
-      return this.getStored('file', item+'/'+path).then(function(fileRecord) {
+      return this.getStored('file', fullPath).then(function(fileRecord) {
         if (fileRecord && fileRecord.blob instanceof Blob) {
           return fileRecord.blob;
         }
-        if (path in loading) return loading[path];
-        loading[path] = getFromServer().then(
-          function(result) { delete loading[path]; return result; },
-          function(reason) { delete loading[path]; return Promise.reject(reason); });
+        return getFromServer();
       });
     },
     deleteFileBlob: function(item, path) {
