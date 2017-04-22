@@ -13,6 +13,7 @@ define(function() {
       };
       retrieving.onsuccess = function(e) {
         var value = cb(e.target.result);
+        console.log('update', objectStore, key, value);
         var putting = objectStore.put(value);
         putting.onerror = retrieving.onerror;
         putting.onblocked = retrieving.onblocked;
