@@ -170,7 +170,9 @@ define(function() {
     getDB: function() {
       if (!('indexedDB' in window)) return Promise.reject('indexedDB not available');
       return this._db = this._db || new Promise(function(resolve, reject) {
-        function initDB(db) {
+        var opening = indexedDB.open('iaStorage');
+        opening.onupgradeneeded = function(e) {
+          var db = e.target.result;
           db.onversionchange = function(e) {
             iaStorage.dbAdmin(
               e.target,
@@ -178,19 +180,13 @@ define(function() {
               e.newVersion,
               e.oldVersion);
           };
-          resolve(db);
-        }
-        var opening = indexedDB.open('iaStorage');
-        opening.onupgradeneeded = function(e) {
-          var db = e.target.result;
           iaStorage.dbAdmin(db, 'upgrade', e.newVersion, e.oldVersion);
-          initDB(db);
         };
         opening.onerror = function() {
           reject('error opening db');
         };
         opening.onsuccess = function(e) {
-          initDB(e.target.result);
+          resolve(e.target.result);
         };
         opening.onblocked = function(e) {
           reject('db blocked');
