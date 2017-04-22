@@ -2,28 +2,6 @@ define(function() {
   
   'use strict';
 
-  function updateStored(objectStore, key, cb) {
-    return new Promise(function(resolve, reject) {
-      var retrieving = objectStore.get(key);
-      retrieving.onerror = function() {
-        reject('db error');
-      };
-      retrieving.onblocked = function() {
-        reject('db blocked');
-      };
-      retrieving.onsuccess = function(e) {
-        var value = cb(e.target.result);
-        console.log('update', objectStore, key, value);
-        var putting = objectStore.put(value);
-        putting.onerror = retrieving.onerror;
-        putting.onblocked = retrieving.onblocked;
-        putting.onsuccess = function() {
-          resolve(value);
-        };
-      };
-    });
-  }
-
   function getStored(objectStore, key) {
     return new Promise(function(resolve, reject) {
       var retrieving = objectStore.get(key);
@@ -237,7 +215,8 @@ define(function() {
     updateStored: function(storeName) {
       function applyPairs(store, pairs) {
         Object.keys(pairs).forEach(function(key) {
-          updateStored(store, key, function(record) {
+          store.get(key).onsuccess = function(e) {
+            var record = e.target.result;
             if (!record) {
               if (typeof store.keyPath !== 'string') {
                 throw new Error('NYI: update uninitialized record with non-string key');
@@ -245,8 +224,8 @@ define(function() {
               record = {};
               record[store.keyPath] = key;
             }
-            return Object.assign(record, pairs[key]);
-          });
+            store.put(Object.assign(record, pairs[key]));
+          };
         });
       }
       if (arguments.length === 1) {
