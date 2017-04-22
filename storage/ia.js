@@ -163,7 +163,7 @@ define(function() {
         return new Promise(function(resolve, reject) {
           var transaction = db.transaction(storeNames, ioMode);
           var result;
-          transaction.onsuccess = function() {
+          transaction.oncomplete = function() {
             if (result instanceof Promise) result.then(resolve);
             else resolve(result);
           };
@@ -184,8 +184,11 @@ define(function() {
       });
     },
     getStored: function(storeName, key) {
-      return this.inTransaction('readonly', storeName, function(store) {
-        return getStored(store, key);
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        self.inTransaction('readonly', storeName, function(store) {
+          getStored(store, key).then(resolve, reject);
+        });
       });
     },
     updateStored: function(storeName) {
