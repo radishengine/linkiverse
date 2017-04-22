@@ -419,7 +419,7 @@ define(function() {
     getFileKeyRange: function(item) {
       return IDBKeyRange.bound(
         item + '/',
-        item.slice(0, -2) + String.fromCharCode(item.charCodeAt(item.length-1) + 1) + '/',
+        item + '~',
         true,
         true);
     },
