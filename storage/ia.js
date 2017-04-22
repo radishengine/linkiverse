@@ -357,6 +357,7 @@ define(function() {
       var pseudopath = 'meta:'+item;
       var self = this;
       return this.getStored('item', item).then(function(record) {
+        mustDownload = mustDownload || !record;
         if (!mustDownload) {
           for (var i = 0; i < requiredFields.length; i++) {
             if (!(requiredFields[i] in record)) {
