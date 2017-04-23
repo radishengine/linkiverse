@@ -711,6 +711,27 @@ define(function() {
       if (this.readyState === 'error') return Promise.reject(this.error);
       return this.appendFromServer();
     },
+    countUniqueValues: function(fieldName) {
+      var items = Object.keys(this.set);
+      return iaStorage.inTransaction('readonly', 'item', function(itemStore) {
+        var set = {};
+        function addValues(e) {
+          var record = e.target.result;
+          if (record && fieldName in record) {
+            if (Array.isArray(record[fieldName])) {
+              for (var i = 0; i < record[fieldName].length; i++) {
+                set[record[fieldName][i]] = (set[record[fieldName][i]] || 0) + 1;
+              }
+            }
+            else set[record[fieldName]] = (set[record[fieldName]] || 0) + 1;
+          }
+        }
+        for (var i = 0; i < items.length; i++) {
+          itemStore.get(items[i]).oncomplete = addValues;
+        }
+        return set;
+      });
+    },
     complete: function() {
       var self = this;
       function afterPopulate() {
