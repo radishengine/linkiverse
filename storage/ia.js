@@ -499,8 +499,34 @@ define(function() {
           case ')': case 'AND': case 'OR': case 'AND NOT':
             throw new Error('invalid query');
           default:
-            if (typeof token === 'string' && token[0] === '"') {
-              token = token.slice(1, -1);
+            if (typeof token === 'string') {
+              if (token[0] === '"') {
+                token = token.slice(1, -1);
+              }
+              var glob = token.indexOf('*');
+              if (glob !== -1 && subFieldName) {
+                if (glob === glob.length-1) {
+                  if (token.length === 1) {
+                    // i.e. when used as an index key range, every item with any value
+                    token = undefined;
+                  }
+                  else {
+                    token = IDBRange.bound(
+                      token.slice(0, glob),
+                      token.slice(0, glob-1) + String.fromCharCode(token.charCodeAt(glob-1) + 1),
+                      true,
+                      false);
+                  }
+                }
+                else {
+                  var pattern = '^' + token.split('*').map(function(part) {
+                    return part.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&');
+                  }).join('.*') + '$';
+                  if (pattern.slice(0, 3) === '^.*') pattern = pattern.slice(3);
+                  if (pattern.slice(-3) === '.*$') pattern = pattern.slice(0, 3);
+                  token = new RegExp(pattern);
+                }
+              }
             }
             expr = token;
             if (subFieldName) {
@@ -575,27 +601,9 @@ define(function() {
                 return Promise.resolve({isAll:false, set:{}});
               }
               var range = part.value;
-              if (typeof range === 'string') {
-                var glob = range.indexOf('*');
-                if (glob !== -1) {
-                  if (glob === range.length-1) {
-                    if (range.length === 1) {
-                      // i.e. every item with any value set for this index
-                      range = undefined;
-                    }
-                    else {
-                      range = IDBRange.bound(
-                        range.slice(0, glob),
-                        range.slice(0, glob-1) + String.fromCharCode(range.charCodeAt(glob-1]+1)),
-                        true,
-                        false);
-                    }
-                  }
-                  else {
-                    // globbing in the middle is not supported
-                    return Promise.resolve({isAll:false, set:{}});
-                  }
-                }
+              if (range instanceof RegExp) {
+                // TODO
+                return Promise.resolve({isAll:false, set:{}});
               }
               return new Promise(function(resolve, reject) {
                 var cursening = itemStore.index(part.field).openCursor(range);
