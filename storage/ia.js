@@ -452,7 +452,7 @@ define(function() {
       parsed: {value:parsed, enumerable:true},
     });
   }
-  ItemSet.prototype = Object.assign(new ItemSetBase, {
+  ItemSet.prototype = {
     parseQuery: function(query) {
       var queryToken = / *(AND( NOT)?|OR|"[^"]*"|\[([^\]]*) TO ([^\]]*)\]|[\(\)]|[^ \[\]"\(\)\:]+:?) */g;
       var match, nextAt = 0;
@@ -702,7 +702,7 @@ define(function() {
           return Promise.reject(reason);
         });
     },
-  });
+  };
   
   iaStorage.ItemSet = ItemSet;
 
