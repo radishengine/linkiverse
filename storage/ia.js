@@ -607,13 +607,20 @@ define(function() {
               }
               return new Promise(function(resolve, reject) {
                 var set = {};
-                itemStore.index(part.field).openKeyCursor(range).onsuccess = function(e) {
+                itemStore.index(part.field).openCursor(range).onsuccess = function(e) {
                   var cursor = e.target.result;
                   if (!cursor) {
                     resolve({set:set, isAll:true});
                     return;
                   }
-                  set[cursor.key] = cursor.key;
+                  // some confusion about whether the value part of an index record
+                  // is supposed to be the full record or just its key
+                  if (typeof cursor.value === 'string') {
+                    set[cursor.value] = true;
+                  }
+                  else {
+                    set[cursor.value.identifier] = cursor.true;
+                  }
                   cursor.continue();
                 };
               });
