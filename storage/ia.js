@@ -614,7 +614,7 @@ define(function() {
                     resolve({set:set, isAll:true});
                     return;
                   }
-                  set[cursor.value] = true;
+                  set[cursor.value] = cursor.value;
                   cursor.continue();
                 };
               });
