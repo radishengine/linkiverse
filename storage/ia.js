@@ -704,7 +704,9 @@ define(function() {
           }
         }
         updates.search[self.query] = searchRecord;
-        iaStorage.updateStored(updates);
+        return iaStorage.updateStored(updates);
+      })
+      .then(function() {
         self.readyState = searchRecord.isComplete ? 'complete' : 'partial';
         return self;
       });
