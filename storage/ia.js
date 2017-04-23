@@ -714,7 +714,7 @@ define(function() {
     complete: function() {
       var self = this;
       function afterPopulate() {
-        if (this.readyState === 'partial') {
+        if (self.readyState === 'partial') {
           return self.populate().then(afterPopulate);
         }
         return self;
