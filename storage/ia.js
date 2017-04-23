@@ -588,9 +588,9 @@ define(function() {
         function(result) { delete loading[pseudopath]; return result; },
         function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
     },
-    getFromStorage: function() {
+    initFromStorage: function() {
       var self = this;
-      return iaStorage.inTransaction('readonly', 'item', function(itemStore) {
+      return iaStorage.inTransaction('readonly', ['item', 'search'], function(itemStore, searchStore) {
         function doPart(part) {
           switch (part.mode) {
             case '"..."':
@@ -651,32 +651,75 @@ define(function() {
               });
           }
         }
-        return doPart(self.parsed);
+        return Promise.all([
+          doPart(self.parsed),
+          new Promise(function(resolve, reject) {
+            searchStore.get(self.query).onsuccess = function(e) {
+              resolve(e.target.result);
+            };
+          }),
+        ])
+        .then(function(values) {
+          var storageInfo = values[0];
+          storageInfo.record = values[1];
+          if (storageInfo.record && storageInfo.record.items) {
+            for (var i = 0; i < storageInfo.record.items.length; i++) {
+              storageInfo.set[storageInfo.record.items[i]] = true;
+            }
+          }
+          return storageInfo;
+        });
       });
     },
-    getLatestInfo: function() {
-      var pseudopath = 'latest:' + this.query;
-      if (pseudopath in loading) return loading[pseudopath];
-      return loading[pseudopath] = this.makeRequest({
-        q:this.query,
-        fl:['identifier','publicdate'],
-        sort:'publicdate desc',
-        rows:1})
-      .then(
-        function onresolve(result) {
-          delete loading[pseudopath];
-          var info = {
-            latest: result.response.docs[0] || null,
-            totalCount: result.response.numFound,
-          };
-        },
-        function onreject(reason) {
-          delete loading[pseudopath];
-          return Promise.reject(reason);
-        });
+    appendFromServer: function() {
+      var query = this.query;
+      var searchRecord = this.searchRecord;
+      if (searchRecord.nextFrom) {
+        // apologies to the year 10000
+        query += ' publicdate:['+searchRecord.nextFrom+' TO 9999]';
+      }
+      var self = this;
+      return this.makeRequest({
+        q: query,
+        fl: ['identifier','title','collection','mediatype','subject','publicdate'],
+        sort: 'publicdate asc',
+        rows: 50})
+      .then(function(payload) {
+        var results = payload.response.docs;
+        searchRecord.isComplete = results.length === payload.response.numFound;
+        var updates = {search:{}, item:{}};
+        if (results.length > 0) {
+          searchRecord.nextFrom = results[results.length-1].publicdate;
+          if (searchRecord.items && searchRecord.items[searchRecord.items.length-1] === results[0].identifier) {
+            searchRecord.items.pop();
+          }
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i].identifier;
+            updates.item[item] = results[i];
+            self.set[item] = true;
+            if (searchRecord.items) searchRecord.items.push(item);
+          }
+        }
+        updates.search[self.query] = searchRecord;
+        iaStorage.updateStored(updates);
+        self.readyState = searchRecord.isComplete ? 'complete' : 'partial';
+        return self;
+      });
     },
-    getInfo: function() {
-      // step one: 
+    populate: function() {
+      if (this.readyState === 'complete') return Promise.resolve(this);
+      if (this.readyState === 'error') return Promise.reject(this.error);
+      return this.appendFromServer();
+    },
+    complete: function() {
+      var self = this;
+      function afterPopulate() {
+        if (this.readyState === 'partial') {
+          return self.populate().then(afterPopulate);
+        }
+        return self;
+      }
+      return this.populate().then(afterPopulate);
     },
     init: function() {
       if (this.readyState !== 'uninitialized') {
@@ -687,11 +730,23 @@ define(function() {
       }
       var self = this;
       this.readyState = 'initializing';
-      return this._initializing = iaStorage.getStored('search', this.query)
-      .then(function(record) {
-        if (record && record.totalCount > 0) {
-          self.totalCount = record.totalCount;
+      return this._initializing = this.initFromStorage()
+      .then(function(storedInfo) {
+        self.set = storedInfo.set;
+        self.searchRecord = storedInfo.record || {
+          query: self.query,
+          items: storedInfo.isAll ? null : [],
+          nextFrom: null,
+          isComplete: false,
+        };
+        if (Object.keys(self.set).length === 0) {
+          return self.appendFromServer()
+          .then(function() {
+            return self;
+          });
         }
+        self.readyState = self.searchRecord.isComplete ? 'complete' : 'partial';
+        return self;
       })
       .then(
         function(result) { delete self._initializing; return result; },
