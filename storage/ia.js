@@ -682,7 +682,7 @@ define(function() {
       return this.makeRequest({
         q: query,
         fl: ['identifier','title','collection','mediatype','subject','publicdate'],
-        sort: 'publicdate asc',
+        sort: ['publicdate asc'], // sort has to be an array?
         rows: 50})
       .then(function(payload) {
         var results = payload.response.docs;
