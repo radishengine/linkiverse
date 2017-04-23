@@ -434,7 +434,26 @@ define(function() {
         return keys;
       });
     },
-    parseQuery: function parseQuery(query) {
+    getCollection: function(item) {
+      return this.getItemSet('collection:' + item);
+    },
+    getItemSet: function(query) {
+      return new ItemSet(query).init();
+    },
+  };
+  
+  function ItemSet(query) {
+    var parsed = this.parseQuery(query);
+    if (parsed.length === 0) {
+      throw new Error('query must have at least one term');
+    }
+    Object.defineProperties(this, {
+      query: {value:query, enumerable:true},
+      parsed: {value:parsed, enumerable:true},
+    });
+  }
+  ItemSet.prototype = Object.assign(new ItemSetBase, {
+    parseQuery: function(query) {
       var queryToken = / *(AND( NOT)?|OR|"[^"]*"|\[([^\]]*) TO ([^\]]*)\]|[\(\)]|[^ \[\]"\(\)\:]+:?) */g;
       var match, nextAt = 0;
       function rewind() {
@@ -463,17 +482,19 @@ define(function() {
         switch (token) {
           case null: return null;
           case '(':
-            expr = [];
             var subexpr;
             while (subexpr = nextExpression(subFieldName)) {
               if (subexpr === null) throw new Error('invalid query');
-              expr.push(subexpr);
+              if (expr) {
+                expr = [expr, subexpr];
+                expr.mode = 'AND';
+              }
+              else expr = subexpr;
               token = nextToken();
               if (token === ')') break;
               if (token === null) throw new Error('invalid query');
               rewind();
             }
-            if (expr.length === 1) expr = expr[0];
             break;
           case ')': case 'AND': case 'OR': case 'AND NOT':
             throw new Error('invalid query');
@@ -484,6 +505,12 @@ define(function() {
             expr = token;
             if (subFieldName) {
               expr = {mode:':', field:subFieldName, value:expr};
+            }
+            else {
+              if (typeof expr !== 'string') {
+                throw new Error('invalid query');
+              }
+              expr = {mode:'"..."', term:expr};
             }
             break;
         }
@@ -498,238 +525,178 @@ define(function() {
             continue;
         }
       }
-      var parsed = [];
-      var expr;
+      var expr, parsed;
       while (expr = nextExpression()) {
-        parsed.push(expr);
+        if (parsed) {
+          parsed = [parsed, expr];
+          parsed.mode = 'AND';
+        }
+        else parsed = expr;
       }
-      if (parsed.length === 1) return parsed[0];
-      parsed.mode = 'AND';
       return parsed;
     },
-    getCollection: function(item) {
-      return new ItemSet('collection', item);
+    onreadystatechange: function() { /* override me! */ },
+    onprogress: function() { /* override me! */ },
+    _readyState: 'uninitialized',
+    get readyState() {
+      return this._readyState;
     },
-  };
-  
-  function ItemSetBase() {
-  }
-  ItemSetBase.prototype = {
-    load: function() {
+    set readyState(v) {
+      if (v === this._readyState) return;
+      this._readyState = v;
+      this.onreadystatechange();
+    },
+    makeRequest: function(paramObj) {
+      var queryString = '?' + Object.keys(paramObj).map(function(key) {
+        var value = paramObj[key];
+        if (Array.isArray(value)) {
+          key += '[]';
+          value = value.join(',');
+        }
+        return key + '=' + value;
+      }).sort().join('&');
+      var pseudopath = 'search:' + queryString;
+      if (pseudopath in loading) return loading[pseudopath];
+      return loading[pseudopath] = jsonp('//archive.org/advancedsearch.php' + queryString + '&output=json')
+      .then(
+        function(result) { delete loading[pseudopath]; return result; },
+        function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
+    },
+    getFromStorage: function() {
       var self = this;
-      return iaStorage.inTransaction('readonly', ['item', 'search'], function(itemStore, searchStore) {
-        return self.loadFromStore(itemStore, searchStore);
+      return iaStorage.inTransaction('readonly', 'item', function(itemStore) {
+        function doPart(part) {
+          switch (part.mode) {
+            case '"..."':
+              // open search terms are not supported
+              return Promise.resolve({isAll:false, set:{}});
+            case ':':
+              if ([].indexOf.call(itemStore.indexNames, part.field) === -1) {
+                return Promise.resolve({isAll:false, set:{}});
+              }
+              var range = part.value;
+              if (typeof range === 'string') {
+                var glob = range.indexOf('*');
+                if (glob !== -1) {
+                  if (glob === range.length-1) {
+                    if (range.length === 1) {
+                      // i.e. every item with any value set for this index
+                      range = undefined;
+                    }
+                    else {
+                      range = IDBRange.bound(
+                        range.slice(0, glob),
+                        range.slice(0, glob-1) + String.fromCharCode(range.charCodeAt(glob-1]+1)),
+                        true,
+                        false);
+                    }
+                  }
+                  else {
+                    // globbing in the middle is not supported
+                    return Promise.resolve({isAll:false, set:{}});
+                  }
+                }
+              }
+              return new Promise(function(resolve, reject) {
+                var cursening = itemStore.index(part.field).openCursor(range);
+                var set = {};
+                cursening.onsuccess = function(e) {
+                  var cursor = e.target.result;
+                  if (!cursor) {
+                    resolve({set:set, isAll:true});
+                  }
+                  set[cursor.value] = true;
+                  cursor.continue();
+                };
+              });
+            case 'AND': case 'OR': case 'AND NOT':
+              return Promise.all([doPart(part[0]), doPart(part[1])])
+              .then(function(sides) {
+                var left = sides[0], right = sides[1];
+                if (part.mode === 'OR') {
+                  left.set = Object.assign(left.set, right.set);
+                  left.isAll = left.isAll && right.isAll;
+                  return left;
+                }
+                else if (part.mode === 'AND NOT') {
+                  if (!right.isAll) {
+                    // since we can't guarantee that we are excluding everything
+                    // that we need to, exclude everything
+                    return {isAll:false, set:{}};
+                  }
+                  var rightKeys = Object.keys(right.set);
+                  for (var i = 0; i < rightKeys.length; i++) {
+                    delete left.set[rightKeys[i]];
+                  }
+                  return left;
+                }
+                else { // AND
+                  var leftKeys = Object.keys(left.set);
+                  for (var i = 0; i < leftKeys.length; i++) {
+                    if (!(leftKeys[i] in right.set)) {
+                      delete left.set[leftKeys[i]];
+                    }
+                  }
+                  left.isAll = left.isAll && right.isAll;
+                  return left;
+                }
+              });
+          }
+        }
+        return doPart(self.parsed);
       });
     },
-    loadFromStore: function() {
-      throw new Error('NYI');
-    },
-    where: function(right) {
-      if (typeof arguments[0] === 'string') {
-        right = new ItemSet(arguments[0], arguments[1]);
-      }
-      return new ItemSetOp(this, 'AND', right);
-    },
-    or: function(right) {
-      if (typeof arguments[0] === 'string') {
-        right = new ItemSet(arguments[0], arguments[1]);
-      }
-      return new ItemSetOp(this, 'OR', right);
-    },
-    except: function(right) {
-      if (typeof arguments[0] === 'string') {
-        right = new ItemSet(arguments[0], arguments[1]);
-      }
-      return new ItemSetOp(this, 'AND NOT', right);
-    },
-  };
-
-  function ItemSetOp(left, operator, right) {
-    if (typeof this[operator] !== 'function') {
-      throw new Error('operator undefined: ' + operator);
-    }
-    this.operator = operator;
-    this.left = left;
-    this.right = right;
-  }
-  ItemSetOp.prototype = Object.assign(new ItemSetBase, {
-    toString: function(bare) {
-      var leftBare = this.operator.replace(/ NOT$/, '') === this.left.operator;
-      var str = this.left.toString(leftBare) + ' ' + this.operator + ' ' + this.right;
-      return bare ? str : '(' + str + ')';
-    },
-    AND: function(values) {
-      var left = values[0], right = values[1];
-      var leftKeys = Object.keys(left);
-      for (var i = 0; i < leftKeys.length; i++) {
-        if (!(leftKeys[i] in right)) {
-          delete left[leftKeys[i]];
-        }
-      }
-      return left;
-    },
-    OR: function(values) {
-      var left = values[0], right = values[1];
-      var rightKeys = Object.keys(right);
-      for (var i = 0; i < rightKeys.length; i++) {
-        if (!(rightKeys[i] in left)) {
-          left[rightKeys[i]] = right[rightKeys[i]];
-        }
-      }
-      return left;
-    },
-    'AND NOT': function(values) {
-      var left = values[0], right = values[1];
-      var rightKeys = Object.keys(right);
-      for (var i = 0; i < rightKeys.length; i++) {
-        delete left[rightKeys[i]];
-      }
-      return left;
-    },
-    loadFromStore: function(itemStore) {
-      return Promise.all([
-        this.left.loadFromStore(itemStore),
-        this.right.loadFromStore(itemStore)])
-      .then(this[this.operator]);
-    },
-  });
-
-  function ItemSet(fieldName, valueRange) {
-    this.fieldName = fieldName;
-    if (!(valueRange instanceof IDBKeyRange)) {
-      valueRange = IDBKeyRange.only(valueRange);
-    }
-    this.valueRange = valueRange;
-  }
-  ItemSet.prototype = Object.assign(new ItemSetBase, {
-    getRangeString: function(range) {
-      function bound(v, mode) {
-        v += '';
-        if (mode && v !== '') {
-          v = v.slice(0, -2) + String.fromCharCode(v.charCodeAt(v.length-1) + mode);
-        }
-        if (/[ \[\]\(\)]|(^(AND|OR|NOT|TO)$)|^\-|^$/.test(v)) {
-          v = '"' + v + '"';
-        }
-        return v;
-      }
-      if (!range.lowerOpen && !range.upperOpen && !indexedDB.cmp(range.lower, range.upper)) {
-        // single value
-        return bound(range.lower, 0);
-      }
-      return '[' + bound(range.lower, +range.lowerOpen) +
-          ' TO ' + bound(range.upper, -range.upperOpen) + ']';
-    },
-    toString: function() {
-      var fieldPrefix = this.fieldName ? this.fieldName+':' : '';
-      var rangeString = this.getRangeString(this.valueRange);
-      return fieldPrefix + rangeString;
-    },
-    loadFromStore: function(itemStore, searchStore) {
-      var self = this;
-      function downloadInfo(currentInfo) {
-        var query = self.toString();
-        var pseudopath = 'search:' + query;
-        if (pseudopath in loading) return loading[pseudopath];
-        return loading[pseudopath] = jsonp(
-          '//archive.org/advancedsearch.php'
-            + '?q=' + query
-            + '&output=json'
-            + '&rows=1'
-            + '&fl[]=identifier'
-            + '&sort=publicdate desc')
-        .then(function(returned) {
-          var last = returned.result.docs[0];
-          var updates = {search:{}};
-          updates.search[query] = {
-            received: new Date(),
-            query: query,
-            lastItem: last && last.identifier,
-            totalCount: returned.result.count,
+    getLatestInfo: function() {
+      var pseudopath = 'latest:' + this.query;
+      if (pseudopath in loading) return loading[pseudopath];
+      return loading[pseudopath] = this.makeRequest({
+        q:this.query,
+        fl:['identifier','publicdate'],
+        sort:'publicdate desc',
+        rows:1})
+      .then(
+        function onresolve(result) {
+          delete loading[pseudopath];
+          var info = {
+            latest: result.response.docs[0] || null,
+            totalCount: result.response.numFound,
           };
-          if (currentInfo
-          && currentInfo.lastItem === updates.search[query].lastItem
-          && currentInfo.totalCount === updates.search[query].totalCount) {
-            // nothing seems to have changed. do a non-blocking update for the timestamp
-            iaStorage.updateStored(updates);
-            return updates.search[query];
-          }
-          return jsonp(
-            '//archive.org/advancedsearch.php'
-            + '?q=' + query
-            + '&output=json'
-            + '&rows=' + updates.search[query].totalCount
-            + '&fl[]=identifier,title,collection,subject'
-            + '&sort=publicdate desc')
-          .then(function(returned) {
-            updates.item = {};
-            var set = {};
-            for (var i = 0; i < returned.result.docs.length; i++) {
-              var doc = returned.result.docs[i];
-              updates.item[doc.identifier] = doc;
-              set[doc.identifier] = true;
-            }
-            return iaStorage.updateStored(updates)
-            .then(function() {
-              return set;
-            });
-          })
-          .then(function() {
-            return updates.search[query];
-          });
-        })
-        .then(
-          function(result) { delete loading[pseudopath]; return result; },
-          function(reason) { delete loading[pseudopath]; return Promise.reject(reason); });
+        },
+        function onreject(reason) {
+          delete loading[pseudopath];
+          return Promise.reject(reason);
+        });
+    },
+    getInfo: function() {
+      // step one: 
+    },
+    init: function() {
+      if (this.readyState !== 'uninitialized') {
+        if (this.readyState === 'error') {
+          return Promise.reject(this.error);
+        }
+        return this._initializing || Promise.resolve(this);
       }
-      return new Promise(function(resolve, reject) {
-        var req = itemStore.index(self.itemName).getAll(self.valueRange);
-        var req2 = searchStore.get(self.toString());
-        req.onerror = req2.onerror = function(e) {
-          reject('db error');
-        };
-        var result = {};
-        req.onsuccess = function(e) {
-          var itemNames = e.target.result;
-          var set = {};
-          for (var i = 0; i < itemNames.length; i++) {
-            set[itemNames[i]] = true;
-          }
-          result.set = set;
-          if ('info' in result) {
-            resolve(result);
-          }
-        };
-        req2.onsuccess = function(e) {
-          result.info = e.target.result;
-          if ('set' in result) {
-            resolve(result);
-          }
-        };
+      var self = this;
+      this.readyState = 'initializing';
+      return this._initializing = iaStorage.getStored('search', this.query)
+      .then(function(record) {
+        if (record && record.totalCount > 0) {
+          self.totalCount = record.totalCount;
+        }
       })
-      .then(function(result) {
-        if (result.info) {
-          if ((new Date() - result.info.received) > 1000*60*60*24) {
-            // if it's been 24 hours, do a non-blocking check to see
-            // if things have changed (for next time)
-            downloadInfo(result.info, result.set);
-          }
-        }
-        else {
-          // do a full download
-          // TODO: create an 'info' based on stored results?
-          // e.g. for a child collection when the parent has already
-          // been processed
-          return downloadInfo(null);
-        }
-        return result.set;
-      });
+      .then(
+        function(result) { delete self._initializing; return result; },
+        function(reason) {
+          delete self._initializing;
+          self.readyState = 'error';
+          self.error = reason;
+          return Promise.reject(reason);
+        });
     },
   });
   
   iaStorage.ItemSet = ItemSet;
-  iaStorage.ItemSet.Base = ItemSetBase;
-  iaStorage.ItemSet.Op = ItemSetOp;
 
   return iaStorage;
 
