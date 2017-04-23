@@ -434,6 +434,79 @@ define(function() {
         return keys;
       });
     },
+    parseQuery: function parseQuery(query) {
+      var queryToken = / *(AND( NOT)?|OR|"[^"]*"|\[([^\]]*) TO ([^\]]*)\]|[\(\)]|[^ \[\]"\(\)\:]+:?) */g;
+      var match, nextAt = 0;
+      function rewind() {
+        queryToken.lastIndex = nextAt = match.index;
+      }
+      function nextToken() {
+        if (nextAt >= query.length) return null;
+        match = queryToken.exec(query);
+        if (!match || match.index !== nextAt) {
+          throw new Error('invalid query');
+        }
+        nextAt = match.index + match[0].length;
+        if (typeof match[3] === 'string') {
+          return IDBKeyRange.bound(match[3], match[4]);
+        }
+        return match[1];
+      }
+      function nextExpression(fieldName) {
+        var token = nextToken();
+        var subFieldName = fieldName;
+        if (typeof token === 'string' && token.slice(-1) === ':') {
+          subFieldName = token.slice(0, -1);
+          token = nextToken();
+        }
+        var expr;
+        switch (token) {
+          case null: return null;
+          case '(':
+            expr = [];
+            var subexpr;
+            while (subexpr = nextExpression(subFieldName)) {
+              if (subexpr === null) throw new Error('invalid query');
+              expr.push(subexpr);
+              token = nextToken();
+              if (token === ')') break;
+              if (token === null) throw new Error('invalid query');
+              rewind();
+            }
+            if (expr.length === 1) expr = expr[0];
+            break;
+          case ')': case 'AND': case 'OR': case 'AND NOT':
+            throw new Error('invalid query');
+          default:
+            if (typeof token === 'string' && token[0] === '"') {
+              token = token.slice(1, -1);
+            }
+            expr = token;
+            if (subFieldName) {
+              expr = {mode:':', field:subFieldName, value:expr};
+            }
+            break;
+        }
+        for (;;) switch (token = nextToken()) {
+          case null: return expr;
+          default: rewind(); return expr;
+          case 'AND': case 'OR': case 'AND NOT':
+            var rhs = nextExpression(fieldName);
+            if (rhs === null) throw new Error('invalid query');
+            expr = [expr, rhs];
+            expr.mode = token;
+            continue;
+        }
+      }
+      var parsed = [];
+      var expr;
+      while (expr = nextExpression()) {
+        parsed.push(expr);
+      }
+      if (parsed.length === 1) return parsed[0];
+      parsed.mode = 'AND';
+      return parsed;
+    },
     getCollection: function(item) {
       return new ItemSet('collection', item);
     },
