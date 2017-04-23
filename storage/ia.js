@@ -112,7 +112,10 @@ define(function() {
             var searchStore = db.createObjectStore('search', {keyPath:'query'});
             itemStore.createIndex('collection', 'collection', {multiEntry:true, unique:false});
             itemStore.createIndex('subject', 'subject', {multiEntry:true, unique:false});
+            itemStore.createIndex('language', 'language', {multiEntry:true, unique:false});
             itemStore.createIndex('mediatype', 'mediatype', {multiEntry:false, unique:false});
+            itemStore.createIndex('date', 'date', {multiEntry:false, unique:false});
+            itemStore.createIndex('publicdate', 'publicdate', {multiEntry:false, unique:false});
           }
           break;
         default:
@@ -681,7 +684,7 @@ define(function() {
       var self = this;
       return this.makeRequest({
         q: query,
-        fl: ['identifier','title','collection','mediatype','subject','publicdate'],
+        fl: ['identifier','title','collection','mediatype','subject','date','publicdate'],
         sort: ['publicdate asc'], // sort has to be an array?
         rows: 50})
       .then(function(payload) {
