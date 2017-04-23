@@ -727,7 +727,7 @@ define(function() {
           }
         }
         for (var i = 0; i < items.length; i++) {
-          itemStore.get(items[i]).oncomplete = addValues;
+          itemStore.get(items[i]).onsuccess = addValues;
         }
         return set;
       });
