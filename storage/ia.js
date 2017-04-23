@@ -606,7 +606,7 @@ define(function() {
                 return Promise.resolve({isAll:false, set:{}});
               }
               return new Promise(function(resolve, reject) {
-                var cursening = itemStore.index(part.field).openCursor(range);
+                var cursening = itemStore.index(part.field).openKeyCursor(range);
                 var set = {};
                 cursening.onsuccess = function(e) {
                   var cursor = e.target.result;
