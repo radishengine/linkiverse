@@ -606,15 +606,14 @@ define(function() {
                 return Promise.resolve({isAll:false, set:{}});
               }
               return new Promise(function(resolve, reject) {
-                var cursening = itemStore.index(part.field).openKeyCursor(range);
                 var set = {};
-                cursening.onsuccess = function(e) {
+                itemStore.index(part.field).openKeyCursor(range).onsuccess = function(e) {
                   var cursor = e.target.result;
                   if (!cursor) {
                     resolve({set:set, isAll:true});
                     return;
                   }
-                  set[cursor.value] = cursor.value;
+                  set[cursor.key] = cursor.key;
                   cursor.continue();
                 };
               });
