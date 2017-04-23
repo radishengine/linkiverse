@@ -619,7 +619,7 @@ define(function() {
                     set[cursor.value] = true;
                   }
                   else {
-                    set[cursor.value.identifier] = cursor.true;
+                    set[cursor.value.identifier] = true;
                   }
                   cursor.continue();
                 };
