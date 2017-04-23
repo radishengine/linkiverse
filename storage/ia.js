@@ -612,6 +612,7 @@ define(function() {
                   var cursor = e.target.result;
                   if (!cursor) {
                     resolve({set:set, isAll:true});
+                    return;
                   }
                   set[cursor.value] = true;
                   cursor.continue();
