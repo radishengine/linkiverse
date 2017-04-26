@@ -432,16 +432,23 @@ define(function() {
       this.instructions = [];
       readInstructions([], this.instructions, this);
     },
-    export: function(isTopLevel) {
-      this.name = nextString(this);
-      if (isTopLevel) {
-        var kind = requireSection(this, ['func', 'global', 'table', 'memory']);
-        this.kind = kind.type;
-        this.ref = requireVar(kind);
-        if (kind.i !== kind.length) {
-          throw new Error('(export (' + kind.type + ' ...)): unexpected content');
+    export: function(module) {
+      var def = {symbol: requireString(this)};
+      var kind = requireSection(this, ['func','global','table','memory']);
+      def.type = kind.type;
+      var ref = requireVar(kind);
+      requireEnd(kind);
+      if (typeof ref === 'string') {
+        ref = module.globalNames[ref];
+        if (ref && ref.type === def.type) {
+          def.id = ref.id;
+        }
+        else {
+          throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
         }
       }
+      else def.id = ref; // TODO: check out of bounds
+      return def;
     },
     import: function(isTopLevel) {
       this.module = nextString(this);
