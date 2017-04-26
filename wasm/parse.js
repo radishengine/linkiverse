@@ -87,7 +87,7 @@ define(function() {
   }
 
   function nextString(t) {
-    if (t[t.i] instanceof String) return t[t.i++];
+    if (t[t.i] instanceof String) return t[t.i++].valueOf();
   }
   
   function requireString(t) {
