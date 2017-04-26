@@ -292,7 +292,7 @@ define(function() {
 
   var readers = {
     module: function() {
-      this.name = nextName(this);
+      var module = {name: nextName(this)};
       if (nextString(this)) {
         var start_i = this.i-1;
         do { } while (nextString(this));
@@ -300,48 +300,49 @@ define(function() {
           throw new Error('binary mode (module...) must only contain string values');
         }
         var dataString = this.slice(start_i).join('');
-        this.data = new Uint8Array(dataString.length);
-        for (var j = 0; j < data.length; j++) data[j] = dataString.charCodeAt(j);
-        return this;
+        module.bytes = new Uint8Array(dataString.length);
+        for (var j = 0; j < dataString.length; j++) module.bytes[j] = dataString.charCodeAt(j);
+        return module;
       }
       var section;
-      this.typedefs = [];
+      module.typedefs = [];
       while (section = nextSection(this, 'type')) {
-        this.typedefs.push(readSection(section, true));
+        module.typedefs.push(readSection(section, true));
       }
-      this.funcs = [];
+      module.funcs = [];
       while (section = nextSection(this, 'func')) {
-        this.funcs.push(readSection(section, true));
+        module.funcs.push(readSection(section, true));
       }
-      this.imports = [];
+      module.imports = [];
       while (section = nextSection(this, 'import')) {
-        this.imports.push(readSection(section, true));
+        module.imports.push(readSection(section, true));
       }
-      this.exports = [];
+      module.exports = [];
       while (section = nextSection(this, 'export')) {
-        this.exports.push(readSection(section, true));
+        module.exports.push(readSection(section, true));
       }
       if (section = nextSection(this, 'table')) {
-        this.table = readSection(section, true);
+        module.table = readSection(section, true);
       }
       if (section = nextSection(this, 'memory')) {
-        this.memory = readSection(section, true);
+        module.memory = readSection(section, true);
       }
-      this.globals = [];
+      module.globals = [];
       while (section = nextSection(this, 'global')) {
-        this.globals.push(readSection(section, true));
+        module.globals.push(readSection(section, true));
       }
-      this.elems = [];
+      module.elems = [];
       while (section = nextSection(this, 'elem')) {
-        this.elems.push(readSection(section, true));
+        module.elems.push(readSection(section, true));
       }
-      this.datas = [];
+      module.dataSections = [];
       while (section = nextSection(this, 'data')) {
-        this.datas.push(readSection(section, true));
+        module.dataSections.push(readSection(section, true));
       }
       if (section = nextSection(this, 'start')) {
-        this.start = readSection(section, true);
+        module.start = readSection(section, true);
       }
+      return module;
     },
     type: function(isTopLevel) {
       if (!isTopLevel) {
@@ -508,11 +509,11 @@ define(function() {
     if (!readers.hasOwnProperty(section.type)) {
       throw new Error('unknown section: ' + section.type);
     }
-    readers[section.type].call(section, isTopLevel);
+    var result = readers[section.type].call(section, isTopLevel) || section;
     if (section.i !== section.length) {
       throw new Error('unexpected content in ' + section.type + ' section')
     }
-    return section;
+    return result;
   }
 
   function parse(wat) {
