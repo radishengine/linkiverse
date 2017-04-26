@@ -90,6 +90,16 @@ define(function() {
     if (t[t.i] instanceof String) return t[t.i++];
   }
   
+  function requireString(t) {
+    var s = nextString(t);
+    if (!s) throw new Error('('+t.type+' ...): expecting string');
+    return s;
+  }
+  
+  function requireEnd(t) {
+    if (t.i !== t.length) throw new Error('('+t.type+' ...): unexpected content');
+  }
+  
   function nextOp(t) {
     var op = t[t.i++];
     if (typeof op !== 'string') {
@@ -307,42 +317,82 @@ define(function() {
         return module;
       }
       var section;
+      var globalNames = module.globalNames = {};
+      module.exports = [];
+      function addName(type, list) {
+        var name = nextName(section);
+        if (!name) return;
+        if (name in globalNames) {
+          throw new Error('name conflict: ' + name);
+        }
+        globalNames[name] = {type:type, id:list.length};
+      }
+      function addExport(type, list) {
+        var def = nextSection(section, 'export');
+        if (!def) return;
+        module.exports.push({
+          type: type,
+          id: list.length,
+          symbol: requireString(def),
+        });
+        requireEnd(def);
+      }
       module.typedefs = [];
       while (section = nextSection(this, 'type')) {
-        module.typedefs.push(readSection(section, true));
+        addName('type', module.typedefs);
+        module.typedefs.push(section);
       }
       module.funcs = [];
       while (section = nextSection(this, 'func')) {
-        module.funcs.push(readSection(section, true));
+        addName('func', module.funcs);
+        addExport('func', module.funcs);
+        module.funcs.push(section);
       }
       module.imports = [];
       while (section = nextSection(this, 'import')) {
-        module.imports.push(readSection(section, true));
+        module.imports.push(section);
       }
-      module.exports = [];
       while (section = nextSection(this, 'export')) {
-        module.exports.push(readSection(section, true));
+        module.exports.push(section);
       }
       if (section = nextSection(this, 'table')) {
-        module.table = readSection(section, true);
+        addName('table', []);
+        addExport('table', []);
+        module.table = section;
       }
       if (section = nextSection(this, 'memory')) {
-        module.memory = readSection(section, true);
+        addName('memory', []);
+        addExport('memory', []);
+        module.memory = section;
       }
       module.globals = [];
       while (section = nextSection(this, 'global')) {
-        module.globals.push(readSection(section, true));
+        addName('global', module.globals);
+        addExport('global', module.globals);
+        module.globals.push(section);
       }
       module.elems = [];
       while (section = nextSection(this, 'elem')) {
-        module.elems.push(readSection(section, true));
+        module.elems.push(section);
       }
       module.dataSections = [];
       while (section = nextSection(this, 'data')) {
-        module.dataSections.push(readSection(section, true));
+        module.dataSections.push(section, true);
       }
       if (section = nextSection(this, 'start')) {
-        module.start = readSection(section, true);
+        var start = readSection(section, true);
+        if (typeof start === 'string') {
+          if (globalNames[start] && globalNames[start].type === 'func') {
+            start = globalNames[start].id;
+          }
+          else {
+            throw new Error('(start ...): invalid func name ' + start);
+          }
+        }
+        if (start < 0 || start >= module.funcs.length) {
+          throw new Error('(start ...): func number out of range');
+        }
+        module.start = start;
       }
       return module;
     },
@@ -503,7 +553,7 @@ define(function() {
       }
     },
     start: function() {
-      this.ref = requireVar(this);
+      return requireVar(this);
     },
   };
   
