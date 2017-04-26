@@ -57,8 +57,9 @@ define(function() {
 
   function nextSection(t, typeCheck) {
     if (!Array.isArray(t[t.i])) return null;
-    if (typeof typeCheck === 'string' && t[t.i].type === typeCheck) return null;
+    if (typeof typeCheck === 'string' && t[t.i].type !== typeCheck) return null;
     if (Array.isArray(typeCheck) && typeCheck.indexOf(t[t.i].type) === -1) return null;
+    if (typeCheck instanceof RegExp && !typeCheck.test(t[t.i]).type) return null;
     return t[t.i++];
   }
 
@@ -75,6 +76,7 @@ define(function() {
       var expecting = '';
       if (typeof typeCheck === 'string') expecting = typeCheck;
       if (Array.isArray(typeCheck)) expecting = typeCheck.join('/');
+      if (typeCheck instanceof RegExp) expecting = typeCheck.toString();
       throw new Error('('+t.kind+' ...): expecting ('+expecting+' ...)');
     }
     return s;
