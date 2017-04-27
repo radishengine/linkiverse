@@ -394,15 +394,17 @@ define(function() {
         }
         globalNames[name] = {type:type, id:list.length};
       }
-      function addExport(type, list) {
-        var def = nextSection(section, 'export');
-        if (!def) return;
-        module.exports.push({
-          type: type,
-          id: list.length,
+      function maybeInlineExport(type, id) {
+        var specifier = nextSection(section, 'export');
+        if (!specifier) return;
+        var def = {
+          type: 'export',
+          export_type: specifier.type,
           symbol: requireString(def),
-        });
-        requireEnd(def);
+        };
+        def[specifier.type + '_id'] = id;
+        requireEnd(specifier);
+        module.exports.push(def);
       }
       while (section = nextSection(this, 'type')) {
         addName('type', typedefs);
@@ -484,7 +486,7 @@ define(function() {
           module.imports.push(def);
         }
         else {
-          addExport('func', module.funcs);
+          maybeInlineExport('func', module.funcs.length);
           var signature = getFuncSignature(section);
           module.funcs.push({
             type: 'func',
@@ -534,7 +536,7 @@ define(function() {
           module.imports.push(def);
         }
         else {
-          addExport('table', module.tables);
+          maybeInlineExport('table', module.tables.length);
           module.tables.push(section);
         }
       }
@@ -557,7 +559,7 @@ define(function() {
           module.imports.push(def);
         }
         else {
-          addExport('memory', module.memorySections);
+          maybeInlineExport('memory', module.memorySections.length);
           var memorySection = {type:'memory', id:module.memorySections.length};
           if (specifier = nextSection(section, 'data')) {
             while (specifier.i < specifier.length) requireString(specifier);
@@ -605,7 +607,7 @@ define(function() {
           module.imports.push(def);
         }
         else {
-          addExport('global', module.globals);
+          maybeInlineExport('global', module.globals.length);
           var def = {id:module.globals.length, type:'global'};
           if (specifier = nextSection(section, 'mut')) {
             def.mutable = true;
@@ -621,7 +623,38 @@ define(function() {
         }
       }
       while (section = nextSection(this, 'export')) {
-        module.exports.push(section);
+        var def = {
+          type: 'export',
+          id: module.exports.length,
+          symbol: requireString(this),
+        };
+        specifier = requireSection(this, ['func', 'global', 'table', 'memory']);
+        def.export_type = specifier.type;
+        var ref = requireVar(specifier);
+        requireEnd(specifier);
+        if (typeof ref === 'string') {
+          ref = globalNames[ref];
+          if (ref && ref.type === def.export_type) {
+            def[def.export_type+'_id'] = ref.id;
+          }
+          else {
+            throw new Error('(export (' + def.export_type + '...)): invalid ref');
+          }
+        }
+        else {
+          var max;
+          switch (def.export_type) {
+            case 'func': max = module.funcs.length-1; break;
+            case 'global': max = module.globals.length-1; break;
+            case 'table': max = module.tableSections.length-1; break;
+            case 'memory': max = module.memorySections.length-1; break;
+          }
+          if (ref < 0 || ref >= max) {
+            throw new Error('(export (' + def.export_type + '...)): invalid ref');
+          }
+          def[def.export_type+'_id'] = ref;
+        }
+        module.exports.push(def);
       }
       if (section = nextSection(this, 'start')) {
         var start = readSection(section, true);
