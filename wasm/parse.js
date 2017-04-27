@@ -876,6 +876,7 @@ define(function() {
         }
       }
       module.codeSections[i] = readInstructions(scope, [], code);
+      if (scope.blockStack.length !== 0) throw new Error('unterminated block');
     }
     return module;
   }
