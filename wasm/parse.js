@@ -355,15 +355,17 @@ define(function() {
       while (section = nextSection(this, 'export')) {
         module.exports.push(section);
       }
+      module.tables = [];
       if (section = nextSection(this, 'table')) {
         addName('table', []);
         addExport('table', []);
-        module.table = section;
+        module.tables.push(section);
       }
+      module.memorySections = [];
       if (section = nextSection(this, 'memory')) {
         addName('memory', []);
         addExport('memory', []);
-        module.memory = section;
+        module.memorySections.push(section);
       }
       module.globals = [];
       while (section = nextSection(this, 'global')) {
@@ -417,7 +419,8 @@ define(function() {
           switch (kind.type) {
             case 'func': max = module.funcs.length-1; break;
             case 'global': max = module.globals.length-1; break;
-            case 'table': case 'memory': max = 0; break;
+            case 'table': max = module.tables.length-1; break;
+            case 'memory': max = module.memory.length-1; break;
           }
           if (ref < 0 || ref > max) {
             throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
@@ -425,6 +428,8 @@ define(function() {
           def.id = ref;
         }
       }
+      if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
+      if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
       return module;
     },
     type: function(isTopLevel) {
