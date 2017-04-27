@@ -34,12 +34,6 @@ define(function() {
     if (typeof t[t.i] === 'string' && t[t.i][0] === '$') return t[t.i++];
   }
 
-  function nextRef(t) {
-    if (typeof t[t.i] === 'number' && t[t.i] === Math.floor(t[t.i])) return t[t.i++];
-    if (typeof t[t.i] === 'string' && t[t.i][0] === '$') return t[t.i++];
-    return null;
-  }
-  
   function nextInt(t) {
     if (Math.floor(t[t.i]) !== t[t.i]) return NaN;
     return t[t.i++];
@@ -51,12 +45,23 @@ define(function() {
     return v;
   }
 
-  function requireRef(t) {
-    var v = nextRef(t);
-    if (v === null) throw new Error('('+t.type+' ...): expecting number or $name');
-    return v;
+  function nextRef(t, set) {
+    var ref;
+    if (typeof t[t.i] === 'number' && t[t.i] === Math.floor(t[t.i])) ref = t[t.i++];
+    else if (typeof t[t.i] === 'string' && t[t.i][0] === '$') ref = t[t.i++];
+    else return null;
+    if (!(ref in set)) {
+      throw new Exception('(' + t.type + ' ...): undefined ' + set.element_kind + ' ref ' + ref);
+    }
+    return (typeof ref === 'string') return set[ref] : ref;
   }
 
+  function requireRef(t, set) {
+    var v = nextRef(t, set);
+    if (v === null) throw new Error('('+t.type+' ...): expected '+set.element_kind+' ref, got ' + t[t.i]);
+    return v;
+  }
+  
   function nextSection(t, typeCheck) {
     if (!Array.isArray(t[t.i])) return null;
     if (typeof typeCheck === 'string' && t[t.i].type !== typeCheck) return null;
@@ -396,8 +401,36 @@ define(function() {
       }
     }
   }
+  
+  function readFuncTypedef(output, section) {
+    output.params = [];
+    output.results = [];
+    var subsection;
+    while (subsection = nextSection(section, 'param')) {
+      var name = nextName(subsection);
+      if (name) {
+        output.params[name] = output.params.length;
+        output.params.push(requireWord(subsection, /^[if](32|64)$/));
+        requireEnd(subsection);
+      }
+      else while (subsection.i < subsection.length) {
+        output.params.push(requireWord(subsection, /^[if](32|64)$/));
+      }
+    }
+    while (subsection = nextSection(section, 'result')) {
+      output.results.push(requireWord(subsection, /^[if](32|64)$/));
+    }
+    if (output.results.length > 1) {
+      throw new Error('more than 1 result is not currently supported');
+    }
+    output.signature = [
+      output.params.join(',') || 'void',
+      output.results.join(',') || 'void',
+    ].join(' -> ');
+    return output;
+  }
 
-  function parse(wat) {
+  function wasm_parse(wat) {
     var activeRx = /\S|$/g;
     var nestingCommentRx = /\(;|;\)/g;
     var tokenRx = /"(?:\\.|[^\\"]+)*"|(-?\s*(?:0x[a-f0-9]+|\d+(?:\.\d+)?))(?![a-z\._\$])|[a-z\$][^\s()";]*|[()]|$/gi;
@@ -497,89 +530,19 @@ define(function() {
       return module;
     }
     Object.assign(module, {
-      typedefs: [],
+      typedefs: Object.assign([], {element_kind:'type'}),
       exports: [],
       imports: [],
-      funcs: [],
-      tables: [],
-      memorySections: [],
+      funcs: Object.assign([], {element_kind:'func'}),
+      tables: Object.assign([], {element_kind:'table'}),
+      memorySections: Object.assign([], {element_kind:'memory'}),
       codeSections: [],
-      globals: [],
+      globals: Object.assign([], {element_kind:'global'}),
       dataSections: [],
       elems: [],
     });
-    var section, specifier;
-    function getFuncSignature(section) {
-      var specifier = nextSection(section, 'type');
-      var id;
-      if (specifier) {
-        var ref = requireRef(specifier);
-        if (typeof ref === 'string') {
-          ref = module.named[ref];
-          if (ref && ref.type === 'type') {
-            id = ref.id;
-          }
-        }
-        else {
-          id = ref;
-          if (id < 0 || id >= module.typedefs.length) {
-            throw new Error('('+section.name+' ...): invalid typedef ref');
-          }
-        }
-      }
-      var paramTypes = [], paramNames = [], returnTypes = [];
-      while (specifier = nextSection(section, 'param')) {
-        var name = nextName(specifier);
-        if (name) {
-          paramNames[name] = paramTypes.length;
-          paramNames.push(name);
-          paramTypes.push(requireWord(specifier, /^[if](32|64)$/));
-          requireEnd(specifier);
-        }
-        else while (specifier.i < specifier.length) {
-          paramNames.push(undefined);
-          paramTypes.push(requireWord(specifier, /^[if](32|64)$/));
-        }
-      }
-      if (specifier = nextSection(section, 'result')) {
-        returnTypes.push(requireWord(specifier, /^[if](32|64)$/));
-      }
-      var signatureString = [
-        paramTypes.join(',') || 'void',
-        returnTypes.join(',') || 'void',
-      ].join(' -> ');
-      if (isNaN(id)) {
-        if (signatureString in module.typedefs) {
-          id = module.typedefs[signatureString];
-        }
-        else {
-          id = module.typedefs[signatureString] = module.typedefs.length;
-          module.typedefs.push(signatureString);
-        }
-      }
-      else {
-        if (module.typedefs[id] !== signatureString) {
-          throw new Error(
-            'func signature mismatch: expected ['
-            + module.typedefs[id] + '], got ['
-            + signatureString + ']');
-        }
-      }
-      return {
-        typedef_id: id,
-        paramNames: paramNames,
-        paramTypes: paramTypes,
-      };
-    }
-    function addName(type, list, specifier) {
-      specifier = specifier || section;
-      var name = nextName(specifier);
-      if (!name) return;
-      if (name in module.named) {
-        throw new Error('name conflict: ' + name);
-      }
-      module.named[name] = {type:type, id:list.length};
-    }
+    
+    var section, name, specifier, subsection, def;
     function maybeInlineExport(type, id) {
       var specifier = nextSection(section, 'export');
       if (!specifier) return;
@@ -593,43 +556,86 @@ define(function() {
       module.exports.push(def);
     }
     while (section = nextSection(doc, 'type')) {
-      addName('type', module.typedefs);
-      var func = requireSection(section, 'func');
-      var next_id = module.typedefs.length;
-      var id = getFuncSignature(func).typedef_id;
-      requireEnd(func);
-      if (id !== next_id) {
-        // explicitly defined redundant copies of the same typedef
-        module.typedefs.push(module.typedefs[id]);
+      module.typedefs.push(def = {
+        type: 'type',
+        id: module.typedefs.length,
+      });
+      if (name = nextName(section)) {
+        if (name in module.typedefs) {
+          throw new Error('typedef name conflict: ' + name);
+        }
+        module.typedefs[name] = def.id;
+      }
+      // assume that (type (type ...)) is not valid, even though it currently
+      // appears to be, according to the grammar
+      readFuncTypedef(def, requireSection(section, 'func'));
+      requireEnd(section);
+      if (!(def.signature in module.typedefs)) {
+        module.typedefs[def.signature] = def.id;
       }
     }
     while (section = nextSection(doc, 'import')) {
-      var def = {id:module.imports.length};
+      module.imports.push(def = {type:'import'});
       def.moduleName = requireString(section);
       def.fieldName = requireString(section);
-      var specifier = requireSection(section, ['func','global','table','memory']);
+      subsection = requireSection(section, ['func','global','table','memory']);
       requireEnd(section);
-      def.type = specifier.type;
-      switch (specifier.type) {
+      section = null;
+      var imported;
+      switch (def.import_type = subsection.type) {
         case 'func':
-          addName('func', module.funcs, specifier);
-          module.funcs.push({type:'import', id:def.id});
-          def.typedef_id = getFuncSignature(specifier).typedef_id;
+          if (module.funcs.length > 0 && !module.funcs[module.funcs.length-1].isImported) {
+            throw new Error('imported functions must be declared before the first non-imported function');
+          }
+          module.funcs.push(imported = {type:'func', id:module.funcs.length, isImported:true});
+          if (name = nextName(subsection)) {
+            if (name in module.funcs) {
+              throw new Error('duplicate func name: ' + name);
+            }
+            module.funcs[name] = imported.id;
+          }
+          if (section = nextSection(subsection, 'type')) {
+            def.typedef_id = requireRef(section, module.typedefs);
+            requireEnd(section);
+            section = null;
+          }
+          else {
+            var typedef = readFuncTypedef({}, subsection);
+            if (typedef.signature in module.typedefs) {
+              def.typedef_id = module.typedefs[typedef.signature];
+            }
+            else {
+              module.typedefs[typedef.signature] = typedef.id = module.typedefs.length;
+              module.typedefs.push(typedef);
+            }
+          }
           break;
         case 'global':
-          addName('global', module.globals, specifier);
-          module.globals.push({type:'import', id:def.id});
-          if (section = nextSection(specifier, 'mut')) {
+          if (module.globals.length > 0 && !module.globals[module.globals.length-1].isImported) {
+            throw new Error('imported globals must be declared before the first non-imported global');
+          }
+          module.globals.push(imported = {type:'global', id:module.globals.length, isImported:true});
+          if (name = nextName(subsection)) {
+            if (name in module.globals) {
+              throw new Error('duplicate global name: ' + name);
+            }
+            module.globals[name] = imported.id;
+          }
+          if (section = nextSection(subsection, 'mut')) {
             def.mutable = true;
-            requireEnd(specifier);
-            specifier = section;
+            requireEnd(subsection);
+            subsection = section;
           }
           else {
             def.mutable = false;
           }
-          def.kind = requireWord(specifier, ['i32','i64','f32','f64']);
+          def.kind = requireWord(subsection, ['i32','i64','f32','f64']);
           break;
         case 'table':
+          if (module.tables.length > 0 && !module.tables[module.tables.length-1].isImported) {
+            throw new Error('imported tables must be declared before the first non-imported global');
+          }
+          module.tables.push(imported = {type:'table', id:module.tables.length, isImported:true});
           addName('table', module.tables, specifier);
           module.tables.push({type:'import', id:def.id});
           def.initialSize = requireInt(specifier);
@@ -645,8 +651,8 @@ define(function() {
           if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
           break;
       }
-      module.imports.push(def);
-      requireEnd(specifier);
+      requireEnd(subsection);
+      def.import_id = imported.id;
     }
     while (section = nextSection(doc, 'func')) {
       addName('func', module.funcs);
@@ -668,20 +674,29 @@ define(function() {
       }
       else {
         maybeInlineExport('func', module.funcs.length);
-        var signature = getFuncSignature(section);
+        var typedef = readFuncTypedef({}, section);
+        var typedef_id;
+        if (typedef.signature in module.typedefs) {
+          typedef_id = module.typedefs[typedef.signature];
+        }
+        else {
+          module.typedefs[typedef.signature] = typedef.id = module.typedefs.length;
+          module.typedefs.push(typedef);
+          typedef_id = typedef.id;
+        }
         module.funcs.push({
           type: 'func',
           id: module.funcs.length,
           code_id: module.codeSections.length,
-          typedef_id: signature.typedef_id,
+          typedef_id: typedef_id,
         });
-        section.localNames = signature.paramNames.slice();
+        section.localNames = typedef.paramNames.slice();
         for (var i = 0; i < section.localNames.length; i++) {
           if (section.localNames[i]) {
             section.localNames[section.localNames[i]] = i;
           }
         }
-        section.localTypes = signature.paramTypes.slice();
+        section.localTypes = typedef.paramTypes.slice();
         while (specifier = nextSection(section, 'local')) {
           var name;
           if (name = nextName(specifier)) {
@@ -803,78 +818,34 @@ define(function() {
       }
     }
     while (section = nextSection(doc, 'export')) {
-      var def = {
+      module.exports.push(def = {
         type: 'export',
         id: module.exports.length,
         export_symbol: requireString(section),
-      };
-      specifier = requireSection(section, ['func', 'global', 'table', 'memory']);
+      });
+      specifier = requireSection(section, ['func','global','table','memory']);
       def.export_type = specifier.type;
-      var ref = requireRef(specifier);
+      def.export_id = requireRef(specifier, ({
+        func: module.funcs,
+        global: module.globals,
+        table: module.tables,
+        memory: module.memorySections,
+      })[specifier.type]);
       requireEnd(specifier);
-      if (typeof ref === 'string') {
-        ref = module.named[ref];
-        if (ref && ref.type === def.export_type) {
-          def[def.export_type+'_id'] = ref.id;
-        }
-        else {
-          throw new Error('(export (' + def.export_type + '...)): invalid ref');
-        }
-      }
-      else {
-        var max;
-        switch (def.export_type) {
-          case 'func': max = module.funcs.length-1; break;
-          case 'global': max = module.globals.length-1; break;
-          case 'table': max = module.tableSections.length-1; break;
-          case 'memory': max = module.memorySections.length-1; break;
-        }
-        if (ref < 0 || ref >= max) {
-          throw new Error('(export (' + def.export_type + '...)): invalid ref');
-        }
-        def[def.export_type+'_id'] = ref;
-      }
-      module.exports.push(def);
     }
     if (section = nextSection(doc, 'start')) {
-      var start = requireRef(section);
+      module.start = requireRef(section, module.funcs);
       requireEnd(section);
-      if (typeof start === 'string') {
-        if (module.named[start] && module.named[start].type === 'func') {
-          start = module.named[start].id;
-        }
-        else {
-          throw new Error('(start ...): invalid func name ' + start);
-        }
-      }
-      if (start < 0 || start >= module.funcs.length) {
-        throw new Error('(start ...): func number out of range');
-      }
-      module.start = start;
     }
     while (section = nextSection(doc, 'elem')) {
       module.elems.push(section);
     }
     while (section = nextSection(doc, 'data')) {
-      var memoryRef = nextRef(section);
-      if (memoryRef === null) memoryRef = 0;
-      var def = {type:'data', id:module.dataSections.length};
-      if (typeof memoryRef === 'string') {
-        memoryRef = module.named[memoryRef];
-        if (memoryRef && memoryRef.type === 'memory') {
-          // TODO: check memory is not imported?
-          def.memory_id = memoryRef.id;
-        }
-        else {
-          throw new Error('(data ...): invalid memory ref ' + memoryRef);
-        }
-      }
-      else {
-        if (memoryRef < 0 || memoryRef >= module.memorySections.length) {
-          throw new Error('(data ...): invalid memory ref ' + memoryRef);
-        }
-        def.memory_id = memoryRef;
-      }
+      module.dataSections.push(def = {
+        type: 'data',
+        id: module.dataSections.length,
+        memory_id: nextRef(section, module.memorySections),
+      });
       def.offset = requireSection(section);
       var start_i = section.i;
       while (section.i < section.length) requireString(section);
@@ -883,7 +854,6 @@ define(function() {
       for (var i = 0; i < byteString.length; i++) {
         def.bytes[i] = byteString.charCodeAt(i);
       }
-      module.dataSections.push(def);
     }
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
@@ -907,6 +877,6 @@ define(function() {
     return module;
   }
 
-  return parse;
+  return wasm_parse;
 
 });
