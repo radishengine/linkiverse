@@ -384,7 +384,19 @@ define(function() {
     if (nextToken() !== null) throw new Error('more than one top-level element');
     if (doc.type !== 'module') throw new Error('top-level element must be (module ...)');
     
-    var module = {name: nextName(doc)};
+    var module = {
+      name: nextName(doc),
+      typedefs: [],
+      exports: [],
+      imports: [],
+      funcs: [],
+      tables: [],
+      memorySections: [],
+      codeSections: [],
+      globals: [],
+      dataSections: [],
+      elems: [],
+    };
     if (nextString(doc)) {
       var start_i = doc.i-1;
       do { } while (nextString(doc));
@@ -398,7 +410,6 @@ define(function() {
     }
     var section, specifier;
     var globalNames = module.globalNames = {};
-    var typedefs = module.typedefs = [];
     function getFuncSignature(section) {
       var specifier = nextSection(section, 'type');
       var id;
@@ -412,8 +423,8 @@ define(function() {
         }
         else {
           id = ref;
-          if (id < 0 || id >= typedefs.length) {
-            throw new Error('('+section.name+' ...): func type id out of range');
+          if (id < 0 || id >= module.typedefs.length) {
+            throw new Error('('+section.name+' ...): invalid typedef ref');
           }
         }
       }
@@ -439,19 +450,19 @@ define(function() {
         returnTypes.join(',') || 'void',
       ].join(' -> ');
       if (isNaN(id)) {
-        if (signatureString in typedefs) {
-          id = typedefs[signatureString];
+        if (signatureString in module.typedefs) {
+          id = module.typedefs[signatureString];
         }
         else {
-          id = typedefs[signatureString] = typedefs.length;
-          typedefs.push(signatureString);
+          id = module.typedefs[signatureString] = module.typedefs.length;
+          module.typedefs.push(signatureString);
         }
       }
       else {
-        if (typedefs[id] !== signatureString) {
+        if (module.typedefs[id] !== signatureString) {
           throw new Error(
             'func signature mismatch: expected ['
-            + typedefs[id] + '], got ['
+            + module.typedefs[id] + '], got ['
             + signatureString + ']');
         }
       }
@@ -461,8 +472,6 @@ define(function() {
         paramTypes: paramTypes,
       };
     }
-    module.exports = [];
-    module.imports = [];
     function addName(type, list, specifier) {
       specifier = specifier || section;
       var name = nextName(specifier);
@@ -485,21 +494,16 @@ define(function() {
       module.exports.push(def);
     }
     while (section = nextSection(doc, 'type')) {
-      addName('type', typedefs);
+      addName('type', module.typedefs);
       var func = requireSection(section, 'func');
-      var next_id = typedefs.length;
+      var next_id = module.typedefs.length;
       var id = getFuncSignature(func).typedef_id;
       requireEnd(func);
       if (id !== next_id) {
         // explicitly defined redundant copies of the same typedef
-        typedefs.push(typedefs[id]);
+        module.typedefs.push(module.typedefs[id]);
       }
     }
-    module.funcs = [];
-    module.tables = [];
-    module.memorySections = [];
-    module.codeSections = [];
-    module.globals = [];
     while (section = nextSection(doc, 'import')) {
       var def = {id:module.imports.length};
       def.moduleName = requireString(section);
@@ -618,7 +622,6 @@ define(function() {
         module.tables.push(section);
       }
     }
-    module.dataSections = [];
     while (section = nextSection(doc, 'memory')) {
       addName('memory', module.memorySections);
       if (specifier = nextSection(section, 'import')) {
@@ -750,7 +753,6 @@ define(function() {
       }
       module.start = start;
     }
-    module.elems = [];
     while (section = nextSection(doc, 'elem')) {
       module.elems.push(section);
     }
@@ -783,38 +785,6 @@ define(function() {
         def.bytes[i] = byteString.charCodeAt(i);
       }
       module.dataSections.push(def);
-    }
-    for (var i = 0; i < module.exports.length; i++) {
-      section = module.exports[i];
-      if ('id' in section) continue;
-      var def = module.exports[i] = {export_symbol: requireString(section)};
-      var kind = requireSection(section, ['func','global','table','memory']);
-      def.type = kind.type;
-      var ref = requireVar(kind);
-      requireEnd(kind);
-      requireEnd(section);
-      if (typeof ref === 'string') {
-        ref = globalNames[ref];
-        if (ref && ref.type === def.type) {
-          def.id = ref.id;
-        }
-        else {
-          throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
-        }
-      }
-      else {
-        var max;
-        switch (kind.type) {
-          case 'func': max = module.funcs.length-1; break;
-          case 'global': max = module.globals.length-1; break;
-          case 'table': max = module.tables.length-1; break;
-          case 'memory': max = module.memorySections.length-1; break;
-        }
-        if (ref < 0 || ref > max) {
-          throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
-        }
-        def.id = ref;
-      }
     }
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
