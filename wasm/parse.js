@@ -626,7 +626,7 @@ define(function() {
         var def = {
           type: 'export',
           id: module.exports.length,
-          symbol: requireString(this),
+          symbol: requireString(section),
         };
         specifier = requireSection(this, ['func', 'global', 'table', 'memory']);
         def.export_type = specifier.type;
