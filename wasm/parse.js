@@ -317,7 +317,7 @@ define(function() {
         for (var j = 0; j < dataString.length; j++) module.bytes[j] = dataString.charCodeAt(j);Sig
         return module;
       }
-      var section;
+      var section, specifier;
       var globalNames = module.globalNames = {};
       var typeSignatures = module.typeSignatures = [];
       function getTypeSignature(section) {
@@ -382,7 +382,8 @@ define(function() {
       }
       module.exports = [];
       module.imports = [];
-      function addName(type, list) {
+      function addName(type, list, specifier) {
+        specifier = specifier || section;
         var name = nextName(section);
         if (!name) return;
         if (name in globalNames) {
@@ -411,30 +412,86 @@ define(function() {
           typeSignatures.push(typeSignatures[id]);
         }
       }
-      while (section = nextSection(this, 'import')) {
-        module.imports.push(section);
-      }
       module.funcs = [];
+      module.tables = [];
+      module.memorySections = [];
+      module.globals = [];
+      while (section = nextSection(this, 'import')) {
+        var def = {id:module.imports.length};
+        def.moduleName = requireString(section);
+        def.fieldName = requireString(section);
+        var specifier = requireSection(section, ['func','global','table','memory']);
+        requireEnd(section);
+        def.type = specifier.type;
+        switch (specifier.type) {
+          case 'func':
+            addName('func', module.funcs, specifier);
+            module.funcs.push({type:'import', id:def.id});
+            def.signature = getTypeSignature(specifier);
+            break;
+          case 'global':
+            addName('global', module.globals, specifier);
+            module.globals.push({type:'import', id:def.id});
+            if (section = nextSection(specifier, 'mut')) {
+              def.mutable = true;
+              requireEnd(specifier);
+              specifier = section;
+            }
+            else {
+              def.mutable = false;
+            }
+            def.kind = requireWord(specifier, ['i32','i64','f32','f64']);
+            break;
+          case 'table':
+            addName('table', module.tables, specifier);
+            module.tables.push({type:'import', id:def.id});
+            def.initialSize = requireInt(specifier);
+            def.maximumSize = nextInt(specifier);
+            if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
+            def.elementType = requireWord(specifier, 'anyfunc');
+            break;
+          case 'memory':
+            addName('memory', module.memorySections, specifier);
+            module.memorySections.push({type:'import', id:def.id});
+            def.initialSize = requireInt(specifier);
+            def.maximumSize = nextInt(specifier);
+            if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
+            break;
+        }
+        module.imports.push(def);
+        requireEnd(specifier);
+      }
       while (section = nextSection(this, 'func')) {
         addName('func', module.funcs);
-        addExport('func', module.funcs);
-        if (nextSection(section, 'import')) throw new Error('NYI');
-        section.signature = getTypeSignature(section);
-        module.funcs.push(section);
+        if (specifier = nextSection(section, 'import')) {
+          if (module.funcs.length > 0 && module.funcs[module.funcs.length-1].type !== 'import') {
+            throw new Error('all imported funcs must be defined before any non-imported');
+          }
+          var def = {id:module.imports.length, type:'func', signature:getTypeSignature(section)};
+          requireEnd(section);
+          def.moduleName = requireString(specifier);
+          def.fieldName = requireString(specifier);
+          requireEnd(specifier);
+          module.funcs.push({type:'import', id:def.id});
+          module.imports.push(def);
+        }
+        else {
+          addExport('func', module.funcs);
+          if (nextSection(section, 'import')) throw new Error('NYI');
+          section.signature = getTypeSignature(section);
+          module.funcs.push(section);
+        }
       }
-      module.tables = [];
       while (section = nextSection(this, 'table')) {
         addName('table', []);
         addExport('table', []);
         module.tables.push(section);
       }
-      module.memorySections = [];
       while (section = nextSection(this, 'memory')) {
         addName('memory', []);
         addExport('memory', []);
         module.memorySections.push(section);
       }
-      module.globals = [];
       while (section = nextSection(this, 'global')) {
         addName('global', module.globals);
         addExport('global', module.globals);
