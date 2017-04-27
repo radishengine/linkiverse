@@ -621,7 +621,7 @@ define(function() {
           id: module.exports.length,
           symbol: requireString(section),
         };
-        specifier = requireSection(this, ['func', 'global', 'table', 'memory']);
+        specifier = requireSection(section, ['func', 'global', 'table', 'memory']);
         def.export_type = specifier.type;
         var ref = requireVar(specifier);
         requireEnd(specifier);
