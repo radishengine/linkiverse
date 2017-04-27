@@ -490,7 +490,7 @@ define(function() {
             type: 'func',
             id: module.funcs.length,
             code_id: module.codeSections.length,
-            type_id: signature.typedef_id,
+            typedef_id: signature.typedef_id,
           });
           section.localNames = signature.paramNames.slice();
           for (var i = 0; i < section.localNames.length; i++) {
