@@ -356,13 +356,13 @@ define(function() {
         module.exports.push(section);
       }
       module.tables = [];
-      if (section = nextSection(this, 'table')) {
+      while (section = nextSection(this, 'table')) {
         addName('table', []);
         addExport('table', []);
         module.tables.push(section);
       }
       module.memorySections = [];
-      if (section = nextSection(this, 'memory')) {
+      while (section = nextSection(this, 'memory')) {
         addName('memory', []);
         addExport('memory', []);
         module.memorySections.push(section);
@@ -420,7 +420,7 @@ define(function() {
             case 'func': max = module.funcs.length-1; break;
             case 'global': max = module.globals.length-1; break;
             case 'table': max = module.tables.length-1; break;
-            case 'memory': max = module.memory.length-1; break;
+            case 'memory': max = module.memorySections.length-1; break;
           }
           if (ref < 0 || ref > max) {
             throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
