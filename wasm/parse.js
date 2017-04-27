@@ -354,7 +354,10 @@ define(function() {
         if (specifier = nextSection(section, 'result')) {
           returnTypes.push(requireWord(specifier, /^[if](32|64)$/));
         }
-        var signatureString = (paramTypes.join(',') || 'void') + ' -> ' + (returnTypes.join(',') || 'void');
+        var signatureString = [
+          paramTypes.join(',') || 'void',
+          returnTypes.join(',') || 'void',
+        ].join(' -> ');
         if (isNaN(id)) {
           if (signatureString in typeSignatures) {
             id = typeSignatures[signatureString];
