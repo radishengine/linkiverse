@@ -140,14 +140,14 @@ define(function() {
         if (typeof ref === 'string') {
           ref = scope[ref];
           if (ref && ref.type === 'blocklevel') {
-            ref = scope.blockStack.length - ref.id;
+            ref = scope.blockLevels.length - ref.id;
           }
           else {
             throw new Error('invalid break label');
           }
         }
         else {
-          if (ref > scope.blockStack.length) {
+          if (ref > scope.blockLevels.length) {
             throw new Error('invalid break label');
           }
         }
@@ -210,7 +210,7 @@ define(function() {
             label = scope[label];
             if (label && label.type === 'blocklevel') {
               // TODO: verify correct diff calculation
-              label = scope.blockStack.length - label.id;
+              label = scope.blockLevels.length - label.id;
             }
             else {
               throw new Error('invalid block ref');
@@ -238,8 +238,8 @@ define(function() {
   }
   
   function pushBlock(scope, name) {
-    var def = {id:scope.blockStack.length, name:name, type:'blocklevel'};
-    scope.blockStack.push(def);
+    var def = {id:scope.blockLevels.length+1, name:name, type:'blocklevel'};
+    scope.blockLevels.push(def);
     scope.push(def);
     if (name) {
       if (name in scope) def.hiding = true;
@@ -248,7 +248,7 @@ define(function() {
   }
   
   function popBlock(scope) {
-    var def = scope.blockStack.pop();
+    var def = scope.blockLevels.pop();
     if (!def) throw new Error('mismatched block/end instructions');
     scope.splice(scope.lastIndexOf(def), 1);
     if (!def.name) return;
@@ -299,11 +299,9 @@ define(function() {
         else {
           // clause(s) are <expr>s instead of (then ...) (else ...)
           // kinda like (select (<then_expr>) (<else_expr>) (<condition_expr>))
-          if (!readExpression(blockStack, output, t)) {
-            throw new Error('(if ...): expecting <expr> for then-clause');
-          }
+          readExpression(scope, output, requireSection(code));
           var i_else = output.length;
-          if (readExpression(output, t)) {
+          if (readExpression(scope, output, expr)) {
             output.splice(i_else, 0, 'else');
           }
         }
