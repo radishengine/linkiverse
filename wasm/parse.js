@@ -411,6 +411,9 @@ define(function() {
           typeSignatures.push(typeSignatures[id]);
         }
       }
+      while (section = nextSection(this, 'import')) {
+        module.imports.push(section);
+      }
       module.funcs = [];
       while (section = nextSection(this, 'func')) {
         addName('func', module.funcs);
@@ -418,12 +421,6 @@ define(function() {
         if (nextSection(section, 'import')) throw new Error('NYI');
         section.signature = getTypeSignature(section);
         module.funcs.push(section);
-      }
-      while (section = nextSection(this, 'import')) {
-        module.imports.push(section);
-      }
-      while (section = nextSection(this, 'export')) {
-        module.exports.push(section);
       }
       module.tables = [];
       while (section = nextSection(this, 'table')) {
@@ -443,13 +440,8 @@ define(function() {
         addExport('global', module.globals);
         module.globals.push(section);
       }
-      module.elems = [];
-      while (section = nextSection(this, 'elem')) {
-        module.elems.push(section);
-      }
-      module.dataSections = [];
-      while (section = nextSection(this, 'data')) {
-        module.dataSections.push(section, true);
+      while (section = nextSection(this, 'export')) {
+        module.exports.push(section);
       }
       if (section = nextSection(this, 'start')) {
         var start = readSection(section, true);
@@ -465,6 +457,15 @@ define(function() {
           throw new Error('(start ...): func number out of range');
         }
         module.start = start;
+      }
+      module.elems = [];
+      while (section = nextSection(this, 'elem')) {
+        module.elems.push(section);
+      }
+      // code section
+      module.dataSections = [];
+      while (section = nextSection(this, 'data')) {
+        module.dataSections.push(section, true);
       }
       for (var i = 0; i < module.exports.length; i++) {
         section = module.exports[i];
