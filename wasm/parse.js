@@ -106,6 +106,8 @@ define(function() {
       signed = modifiers[4] === '_s';
     }
     switch (op) {
+      case 'if': case 'else': case 'end': case 'block': case 'loop':
+        throw new Error('readOp() is the wrong place to handle "'+op+'"');
       case 'unreachable':
       case 'nop':
       case 'return':
