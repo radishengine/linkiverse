@@ -34,7 +34,7 @@ define(function() {
     if (typeof t[t.i] === 'string' && t[t.i][0] === '$') return t[t.i++];
   }
 
-  function nextVar(t) {
+  function nextRef(t) {
     if (typeof t[t.i] === 'number' && t[t.i] === Math.floor(t[t.i])) return t[t.i++];
     if (typeof t[t.i] === 'string' && t[t.i][0] === '$') return t[t.i++];
     return null;
@@ -51,8 +51,8 @@ define(function() {
     return v;
   }
 
-  function requireVar(t) {
-    var v = nextVar(t);
+  function requireRef(t) {
+    var v = nextRef(t);
     if (v === null) throw new Error('('+t.type+' ...): expecting number or $name');
     return v;
   }
@@ -140,12 +140,12 @@ define(function() {
       case 'call': case 'call_indirect':
       case 'get_local': case 'set_local': case 'tee_local':
       case 'get_global': case 'set_global':
-        var ref = requireVar(t);
+        var ref = requireRef(t);
         return {op:op, ref:ref};
       case 'br_table':
         var labels = [];
         var label;
-        while (label = nextVar(t)) labels.push(label);
+        while (label = nextRef(t)) labels.push(label);
         return {op:op, labels:labels};
       case 'load': case 'store':
         var offset = nextWord(t, /^offset=(\d+)$/);
@@ -384,19 +384,19 @@ define(function() {
     if (nextToken() !== null) throw new Error('more than one top-level element');
     if (doc.type !== 'module') throw new Error('top-level element must be (module ...)');
     
-    var moduleName = nextName(doc);
+    var module = {type:'module', name:nextName(doc), named:{}};
+    if (module.name) module.named[module.name] = module;
     if (doc[doc.i] instanceof String) {
       var start_i = doc.i++;
       while (doc.i < doc.length) requireString(doc);
       var dataString = doc.slice(start_i).join('');
-      var bytes = new Uint8Array(dataString.length);
+      module.bytes = new Uint8Array(dataString.length);
       for (var j = 0; j < dataString.length; j++) {
-        bytes[j] = dataString.charCodeAt(j);
+        module.bytes[j] = dataString.charCodeAt(j);
       }
-      return {name:moduleName, bytes:bytes};
+      return module;
     }
-    var module = {
-      name: moduleName,
+    Object.assign(module, {
       typedefs: [],
       exports: [],
       imports: [],
@@ -407,16 +407,15 @@ define(function() {
       globals: [],
       dataSections: [],
       elems: [],
-    };
+    });
     var section, specifier;
-    var globalNames = module.globalNames = {};
     function getFuncSignature(section) {
       var specifier = nextSection(section, 'type');
       var id;
       if (specifier) {
-        var ref = requireVar(specifier);
+        var ref = requireRef(specifier);
         if (typeof ref === 'string') {
-          ref = globalNames[ref];
+          ref = module.named[ref];
           if (ref && ref.type === 'type') {
             id = ref.id;
           }
@@ -476,10 +475,10 @@ define(function() {
       specifier = specifier || section;
       var name = nextName(specifier);
       if (!name) return;
-      if (name in globalNames) {
+      if (name in module.named) {
         throw new Error('name conflict: ' + name);
       }
-      globalNames[name] = {type:type, id:list.length};
+      module.named[name] = {type:type, id:list.length};
     }
     function maybeInlineExport(type, id) {
       var specifier = nextSection(section, 'export');
@@ -711,10 +710,10 @@ define(function() {
       };
       specifier = requireSection(section, ['func', 'global', 'table', 'memory']);
       def.export_type = specifier.type;
-      var ref = requireVar(specifier);
+      var ref = requireRef(specifier);
       requireEnd(specifier);
       if (typeof ref === 'string') {
-        ref = globalNames[ref];
+        ref = module.named[ref];
         if (ref && ref.type === def.export_type) {
           def[def.export_type+'_id'] = ref.id;
         }
@@ -738,11 +737,11 @@ define(function() {
       module.exports.push(def);
     }
     if (section = nextSection(doc, 'start')) {
-      var start = requireVar(section);
+      var start = requireRef(section);
       requireEnd(section);
       if (typeof start === 'string') {
-        if (globalNames[start] && globalNames[start].type === 'func') {
-          start = globalNames[start].id;
+        if (module.named[start] && module.named[start].type === 'func') {
+          start = module.named[start].id;
         }
         else {
           throw new Error('(start ...): invalid func name ' + start);
@@ -757,11 +756,11 @@ define(function() {
       module.elems.push(section);
     }
     while (section = nextSection(doc, 'data')) {
-      var memoryRef = nextVar(section);
+      var memoryRef = nextRef(section);
       if (memoryRef === null) memoryRef = 0;
       var def = {type:'data', id:module.dataSections.length};
       if (typeof memoryRef === 'string') {
-        memoryRef = globalNames[memoryRef];
+        memoryRef = module.named[memoryRef];
         if (memoryRef && memoryRef.type === 'memory') {
           // TODO: check memory is not imported?
           def.memory_id = memoryRef.id;
