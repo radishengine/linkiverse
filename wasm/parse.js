@@ -47,7 +47,7 @@ define(function() {
   
   function requireInt(t) {
     var v = nextInt(t);
-    if (isNaN(v)) throw new Exception('('+t.type+' ...): expecting int');
+    if (isNaN(v)) throw new Error('('+t.type+' ...): expecting int');
     return v;
   }
 
