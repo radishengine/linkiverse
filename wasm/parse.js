@@ -536,7 +536,7 @@ define(function() {
             }
             memorySection.initialSize = memorySection.maximumSize = bytes.length;
             module.dataSections.push({
-              memory: memorySection.id,
+              memory_id: memorySection.id,
               bytes: bytes,
               offset: Object.assign([0], {type:'i32.const', i:0}),
             });
