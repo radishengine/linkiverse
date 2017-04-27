@@ -384,8 +384,19 @@ define(function() {
     if (nextToken() !== null) throw new Error('more than one top-level element');
     if (doc.type !== 'module') throw new Error('top-level element must be (module ...)');
     
+    var moduleName = nextName(doc);
+    if (doc[doc.i] instanceof String) {
+      var start_i = doc.i++;
+      while (doc.i < doc.length) requireString(doc);
+      var dataString = doc.slice(start_i).join('');
+      var bytes = new Uint8Array(dataString.length);
+      for (var j = 0; j < dataString.length; j++) {
+        bytes[j] = dataString.charCodeAt(j);
+      }
+      return {name:moduleName, bytes:bytes};
+    }
     var module = {
-      name: nextName(doc),
+      name: moduleName,
       typedefs: [],
       exports: [],
       imports: [],
@@ -397,17 +408,6 @@ define(function() {
       dataSections: [],
       elems: [],
     };
-    if (nextString(doc)) {
-      var start_i = doc.i-1;
-      do { } while (nextString(doc));
-      if (doc.i !== doc.length) {
-        throw new Error('binary mode (module...) must only contain string values');
-      }
-      var dataString = doc.slice(start_i).join('');
-      module.bytes = new Uint8Array(dataString.length);
-      for (var j = 0; j < dataString.length; j++) module.bytes[j] = dataString.charCodeAt(j);
-      return module;
-    }
     var section, specifier;
     var globalNames = module.globalNames = {};
     function getFuncSignature(section) {
