@@ -339,15 +339,17 @@ define(function() {
             }
           }
         }
-        var paramTypes = [], paramNameIDs = {}, returnTypes = [];
+        var paramTypes = [], paramNames = [], returnTypes = [];
         while (specifier = nextSection(section, 'param')) {
           var name = nextName(specifier);
           if (name) {
-            paramNameIDs[name] = paramTypes.length;
+            paramNames[name] = paramTypes.length;
+            paramNames.push(name);
             paramTypes.push(requireWord(specifier, /^[if](32|64)$/));
             requireEnd(specifier);
           }
           else while (specifier.i < specifier.length) {
+            paramNames.push(undefined);
             paramTypes.push(requireWord(specifier, /^[if](32|64)$/));
           }
         }
@@ -380,8 +382,9 @@ define(function() {
           }
         }
         return {
-          id: typeSignatures[signatureString],
-          paramNameIDs: paramNameIDs,
+          type_id: typeSignatures[signatureString],
+          paramNames: paramNames,
+          paramTypes: paramTypes,
         };
       }
       module.exports = [];
@@ -419,6 +422,7 @@ define(function() {
       module.funcs = [];
       module.tables = [];
       module.memorySections = [];
+      module.codeSections = [];
       module.globals = [];
       while (section = nextSection(this, 'import')) {
         var def = {id:module.imports.length};
@@ -481,9 +485,34 @@ define(function() {
         }
         else {
           addExport('func', module.funcs);
-          if (nextSection(section, 'import')) throw new Error('NYI');
-          section.signature = getTypeSignature(section);
-          module.funcs.push(section);
+          var signature = getTypeSignature(section);
+          module.funcs.push({
+            type: 'func',
+            id: module.funcs.length,
+            code_id: module.codeSections.length,
+            type_id: signature.type_id,
+          });
+          section.localNames = signature.paramNames.slice();
+          for (var i = 0; i < section.localNames.length; i++) {
+            if (section.localNames[i]) {
+              section.localNames[section.localNames[i]] = i;
+            }
+          }
+          section.localTypes = signature.paramTypes.slice();
+          while (specifier = nextSection(section, 'local')) {
+            var name;
+            if (name = nextName(specifier)) {
+              section.localNames[name] = section.localNames.length;
+              section.localNames.push(name);
+              section.localTypes.push(requireWord(specifier, ['i32','i64','f32','f64']));
+              requireEnd(specifier);
+            }
+            else while (specifier.i < specifier.end) {
+              section.localNames.push(undefined);
+              section.localTypes.push(requireWord(specifier, ['i32','i64','f32','f64']));
+            }
+          }
+          module.codeSections.push(section);
         }
       }
       while (section = nextSection(this, 'table')) {
@@ -570,14 +599,25 @@ define(function() {
           else {
             def.mutable = false;
           }
-          def.kind = requireWord(section, ['i32','i64','f32','f64']);
+          def.dataType = requireWord(section, ['i32','i64','f32','f64']);
           requireEnd(section);
           module.globals.push({type:'import', id:def.id});
           module.imports.push(def);
         }
         else {
           addExport('global', module.globals);
-          module.globals.push(section);
+          var def = {id:module.globals.length, type:'global'};
+          if (specifier = nextSection(section, 'mut')) {
+            def.mutable = true;
+            def.dataType = requireWord(specifier, ['i32','i64','f32','f64']);
+            requireEnd(specifier);
+          }
+          else {
+            def.mutable = false;
+            def.dataType = requireWord(section, ['i32','i64','f32','f64']);
+          }
+          def.initialValue = section;
+          module.globals.push(def);
         }
       }
       while (section = nextSection(this, 'export')) {
@@ -602,7 +642,6 @@ define(function() {
       while (section = nextSection(this, 'elem')) {
         module.elems.push(section);
       }
-      // code section
       while (section = nextSection(this, 'data')) {
         var memoryRef = nextVar(section);
         if (memoryRef === null) memoryRef = 0;
