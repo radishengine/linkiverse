@@ -65,13 +65,6 @@ define(function() {
     return t[t.i++];
   }
 
-  function requireEnum(t, values) {
-    if (values.indexOf(t[t.i] === -1)) {
-      throw new Error('('+t.kind+'...): expecting ' + values.join('/'));
-    }
-    return t[t.i++];
-  }
-
   function requireSection(t, typeCheck) {
     var s = nextSection(t, typeCheck);
     if (!s) {
@@ -79,7 +72,7 @@ define(function() {
       if (typeof typeCheck === 'string') expecting = typeCheck;
       if (Array.isArray(typeCheck)) expecting = typeCheck.join('/');
       if (typeCheck instanceof RegExp) expecting = typeCheck.toString();
-      throw new Error('('+t.kind+' ...): expecting ('+expecting+' ...)');
+      throw new Error('('+t.type+' ...): expecting ('+expecting+' ...)');
     }
     return s;
   }
