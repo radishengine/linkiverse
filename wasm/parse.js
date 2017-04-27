@@ -320,8 +320,8 @@ define(function() {
       }
       var section, specifier;
       var globalNames = module.globalNames = {};
-      var typeSignatures = module.typeSignatures = [];
-      function getTypeSignature(section) {
+      var typedefs = module.typedefs = [];
+      function getFuncSignature(section) {
         var specifier = nextSection(section, 'type');
         var id;
         if (specifier) {
@@ -334,7 +334,7 @@ define(function() {
           }
           else {
             id = ref;
-            if (id < 0 || id >= typeSignatures.length) {
+            if (id < 0 || id >= typedefs.length) {
               throw new Error('('+section.name+' ...): func type id out of range');
             }
           }
@@ -361,28 +361,24 @@ define(function() {
           returnTypes.join(',') || 'void',
         ].join(' -> ');
         if (isNaN(id)) {
-          if (signatureString in typeSignatures) {
-            id = typeSignatures[signatureString];
+          if (signatureString in typedefs) {
+            id = typedefs[signatureString];
           }
           else {
-            id = typeSignatures[signatureString] = typeSignatures.length;
-            typeSignatures.push({
-              paramTypes: paramTypes,
-              returnTypes: returnTypes,
-              signatureString: signatureString,
-            });
+            id = typedefs[signatureString] = typedefs.length;
+            typedefs.push(signatureString);
           }
         }
         else {
-          if (typeSignatures[id].signatureString !== signatureString) {
+          if (typedefs[id] !== signatureString) {
             throw new Error(
               'func signature mismatch: expected ['
-              + typeSignatures[id].signatureString
-              + '], got [' + signatureString + ']');
+              + typedefs[id] + '], got ['
+              + signatureString + ']');
           }
         }
         return {
-          type_id: typeSignatures[signatureString],
+          typedef_id: id,
           paramNames: paramNames,
           paramTypes: paramTypes,
         };
@@ -409,14 +405,14 @@ define(function() {
         requireEnd(def);
       }
       while (section = nextSection(this, 'type')) {
-        addName('type', typeSignatures);
+        addName('type', typedefs);
         var func = requireSection(section, 'func');
-        var next_id = typeSignatures.length;
-        var id = getTypeSignature(func).id;
+        var next_id = typedefs.length;
+        var id = getFuncSignature(func).typedef_id;
         requireEnd(func);
         if (id !== next_id) {
-          // if the source calls for redundant copies of the same signature, respect that
-          typeSignatures.push(typeSignatures[id]);
+          // explicitly defined redundant copies of the same typedef
+          typedefs.push(typedefs[id]);
         }
       }
       module.funcs = [];
@@ -435,7 +431,7 @@ define(function() {
           case 'func':
             addName('func', module.funcs, specifier);
             module.funcs.push({type:'import', id:def.id});
-            def.signature = getTypeSignature(specifier);
+            def.typedef_id = getFuncSignature(specifier).typedef_id;
             break;
           case 'global':
             addName('global', module.globals, specifier);
@@ -475,7 +471,11 @@ define(function() {
           if (module.funcs.length > 0 && module.funcs[module.funcs.length-1].type !== 'import') {
             throw new Error('all imported funcs must be defined before any non-imported');
           }
-          var def = {id:module.imports.length, type:'func', signature:getTypeSignature(section)};
+          var def = {
+            id: module.imports.length,
+            type: 'func',
+            typedef_id: getFuncSignature(section).typedef_id,
+          };
           requireEnd(section);
           def.moduleName = requireString(specifier);
           def.fieldName = requireString(specifier);
@@ -485,12 +485,12 @@ define(function() {
         }
         else {
           addExport('func', module.funcs);
-          var signature = getTypeSignature(section);
+          var signature = getFuncSignature(section);
           module.funcs.push({
             type: 'func',
             id: module.funcs.length,
             code_id: module.codeSections.length,
-            type_id: signature.type_id,
+            type_id: signature.typedef_id,
           });
           section.localNames = signature.paramNames.slice();
           for (var i = 0; i < section.localNames.length; i++) {
