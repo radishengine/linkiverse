@@ -10,6 +10,7 @@ define(function() {
       var match = t[t.i].match(checkWord);
       if (match) {
         t[t.i++];
+        if (match[0] === match.input) return match.input;
         return match;
       }
       return null;
