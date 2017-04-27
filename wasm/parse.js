@@ -325,6 +325,7 @@ define(function() {
   
   function readInstructions(scope, output, code) {
     var blockName, dataType;
+    var initialBlockLevel = scope.blockStack.length;
     reading: for (;;) {
       switch (code[code.i]) {
         case 'block':
@@ -334,6 +335,23 @@ define(function() {
           pushBlock(scope, nextName(code));
           while (dataType = nextWord(/^[if](32|64)$/)) {
             output.push(dataType);
+          }
+          var depth = 0;
+          var j = code.i;
+          endFinding: while (j < code.length) switch (code[j++]) {
+            case 'block': case 'loop': case 'if':
+              depth++;
+              continue endFinding;
+            case 'end':
+              if (--depth < 0) break endFinding;
+              continue endFinding;
+          }
+          if (typeof code[j] === 'string' && code[j][0] === '$') {
+            var block = scope.blockStack[scope.blockStack.length-1];
+            if (code[j] in scope) {
+              block.hiding = true;
+            }
+            scope[code[j]] = block;
           }
           continue reading;
         case 'else':
@@ -354,11 +372,19 @@ define(function() {
           continue reading;
         case 'end':
           output.push(nextWord(code));
-          if (blockName = nextName(code)) throw new Error('NYI: end $label');
+          nextName(code); // ignore, handled earlier
           popBlock(scope);
+          if (scope.blockStack.length < initialBlockLevel) {
+            throw new Error('end for unopened block');
+          }
           continue reading;
         default:
-          if (code.i === code.length) return output;
+          if (code.i === code.length) {
+            if (scope.blockStack.length !== initialBlockLevel) {
+              throw new Error('unterminated block');
+            }
+            return output;
+          }
           var instr;
           if (typeof code[code.i] === 'string') {
             readOp(scope, output, code);
@@ -876,7 +902,6 @@ define(function() {
         }
       }
       module.codeSections[i] = readInstructions(scope, [], code);
-      if (scope.blockStack.length !== 0) throw new Error('unterminated block');
     }
     return module;
   }
