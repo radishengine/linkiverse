@@ -902,6 +902,7 @@ define(function() {
         }
       }
       module.codeSections[i] = readInstructions(scope, [], code);
+      module.codeSections[i].localTypes = code.localTypes;
     }
     return module;
   }
