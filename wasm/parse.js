@@ -313,12 +313,74 @@ define(function() {
         }
         var dataString = this.slice(start_i).join('');
         module.bytes = new Uint8Array(dataString.length);
-        for (var j = 0; j < dataString.length; j++) module.bytes[j] = dataString.charCodeAt(j);
+        for (var j = 0; j < dataString.length; j++) module.bytes[j] = dataString.charCodeAt(j);Sig
         return module;
       }
       var section;
       var globalNames = module.globalNames = {};
+      var typeSignatures = module.typeSignatures = [];
+      function getTypeSignature(section) {
+        var specifier = nextSection(section, 'type');
+        var id;
+        if (specifier) {
+          var ref = requireVar(specifier);
+          if (typeof ref === 'string') {
+            ref = globalNames[ref];
+            if (ref && ref.type === 'type') {
+              id = ref.id;
+            }
+          }
+          else {
+            id = ref;
+            if (id < 0 || id >= typeSignatures.length) {
+              throw new Error('('+section.name+' ...): func type id out of range');
+            }
+          }
+        }
+        var paramTypes = [], paramNameIDs = {}, returnTypes = [];
+        while (specifier = nextSection(section, 'param')) {
+          var name = nextName(specifier);
+          if (name) {
+            paramNameIDs[name] = paramTypes.length;
+            paramTypes.push(requireWord(specifier, /^[if](32|64)$/));
+            requireEnd(specifier);
+          }
+          else while (specifier.i < specifier.length) {
+            paramTypes.push(requireWord(specifier, /^[if](32|64)$/));
+          }
+        }
+        if (specifier = nextSection(section, 'result')) {
+          returnTypes.push(requireWord(specifier, /^[if](32|64)$/));
+        }
+        var signatureString = (paramTypes.join(',') || 'void') + ' -> ' + (returnTypes.join(',') || 'void');
+        if (isNaN(id)) {
+          if (signatureString in typeSignatures) {
+            id = typeSignatures[signatureString];
+          }
+          else {
+            id = typeSignatures[signatureString] = typeSignatures.length;
+            typeSignatures.push({
+              paramTypes: paramTypes,
+              returnTypes: returnTypes,
+              signatureString: signatureString,
+            });
+          }
+        }
+        else {
+          if (typeSignatures[id].signatureString !== signatureString) {
+            throw new Error(
+              'func signature mismatch: expected ['
+              + typeSignatures[id].signatureString
+              + '], got [' + signatureString + ']');
+          }
+        }
+        return {
+          id: typeSignatures[signatureString],
+          paramNameIDs: paramNameIDs,
+        };
+      }
       module.exports = [];
+      module.imports = [];
       function addName(type, list) {
         var name = nextName(section);
         if (!name) return;
@@ -337,18 +399,25 @@ define(function() {
         });
         requireEnd(def);
       }
-      module.typedefs = [];
       while (section = nextSection(this, 'type')) {
-        addName('type', module.typedefs);
-        module.typedefs.push(section);
+        addName('type', typeSignatures);
+        var func = requireSection(section, 'func');
+        var next_id = typeSignatures.length;
+        var id = getTypeSignature(func).id;
+        requireEnd(func);
+        if (id !== next_id) {
+          // if the source calls for redundant copies of the same signature, respect that
+          typeSignatures.push(typeSignatures[id]);
+        }
       }
       module.funcs = [];
       while (section = nextSection(this, 'func')) {
         addName('func', module.funcs);
         addExport('func', module.funcs);
+        if (nextSection(section, 'import')) throw new Error('NYI');
+        section.signature = getTypeSignature(section);
         module.funcs.push(section);
       }
-      module.imports = [];
       while (section = nextSection(this, 'import')) {
         module.imports.push(section);
       }
