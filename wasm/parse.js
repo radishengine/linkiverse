@@ -358,6 +358,7 @@ define(function() {
           popBlock(scope);
           continue reading;
         default:
+          if (code.i === code.length) return output;
           var instr;
           if (typeof code[code.i] === 'string') {
             readOp(scope, output, code);
@@ -868,7 +869,7 @@ define(function() {
           scope.push({name:k, type:module.named[k].type, id:module.named[k].id});
         }
       }
-      for (var j = 0; j < section.localNames.length; i++) {
+      for (var j = 0; j < code.localNames.length; i++) {
         if (section.localNames[j]) {
           var local = {type:'local', id:j, name:section.localNames[j]};
           scope.push(scope[local.name] = local);
