@@ -507,7 +507,7 @@ define(function() {
               section.localTypes.push(requireWord(specifier, ['i32','i64','f32','f64']));
               requireEnd(specifier);
             }
-            else while (specifier.i < specifier.end) {
+            else while (specifier.i < specifier.length) {
               section.localNames.push(undefined);
               section.localTypes.push(requireWord(specifier, ['i32','i64','f32','f64']));
             }
