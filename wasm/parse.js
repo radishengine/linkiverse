@@ -506,6 +506,7 @@ define(function() {
           module.tables.push(section);
         }
       }
+      module.dataSections = [];
       while (section = nextSection(this, 'memory')) {
         addName('memory', module.memorySections);
         if (specifier = nextSection(section, 'import')) {
@@ -525,7 +526,27 @@ define(function() {
         }
         else {
           addExport('memory', module.memorySections);
-          module.memorySections.push(section);
+          var memorySection = {type:'memory', id:module.memorySections.length};
+          if (specifier = nextSection(section, 'data')) {
+            while (specifier.i < specifier.length) requireString(specifier);
+            var dataString = specifier.join('');
+            var bytes = new Uint8Array(dataString);
+            for (var i = 0; i < dataString.length; i++) {
+              bytes[i] = dataString.charCodeAt(i);
+            }
+            memorySection.initialSize = memorySection.maximumSize = bytes.length;
+            module.dataSections.push({
+              memory: memorySection.id,
+              bytes: bytes,
+              offset: Object.assign([0], {type:'i32.const', i:0}),
+            });
+          }
+          else {
+            memorySection.initialSize = requireInt(section);
+            memorySection.maximumSize = nextInt(section);
+            if (isNaN(memorySection.maximumSize)) memorySection.maximumSize = Infinity;
+          }
+          module.memorySections.push(memorySection);
         }
       }
       while (section = nextSection(this, 'global')) {
@@ -579,9 +600,35 @@ define(function() {
         module.elems.push(section);
       }
       // code section
-      module.dataSections = [];
       while (section = nextSection(this, 'data')) {
-        module.dataSections.push(section, true);
+        var memoryRef = nextVar(section);
+        if (memoryRef === null) memoryRef = 0;
+        var def = {type:'data', id:module.dataSections.length};
+        if (typeof memoryRef === 'string') {
+          memoryRef = globalNames[memoryRef];
+          if (memoryRef && memoryRef.type === 'memory') {
+            // TODO: check memory is not imported?
+            def.memory_id = memoryRef.id;
+          }
+          else {
+            throw new Error('(data ...): invalid memory ref ' + memoryRef);
+          }
+        }
+        else {
+          if (memoryRef < 0 || memoryRef >= module.memorySections.length) {
+            throw new Error('(data ...): invalid memory ref ' + memoryRef);
+          }
+          def.memory_id = memoryRef;
+        }
+        def.offset = requireSection(section);
+        var start_i = section.i;
+        while (section.i < section.length) requireString(section);
+        var byteString = section.slice(start_i).join('');
+        def.bytes = new Uint8Array(byteString.length);
+        for (var i = 0; i < byteString.length; i++) {
+          def.bytes[i] = byteString.charCodeAt(i);
+        }
+        module.dataSections.push(def);
       }
       for (var i = 0; i < module.exports.length; i++) {
         section = module.exports[i];
