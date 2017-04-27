@@ -41,8 +41,8 @@ define(function() {
   }
   
   function nextInt(t) {
-    if (Math.floor(this[t.i]) !== this[t.i]) return NaN;
-    return this[t.i++];
+    if (Math.floor(t[t.i]) !== t[t.i]) return NaN;
+    return t[t.i++];
   }
   
   function requireInt(t) {
