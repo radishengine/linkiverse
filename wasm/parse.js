@@ -394,6 +394,37 @@ define(function() {
         }
         module.start = start;
       }
+      for (var i = 0; i < module.exports.length; i++) {
+        section = module.exports[i];
+        if ('id' in section) continue;
+        var def = module.exports[i] = {symbol: requireString(section)};
+        var kind = requireSection(section, ['func','global','table','memory']);
+        def.type = kind.type;
+        var ref = requireVar(kind);
+        requireEnd(kind);
+        requireEnd(section);
+        if (typeof ref === 'string') {
+          ref = globalNames[ref];
+          if (ref && ref.type === def.type) {
+            def.id = ref.id;
+          }
+          else {
+            throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
+          }
+        }
+        else {
+          var max;
+          switch (kind.type) {
+            case 'func': max = module.funcs.length-1; break;
+            case 'global': max = module.globals.length-1; break;
+            case 'table': case 'memory': max = 0; break;
+          }
+          if (ref < 0 || ref > max) {
+            throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
+          }
+          def.id = ref;
+        }
+      }
       return module;
     },
     type: function(isTopLevel) {
@@ -431,24 +462,6 @@ define(function() {
       }
       this.instructions = [];
       readInstructions([], this.instructions, this);
-    },
-    export: function(module) {
-      var def = {symbol: requireString(this)};
-      var kind = requireSection(this, ['func','global','table','memory']);
-      def.type = kind.type;
-      var ref = requireVar(kind);
-      requireEnd(kind);
-      if (typeof ref === 'string') {
-        ref = module.globalNames[ref];
-        if (ref && ref.type === def.type) {
-          def.id = ref.id;
-        }
-        else {
-          throw new Error('(export (' + kind.type + ' ...)): invalid ' + kind.type + ' reference');
-        }
-      }
-      else def.id = ref; // TODO: check out of bounds
-      return def;
     },
     import: function(isTopLevel) {
       this.module = nextString(this);
