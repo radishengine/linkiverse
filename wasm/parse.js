@@ -384,7 +384,7 @@ define(function() {
       module.imports = [];
       function addName(type, list, specifier) {
         specifier = specifier || section;
-        var name = nextName(section);
+        var name = nextName(specifier);
         if (!name) return;
         if (name in globalNames) {
           throw new Error('name conflict: ' + name);
