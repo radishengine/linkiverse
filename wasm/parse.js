@@ -3,7 +3,7 @@ define(function() {
   'use strict';
   
   function nextWord(t, checkWord) {
-    if (typeof t[t.i] === 'string') return null;
+    if (typeof t[t.i] !== 'string') return null;
     if (typeof checkWord === 'string' && checkWord !== t[t.i]) return null;
     if (Array.isArray(checkWord) && !checkWord.indexOf(t[t.i])) return null;
     if (checkWord instanceof RegExp) {
