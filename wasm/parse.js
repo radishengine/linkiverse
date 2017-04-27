@@ -323,7 +323,7 @@ define(function() {
   
   function readInstructions(scope, output, code) {
     var blockName, dataType;
-    var initialBlockLevel = scope.blockStack.length;
+    var initialBlockLevel = scope.blockLevels.length;
     reading: for (;;) {
       switch (code[code.i]) {
         case 'block':
@@ -345,7 +345,7 @@ define(function() {
               continue endFinding;
           }
           if (typeof code[j] === 'string' && code[j][0] === '$') {
-            var block = scope.blockStack[scope.blockStack.length-1];
+            var block = scope.blockLevels[scope.blockLevels.length-1];
             if (code[j] in scope) {
               block.hiding = true;
             }
@@ -353,7 +353,7 @@ define(function() {
           }
           continue reading;
         case 'else':
-          var block = scope.blockStack[scope.blockStack.length-1];
+          var block = scope.blockLevels[scope.blockLevels.length-1];
           // TODO: check block type
           if (!block) throw new Error('else without matching if');
           output.push(nextWord(code));
@@ -372,13 +372,13 @@ define(function() {
           output.push(nextWord(code));
           nextName(code); // ignore, handled earlier
           popBlock(scope);
-          if (scope.blockStack.length < initialBlockLevel) {
+          if (scope.blockLevels.length < initialBlockLevel) {
             throw new Error('end for unopened block');
           }
           continue reading;
         default:
           if (code.i === code.length) {
-            if (scope.blockStack.length !== initialBlockLevel) {
+            if (scope.blockLevels.length !== initialBlockLevel) {
               throw new Error('unterminated block');
             }
             return output;
@@ -887,7 +887,7 @@ define(function() {
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
     for (var i = 0; i < module.codeSections.length; i++) {
       var code = module.codeSections[i];
-      var scope = Object.assign([], module.named, {blockStack:[]});
+      var scope = Object.assign([], module.named, {blockLevels:[], module:module});
       for (var k in module.named) {
         if (k[0] === '$') {
           scope.push({name:k, type:module.named[k].type, id:module.named[k].id});
