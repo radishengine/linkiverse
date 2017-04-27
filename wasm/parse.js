@@ -95,11 +95,8 @@ define(function() {
     if (t.i !== t.length) throw new Error('('+t.type+' ...): unexpected content');
   }
   
-  function nextOp(t) {
-    var op = t[t.i++];
-    if (typeof op !== 'string') {
-      --t.i; return;
-    }
+  function readOp(scope, output, code) {
+    var op = requireWord(code);
     var type, cast, signed;
     var modifiers = op.match(/^([if](32|64)\.)(.*?)(8|16|32|\/[if](32|64))?(_[su])?$/);
     if (modifiers) {
@@ -135,79 +132,168 @@ define(function() {
       case 'demote':
       case 'promote':
       case 'reinterpret':
-        return op;
+        output.push(op);
+        return;
       case 'br': case 'br_if':
-      case 'call': case 'call_indirect':
+        var ref = requireRef(code);
+        // TODO: verify correct block stack checking
+        if (typeof ref === 'string') {
+          ref = scope[ref];
+          if (ref && ref.type === 'blocklevel') {
+            ref = scope.blockStack.length - ref.id;
+          }
+          else {
+            throw new Error('invalid break label');
+          }
+        }
+        else {
+          if (ref > scope.blockStack.length) {
+            throw new Error('invalid break label');
+          }
+        }
+        output.push(op, ref);
+        return;
+      case 'call':
+      case 'call_indirect':
+        var ref = requireRef(code);
+        if (typeof ref === 'string') {
+          ref = scope[ref];
+          if (ref && ref.type === 'func') {
+            ref = ref.id;
+          }
+          else {
+            throw new Error('invalid func ref');
+          }
+        }
+        else {
+          // TODO: func number checking
+        }
+        output.push(op, ref);
+        return;
       case 'get_local': case 'set_local': case 'tee_local':
+        var ref = requireRef(code);
+        if (typeof ref === 'string') {
+          ref = scope[ref];
+          if (ref && ref.type === 'local') {
+            ref = ref.id;
+          }
+          else {
+            throw new Error('invalid local ref');
+          }
+        }
+        else {
+          // TODO: local number checking
+        }
+        output.push(op, ref);
+        return;
       case 'get_global': case 'set_global':
-        var ref = requireRef(t);
-        return {op:op, ref:ref};
+        var ref = requireRef(code);
+        if (typeof ref === 'string') {
+          ref = scope[ref];
+          if (ref && ref.type === 'global') {
+            ref = ref.id;
+          }
+          else {
+            throw new Error('invalid global ref');
+          }
+        }
+        else {
+          // TODO: global number checking
+        }
+        output.push(op, ref);
+        return;
       case 'br_table':
-        var labels = [];
+        output.push(op);
         var label;
-        while (label = nextRef(t)) labels.push(label);
-        return {op:op, labels:labels};
+        while (label = nextRef(code)) {
+          if (typeof label === 'string') {
+            label = scope[label];
+            if (label && label.type === 'blocklevel') {
+              // TODO: verify correct diff calculation
+              label = scope.blockStack.length - label.id;
+            }
+            else {
+              throw new Error('invalid block ref');
+            }
+          }
+          else {
+            // TODO: label number checking
+          }
+          output.push(label);
+        }
+        return;
       case 'load': case 'store':
-        var offset = nextWord(t, /^offset=(\d+)$/);
-        offset = offset ? +offset[1] : 0;
-        var align = nextWord(t, /^align=(\d+)$/);
-        align = align ? +align[1] : op.match(/\d+/)[0]/8;
-        return {op:op, offset:offset, align:align};
+        output.push(op);
+        output.push(nextWord(output, /^offset=\d+$/) || 'offset=0');
+        output.push(nextWord(output, /^align=\d+$/) || ('align='+op.match(/\d+/)[0]/8));
+        return;
       case 'const':
-        var num = t[t.i++];
+        var num = code[code.i++];
         if (isNaN(num)) throw new Error(op + ': numeric value required');
-        return {op:op, value:num};
+        output.push(op, num);
+        return;
+      default:
+        throw new Error('unknown op: ' + op);
     }
-    t.i--;
-    return null;
   }
   
-  function readExpression(blockStack, output, t) {
-    var expr = nextSection(t);
-    if (!expr) return null;
+  function pushBlock(scope, name) {
+    var def = {id:scope.blockStack.length, name:name, type:'blocklevel'};
+    scope.blockStack.push(def);
+    scope.push(def);
+    if (name) {
+      if (name in scope) def.hiding = true;
+      scope[name] = def;
+    }
+  }
+  
+  function popBlock(scope) {
+    var def = scope.blockStack.pop();
+    if (!def) throw new Error('mismatched block/end instructions');
+    scope.splice(scope.lastIndexOf(def), 1);
+    if (!def.name) return;
+    delete scope[def.name];
+    if (def.hiding) for (var i = 0; i < scope.length; i++) {
+      scope[scope[i].name] = scope[i];
+    }
+  }
+  
+  function readExpression(scope, output, code) {
+    var expr = requireSection(code);
+    var dataType;
     switch (expr.type) {
       case 'block':
       case 'loop':
-        var block = {type:expr.type, pos:blockStack.length};
-        blockStack.push(block);
-        if (block.name = nextName(expr)) blockStack[block.name] = block;
-        block.types = [];
-        var type;
-        while (type = nextWord(/^[if](32|64)$/)) block.types.push(type);        
-        output.push(block);
-        readInstructions(blockStack, output, expr);
-        if (blockStack.pop() !== block) {
-          throw new Error('corrupt block stack');
+        output.push(nextWord(expr.type));
+        pushBlock(scope, nextName(expr));
+        while (dataType = nextWord(/^[if](32|64)$/)) {
+          output.push(dataType);
         }
-        if (block.name) delete blockStack[block.name];
+        readInstructions(scope, output, expr);
         output.push('end');
-        if (expr.i !== expr.length) {
-          throw new Error('(if ...): unexpected content');
-        }
+        popBlock(scope);
         break;
       case 'if':
-        var _if = {type:'if', pos:blockStack.length};
-        _if.name = nextName(expr);
-        _if.types = [];
-        var type;
-        while (type = nextWord(/^[if](32|64)$/)) _if.types.push(type);
-        blockStack.push(_if);
-        if (_if.name) blockStack[_if.name] = _if;
+        var blockName = nextName(expr);
+        var blockTypes = [];
+        while (dataType = nextWord(/^[if](32|64)$/)) {
+          blockTypes.push(dataType);
+        }
         var _then = nextSection(expr, 'then');
         if (!_then) {
           // condition must be specified first
-          if (!readExpression(blockStack, output, expr)) {
-            throw new Error('(if ...): expecting (then ...) or condition <expr>');
-          }
+          readExpression(scope, output, requireSection(expr));
           _then = nextSection(expr, 'then');
         }
-        output.push(_if);
+        output.push('if');
+        output.push.apply(output, blockTypes);
+        pushBlock(scope, blockName);
         if (_then) {
-          readInstructions(blockStack, output, _then);
+          readInstructions(scope, output, _then);
           var _else = nextSection(expr, 'else');
           if (_else) {
             output.push('else');
-            readInstructions(blockStack, output, _else);
+            readInstructions(scope, output, _else);
           }
         }
         else {
@@ -221,77 +307,64 @@ define(function() {
             output.splice(i_else, 0, 'else');
           }
         }
-        if (blockStack.pop() !== _if) {
-          throw new Error('corrupt block stack');
-        }
-        if (_if.name) delete blockStack[_if.name];
         output.push('end');
-        if (expr.i !== expr.length) {
-          throw new Error('(if ...): unexpected content');
-        }
+        popBlock(scope);
+        requireEnd(expr);
         return expr;
       default:
         expr.unshift(expr.name);
-        var op = nextOp(expr);
-        if (!op) {
-          throw new Error('expecting op, got: ' + expr.name);
-        }
+        var splicer = [output.length, 0];
+        readOp(scope, output, expr);
         while (expr.i < expr.length) {
-          if (readExpression(output, expr) === null) {
-            throw new Error('invalid operand for ' + expr.name);
-          }
+          readExpression(scope, splicer, expr);
         }
-        output.push(expr);
+        output.splice.apply(output, splicer);
         return expr;
     }
   }
   
-  function readInstructions(blockStack, output, t) {
+  function readInstructions(scope, output, code) {
+    var blockName, dataType;
     reading: for (;;) {
-      switch (t[t.i]) {
+      switch (code[code.i]) {
         case 'block':
         case 'loop':
         case 'if':
-          var block = {type:t[t.i++], pos:blockStack.length};
-          block.name = nextName(t);
-          block.types = [];
-          var type;
-          while (type = nextWord(/^[if](32|64)$/)) block.types.push(type);
-          blockStack.push(block);
-          if (block.name) {
-            blockStack[block.name] = block;
+          output.push(nextWord(code));
+          pushBlock(scope, nextName(code));
+          while (dataType = nextWord(/^[if](32|64)$/)) {
+            output.push(dataType);
           }
-          output.push(block);
           continue reading;
         case 'else':
-          var block = blockStack.pop();
-          if (!block || !/^(else|if)$/.test(block.type)) throw new Error('mismatched else');
-          block = {type:'else', types:block.types, pos:blockStack.length};
-          block.name = nextName(t);
-          if (block.name) {
-            blockStack[block.name] = block;
+          var block = scope.blockStack[scope.blockStack.length-1];
+          // TODO: check block type
+          if (!block) throw new Error('else without matching if');
+          output.push(nextWord(code));
+          if (blockName = nextName(code)) {
+            if (block.name) {
+              delete scope[block.name];
+            }
+            if (blockName in scope) {
+              block.hiding = true;
+            }
+            block.name = blockName;
+            scope[blockName] = block;
           }
-          output.push(block);
-          t.i++;
           continue reading;
         case 'end':
-          var block = blockStack.pop();
-          if (!block) throw new Error('mismatched end');
-          block.endName = nextName();
-          if (block.name) delete blockStack[block.name];
-          t.i++;
-          output.push('end');
+          output.push(nextWord(code));
+          if (blockName = nextName(code)) throw new Error('NYI: end $label');
+          popBlock(scope);
           continue reading;
         default:
           var instr;
-          if (typeof t[t.i] === 'string') {
-            instr = nextOp(t);
+          if (typeof code[code.i] === 'string') {
+            readOp(scope, output, code);
           }
           else {
-            instr = readExpression(blockStack, output, t);
+            readExpression(scope, output, requireSection(code));
           }
-          if (!instr) break reading;
-          output.push(instr);
           continue reading;
       }
     }
@@ -787,6 +860,22 @@ define(function() {
     }
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
+    for (var i = 0; i < module.codeSections.length; i++) {
+      var code = module.codeSections[i];
+      var scope = Object.assign([], module.named, {blockStack:[]});
+      for (var k in module.named) {
+        if (k[0] === '$') {
+          scope.push({name:k, type:module.named[k].type, id:module.named[k].id});
+        }
+      }
+      for (var j = 0; j < section.localNames.length; i++) {
+        if (section.localNames[j]) {
+          var local = {type:'local', id:j, name:section.localNames[j]};
+          scope.push(scope[local.name] = local);
+        }
+      }
+      module.codeSections[i] = readInstructions(scope, [], code);
+    }
     return module;
   }
 
