@@ -530,7 +530,7 @@ define(function() {
           if (specifier = nextSection(section, 'data')) {
             while (specifier.i < specifier.length) requireString(specifier);
             var dataString = specifier.join('');
-            var bytes = new Uint8Array(dataString);
+            var bytes = new Uint8Array(dataString.length);
             for (var i = 0; i < dataString.length; i++) {
               bytes[i] = dataString.charCodeAt(i);
             }
