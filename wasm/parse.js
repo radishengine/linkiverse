@@ -5,7 +5,7 @@ define(function() {
   function nextWord(t, checkWord) {
     if (typeof t[t.i] !== 'string') return null;
     if (typeof checkWord === 'string' && checkWord !== t[t.i]) return null;
-    if (Array.isArray(checkWord) && !checkWord.indexOf(t[t.i])) return null;
+    if (Array.isArray(checkWord) && checkWord.indexOf(t[t.i]) < 0) return null;
     if (checkWord instanceof RegExp) {
       var match = t[t.i].match(checkWord);
       if (match) {
