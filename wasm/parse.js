@@ -33,6 +33,17 @@ define(function() {
   function nextName(t) {
     if (typeof t[t.i] === 'string' && t[t.i][0] === '$') return t[t.i++];
   }
+  
+  function nextNumber(t) {
+    if (typeof t[t.i] === 'number') return t[t.i++];
+    return NaN;
+  }
+  
+  function requireNumber(t) {
+    var v = nextNumber(v);
+    if (isNaN(v)) throw new Error('('+t.type+' ...): expecting number');
+    return v;
+  }
 
   function nextInt(t) {
     if (Math.floor(t[t.i]) !== t[t.i]) return NaN;
@@ -60,6 +71,13 @@ define(function() {
     var v = nextRef(t, set);
     if (v === null) throw new Error('('+t.type+' ...): expected '+set.element_kind+' ref, got ' + t[t.i]);
     return v;
+  }
+  
+  function maybeDefineRef(t, set, id) {
+    var name = nextName(t);
+    if (!name) return;
+    if (name in set) throw new Error('duplicate '+set.element_kind+' ref: ' + name);
+    set[name] = id;
   }
   
   function nextSection(t, typeCheck) {
@@ -112,7 +130,7 @@ define(function() {
     }
     switch (op) {
       case 'if': case 'else': case 'end': case 'block': case 'loop':
-        throw new Error('readOp() is the wrong place to handle "'+op+'"');
+        throw new Error('readOp() is the wrong place to handle structural delimiters like "'+op+'"');
       case 'unreachable':
       case 'nop':
       case 'return':
@@ -142,102 +160,32 @@ define(function() {
         output.push(op);
         return;
       case 'br': case 'br_if':
-        var ref = requireRef(code);
-        // TODO: verify correct block stack checking
-        if (typeof ref === 'string') {
-          ref = scope[ref];
-          if (ref && ref.type === 'blocklevel') {
-            ref = scope.blockLevels.length - ref.id;
-          }
-          else {
-            throw new Error('invalid break label');
-          }
-        }
-        else {
-          if (ref > scope.blockLevels.length) {
-            throw new Error('invalid break label');
-          }
-        }
-        output.push(op, ref);
+        output.push(op, scope.blockLevels.length - requireRef(code, scope.blockLevels));
         return;
       case 'call':
       case 'call_indirect':
-        var ref = requireRef(code);
-        if (typeof ref === 'string') {
-          ref = scope[ref];
-          if (ref && ref.type === 'func') {
-            ref = ref.id;
-          }
-          else {
-            throw new Error('invalid func ref');
-          }
-        }
-        else {
-          // TODO: func number checking
-        }
-        output.push(op, ref);
+        output.push(op, requireRef(code, scope.module.funcs));
         return;
       case 'get_local': case 'set_local': case 'tee_local':
-        var ref = requireRef(code);
-        if (typeof ref === 'string') {
-          ref = scope[ref];
-          if (ref && ref.type === 'local') {
-            ref = ref.id;
-          }
-          else {
-            throw new Error('invalid local ref');
-          }
-        }
-        else {
-          // TODO: local number checking
-        }
-        output.push(op, ref);
+        output.push(op, requireRef(code, scope.locals));
         return;
       case 'get_global': case 'set_global':
-        var ref = requireRef(code);
-        if (typeof ref === 'string') {
-          ref = scope[ref];
-          if (ref && ref.type === 'global') {
-            ref = ref.id;
-          }
-          else {
-            throw new Error('invalid global ref');
-          }
-        }
-        else {
-          // TODO: global number checking
-        }
-        output.push(op, ref);
+        output.push(op, requireRef(code, scope.module.globals));
         return;
       case 'br_table':
-        output.push(op);
-        var label;
-        while (label = nextRef(code)) {
-          if (typeof label === 'string') {
-            label = scope[label];
-            if (label && label.type === 'blocklevel') {
-              // TODO: verify correct diff calculation
-              label = scope.blockLevels.length - label.id;
-            }
-            else {
-              throw new Error('invalid block ref');
-            }
-          }
-          else {
-            // TODO: label number checking
-          }
-          output.push(label);
+        output.push(op, requireRef(code, scope.blockLevels));
+        var ref;
+        while (ref = nextRef(code, scope.blockLevels)) {
+          output.push(ref);
         }
         return;
       case 'load': case 'store':
         output.push(op);
-        output.push(nextWord(output, /^offset=\d+$/) || 'offset=0');
-        output.push(nextWord(output, /^align=\d+$/) || ('align='+op.match(/\d+/)[0]/8));
+        output.push(nextWord(code, /^offset=\d+$/) || 'offset=0');
+        output.push(nextWord(code, /^align=\d+$/) || ('align='+op.match(/\d+/)[0]/8));
         return;
       case 'const':
-        var num = code[code.i++];
-        if (isNaN(num)) throw new Error(op + ': numeric value required');
-        output.push(op, num);
+        output.push(op, requireNumber(code));
         return;
       default:
         throw new Error('unknown op: ' + op);
@@ -245,12 +193,13 @@ define(function() {
   }
   
   function pushBlock(scope, name) {
-    var def = {id:scope.blockLevels.length+1, name:name, type:'blocklevel'};
+    var def = {id:scope.blockLevels.length+1, names:[], type:'blocklevel'};
     scope.blockLevels.push(def);
     scope.push(def);
     if (name) {
       if (name in scope) def.hiding = true;
       scope[name] = def;
+      scope.names.push(name);
     }
   }
   
@@ -258,8 +207,9 @@ define(function() {
     var def = scope.blockLevels.pop();
     if (!def) throw new Error('mismatched block/end instructions');
     scope.splice(scope.lastIndexOf(def), 1);
-    if (!def.name) return;
-    delete scope[def.name];
+    for (var i = 0; i < def.names.length; i++) {
+      delete scope[def.names[i]];
+    }
     if (def.hiding) for (var i = 0; i < scope.length; i++) {
       scope[scope[i].name] = scope[i];
     }
@@ -356,12 +306,13 @@ define(function() {
             if (code[j] in scope) {
               block.hiding = true;
             }
+            block.names.push(code[j]);
             scope[code[j]] = block;
           }
           continue reading;
         case 'else':
           var block = scope.blockLevels[scope.blockLevels.length-1];
-          // TODO: check block type
+          // TODO: check block type?
           if (!block) throw new Error('else without matching if');
           output.push(nextWord(code));
           if (blockName = nextName(code)) {
@@ -560,12 +511,7 @@ define(function() {
         type: 'type',
         id: module.typedefs.length,
       });
-      if (name = nextName(section)) {
-        if (name in module.typedefs) {
-          throw new Error('typedef name conflict: ' + name);
-        }
-        module.typedefs[name] = def.id;
-      }
+      maybeDefineRef(section, module.typedefs, def.id);
       // assume that (type (type ...)) is not valid, even though it currently
       // appears to be, according to the grammar
       readFuncTypedef(def, requireSection(section, 'func'));
@@ -580,27 +526,21 @@ define(function() {
       def.fieldName = requireString(section);
       subsection = requireSection(section, ['func','global','table','memory']);
       requireEnd(section);
-      section = null;
+      section = subsection;
       var imported;
-      switch (def.import_type = subsection.type) {
+      switch (def.import_type = section.type) {
         case 'func':
           if (module.funcs.length > 0 && !module.funcs[module.funcs.length-1].isImported) {
             throw new Error('imported functions must be declared before the first non-imported function');
           }
           module.funcs.push(imported = {type:'func', id:module.funcs.length, isImported:true});
-          if (name = nextName(subsection)) {
-            if (name in module.funcs) {
-              throw new Error('duplicate func name: ' + name);
-            }
-            module.funcs[name] = imported.id;
-          }
-          if (section = nextSection(subsection, 'type')) {
+          maybeDefineRef(section, module.funcs, imported.id);
+          if (subsection = nextSection(section, 'type')) {
             def.typedef_id = requireRef(section, module.typedefs);
-            requireEnd(section);
-            section = null;
+            requireEnd(subsection);
           }
           else {
-            var typedef = readFuncTypedef({}, subsection);
+            var typedef = readFuncTypedef({}, section);
             if (typedef.signature in module.typedefs) {
               def.typedef_id = module.typedefs[typedef.signature];
             }
@@ -615,138 +555,151 @@ define(function() {
             throw new Error('imported globals must be declared before the first non-imported global');
           }
           module.globals.push(imported = {type:'global', id:module.globals.length, isImported:true});
-          if (name = nextName(subsection)) {
-            if (name in module.globals) {
-              throw new Error('duplicate global name: ' + name);
-            }
-            module.globals[name] = imported.id;
-          }
-          if (section = nextSection(subsection, 'mut')) {
-            def.mutable = true;
+          maybeDefineRef(section, module.globals, imported.id);
+          if (subsection = nextSection(section, 'mut')) {
+            imported.mutable = true;
+            imported.dataType = requireWord(subsection, ['i32','i64','f32','f64']);
             requireEnd(subsection);
-            subsection = section;
           }
           else {
-            def.mutable = false;
+            imported.mutable = false;
+            imported.dataType = requireWord(section, ['i32','i64','f32','f64']);
           }
-          def.kind = requireWord(subsection, ['i32','i64','f32','f64']);
           break;
         case 'table':
           if (module.tables.length > 0 && !module.tables[module.tables.length-1].isImported) {
             throw new Error('imported tables must be declared before the first non-imported global');
           }
           module.tables.push(imported = {type:'table', id:module.tables.length, isImported:true});
-          addName('table', module.tables, specifier);
-          module.tables.push({type:'import', id:def.id});
-          def.initialSize = requireInt(specifier);
-          def.maximumSize = nextInt(specifier);
-          if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
-          def.elementType = requireWord(specifier, 'anyfunc');
+          maybeDefineRef(section, module.tables, imported.id);
+          imported.initialSize = requireInt(section);
+          imported.maximumSize = nextInt(section);
+          if (isNaN(imported.maximumSize)) imported.maximumSize = Infinity;
+          imported.elementType = requireWord(specifier, 'anyfunc');
           break;
         case 'memory':
-          addName('memory', module.memorySections, specifier);
-          module.memorySections.push({type:'import', id:def.id});
-          def.initialSize = requireInt(specifier);
-          def.maximumSize = nextInt(specifier);
-          if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
+          if (module.memorySections.length > 0 && !module.memorySections[module.memorySections.length-1].isImported) {
+            throw new Error('imported memory sections must be declared for the first non-imported section');
+          }
+          module.memorySections.push(imported = {type:'memory', id:module.memorySections.length, isImported:true});
+          maybeDefineRef(section, module.memorySections, imported.id);
+          imported.initialSize = requireInt(specifier);
+          imported.maximumSize = nextInt(specifier);
+          if (isNaN(imported.maximumSize)) imported.maximumSize = Infinity;
           break;
       }
-      requireEnd(subsection);
+      requireEnd(section);
       def.import_id = imported.id;
     }
     while (section = nextSection(doc, 'func')) {
-      addName('func', module.funcs);
-      if (specifier = nextSection(section, 'import')) {
-        if (module.funcs.length > 0 && module.funcs[module.funcs.length-1].type !== 'import') {
+      module.funcs.push(def = {type:'func', id:module.funcs.length});
+      maybeDefineRef(section, module.funcs, def.id);
+      if (subsection = nextSection(section, 'import')) {
+        if (module.funcs.length > 0 && !module.funcs[module.funcs.length-1].isImported) {
           throw new Error('all imported funcs must be defined before any non-imported');
         }
-        var def = {
-          id: module.imports.length,
-          type: 'func',
-          typedef_id: getFuncSignature(section).typedef_id,
-        };
+        def.isImported = true;
+        readFuncTypedef(def, section);
         requireEnd(section);
-        def.moduleName = requireString(specifier);
-        def.fieldName = requireString(specifier);
-        requireEnd(specifier);
-        module.funcs.push({type:'import', id:def.id});
-        module.imports.push(def);
-      }
-      else {
-        maybeInlineExport('func', module.funcs.length);
-        var typedef = readFuncTypedef({}, section);
-        var typedef_id;
-        if (typedef.signature in module.typedefs) {
-          typedef_id = module.typedefs[typedef.signature];
+        if (def.signature in module.typedefs) {
+          def.typedef_id = module.typedefs[def.signature];
         }
         else {
-          module.typedefs[typedef.signature] = typedef.id = module.typedefs.length;
-          module.typedefs.push(typedef);
-          typedef_id = typedef.id;
+          def.typedef_id = module.typedefs.length;
+          module.typedefs.push(module[def.signature] = def);
         }
-        module.funcs.push({
-          type: 'func',
-          id: module.funcs.length,
-          code_id: module.codeSections.length,
-          typedef_id: typedef_id,
+        module.imports.push(def = {
+          type: 'import',
+          id: module.imports.length,
+          import_type: 'func',
+          import_id: def.id,
         });
-        section.localNames = typedef.paramNames.slice();
-        for (var i = 0; i < section.localNames.length; i++) {
-          if (section.localNames[i]) {
-            section.localNames[section.localNames[i]] = i;
-          }
+        def.moduleName = requireString(subsection);
+        def.fieldName = requireString(subsection);
+        requireEnd(subsection);
+        continue;
+      }
+      else {
+        maybeInlineExport('func', def.id);
+        readFuncTypedef(def, section);
+        if (def.signature in module.typedefs) {
+          def.typedef_id = module.typedefs[def.signature];
         }
-        section.localTypes = typedef.paramTypes.slice();
-        while (specifier = nextSection(section, 'local')) {
-          var name;
-          if (name = nextName(specifier)) {
-            section.localNames[name] = section.localNames.length;
-            section.localNames.push(name);
-            section.localTypes.push(requireWord(specifier, ['i32','i64','f32','f64']));
-            requireEnd(specifier);
+        else {
+          def.typedef_id = module.typedefs.length;
+          module.typedefs.push(module[def.signature] = def);
+        }
+        var code = {id:module.codeSections.length, type:'code'};
+        def.code_id = code.id;
+        code.locals = typedef.params.slice();
+        for (var k in typedef.params) {
+          if (k[1] === '$') code.locals[k] = typedef.params[k];
+        }
+        while (subsection = nextSection(section, 'local')) {
+          if (name = nextName(subsection)) {
+            code.locals[name] = code.locals.length;
+            code.locals.push(requireWord(subsection, ['i32','i64','f32','f64']));
+            requireEnd(subsection);
           }
-          else while (specifier.i < specifier.length) {
-            section.localNames.push(undefined);
-            section.localTypes.push(requireWord(specifier, ['i32','i64','f32','f64']));
+          else while (subsection.i < subsection.length) {
+            code.locals.push(requireWord(specifier, ['i32','i64','f32','f64']));
           }
         }
         module.codeSections.push(section);
       }
     }
     while (section = nextSection(doc, 'table')) {
-      addName('table', module.tables);
-      if (specifier = nextSection(section, 'import')) {
-        if (module.tables.length > 0 && module.tables[module.tables.length-1].type !== 'import') {
+      module.tables.push(def = {type:'table', id:module.tables.length});
+      maybeDefineRef(section, module.tables, def.id);
+      if (subsection = nextSection(section, 'import')) {
+        if (module.tables.length > 0 && !module.tables[module.tables.length-1].isImported) {
           throw new Error('all imported tables must be defined before any non-imported');
         }
-        var def = {id:module.imports.length, type:'table'};
+        def.isImported = true;
         def.initialSize = requireInt(section);
         def.maximumSize = nextInt(section);
         if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
         def.elementType = requireWord(section, 'anyfunc');
         requireEnd(section);
-        def.moduleName = requireString(specifier);
-        def.fieldName = requireString(specifier);
-        requireEnd(specifier);
-        module.tables.push({type:'import', id:def.id});
-        module.imports.push(def);
+        
+        module.imports.push(def = {
+          id: module.imports.length,
+          type: 'import',
+          import_id: def.id,
+          import_type: 'table',
+        });
+        def.moduleName = requireString(subsection);
+        def.fieldName = requireString(subsection);
+        requireEnd(subsection);
       }
       else {
-        maybeInlineExport('table', module.tables.length);
-        module.tables.push(section);
+        maybeInlineExport('table', def.id);
+        def.initialSize = requireInt(section);
+        def.maximumSize = nextInt(section);
+        if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
+        def.elementType = requireWord(section, 'anyfunc');
+        requireEnd(section);
       }
     }
     while (section = nextSection(doc, 'memory')) {
-      addName('memory', module.memorySections);
-      if (specifier = nextSection(section, 'import')) {
-        if (module.memorySections.length > 0 && module.memorySections[module.memorySections.length-1].type !== 'import') {
+      module.memorySections.push(def = {type:'memory', id:module.memorySections.length});
+      maybeDefineRef(section, module.memorySections, def.id);
+      if (subsection = nextSection(section, 'import')) {
+        if (module.memorySections.length > 0 && !module.memorySections[module.memorySections.length-1].isImported) {
           throw new Error('all imported memory sections must be defined before any non-imported');
         }
-        var def = {id:module.imports.length, type:'memory'};
+        def.isImported = true;
         def.initialSize = requireInt(section);
         def.maximumSize = nextInt(section);
         if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
         requireEnd(section);
+        
+        module.imports.push(def = {
+          id: module.imports.length,
+          type: 'import',
+          import_id: def.id,
+          import_type: 'memory',
+        });
         def.moduleName = requireString(specifier);
         def.fieldName = requireString(specifier);
         requireEnd(specifier);
@@ -754,56 +707,59 @@ define(function() {
         module.imports.push(def);
       }
       else {
-        maybeInlineExport('memory', module.memorySections.length);
-        var memorySection = {type:'memory', id:module.memorySections.length};
-        if (specifier = nextSection(section, 'data')) {
-          while (specifier.i < specifier.length) requireString(specifier);
-          var dataString = specifier.join('');
+        maybeInlineExport('memory', def.id);
+        if (subsection = nextSection(section, 'data')) {
+          while (subsection.i < subsection.length) requireString(subsection);
+          var dataString = subsection.join('');
           var bytes = new Uint8Array(dataString.length);
           for (var i = 0; i < dataString.length; i++) {
             bytes[i] = dataString.charCodeAt(i);
           }
-          memorySection.initialSize = memorySection.maximumSize = bytes.length;
+          def.initialSize = def.maximumSize = bytes.length;
           module.dataSections.push({
-            memory_id: memorySection.id,
+            memory_id: def.id,
             bytes: bytes,
             offset: Object.assign([0], {type:'i32.const', i:0}),
           });
         }
         else {
-          memorySection.initialSize = requireInt(section);
-          memorySection.maximumSize = nextInt(section);
-          if (isNaN(memorySection.maximumSize)) memorySection.maximumSize = Infinity;
+          def.initialSize = requireInt(section);
+          def.maximumSize = nextInt(section);
+          if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
         }
-        module.memorySections.push(memorySection);
       }
     }
     while (section = nextSection(doc, 'global')) {
-      addName('global', module.globals);
-      if (specifier = nextSection(section, 'import')) {
-        if (module.globals.length > 0 && module.globals[module.globals.length-1].type !== 'import') {
+      module.globals.push(def = {type:'global', id:module.globals.length});
+      maybeDefineRef(section, module.globals, def.id);
+      if (subsection = nextSection(section, 'import')) {
+        if (module.globals.length > 0 && !module.globals[module.globals.length-1].isImporte) {
           throw new Error('all imported globals must be defined before any non-imported');
         }
-        var def = {id:module.imports.length, type:'global'};
-        def.moduleName = requireString(specifier);
-        def.fieldName = requireString(specifier);
-        requireEnd(specifier);
+        def.isImported = true;
         if (specifier = nextSection(section, 'mut')) {
           def.mutable = true;
-          requireEnd(section);
-          section = specifier;
+          def.dataType = requireWord(specifier, ['i32','i64','f32','f64']);
+          requireEnd(specifier);
         }
         else {
           def.mutable = false;
+          def.dataType = requireWord(section, ['i32','i64','f32','f64']);
         }
-        def.dataType = requireWord(section, ['i32','i64','f32','f64']);
         requireEnd(section);
-        module.globals.push({type:'import', id:def.id});
-        module.imports.push(def);
+        
+        module.imports.push(def = {
+          type: 'import',
+          id: module.imports.length,
+          import_type: 'global',
+          import_id: def.id,
+        });
+        def.moduleName = requireString(subsection);
+        def.fieldName = requireString(subsection);
+        requireEnd(subsection);
       }
       else {
-        maybeInlineExport('global', module.globals.length);
-        var def = {id:module.globals.length, type:'global'};
+        maybeInlineExport('global', def.id);
         if (specifier = nextSection(section, 'mut')) {
           def.mutable = true;
           def.dataType = requireWord(specifier, ['i32','i64','f32','f64']);
@@ -814,7 +770,6 @@ define(function() {
           def.dataType = requireWord(section, ['i32','i64','f32','f64']);
         }
         def.initialValue = section;
-        module.globals.push(def);
       }
     }
     while (section = nextSection(doc, 'export')) {
@@ -823,22 +778,30 @@ define(function() {
         id: module.exports.length,
         export_symbol: requireString(section),
       });
-      specifier = requireSection(section, ['func','global','table','memory']);
-      def.export_type = specifier.type;
-      def.export_id = requireRef(specifier, ({
+      subsection = requireSection(section, ['func','global','table','memory']);
+      requireEnd(section);
+      def.export_type = subsection.type;
+      def.export_id = requireRef(subsection, ({
         func: module.funcs,
         global: module.globals,
         table: module.tables,
         memory: module.memorySections,
-      })[specifier.type]);
-      requireEnd(specifier);
+      })[subsection.type]);
+      requireEnd(subsection);
     }
     if (section = nextSection(doc, 'start')) {
       module.start = requireRef(section, module.funcs);
       requireEnd(section);
     }
     while (section = nextSection(doc, 'elem')) {
-      module.elems.push(section);
+      module.elems.push(def = {
+        table_id: nextRef(section, module.tables) || 0,
+      });
+      def.offset = requireSection(section);
+      def.func_ids = [];
+      while (section.i < section.length) {
+        def.funcs.push(requireRef(section, module.funcs));
+      }
     }
     while (section = nextSection(doc, 'data')) {
       module.dataSections.push(def = {
@@ -859,7 +822,7 @@ define(function() {
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
     for (var i = 0; i < module.codeSections.length; i++) {
       var code = module.codeSections[i];
-      var scope = Object.assign([], module.named, {blockLevels:[], module:module});
+      var scope = {blockLevels:[], module:module, locals:code.locals};
       for (var k in module.named) {
         if (k[0] === '$') {
           scope.push({name:k, type:module.named[k].type, id:module.named[k].id});
@@ -872,7 +835,7 @@ define(function() {
         }
       }
       module.codeSections[i] = readInstructions(scope, [], code);
-      module.codeSections[i].localTypes = code.localTypes;
+      module.codeSections[i].localTypes = code.locals;
     }
     return module;
   }
