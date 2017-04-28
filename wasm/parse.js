@@ -700,7 +700,7 @@ define(function() {
       module.globals.push(def = {type:'global', id:module.globals.length});
       maybeDefineRef(section, module.globals, def.id);
       if (subsection = nextSection(section, 'import')) {
-        if (module.globals.length > 0 && !module.globals[module.globals.length-1].isImporte) {
+        if (module.globals.length > 0 && !module.globals[module.globals.length-1].isImported) {
           throw new Error('all imported globals must be defined before any non-imported');
         }
         def.isImported = true;
