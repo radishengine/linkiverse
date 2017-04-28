@@ -468,8 +468,7 @@ define(function() {
     if (nextToken() !== null) throw new Error('more than one top-level element');
     if (doc.type !== 'module') throw new Error('top-level element must be (module ...)');
     
-    var module = {type:'module', name:nextName(doc), named:{}};
-    if (module.name) module.named[module.name] = module;
+    var module = {type:'module', name:nextName(doc)};
     if (doc[doc.i] instanceof String) {
       var start_i = doc.i++;
       while (doc.i < doc.length) requireString(doc);
@@ -823,11 +822,6 @@ define(function() {
     for (var i = 0; i < module.codeSections.length; i++) {
       var code = module.codeSections[i];
       var scope = {blockLevels:[], module:module, locals:code.locals};
-      for (var k in module.named) {
-        if (k[0] === '$') {
-          scope.push({name:k, type:module.named[k].type, id:module.named[k].id});
-        }
-      }
       for (var j = 0; j < code.localNames.length; i++) {
         if (section.localNames[j]) {
           var local = {type:'local', id:j, name:section.localNames[j]};
