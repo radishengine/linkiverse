@@ -354,6 +354,7 @@ define(function() {
   }
   
   function readFuncTypedef(output, section) {
+    output.type = 'func';
     output.params = [];
     output.results = [];
     var subsection;
@@ -506,10 +507,7 @@ define(function() {
       module.exports.push(def);
     }
     while (section = nextSection(doc, 'type')) {
-      module.typedefs.push(def = {
-        type: 'type',
-        id: module.typedefs.length,
-      });
+      module.typedefs.push(def = {id: module.typedefs.length});
       maybeDefineRef(section, module.typedefs, def.id);
       // assume that (type (type ...)) is not valid, even though it currently
       // appears to be, according to the grammar
