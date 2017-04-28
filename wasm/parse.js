@@ -486,10 +486,10 @@ define(function() {
       funcs: Object.assign([], {element_kind:'func'}),
       tables: Object.assign([], {element_kind:'table'}),
       memorySections: Object.assign([], {element_kind:'memory'}),
-      codeSections: [],
+      functionBodies: [],
       globals: Object.assign([], {element_kind:'global'}),
       dataSections: [],
-      elems: [],
+      tableElements: [],
     });
     
     var section, name, specifier, subsection, def;
@@ -628,7 +628,7 @@ define(function() {
           def.typedef_id = module.typedefs.length;
           module.typedefs.push(module[def.signature] = def);
         }
-        var code = {id:module.codeSections.length, type:'code'};
+        var code = {id:module.functionBodies.length, type:'code'};
         def.code_id = code.id;
         code.locals = typedef.params.slice();
         for (var k in typedef.params) {
@@ -644,7 +644,7 @@ define(function() {
             code.locals.push(requireWord(specifier, ['i32','i64','f32','f64']));
           }
         }
-        module.codeSections.push(section);
+        module.functionBodies.push(section);
       }
     }
     while (section = nextSection(doc, 'table')) {
@@ -793,7 +793,7 @@ define(function() {
       requireEnd(section);
     }
     while (section = nextSection(doc, 'elem')) {
-      module.elems.push(def = {
+      module.tableElements.push(def = {
         table_id: nextRef(section, module.tables) || 0,
       });
       def.offset = requireSection(section);
@@ -819,8 +819,8 @@ define(function() {
     }
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
-    for (var i = 0; i < module.codeSections.length; i++) {
-      var code = module.codeSections[i];
+    for (var i = 0; i < module.functionBodies.length; i++) {
+      var code = module.functionBodies[i];
       var scope = {blockLevels:[], module:module, locals:code.locals};
       for (var j = 0; j < code.localNames.length; i++) {
         if (section.localNames[j]) {
@@ -828,8 +828,8 @@ define(function() {
           scope.push(scope[local.name] = local);
         }
       }
-      module.codeSections[i] = readInstructions(scope, [], code);
-      module.codeSections[i].localTypes = code.locals;
+      module.functionBodies[i] = readInstructions(scope, [], code);
+      module.functionBodies[i].localTypes = code.locals;
     }
     return module;
   }
