@@ -514,7 +514,7 @@ define(function() {
     
     var section, def;
     
-    if (module.typedefs.length > 0) {
+    if (module.typedefs && module.typedefs.length > 0) {
       section = [leb128_unsigned(module.typedefs.length)];
       for (var i = 0; i < module.typedefs.length; i++) {
         def = module.typedefs[i];
@@ -534,7 +534,7 @@ define(function() {
       addSection(SECTION_TYPE, section);
     }
     
-    if (module.imports.length > 0) {
+    if (module.imports && module.imports.length > 0) {
       section = [leb128_unsigned(module.imports.length)];
       for (var i = 0; i < module.imports.length; i++) {
         def = module.imports[i];
@@ -562,7 +562,7 @@ define(function() {
       addSection(SECTION_IMPORT, section);
     }
     
-    if (module.funcs.length > 0) {
+    if (module.funcs && module.funcs.length > 0) {
       section = [leb128_unsigned(module.imports.length)];
       for (var i = 0; i < module.funcs.length; i++) {
         section.push(leb128_unsigned(module.funcs[i].typedef_id));
@@ -570,7 +570,7 @@ define(function() {
       addSection(SECTION_FUNCTION, section);
     }
     
-    if (module.tables.length > 0) {
+    if (module.tables && module.tables.length > 0) {
       section = [leb128_unsigned(module.tables.length)];
       for (var i = 0; i < module.tables.length; i++) {
         write_table_type(section, module.tables[i]);
@@ -578,7 +578,7 @@ define(function() {
       addSection(SECTION_TABLE, section);
     }
     
-    if (module.memorySections.length > 0) {
+    if (module.memorySections && module.memorySections.length > 0) {
       section = [leb128_unsigned(module.memorySections.length)];
       for (var i = 0; i < module.memorySections.length; i++) {
         write_memory_type(section, module.memorySections[i]);
@@ -586,7 +586,7 @@ define(function() {
       addSection(SECTION_MEMORY, section);
     }
     
-    if (module.globals.length > 0) {
+    if (module.globals && module.globals.length > 0) {
       section = [leb128_unsigned(module.globals.length)];
       for (var i = 0; i < module.globals.length; i++) {
         def = module.globals[i];
@@ -596,7 +596,7 @@ define(function() {
       addSection(SECTION_GLOBAL, section);
     }
     
-    if (module.exports.length > 0) {
+    if (module.exports && module.exports.length > 0) {
       section = [leb128_unsigned(module.exports.length)];
       for (var i = 0; i < module.exports.length; i++) {
         def = module.exports[i];
@@ -611,7 +611,7 @@ define(function() {
       addSection(SECTION_START, [leb128_unsigned(module.start)]);
     }
     
-    if (module.tableElements.length > 0) {
+    if (module.tableElements && module.tableElements.length > 0) {
       section = [leb128_unsigned(module.tableElements.length)];
       for (var i = 0; i < module.tableElements.length; i++) {
         def = module.tableElements[i];
@@ -625,10 +625,10 @@ define(function() {
       addSection(SECTION_ELEMENT, section);
     }
     
-    if (module.codeSections.length > 0) {
-      section = [leb128_unsigned(module.codeSections.length)];
-      for (var i = 0; i < module.codeSections.length; i++) {
-        def = module.codeSections[i];
+    if (module.functionBodies && module.functionBodies.length > 0) {
+      section = [leb128_unsigned(module.functionBodies.length)];
+      for (var i = 0; i < module.functionBodies.length; i++) {
+        def = module.functionBodies[i];
         var body = [leb128_unsigned(def.locals.length)];
         for (var j = 0; j < def.locals.length; j++) {
           var count = 1;
@@ -647,7 +647,7 @@ define(function() {
       addSection(SECTION_CODE, section);
     }
     
-    if (module.dataSections.length > 0) {
+    if (module.dataSections && module.dataSections.length > 0) {
       section = [leb128_unsigned(module.dataSections.length)];
       for (var i = 0; i < module.dataSections.length; i++) {
         def = module.dataSections[i];
