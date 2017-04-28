@@ -562,34 +562,41 @@ define(function() {
       addSection(SECTION_IMPORT, section);
     }
     
-    if (module.funcs && module.funcs.length > 0) {
-      section = [leb128_unsigned(module.imports.length)];
-      for (var i = 0; i < module.funcs.length; i++) {
-        section.push(leb128_unsigned(module.funcs[i].typedef_id));
+    function nonImported(v) { return !v.isImported; }
+    
+    var funcs = (module.funcs || []).filter(nonImported);
+    var tables = (module.tables || []).filter(nonImported);
+    var memorySections = (module.memorySections || []).filter(nonImported);
+    var globals = (module.globals || []).filter(nonImported);
+    
+    if (funcs.length > 0) {
+      section = [leb128_unsigned(funcs.length)];
+      for (var i = 0; i < funcs.length; i++) {
+        section.push(leb128_unsigned(funcs[i].typedef_id));
       }
       addSection(SECTION_FUNCTION, section);
     }
     
-    if (module.tables && module.tables.length > 0) {
-      section = [leb128_unsigned(module.tables.length)];
-      for (var i = 0; i < module.tables.length; i++) {
-        write_table_type(section, module.tables[i]);
+    if (tables.length > 0) {
+      section = [leb128_unsigned(tables.length)];
+      for (var i = 0; i < tables.length; i++) {
+        write_table_type(section, tables[i]);
       }
       addSection(SECTION_TABLE, section);
     }
     
-    if (module.memorySections && module.memorySections.length > 0) {
-      section = [leb128_unsigned(module.memorySections.length)];
-      for (var i = 0; i < module.memorySections.length; i++) {
-        write_memory_type(section, module.memorySections[i]);
+    if (memorySections.length > 0) {
+      section = [leb128_unsigned(memorySections.length)];
+      for (var i = 0; i < memorySections.length; i++) {
+        write_memory_type(section, memorySections[i]);
       }
       addSection(SECTION_MEMORY, section);
     }
     
-    if (module.globals && module.globals.length > 0) {
-      section = [leb128_unsigned(module.globals.length)];
-      for (var i = 0; i < module.globals.length; i++) {
-        def = module.globals[i];
+    if (globals.length > 0) {
+      section = [leb128_unsigned(globals.length)];
+      for (var i = 0; i < globals.length; i++) {
+        def = globals[i];
         write_global_type(section, def);
         write_instructions(section, def.initialValue);
       }
