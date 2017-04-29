@@ -128,7 +128,7 @@ define(function() {
       demangled_op = modifiers[3];
       numType2 = modifiers[4] || numType;
       numSize2 = modifiers[5] || numSize;
-      signedness = modifiers[6];
+      signedness = modifiers[6] || 'x'; // s for signed, u for unsigned, x for unspecified
     }
     else demangled_op = op;
     switch (demangled_op) {
