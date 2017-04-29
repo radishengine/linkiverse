@@ -785,6 +785,7 @@ define(function() {
         def.bytes[i] = byteString.charCodeAt(i);
       }
     }
+    requireEnd(doc);
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
     function processInstructions(body, paramsAndLocals) {
