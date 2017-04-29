@@ -782,7 +782,7 @@ define(function() {
       var body = module.functionBodies[i];
       var paramsAndLocals = body.params.concat(body.locals);
       for (var k in body.params) {
-        if (k[0] === '$') paramsAndLocals[k] = body.params[i];
+        if (k[0] === '$') paramsAndLocals[k] = body.params[k];
       }
       for (var k in body.locals) {
         if (k[0] === '$') paramsAndLocals[k] = body.locals[k] + body.params.length;
