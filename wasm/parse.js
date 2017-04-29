@@ -64,7 +64,7 @@ define(function() {
     if (!(ref in set)) {
       throw new Exception('(' + t.type + ' ...): undefined ' + set.element_kind + ' ref ' + ref);
     }
-    return (typeof ref === 'string') return set[ref] : ref;
+    return (typeof ref === 'string') ? set[ref] : +ref;
   }
 
   function requireRef(t, set) {
