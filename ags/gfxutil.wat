@@ -472,7 +472,7 @@
     (local $val i32)
     loop $top
       ;; if $in >= $in_end, return $out
-      (if (i32.ge_u (i32.get_local $in) (i32.get_local $in_end)) (return (get_local $out)))
+      (if (i32.ge_u (get_local $in) (get_local $in_end)) (return (get_local $out)))
       ;; get a signed byte at $in
       (set_local $count (i32.load8_s (get_local $in)))
       ;; $in++
