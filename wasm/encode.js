@@ -598,7 +598,7 @@ define(function() {
       for (var i = 0; i < globals.length; i++) {
         def = globals[i];
         write_global_type(section, def);
-        write_instructions(section, def.initialValue);
+        write_instructions(section, def.initialValue || [def.dataType + '.const', 0]);
       }
       addSection(SECTION_GLOBAL, section);
     }
