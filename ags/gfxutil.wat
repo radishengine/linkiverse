@@ -68,65 +68,67 @@
       br $top
     end
   )
-  (func $fill (export "fill") (param $out i32) (param $val i32) (param $count i32)
+  (func $fill (export "fill") (param $out i32) (param $val i64) (param $count i32)
     (call $ensure_memory_reach (i32.add (get_local $out) (get_local $count)))
-    ;; if $out is not 32-bit aligned, deal with that first
+    ;; if $out is not 64-bit aligned, deal with that first
     block $break
       loop $top
-        ;; if count=0, return
+        ;; if $count is 0, return
         (if (i32.eqz (get_local $count)) (return))
-        ;; if $out is 32-bit aligned, break
-        (br_if $break (i32.eqz (i32.and (get_local $out) (i32.const 3))))
+        ;; if $out is 64-bit aligned, break
+        (br_if $break (i32.eqz (i32.and (get_local $out) (i32.const 7))))
         ;; otherwise, fill 1 byte and continue
-        (i32.store8 (get_local $out) (get_local $val))
+        (i64.store8 (get_local $out) (get_local $val))
         (set_local   $out (i32.add (get_local   $out) (i32.const 1)))
         (set_local $count (i32.sub (get_local $count) (i32.const 1)))
         br $top
       end
     end $break
-    ;; turn $val the byte into a 32-bit pattern of itself
-    (set_local $val (i32.and (get_local $val) (i32.const 255)))
-    (set_local $val (i32.or (get_local $val) (i32.shl (get_local $val) (i32.const  8))))
-    (set_local $val (i32.or (get_local $val) (i32.shl (get_local $val) (i32.const 16))))
+    ;; turn $val the byte into a 64-bit pattern of itself
+    (set_local $val (i64.and (get_local $val) (i64.const 255)))
+    (set_local $val (i64.or (get_local $val) (i64.shl (get_local $val) (i64.const  8))))
+    (set_local $val (i64.or (get_local $val) (i64.shl (get_local $val) (i64.const 16))))
+    (set_local $val (i64.or (get_local $val) (i64.shl (get_local $val) (i64.const 32))))
     ;; switch-table on $count's highest set bit
-    block $b0_3
-      block $b4_7
-        block $b8_15
-          block $b16_or_more
+    block $b0_7
+      block $b8_15
+        block $b16_31
+          block $b32_or_more
             (i32.sub (i32.const 32) (i32.clz (get_local $count)))
-            br_table $b0_3 $b0_3 $b0_3 $b4_7 $b8_15 $b16_or_more
-          end $b16_or_more
+            br_table $b0_7 $b0_7 $b0_7 $b0_7 $b8_15 $b16_31 $b32_or_more
+          end $b32_or_more
           loop $top
-            (i32.store          (get_local $out)                 (get_local $val))
-            (i32.store (i32.add (get_local $out) (i32.const  4)) (get_local $val))
-            (i32.store (i32.add (get_local $out) (i32.const  8)) (get_local $val))
-            (i32.store (i32.add (get_local $out) (i32.const 12)) (get_local $val))
-                                  (set_local   $out (i32.add (get_local   $out) (i32.const 16)))
-            (br_if $top (i32.ge_u (tee_local $count (i32.sub (get_local $count) (i32.const 16))) (i32.const 16)))
+            (i64.store          (get_local $out)                 (get_local $val))
+            (i64.store (i32.add (get_local $out) (i32.const  8)) (get_local $val))
+            (i64.store (i32.add (get_local $out) (i32.const 16)) (get_local $val))
+            (i64.store (i32.add (get_local $out) (i32.const 24)) (get_local $val))
+                                  (set_local   $out (i32.add (get_local   $out) (i32.const 32)))
+            (br_if $top (i32.ge_u (tee_local $count (i32.sub (get_local $count) (i32.const 32))) (i32.const 32)))
           end
-          (br_if $b0_3 (i32.lt_u (get_local $count) (i32.const 4)))
-          (br_if $b4_7 (i32.lt_u (get_local $count) (i32.const 8)))
+          (br_if $b0_7  (i32.lt_u (get_local $count) (i32.const  8)))
+          (br_if $b8_15 (i32.lt_u (get_local $count) (i32.const 16)))
           ;; fall through:
-        end $b8_15
-        (i32.store          (get_local $out)                 (get_local $val))
-        (i32.store (i32.add (get_local $out) (i32.const  4)) (get_local $val))
-                               (set_local   $out (i32.add (get_local   $out) (i32.const 8)))
-        (br_if $b0_3 (i32.lt_u (tee_local $count (i32.sub (get_local $count) (i32.const 8))) (i32.const 4)))
+        end $b16_31
+        (i64.store          (get_local $out)                 (get_local $val))
+        (i64.store (i32.add (get_local $out) (i32.const  8)) (get_local $val))
+                               (set_local   $out (i32.add (get_local   $out) (i32.const 16)))
+        (br_if $b0_7 (i32.lt_u (tee_local $count (i32.sub (get_local $count) (i32.const 16))) (i32.const 16)))
         ;; fall through:
-      end $b4_7
-      (i32.store (get_local $out) (get_local $val))
-      (set_local   $out (i32.add (get_local   $out) (i32.const 4)))
-      (set_local $count (i32.sub (get_local $count) (i32.const 4)))
-    end $b0_3
+      end $b8_15
+      (i64.store (get_local $out) (get_local $val))
+      (set_local   $out (i32.add (get_local   $out) (i32.const 8)))
+      (set_local $count (i32.sub (get_local $count) (i32.const 8)))
+    end $b0_7
     loop $top
       ;; if count=0, return
       (if (i32.eqz (get_local $count)) (return))
       ;; otherwise, copy 1 byte and continue
-      (i32.store8 (get_local $out) (get_local $val))
+      (i64.store8 (get_local $out) (get_local $val))
       (set_local   $out (i32.add (get_local   $out) (i32.const 1)))
       (set_local $count (i32.sub (get_local $count) (i32.const 1)))
       br $top
     end
+    unreachable
   )
   (func (export "unpack_paletted") (param $out i32) (param $in i32) (param $palette i32) (param $count i32)
     ;; ensure mem[..$out + $count*4]
