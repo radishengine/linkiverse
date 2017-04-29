@@ -523,12 +523,12 @@ define(function() {
         }
         section.push(VALUE_TYPES.func);
         section.push(leb128_unsigned(def.params.length));
-        for (var i = 0; i < def.params.length; i++) {
-          section.push(VALUE_TYPES[def.params[i]]);
+        for (var j = 0; i < def.params.length; j++) {
+          section.push(VALUE_TYPES[def.params[j]]);
         }
         section.push(leb128_unsigned(def.results.length));
-        for (var i = 0; i < def.results.length; i++) {
-          section.push(VALUE_TYPES[def.results[i]]);
+        for (var j = 0; j < def.results.length; j++) {
+          section.push(VALUE_TYPES[def.results[j]]);
         }
       }
       addSection(SECTION_TYPE, section);
