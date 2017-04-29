@@ -266,7 +266,7 @@ define(function() {
         requireEnd(expr);
         return expr;
       default:
-        expr.unshift(expr.name);
+        expr.unshift(expr.type);
         var splicer = [output.length, 0];
         readOp(scope, output, expr);
         while (expr.i < expr.length) {
