@@ -645,7 +645,8 @@ define(function() {
       for (var i = 0; i < module.functionBodies.length; i++) {
         def = module.functionBodies[i];
         var locals = def.locals || [];
-        var body = [leb128_unsigned(locals.length)];
+        var body = [];
+        // add locals, in batches of the same type
         for (var j = 0; j < locals.length; j++) {
           var count = 1;
           while (locals[j+1] === locals[j]) {
@@ -656,6 +657,8 @@ define(function() {
             leb128_unsigned(count),
             leb128_unsigned(VALUE_TYPES[locals[j]]));
         }
+        // prefix with the number of local-batches
+        body.unshift(leb128_unsigned(body.length/2));
         write_instructions(body, def);
         section.push(leb128_unsigned(blobPartsByteLength(body)));
         section.push.apply(section, body);
