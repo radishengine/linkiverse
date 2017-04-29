@@ -593,7 +593,7 @@ define(function() {
       module.funcs.push(def = {kind:'func', id:module.funcs.length});
       maybeDefineRef(section, module.funcs, def.id);
       if (subsection = nextSection(section, 'import')) {
-        if (module.funcs.length > 0 && !module.funcs[module.funcs.length-1].isImported) {
+        if (module.funcs.length > 1 && !module.funcs[module.funcs.length-2].isImported) {
           throw new Error('all imported funcs must be defined before any non-imported');
         }
         def.isImported = true;
@@ -638,7 +638,7 @@ define(function() {
       module.tables.push(def = {kind:'table', id:module.tables.length});
       maybeDefineRef(section, module.tables, def.id);
       if (subsection = nextSection(section, 'import')) {
-        if (module.tables.length > 0 && !module.tables[module.tables.length-1].isImported) {
+        if (module.tables.length > 1 && !module.tables[module.tables.length-2].isImported) {
           throw new Error('all imported tables must be defined before any non-imported');
         }
         def.isImported = true;
@@ -660,7 +660,7 @@ define(function() {
       module.memorySections.push(def = {kind:'memory', id:module.memorySections.length});
       maybeDefineRef(section, module.memorySections, def.id);
       if (subsection = nextSection(section, 'import')) {
-        if (module.memorySections.length > 0 && !module.memorySections[module.memorySections.length-1].isImported) {
+        if (module.memorySections.length > 1 && !module.memorySections[module.memorySections.length-2].isImported) {
           throw new Error('all imported memory sections must be defined before any non-imported');
         }
         def.isImported = true;
@@ -697,7 +697,7 @@ define(function() {
       module.globals.push(def = {type:'global', id:module.globals.length});
       maybeDefineRef(section, module.globals, def.id);
       if (subsection = nextSection(section, 'import')) {
-        if (module.globals.length > 0 && !module.globals[module.globals.length-1].isImported) {
+        if (module.globals.length > 1 && !module.globals[module.globals.length-2].isImported) {
           throw new Error('all imported globals must be defined before any non-imported');
         }
         def.isImported = true;
