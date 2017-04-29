@@ -27,7 +27,7 @@ define(['./parse', './encode'], function(wasm_parse, wasm_encode) {
         });
       })
       .then(function(wasm) {
-        if (!WebAssembly.verify(wasm)) {
+        if (!WebAssembly.validate(wasm)) {
           return Promise.reject('invalid wasm');
         }
         return WebAssembly.compile(wasm);
