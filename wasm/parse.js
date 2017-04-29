@@ -606,16 +606,13 @@ define(function() {
         maybeInlineExport(def, section);
       }
       readFuncTypedef(def, section);
-      var typedef;
       if (def.signature in module.typedefs) {
         def.typedef_id = module.typedefs[def.signature];
-        typedef = module.typedefs[def.typedef_id];
       }
       else {
         def.typedef_id = module.typedefs.length;
         module.typedefs.push(def);
         module.typedefs[def.signature] = def.typedef_id;
-        typedef = def;
       }
       if (def.isImported) {
         requireEnd(section);
@@ -623,9 +620,9 @@ define(function() {
       }
       var body = {id:module.functionBodies.length, kind:'code'};
       def.code_id = body.id;
-      body.locals = typedef.params.slice();
-      for (var k in typedef.params) {
-        if (k[0] === '$') body.locals[k] = typedef.params[k];
+      body.locals = def.params.slice();
+      for (var k in def.params) {
+        if (k[0] === '$') body.locals[k] = def.params[k];
       }
       while (subsection = nextSection(section, 'local')) {
         if (name = nextName(subsection)) {
