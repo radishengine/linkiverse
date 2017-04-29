@@ -784,12 +784,6 @@ define(function() {
     for (var i = 0; i < module.functionBodies.length; i++) {
       var code = module.functionBodies[i];
       var scope = {blockLevels:[], module:module, locals:code.locals};
-      for (var j = 0; j < code.localNames.length; i++) {
-        if (section.localNames[j]) {
-          var local = {type:'local', id:j, name:section.localNames[j]};
-          scope.push(scope[local.name] = local);
-        }
-      }
       module.functionBodies[i] = readInstructions(scope, [], code);
       module.functionBodies[i].localTypes = code.locals;
     }
