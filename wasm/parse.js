@@ -195,26 +195,27 @@ define(function() {
     }
   }
   
-  function pushBlock(scope, name) {
+  function enterBlock(scope, name) {
     var def = {id:scope.blockLevels.length+1, names:[], type:'blocklevel'};
     scope.blockLevels.push(def);
-    scope.push(def);
     if (name) {
-      if (name in scope) def.hiding = true;
-      scope[name] = def;
+      if (name in scope.blockLevels) def.hiding = true;
+      scope[name] = def.id;
       scope.names.push(name);
     }
   }
   
-  function popBlock(scope) {
+  function leaveBlock(scope) {
     var def = scope.blockLevels.pop();
-    if (!def) throw new Error('mismatched block/end instructions');
-    scope.splice(scope.lastIndexOf(def), 1);
+    if (!def) throw new Error('end without block/loop/if');
     for (var i = 0; i < def.names.length; i++) {
       delete scope[def.names[i]];
     }
-    if (def.hiding) for (var i = 0; i < scope.length; i++) {
-      scope[scope[i].name] = scope[i];
+    if (def.hiding) {
+      for (var i = 0; i < scope.blockLevels.length; i++)
+      for (var j = 0; j < scope.blockLevels[i].names.length; j++) {
+        scope.blockLevels[scope.blockLevels[i].names[j]] = i+1;
+      }
     }
   }
   
@@ -224,13 +225,13 @@ define(function() {
       case 'block':
       case 'loop':
         output.push(nextWord(expr.type));
-        pushBlock(scope, nextName(expr));
+        enterBlock(scope, nextName(expr));
         while (dataType = nextWord(expr, /^[if](32|64)$/)) {
           output.push(dataType);
         }
         readInstructions(scope, output, expr);
         output.push('end');
-        popBlock(scope);
+        leaveBlock(scope);
         break;
       case 'if':
         var blockName = nextName(expr);
@@ -246,7 +247,7 @@ define(function() {
         }
         output.push('if');
         output.push.apply(output, blockTypes);
-        pushBlock(scope, blockName);
+        enterBlock(scope, blockName);
         if (_then) {
           readInstructions(scope, output, _then);
           var _else = nextSection(expr, 'else');
@@ -265,7 +266,7 @@ define(function() {
           }
         }
         output.push('end');
-        popBlock(scope);
+        leaveBlock(scope);
         requireEnd(expr);
         return expr;
       default:
@@ -289,7 +290,7 @@ define(function() {
         case 'loop':
         case 'if':
           output.push(nextWord(code));
-          pushBlock(scope, nextName(code));
+          enterBlock(scope, nextName(code));
           while (dataType = nextWord(code, /^[if](32|64)$/)) {
             output.push(dataType);
           }
@@ -331,7 +332,7 @@ define(function() {
         case 'end':
           output.push(nextWord(code));
           nextName(code); // ignore, should have been handled earlier
-          popBlock(scope);
+          leaveBlock(scope);
           if (scope.blockLevels.length < initialBlockLevel) {
             throw new Error('end for unopened block');
           }
