@@ -1,11 +1,11 @@
 (module
-  (;
   (func $ensure_memory_reach (param $end i32)
     ;; transform byte offset to page delta and do nothing if it's <= 0
     (if (i32.gt_s (tee_local $end (i32.sub (current_memory) (i32.div_u (get_local $end) (i32.const 65536)))) (i32.const 0))
       (drop (grow_memory (get_local $end)))
     )
   )
+  (;
   (func $copy (param $out i32) (param $in i32) (param $count i32)
     (call $ensure_memory_reach (i32.add (get_local $out) (get_local $count)))
     ;; if $out is not 32-bit aligned, deal with that first
