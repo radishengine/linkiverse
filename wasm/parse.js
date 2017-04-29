@@ -62,7 +62,7 @@ define(function() {
     else if (typeof t[t.i] === 'string' && t[t.i][0] === '$') ref = t[t.i++];
     else return null;
     if (!(ref in set)) {
-      throw new Exception('(' + t.type + ' ...): undefined ' + set.element_kind + ' ref ' + ref);
+      throw new Error('(' + t.type + ' ...): undefined ' + set.element_kind + ' ref ' + ref);
     }
     return (typeof ref === 'string') ? set[ref] : +ref;
   }
