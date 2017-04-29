@@ -9,7 +9,7 @@
   (func $copy (param $out i32) (param $in i32) (param $count i32)
     (call $ensure_memory_reach (i32.add (get_local $out) (get_local $count)))
     ;; if $out is not 32-bit aligned, deal with that first
-    block
+    block $break
       loop $top
         (if (i32.eqz (get_local $count)) (return))
         ;; if $out is 32-bit aligned, break
@@ -23,10 +23,10 @@
       end
     end $break
     ;; switch-table on $count's highest set bit
-    block
-      block
-        block
-          block
+    block $b0_3
+      block $b4_7
+        block $b8_15
+          block $b16_or_more
             (i32.sub (i32.const 32) (i32.clz (get_local $count)))
             br_table $b0_3 $b0_3 $b0_3 $b4_7 $b8_15 $b16_or_more
           end $b16_or_more
@@ -69,7 +69,7 @@
   (func $fill (param $out i32) (param $val i32) (param $count i32)
     (call $ensure_memory_reach (i32.add (get_local $out) (get_local $count)))
     ;; if $out is not 32-bit aligned, deal with that first
-    block
+    block $break
       loop $top
         ;; if count=0, return
         (if (i32.eqz (get_local $count)) (return))
@@ -87,10 +87,10 @@
     (set_local $val (i32.or (get_local $val) (i32.shl (get_local $val) (i32.const  8))))
     (set_local $val (i32.or (get_local $val) (i32.shl (get_local $val) (i32.const 16))))
     ;; switch-table on $count's highest set bit
-    block
-      block
-        block
-          block
+    block $b0_3
+      block $b4_7
+        block $b8_15
+          block $b16_or_more
             (i32.sub (i32.const 32) (i32.clz (get_local $count)))
             br_table $b0_3 $b0_3 $b0_3 $b4_7 $b8_15 $b16_or_more
           end $b16_or_more
@@ -130,10 +130,10 @@
   (func (export "unpack_paletted") (param $out i32) (param $in i32) (param $palette i32) (param $count i32)
     ;; ensure mem[..$out + $count*4]
     (call $ensure_memory_reach (i32.add (get_local $out) (i32.mul (get_local $count) (i32.const 4))))
-    block
-      block
-        block
-          block
+    block $p0_3
+      block $p4_7
+        block $p8_15
+          block $p16_or_more
             (i32.sub (i32.const 32) (i32.clz (get_local $count)))
             br_table $p0_3 $p0_3 $p0_3 $p4_7 $p8_15 $p16_or_more
           end $p16_or_more
@@ -249,10 +249,10 @@
     (local $pixel i32)
     ;; ensure mem[..$out + $count*4]
     (call $ensure_memory_reach (i32.add (get_local $out) (i32.mul (get_local $count) (i32.const 4))))
-    block
-      block
-        block
-          block
+    block $p0_3
+      block $p4_7
+        block $p8_15
+          block $p16_or_more
             (i32.sub (i32.const 32) (i32.clz (get_local $count)))          
             br_table $p0_3 $p0_3 $p0_3 $p4_7 $p8_15 $p16_or_more
           end $p16_or_more
@@ -376,30 +376,29 @@
     (local $temp3 i32)
     (call $ensure_memory_reach (i32.add (get_local $out) (i32.mul (get_local $count) (i32.const 4))))
     ;; if $in is not 32-bit aligned, deal with that first
-    (block $break (loop $top
-      ;; if count=0, return
-      (block $end_check
-        (br_if $end_check (get_local $count))
-        (return (get_local $out))
-      )
-      ;; if $in is 32-bit aligned, break
-      (br_if $break (i32.eqz (i32.and (get_local $in) (i32.const 3))))
-      ;; otherwise, copy 1 pixel and continue
-      (i32.store
-        (get_local $out)
-        (call $expand_b8g8r8
-          (call $read_b8g8r8 (get_local $in))
-          (get_local $opaque)
-          (get_local $transp)
+    block $break
+      loop $top
+        ;; if count=0, return
+        (if (i32.eqz (get_local $count)) (return))
+        ;; if $in is 32-bit aligned, break
+        (br_if $break (i32.eqz (i32.and (get_local $in) (i32.const 3))))
+        ;; otherwise, copy 1 pixel and continue
+        (i32.store
+          (get_local $out)
+          (call $expand_b8g8r8
+            (call $read_b8g8r8 (get_local $in))
+            (get_local $opaque)
+            (get_local $transp)
+          )
         )
-      )
-      (set_local    $in (i32.add (get_local    $in) (i32.const 3)))
-      (set_local   $out (i32.add (get_local   $out) (i32.const 4)))
-      (set_local $count (i32.sub (get_local $count) (i32.const 1)))
-      (br $top)
-    ))
+        (set_local    $in (i32.add (get_local    $in) (i32.const 3)))
+        (set_local   $out (i32.add (get_local   $out) (i32.const 4)))
+        (set_local $count (i32.sub (get_local $count) (i32.const 1)))
+        (br $top)
+      end
+    end $break
     ;; do blocks of 4 pixels (12 bytes -> 16 bytes)
-    block
+    block $break
       loop $top
         (br_if $break (i32.lt_u (get_local $count) (i32.const 12)))
         (set_local $temp1 (i32.load (get_local $in)))
