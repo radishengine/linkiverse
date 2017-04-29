@@ -215,8 +215,7 @@ define(function() {
     }
   }
   
-  function readExpression(scope, output, code) {
-    var expr = requireSection(code);
+  function readExpression(scope, output, expr) {
     var dataType;
     switch (expr.type) {
       case 'block':
@@ -256,7 +255,7 @@ define(function() {
         else {
           // clause(s) are <expr>s instead of (then ...) (else ...)
           // kinda like (select (<then_expr>) (<else_expr>) (<condition_expr>))
-          readExpression(scope, output, requireSection(code));
+          readExpression(scope, output, requireSection(expr));
           var i_else = output.length;
           if (readExpression(scope, output, expr)) {
             output.splice(i_else, 0, 'else');
@@ -271,7 +270,7 @@ define(function() {
         var splicer = [output.length, 0];
         readOp(scope, output, expr);
         while (expr.i < expr.length) {
-          readExpression(scope, splicer, expr);
+          readExpression(scope, splicer, requireSection(expr));
         }
         output.splice.apply(output, splicer);
         return expr;
