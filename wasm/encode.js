@@ -609,7 +609,7 @@ define(function() {
         def = module.exports[i];
         section.push(
           leb128_unsigned(utf8len(def.exportAs)), def.exportAs,
-          EXTERNAL_KINDS(def.kind), leb128_unsigned(def.id));
+          EXTERNAL_KINDS[def.kind], leb128_unsigned(def.id));
       }
       addSection(SECTION_EXPORT, section);
     }
