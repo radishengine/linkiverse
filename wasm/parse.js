@@ -785,7 +785,7 @@ define(function() {
       var code = module.functionBodies[i];
       var scope = {blockLevels:[], module:module, locals:code.locals};
       module.functionBodies[i] = readInstructions(scope, [], code);
-      module.functionBodies[i].localTypes = code.locals;
+      module.functionBodies[i].locals = code.locals.slice();
     }
     return module;
   }
