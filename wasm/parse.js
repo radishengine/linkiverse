@@ -703,7 +703,7 @@ define(function() {
       requireEnd(section);
     }
     while (section = nextSection(doc, 'global')) {
-      module.globals.push(def = {type:'global', id:module.globals.length});
+      module.globals.push(def = {kind:'global', id:module.globals.length});
       maybeDefineRef(section, module.globals, def.id);
       if (subsection = nextSection(section, 'import')) {
         if (module.globals.length > 1 && !module.globals[module.globals.length-2].isImported) {
