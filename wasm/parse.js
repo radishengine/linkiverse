@@ -493,7 +493,7 @@ define(function() {
       tableElements: [],
     });
     
-    var section, name, specifier, subsection, def;
+    var section, name, subsection, def;
     function maybeInlineExport(def, section) {
       var subsection = nextSection(section, 'export');
       if (subsection) {
@@ -573,7 +573,7 @@ define(function() {
           def.initialSize = requireInt(section);
           def.maximumSize = nextInt(section);
           if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
-          def.elementType = requireWord(specifier, 'anyfunc');
+          def.elementType = requireWord(section, 'anyfunc');
           break;
         case 'memory':
           if (module.memorySections.length > 0 && !module.memorySections[module.memorySections.length-1].isImported) {
@@ -582,8 +582,8 @@ define(function() {
           def.id = module.memorySections.length;
           module.memorySections.push(def);
           maybeDefineRef(section, module.memorySections, def.id);
-          def.initialSize = requireInt(specifier);
-          def.maximumSize = nextInt(specifier);
+          def.initialSize = requireInt(section);
+          def.maximumSize = nextInt(section);
           if (isNaN(def.maximumSize)) def.maximumSize = Infinity;
           break;
       }
@@ -630,7 +630,7 @@ define(function() {
           requireEnd(subsection);
         }
         else while (subsection.i < subsection.length) {
-          body.locals.push(requireWord(specifier, ['i32','i64','f32','f64']));
+          body.locals.push(requireWord(subsection, ['i32','i64','f32','f64']));
         }
       }
     }
@@ -664,8 +664,8 @@ define(function() {
           throw new Error('all imported memory sections must be defined before any non-imported');
         }
         def.isImported = true;
-        def.moduleName = requireString(specifier);
-        def.fieldName = requireString(specifier);
+        def.moduleName = requireString(subsection);
+        def.fieldName = requireString(subsection);
         requireEnd(subsection);
         module.imports.push(def);
       }
@@ -701,18 +701,18 @@ define(function() {
           throw new Error('all imported globals must be defined before any non-imported');
         }
         def.isImported = true;
-        def.moduleName = requireString(specifier);
-        def.fieldName = requireString(specifier);
+        def.moduleName = requireString(subsection);
+        def.fieldName = requireString(subsection);
         requireEnd(subsection);
         module.imports.push(def);
       }
       else {
         maybeInlineExport(def, section);
       }
-      if (specifier = nextSection(section, 'mut')) {
+      if (subsection = nextSection(section, 'mut')) {
         def.mutable = true;
-        def.dataType = requireWord(specifier, ['i32','i64','f32','f64']);
-        requireEnd(specifier);
+        def.dataType = requireWord(subsection, ['i32','i64','f32','f64']);
+        requireEnd(subsection);
       }
       else {
         def.mutable = false;
