@@ -477,7 +477,7 @@
       (set_local $count (i32.load8_s (get_local $in)))
       ;; $in++
       (set_local $in (i32.add (get_local $in) (i32.const 1)))
-      (if (i32.ge (get_local $count) (i32.const 0)) (then
+      (if (i32.ge_u (get_local $count) (i32.const 0)) (then
         ;; $count >= 0: make a literal copy of (count+1) bytes
         (set_local $count (i32.add (get_local $count) (i32.const 1)))
         (call $copy (get_local $out) (get_local $in) (get_local $count))
