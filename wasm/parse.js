@@ -494,17 +494,14 @@ define(function() {
     });
     
     var section, name, specifier, subsection, def;
-    function maybeInlineExport(type, id) {
-      var specifier = nextSection(section, 'export');
-      if (!specifier) return;
-      var def = {
-        type: 'export',
-        export_type: specifier.type,
-        export_symbol: requireString(def),
-      };
-      def[specifier.type + '_id'] = id;
-      requireEnd(specifier);
-      module.exports.push(def);
+    function maybeInlineExport(def, section) {
+      var subsection = nextSection(section, 'export');
+      if (subsection) {
+        // TODO: multiple exports for the same thing?
+        def.exportAs = requireString(subsection);
+        requireEnd(subsection);
+        module.exports.push(def);
+      }
     }
     while (section = nextSection(doc, 'type')) {
       module.typedefs.push(def = {id: module.typedefs.length});
@@ -604,7 +601,7 @@ define(function() {
         module.imports.push(def);
       }
       else {
-        maybeInlineExport('func', def.id);
+        maybeInlineExport(def, section);
       }
       readFuncTypedef(def, section);
       if (def.signature in module.typedefs) {
@@ -651,7 +648,7 @@ define(function() {
         module.imports.push(def);
       }
       else {
-        maybeInlineExport('table', def.id);
+        maybeInlineExport(def, section);
       }
       def.initialSize = requireInt(section);
       def.maximumSize = nextInt(section);
@@ -673,7 +670,7 @@ define(function() {
         module.imports.push(def);
       }
       else {
-        maybeInlineExport('memory', def.id);
+        maybeInlineExport(def, section);
       }
       if (!def.isImported && (subsection = nextSection(section, 'data'))) {
         while (subsection.i < subsection.length) requireString(subsection);
@@ -710,7 +707,7 @@ define(function() {
         module.imports.push(def);
       }
       else {
-        maybeInlineExport('global', def.id);
+        maybeInlineExport(def, section);
       }
       if (specifier = nextSection(section, 'mut')) {
         def.mutable = true;
