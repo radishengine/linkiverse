@@ -725,7 +725,12 @@ define(function() {
         requireEnd(section);
       }
       else {
-        def.initialValue = section;
+        if (section.i === section.length) {
+          def.initialValue = Object.assign([def.dataType + '.const', 0], {i:0});
+        }
+        else {
+          def.initialValue = section;
+        }
       }
     }
     while (section = nextSection(doc, 'export')) {
