@@ -618,8 +618,9 @@ define(function() {
         requireEnd(section);
         continue;
       }
-      var body = {id:module.functionBodies.length, kind:'code'};
-      def.code_id = body.id;
+      var body = section;
+      def.body_id = module.functionBodies.length;
+      module.functionBodies.push(body);
       body.locals = def.params.slice();
       for (var k in def.params) {
         if (k[0] === '$') body.locals[k] = def.params[k];
@@ -634,8 +635,6 @@ define(function() {
           body.locals.push(requireWord(specifier, ['i32','i64','f32','f64']));
         }
       }
-      body.instructions = section;
-      module.functionBodies.push(body);
     }
     while (section = nextSection(doc, 'table')) {
       module.tables.push(def = {kind:'table', id:module.tables.length});
