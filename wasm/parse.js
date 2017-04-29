@@ -790,7 +790,11 @@ define(function() {
       for (var k in body.locals) {
         if (k[0] === '$') paramsAndLocals[k] = body.locals[k] + body.params.length;
       }
-      var scope = {blockLevels:[], module:module, locals:paramsAndLocals};
+      var scope = {
+        blockLevels: Object.assign([], {element_kind:'blocklevel'}),
+        module: module,
+        locals: paramsAndLocals,
+      };
       module.functionBodies[i] = readInstructions(scope, [], body);
       module.functionBodies[i].locals = body.locals.slice();
     }
