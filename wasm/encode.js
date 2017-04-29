@@ -523,7 +523,7 @@ define(function() {
         }
         section.push(VALUE_TYPES.func);
         section.push(leb128_unsigned(def.params.length));
-        for (var j = 0; i < def.params.length; j++) {
+        for (var j = 0; j < def.params.length; j++) {
           section.push(VALUE_TYPES[def.params[j]]);
         }
         section.push(leb128_unsigned(def.results.length));
