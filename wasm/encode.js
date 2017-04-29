@@ -383,7 +383,7 @@ define(function() {
       }
       op = OPCODES[op];
       if (typeof op !== 'number') {
-        throw new Error('invalid instruction: ' + buffer[pos-1]);
+        throw new Error('invalid instruction: ' + code[i-1]);
       }
       buffer[pos++] = op;
       switch (op) {
