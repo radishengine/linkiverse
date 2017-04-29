@@ -624,10 +624,8 @@ define(function() {
       var body = section;
       def.body_id = module.functionBodies.length;
       module.functionBodies.push(body);
-      body.locals = def.params.slice();
-      for (var k in def.params) {
-        if (k[0] === '$') body.locals[k] = def.params[k];
-      }
+      body.params = def.params;
+      body.locals = [];
       while (subsection = nextSection(section, 'local')) {
         if (name = nextName(subsection)) {
           body.locals[name] = body.locals.length;
@@ -784,10 +782,17 @@ define(function() {
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
     for (var i = 0; i < module.functionBodies.length; i++) {
-      var code = module.functionBodies[i];
-      var scope = {blockLevels:[], module:module, locals:code.locals};
-      module.functionBodies[i] = readInstructions(scope, [], code);
-      module.functionBodies[i].locals = code.locals.slice();
+      var body = module.functionBodies[i];
+      var paramsAndLocals = body.params.concat(body.locals);
+      for (var k in body.params) {
+        if (k[0] === '$') paramsAndLocals[k] = body.params[i];
+      }
+      for (var k in body.locals) {
+        if (k[0] === '$') paramsAndLocals[k] = body.locals[k] + body.params.length;
+      }
+      var scope = {blockLevels:[], module:module, locals:paramsAndLocals};
+      module.functionBodies[i] = readInstructions(scope, [], body);
+      module.functionBodies[i].locals = body.locals.slice();
     }
     return module;
   }
