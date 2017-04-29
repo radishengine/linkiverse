@@ -1,5 +1,5 @@
 (module
-  (memory (import "memory" "main") 0)
+  (import "memory" "main" (memory 0))
   (;
   (func $ensure_memory_reach (param $end i32)
     ;; transform byte offset to page delta and do nothing if it's <= 0
