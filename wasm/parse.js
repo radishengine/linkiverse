@@ -222,7 +222,7 @@ define(function() {
       case 'loop':
         output.push(nextWord(expr.type));
         pushBlock(scope, nextName(expr));
-        while (dataType = nextWord(/^[if](32|64)$/)) {
+        while (dataType = nextWord(expr, /^[if](32|64)$/)) {
           output.push(dataType);
         }
         readInstructions(scope, output, expr);
@@ -232,7 +232,7 @@ define(function() {
       case 'if':
         var blockName = nextName(expr);
         var blockTypes = [];
-        while (dataType = nextWord(/^[if](32|64)$/)) {
+        while (dataType = nextWord(expr, /^[if](32|64)$/)) {
           blockTypes.push(dataType);
         }
         var _then = nextSection(expr, 'then');
@@ -287,7 +287,7 @@ define(function() {
         case 'if':
           output.push(nextWord(code));
           pushBlock(scope, nextName(code));
-          while (dataType = nextWord(/^[if](32|64)$/)) {
+          while (dataType = nextWord(code, /^[if](32|64)$/)) {
             output.push(dataType);
           }
           var depth = 0;
@@ -327,7 +327,7 @@ define(function() {
           continue reading;
         case 'end':
           output.push(nextWord(code));
-          nextName(code); // ignore, handled earlier
+          nextName(code); // ignore, should have been handled earlier
           popBlock(scope);
           if (scope.blockLevels.length < initialBlockLevel) {
             throw new Error('end for unopened block');
