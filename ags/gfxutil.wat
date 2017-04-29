@@ -472,7 +472,7 @@
   )
   (func (export "unpack_allegro") (param $out i32) (param $in i32) (param $in_end i32) (result i32)
     (local $count i32)
-    (local $val i32)
+    (local $val i64)
     loop $top
       ;; if $in >= $in_end, return $out
       (if (i32.ge_u (get_local $in) (get_local $in_end)) (return (get_local $out)))
@@ -497,7 +497,7 @@
         (else
           ;; -127 < $count < 0: copy one byte of input, (1+abs($count)) times
           (set_local $count (i32.sub (i32.const 1) (get_local $count)))
-          (set_local $val (i32.load8_u (get_local $in)))
+          (set_local $val (i64.load8_u (get_local $in)))
           (set_local $in (i32.add (get_local $in) (i32.const 1)))
           (call $fill (get_local $out) (get_local $val) (get_local $count))
           (set_local $out (i32.add (get_local $out) (get_local $count)))
