@@ -2,8 +2,6 @@
 
   (import "memory" "main" (memory 0))
 
-  (global (export "initialAdler32") i32 i32.const 1)
-
   (func (export "adler32") (param $adler i32) (param $in i32) (param $len i32)
     (param $sum2 i32)
     (param $n i32)
@@ -149,5 +147,7 @@
     
     (return (i32.or (get_local $adler) (i32.shl (get_local $sum2) (i32.const 16))))      
   )
+  
+  (global (export "initialAdler32") i32 i32.const 1)
   
 )
