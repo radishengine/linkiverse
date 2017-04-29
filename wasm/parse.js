@@ -260,9 +260,9 @@ define(function() {
           // clause(s) are <expr>s instead of (then ...) (else ...)
           // kinda like (select (<then_expr>) (<else_expr>) (<condition_expr>))
           readExpression(scope, output, requireSection(expr));
-          var i_else = output.length;
-          if (readExpression(scope, output, expr)) {
-            output.splice(i_else, 0, 'else');
+          if (expr.i < expr.length) {
+            output.push('else');
+            readExpression(scope, output, requireSection(expr));
           }
         }
         output.push('end');
