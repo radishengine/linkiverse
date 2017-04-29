@@ -120,13 +120,15 @@ define(function() {
   
   function readOp(scope, output, code) {
     var op = requireWord(code);
-    var demangled_op, type, cast, signed;
-    var modifiers = op.match(/^([if](?:32|64)\.)(.*?)(8|16|32|\/[if](32|64))?(_[su])?$/);
+    var demangled_op, numType, numSize, numType2, numSize2, signedness;
+    var modifiers = op.match(/^([if])(32|64)\.(.+?)(?:(?:\/([if]))?(8|16|32|64))?(?:_([su]))?$/);
     if (modifiers) {
-      type = modifiers[1];
-      demangled_op = modifiers[2];
-      cast = modifiers[3];
-      signed = modifiers[4] === '_s';
+      numType = modifiers[1];
+      numSize = modifiers[2];
+      demangled_op = modifiers[3];
+      numType2 = modifiers[4] || numType;
+      numSize2 = modifiers[5] || numSize;
+      signedness = modifiers[6];
     }
     else demangled_op = op;
     switch (demangled_op) {
