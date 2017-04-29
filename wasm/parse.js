@@ -56,6 +56,7 @@ define(function() {
     return v;
   }
 
+  // note: be careful to check for (nextRef(...)===null) instead of !nextRef(...)
   function nextRef(t, set) {
     var ref;
     if (typeof t[t.i] === 'number' && t[t.i] === Math.floor(t[t.i])) ref = t[t.i++];
@@ -182,7 +183,7 @@ define(function() {
       case 'br_table':
         output.push(op, requireRef(code, scope.blockLevels));
         var label;
-        while (label = nextRef(code, scope.blockLevels)) {
+        while ((label = nextRef(code, scope.blockLevels)) !== null) {
           if (typeof code[code.i-1] === 'string') {
             label = scope.blockLevels.length - label;
           }
