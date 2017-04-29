@@ -1,8 +1,10 @@
 (module
   (import "memory" "main" (memory 0))
   (func $ensure_memory_reach (param $end i32)
-    ;; transform byte offset to page delta and do nothing if it's <= 0
+    ;; transform byte offset to page delta, and if it's >= 0...
     (if (i32.gt_s (tee_local $end (i32.sub (current_memory) (i32.div_u (get_local $end) (i32.const 65536)))) (i32.const 0))
+      ;; ...grow the memory by this number of pages
+      ;; (and drop the result, which is the old page count)
       (drop (grow_memory (get_local $end)))
     )
   )
