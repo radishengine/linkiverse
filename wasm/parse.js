@@ -185,7 +185,7 @@ define(function() {
       case 'load': case 'store':
         output.push(op);
         output.push(nextWord(code, /^offset=\d+$/) || 'offset=0');
-        output.push(nextWord(code, /^align=\d+$/) || ('align='+op.match(/\d+/)[0]/8));
+        output.push(nextWord(code, /^align=\d+$/) || ('align='+numSize2/8));
         return;
       case 'const':
         output.push(op, requireNumber(code));
