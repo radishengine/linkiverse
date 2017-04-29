@@ -316,9 +316,9 @@ define(function() {
       buffer = new Uint8Array(1 << Math.ceil(Math.log2((code.length - i) + 1)));
       pos = 0;
     }
-    function flush() {
+    function flush(final) {
       section.push(buffer.subarray(0, pos));
-      alloc();
+      if (!final) alloc();
     }
     function write_unsigned(v) {
       for (;;) {
@@ -483,12 +483,12 @@ define(function() {
       }
     }
     if (pos >= buffer.length) {
-      flush();
+      flush(true);
       section.push(new Uint8Array([OPCODES.end]));
       return;
     }
     buffer[pos++] = OPCODES.end;
-    flush();
+    flush(true);
   }
   
   function wasm_encode(module) {
