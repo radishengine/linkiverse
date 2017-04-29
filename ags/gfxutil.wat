@@ -5,6 +5,7 @@
       (drop (grow_memory (get_local $end)))
     )
   )
+  (;
   (func $copy (param $out i32) (param $in i32) (param $count i32)
     (call $ensure_memory_reach (i32.add (get_local $out) (get_local $count)))
     ;; if $out is not 32-bit aligned, deal with that first
@@ -504,4 +505,5 @@
     end
     unreachable
   )
+  ;)
 )
