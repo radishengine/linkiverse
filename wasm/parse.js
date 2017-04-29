@@ -163,7 +163,11 @@ define(function() {
         output.push(op);
         return;
       case 'br': case 'br_if':
-        output.push(op, scope.blockLevels.length - requireRef(code, scope.blockLevels));
+        var label = requireRef(code, scope.blockLevels);
+        if (typeof code[code.i-1] === 'string') {
+          label = scope.blockLevels.length - label;
+        }
+        output.push(op, label);
         return;
       case 'call':
       case 'call_indirect':
@@ -177,9 +181,12 @@ define(function() {
         return;
       case 'br_table':
         output.push(op, requireRef(code, scope.blockLevels));
-        var ref;
-        while (ref = nextRef(code, scope.blockLevels)) {
-          output.push(ref);
+        var label;
+        while (label = nextRef(code, scope.blockLevels)) {
+          if (typeof code[code.i-1] === 'string') {
+            label = scope.blockLevels.length - label;
+          }
+          output.push(label);
         }
         return;
       case 'load': case 'store':
