@@ -200,7 +200,7 @@ define(function() {
     scope.blockLevels.push(def);
     if (name) {
       if (name in scope.blockLevels) def.hiding = true;
-      scope[name] = def.id;
+      scope.blockLevels[name] = def.id;
       def.names.push(name);
     }
   }
@@ -209,7 +209,7 @@ define(function() {
     var def = scope.blockLevels.pop();
     if (!def) throw new Error('end without block/loop/if');
     for (var i = 0; i < def.names.length; i++) {
-      delete scope[def.names[i]];
+      delete scope.blockLevels[def.names[i]];
     }
     if (def.hiding) {
       for (var i = 0; i < scope.blockLevels.length; i++)
@@ -306,11 +306,11 @@ define(function() {
           }
           if (typeof code[j] === 'string' && code[j][0] === '$') {
             var block = scope.blockLevels[scope.blockLevels.length-1];
-            if (code[j] in scope) {
+            if (code[j] in scope.blockLevels) {
               block.hiding = true;
             }
             block.names.push(code[j]);
-            scope[code[j]] = block;
+            scope.blockLevels[code[j]] = block.id;
           }
           continue reading;
         case 'else':
@@ -318,15 +318,12 @@ define(function() {
           // TODO: check block type?
           if (!block) throw new Error('else without matching if');
           output.push(nextWord(code));
-          if (blockName = nextName(code)) {
-            if (block.name) {
-              delete scope[block.name];
-            }
-            if (blockName in scope) {
+          if ((blockName = nextName(code)) && block.names.indexOf(blockName) === -1) {
+            block.names.push(blockName);
+            if (blockName in scope.blockLevels) {
               block.hiding = true;
             }
-            block.name = blockName;
-            scope[blockName] = block;
+            scope.blockLevels[blockName] = block.id;
           }
           continue reading;
         case 'end':
