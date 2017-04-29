@@ -8,7 +8,7 @@ define(['./parse', './encode'], function(wasm_parse, wasm_encode) {
   
   return {
     load: function(name, parentRequire, onload, config) {
-      fetch(parentRequire.toUrl(name+'.wat'))
+      fetch(parentRequire.toUrl(name+'.wat'), {cache:'no-cache'})
       .then(function(response) {
         if (response.ok) return response.text();
         return Promise.reject(response.url + ': ' + response.status + ' ' + response.statusText);
