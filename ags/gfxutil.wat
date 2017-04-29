@@ -126,7 +126,6 @@
       br $top
     end
   )
-  (;
   (func (export "unpack_paletted") (param $out i32) (param $in i32) (param $palette i32) (param $count i32)
     ;; ensure mem[..$out + $count*4]
     (call $ensure_memory_reach (i32.add (get_local $out) (i32.mul (get_local $count) (i32.const 4))))
@@ -370,7 +369,6 @@
       (param $opaque i32)
       (param $transp i32)
       (param $count i32)
-      (result i32)
     (local $temp1 i32)
     (local $temp2 i32)
     (local $temp3 i32)
@@ -505,5 +503,4 @@
     end
     unreachable
   )
-  ;)
 )
