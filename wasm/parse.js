@@ -625,7 +625,7 @@ define(function() {
       def.code_id = body.id;
       body.locals = typedef.params.slice();
       for (var k in typedef.params) {
-        if (k[1] === '$') body.locals[k] = typedef.params[k];
+        if (k[0] === '$') body.locals[k] = typedef.params[k];
       }
       while (subsection = nextSection(section, 'local')) {
         if (name = nextName(subsection)) {
