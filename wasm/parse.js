@@ -40,7 +40,7 @@ define(function() {
   }
   
   function requireNumber(t) {
-    var v = nextNumber(v);
+    var v = nextNumber(t);
     if (isNaN(v)) throw new Error('('+t.type+' ...): expecting number');
     return v;
   }
