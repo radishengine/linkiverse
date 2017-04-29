@@ -37,6 +37,10 @@ define(['./parse', './encode'], function(wasm_parse, wasm_encode) {
         onload.error(reason);
       });
     },
+    normalize: function(name, normalize) {
+      // use standard module name normalization
+      return normalize(name);
+    },
   };
 
 });
