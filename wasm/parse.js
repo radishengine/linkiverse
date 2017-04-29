@@ -201,7 +201,7 @@ define(function() {
     if (name) {
       if (name in scope.blockLevels) def.hiding = true;
       scope[name] = def.id;
-      scope.names.push(name);
+      def.names.push(name);
     }
   }
   
