@@ -572,7 +572,11 @@ define(function() {
     if (funcs.length > 0) {
       section = [leb128_unsigned(funcs.length)];
       for (var i = 0; i < funcs.length; i++) {
-        section.push(leb128_unsigned(funcs[i].typedef_id));
+        var def = funcs[i];
+        if (!isNaN(def.body_id) && def.body_id !== i) {
+          throw new Error('non-imported function body ids must increment from 0');
+        }
+        section.push(leb128_unsigned(def.typedef_id));
       }
       addSection(SECTION_FUNCTION, section);
     }
