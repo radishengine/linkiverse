@@ -35,18 +35,34 @@
     block $b0_7
       block $b8_15
         block $b16_31
-          block $b32_or_more
-            (i32.sub (i32.const 32) (i32.clz (get_local $count)))
-            br_table $b0_7 $b0_7 $b0_7 $b0_7 $b8_15 $b16_31 $b32_or_more
-          end $b32_or_more
-          loop $top
-            (i64.store offset=0  align=8 (get_local $out) (get_local $val))
-            (i64.store offset=8  align=8 (get_local $out) (get_local $val))
-            (i64.store offset=16 align=8 (get_local $out) (get_local $val))
-            (i64.store offset=24 align=8 (get_local $out) (get_local $val))
-                                  (set_local   $out (i32.add (get_local   $out) (i32.const 32)))
-            (br_if $top (i32.ge_u (tee_local $count (i32.sub (get_local $count) (i32.const 32))) (i32.const 32)))
-          end
+          block $b32_63
+            block $b64_or_more
+              (i32.sub (i32.const 32) (i32.clz (get_local $count)))
+              br_table $b0_7 $b0_7 $b0_7 $b0_7 $b8_15 $b16_31 $b32_63 $b64_or_more
+            end $b64_or_more
+            loop $top
+              (i64.store offset=0  align=8 (get_local $out) (get_local $val))
+              (i64.store offset=8  align=8 (get_local $out) (get_local $val))
+              (i64.store offset=16 align=8 (get_local $out) (get_local $val))
+              (i64.store offset=24 align=8 (get_local $out) (get_local $val))
+              (i64.store offset=32 align=8 (get_local $out) (get_local $val))
+              (i64.store offset=40 align=8 (get_local $out) (get_local $val))
+              (i64.store offset=48 align=8 (get_local $out) (get_local $val))
+              (i64.store offset=56 align=8 (get_local $out) (get_local $val))
+                                    (set_local   $out (i32.add (get_local   $out) (i32.const 64)))
+              (br_if $top (i32.ge_u (tee_local $count (i32.sub (get_local $count) (i32.const 64))) (i32.const 64)))
+            end
+            (br_if $b0_7   (i32.lt_u (get_local $count) (i32.const  8)))
+            (br_if $b8_15  (i32.lt_u (get_local $count) (i32.const 16)))
+            (br_if $b16_31 (i32.lt_u (get_local $count) (i32.const 32)))
+            ;; fall through:
+          end $b32_63
+          (i64.store offset=0  align=8 (get_local $out) (get_local $val))
+          (i64.store offset=8  align=8 (get_local $out) (get_local $val))
+          (i64.store offset=16 align=8 (get_local $out) (get_local $val))
+          (i64.store offset=24 align=8 (get_local $out) (get_local $val))
+          (set_local   $out (i32.add (get_local   $out) (i32.const 32)))
+          (set_local $count (i32.sub (get_local $count) (i32.const 32)))
           (br_if $b0_7  (i32.lt_u (get_local $count) (i32.const  8)))
           (br_if $b8_15 (i32.lt_u (get_local $count) (i32.const 16)))
           ;; fall through:
