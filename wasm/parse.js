@@ -787,6 +787,14 @@ define(function() {
     }
     if (module.tables.length > 1) throw new Error('only 1 table section is allowed currently');
     if (module.memorySections.length > 1) throw new Error('only 1 memory section is allowed currently');
+    function processInstructions(body, paramsAndLocals) {
+      var scope = {
+        blockLevels: Object.assign([], {element_kind:'blocklevel'}),
+        module: module,
+        locals: paramsAndLocals || [],
+      };
+      return readInstructions(scope, [], body);
+    }
     for (var i = 0; i < module.functionBodies.length; i++) {
       var body = module.functionBodies[i];
       var paramsAndLocals = body.params.concat(body.locals);
@@ -796,13 +804,19 @@ define(function() {
       for (var k in body.locals) {
         if (k[0] === '$') paramsAndLocals[k] = body.locals[k] + body.params.length;
       }
-      var scope = {
-        blockLevels: Object.assign([], {element_kind:'blocklevel'}),
-        module: module,
-        locals: paramsAndLocals,
-      };
-      module.functionBodies[i] = readInstructions(scope, [], body);
+      module.functionBodies[i] = processInstructions(body, paramsAndLocals);
       module.functionBodies[i].locals = body.locals.slice();
+    }
+    for (var i = 0; i < module.globals.length; i++) {
+      if (!module.globals[i].isImported) {
+        module.globals[i].initialValue = processInstructions(module.globals[i].initialValue);
+      }
+    }
+    for (var i = 0; i < module.dataSections.length; i++) {
+      module.dataSections[i].offset = processInstructions(module.dataSections[i].offset);
+    }
+    for (var i = 0; i < module.tableElements.length; i++) {
+      module.tableElements[i].offset = processInstructions(module.tableElements[i].offset);
     }
     return module;
   }
