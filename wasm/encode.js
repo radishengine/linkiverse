@@ -636,16 +636,17 @@ define(function() {
       section = [leb128_unsigned(module.functionBodies.length)];
       for (var i = 0; i < module.functionBodies.length; i++) {
         def = module.functionBodies[i];
-        var body = [leb128_unsigned(def.locals.length)];
-        for (var j = 0; j < def.locals.length; j++) {
+        var locals = def.locals || [];
+        var body = [leb128_unsigned(locals.length)];
+        for (var j = 0; j < locals.length; j++) {
           var count = 1;
-          while (def.locals[j+1] === def.locals[j]) {
+          while (locals[j+1] === locals[j]) {
             j++;
             count++;
           }
           body.push(
             leb128_unsigned(count),
-            leb128_unsigned(VALUE_TYPES[def.locals[j]]));
+            leb128_unsigned(VALUE_TYPES[locals[j]]));
         }
         write_instructions(body, def.instructions);
         section.push(leb128_unsigned(blobPartsByteLength(body)));
