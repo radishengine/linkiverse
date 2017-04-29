@@ -224,7 +224,7 @@ define(function() {
     switch (expr.type) {
       case 'block':
       case 'loop':
-        output.push(nextWord(expr.type));
+        output.push(expr.type);
         enterBlock(scope, nextName(expr));
         while (dataType = nextWord(expr, /^[if](32|64)$/)) {
           output.push(dataType);
