@@ -534,13 +534,15 @@ define(function() {
             requireEnd(subsection);
           }
           else {
-            var typedef = readFuncTypedef({}, section);
+            var typedef = readFuncTypedef(def, section);
             if (typedef.signature in module.typedefs) {
               def.typedef_id = module.typedefs[typedef.signature];
             }
             else {
-              module.typedefs[typedef.signature] = typedef.id = module.typedefs.length;
-              module.typedefs.push(typedef);
+              def.typedef_id = module.typedefs.length;
+              module.typedefs.push(def);
+              module.typedefs[def.signature] = def.typedef_id;
+              typedef = def;
             }
           }
           break;
@@ -604,12 +606,16 @@ define(function() {
         maybeInlineExport(def, section);
       }
       readFuncTypedef(def, section);
+      var typedef;
       if (def.signature in module.typedefs) {
         def.typedef_id = module.typedefs[def.signature];
+        typedef = module.typedefs[def.typedef_id];
       }
       else {
         def.typedef_id = module.typedefs.length;
-        module.typedefs.push(module[def.signature] = def);
+        module.typedefs.push(def);
+        module.typedefs[def.signature] = def.typedef_id;
+        typedef = def;
       }
       if (def.isImported) {
         requireEnd(section);
