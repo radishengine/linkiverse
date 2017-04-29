@@ -648,7 +648,7 @@ define(function() {
             leb128_unsigned(count),
             leb128_unsigned(VALUE_TYPES[locals[j]]));
         }
-        write_instructions(body, def.instructions);
+        write_instructions(body, def);
         section.push(leb128_unsigned(blobPartsByteLength(body)));
         section.push.apply(section, body);
       }
