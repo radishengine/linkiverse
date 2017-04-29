@@ -68,7 +68,8 @@
       br $top
     end
   )
-  (func $fill (export "fill") (param $out i32) (param $val i64) (param $count i32)
+  (func $fill (export "fill") (param $out i32) (param $val32 i32) (param $count i32)
+    (local $val i64)
     (call $ensure_memory_reach (i32.add (get_local $out) (get_local $count)))
     ;; if $out is not 64-bit aligned, deal with that first
     block $break
@@ -78,14 +79,14 @@
         ;; if $out is 64-bit aligned, break
         (br_if $break (i32.eqz (i32.and (get_local $out) (i32.const 7))))
         ;; otherwise, fill 1 byte and continue
-        (i64.store8 (get_local $out) (get_local $val))
+        (i32.store8 (get_local $out) (get_local $val32))
         (set_local   $out (i32.add (get_local   $out) (i32.const 1)))
         (set_local $count (i32.sub (get_local $count) (i32.const 1)))
         br $top
       end
     end $break
-    ;; turn $val the byte into a 64-bit pattern of itself
-    (set_local $val (i64.and (get_local $val) (i64.const 255)))
+    ;; turn $val into a 64-bit pattern $val32's low byte
+    (set_local $val (i64.extend_u/i32 (i32.and (get_local $val32) (i32.const 255))))
     (set_local $val (i64.or (get_local $val) (i64.shl (get_local $val) (i64.const  8))))
     (set_local $val (i64.or (get_local $val) (i64.shl (get_local $val) (i64.const 16))))
     (set_local $val (i64.or (get_local $val) (i64.shl (get_local $val) (i64.const 32))))
@@ -123,7 +124,7 @@
       ;; if count=0, return
       (if (i32.eqz (get_local $count)) (return))
       ;; otherwise, copy 1 byte and continue
-      (i64.store8 (get_local $out) (get_local $val))
+      (i32.store8 (get_local $out) (get_local $val32))
       (set_local   $out (i32.add (get_local   $out) (i32.const 1)))
       (set_local $count (i32.sub (get_local $count) (i32.const 1)))
       br $top
