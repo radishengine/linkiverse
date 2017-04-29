@@ -348,27 +348,28 @@ define(function() {
       }
     }
     function memory_immediate(naturalAlignment) {
-      var match, alignment, offset;
+      var match, alignment = Math.log2(naturalAlignment), offset = 0;
       
-      if (match = (''+code[i]).match(/^align=(\d+)$/)) {
-        i++;
-        var alignment = Math.log2(+match[1]);
-        if (match !== Math.floor(match)) {
-          throw new Error('align must be a power of 2');
+      do {
+        if (match = (''+code[i]).match(/^offset=(\d+)$/)) {
+          i++;
+          offset = +match[1];
         }
-        if (alignment > naturalAlignment) {
-          throw new Error('alignment size must be no larger than natural alignment');
+        else if (match = (''+code[i]).match(/^align=(\d+)$/)) {
+          i++;
+          var alignment = Math.log2(+match[1]);
+          if (alignment !== Math.floor(alignment)) {
+            throw new Error('align must be a power of 2');
+          }
+          if (alignment > naturalAlignment) {
+            throw new Error('alignment size must be no larger than natural alignment');
+          }
         }
-      }
-      else alignment = naturalAlignment;
+      } while (match);
       
-      if (match = (''+code[i]).match(/^offset=(\d+)$/)) {
-        i++;
-        offset = +match[1];
-      }
-      else offset = 0;
+      var flags = alignment;
       
-      write_unsigned(alignment);
+      write_unsigned(flags);
       write_unsigned(offset);
     }
     alloc();
