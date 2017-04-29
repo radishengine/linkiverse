@@ -181,14 +181,14 @@ define(function() {
         output.push(op, requireRef(code, scope.module.globals));
         return;
       case 'br_table':
-        output.push(op, requireRef(code, scope.blockLevels));
-        var label;
-        while ((label = nextRef(code, scope.blockLevels)) !== null) {
+        output.push(op);
+        var label = requireRef(code, scope.blockLevels);
+        do {
           if (typeof code[code.i-1] === 'string') {
             label = scope.blockLevels.length - label;
           }
           output.push(label);
-        }
+        } while ((label = nextRef(code, scope.blockLevels)) !== null);
         return;
       case 'load': case 'store':
         output.push(op);
