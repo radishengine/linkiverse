@@ -26,12 +26,7 @@ define(['./parse', './encode'], function(wasm_parse, wasm_encode) {
           fr.readAsArrayBuffer(wasm_blob);
         });
       })
-      .then(function(wasm) {
-        if (!WebAssembly.validate(wasm)) {
-          return Promise.reject('invalid wasm');
-        }
-        return WebAssembly.compile(wasm);
-      })
+      .then(WebAssembly.compile)
       .then(onload, function(reason) {
         if (!(reason instanceof Error)) reason = new Error(reason);
         onload.error(reason);
