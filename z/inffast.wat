@@ -263,15 +263,33 @@
                   ;; distance base
                   (set_local $dist (i32.shr_u (get_local $here) (i32.const 16)))
                   (set_local $op (i32.and (get_local $op) (i32.const 15))) ;; number of extra bits
+                  (if (i32.lt_u (get_local $bits) (get_local $op)) (then
+                    (set_local $hold
+                      (i32.add
+                        (get_local $hold)
+                        (i32.shl
+                          (i32.load8_u (get_local $in))
+                          (get_local $bits)
+                        )
+                      )
+                    )
+                    (set_local   $in (i32.add (get_local   $in) (i32.const 1)))
+                    (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                    (if (i32.lt_u (get_local $bits) (get_local $op)) (then
+                      (set_local $hold
+                        (i32.add
+                          (get_local $hold)
+                          (i32.shl
+                            (i32.load8_u (get_local $in))
+                            (get_local $bits)
+                          )
+                        )
+                      )
+                      (set_local   $in (i32.add (get_local   $in) (i32.const 1)))
+                      (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                    ))
+                  ))
   (;
-                    if (bits < op) {
-                        hold += (unsigned long)(*in++) << bits;
-                        bits += 8;
-                        if (bits < op) {
-                            hold += (unsigned long)(*in++) << bits;
-                            bits += 8;
-                        }
-                    }
                     dist += (unsigned)hold & ((1U << op) - 1);
                     hold >>= op;
                     bits -= op;
