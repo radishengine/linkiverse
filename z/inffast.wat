@@ -259,10 +259,11 @@
                     (i32.const 255)
                   )
                 )
+                (if (i32.and (get_local $op) (i32.const 16)) (then
+                  ;; distance base
+                  (set_local $dist (i32.shr_u (get_local $here) (i32.const 16)))
+                  (set_local $op (i32.and (get_local $op) (i32.const 15))) ;; number of extra bits
   (;
-                if (op & 16) {                      /* distance base */
-                    dist = (unsigned)(here.val);
-                    op &= 15;                       /* number of extra bits */
                     if (bits < op) {
                         hold += (unsigned long)(*in++) << bits;
                         bits += 8;
@@ -377,48 +378,44 @@
                                 *out++ = *from++;
                         }
                     }
-                }
-                else if ((op & 64) == 0) {          /* 2nd level distance code */
+       ;)
+                  (br $do)
+                ))
+                (if (i32.eqz (i32.and (get_local $op) (i32.const 64))) (then
+                  ;; 2nd level distance code
+                  (;
                     here = dcode[here.val + (hold & ((1U << op) - 1))];
-       ;)
-                    (br $dodist)
-        (;
-                }
-                else {
-                    strm->msg = (char *)"invalid distance code";
-                    state->mode = BAD;
-       ;)
-                    (br $break)
-        (;
-                }
-        ;)
-              (br $do)
+                  ;)
+                  (br $dodist)
+                ))
+                (;
+                  strm->msg = (char *)"invalid distance code";
+                  state->mode = BAD;
+                ;)
+                (br $break)
+              end ;; loop $dodist
             ))
-            
-        (;
-            if ((op & 64) == 0) {              /* 2nd level length code */
+            (if (i32.eqz (i32.and (get_local $op) (i32.const 64))) (then
+              ;; 2nd level length code
+              (;
                 here = lcode[here.val + (hold & ((1U << op) - 1))];
-     ;)
-                (br $dolen)
-      (;
-            }
-            else if (op & 32) {                     /* end-of-block */
-                Tracevv((stderr, "inflate:         end of block\n"));
+              ;)
+              (br $dolen)
+            ))
+            (if (i32.and (get_local $op) (i32.const 32)) (then
+              ;; end of block
+              ;; Tracevv((stderr, "inflate:         end of block\n"));
+              (;
                 state->mode = TYPE;
-     ;)
-                (br $break)
-      (;
-            }
-            else {
-                strm->msg = (char *)"invalid literal/length code";
-                state->mode = BAD;
-     ;)
-                (br $break)
-      (;
-            }
-     ;)
-            end $dodist
-          end $dolen
+              ;)
+              (br $break)
+            ))
+            (;
+              strm->msg = (char *)"invalid literal/length code";
+              state->mode = BAD;
+            ;)
+            (br $break)
+          end ;; loop $dolen
         end $do
         (br_if $top
           (i32.and
@@ -429,7 +426,7 @@
       end
     end $break
 
-    ;; return unused bytes (on entry, bits < 8, so in won't go too far back)
+    ;; return unused bytes (on entry, $bits < 8, so $in won't go too far back)
     (set_local $len (i32.shr_u (get_local $bits) (i32.const 3)))
     (set_local $in (i32.sub (get_local $in) (get_local $len)))
     (set_local $bits (i32.sub (get_local $bits) (bit.shl (get_local $len) (i32.const 3))))
