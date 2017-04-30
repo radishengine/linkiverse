@@ -1,5 +1,10 @@
 (module
 
+  ;; code as i32: VVVVBBPP
+  ;; VVVV = val
+  ;; BB = bits
+  ;; PP = op
+
   ;; stream:
   ;;  offset=0 next_in
   ;;  offset=4 avail_in
@@ -50,27 +55,27 @@
   (func $inflate_fast
       (param $strm i32)
       (param $start i32) ;; inflate()'s starting value for strm->avail_out
-    (local $state i32)
-    (local $in i32)      ;; local strm->next_in
-    (local $last i32)    ;; have enough input while $in < $last
-    (local $out i32)     ;; local strm->next_out
-    (local $beg i32)     ;; inflate()'s initial strm->next_out
-    (local $end i32)     ;; while $out < $end, enough space available
-    (local $wsize i32)   ;; window size or zero if not using window
-    (local $whave i32)   ;; valid bytes in the window
-    (local $wnext i32)   ;; window write index
-    (local $window i32)  ;; allocated sliding window, if wsize != 0
-    (local $hold i32)    ;; local strm->hold
-    (local $bits i32)    ;; local strm->bits
-    (local $lcode i32)   ;; local strm->lencode
-    (local $dcode i32)   ;; local strm->distcode
-    (local $lmask i32)   ;; mask for first level of length codes
-    (local $dmask i32)   ;; mask for first level of distance codes
-    (local $here i32)    ;; retrieved table entry
-    (local $op i32)      ;; code bits, operation, extra bits, or window position, window bytes to copy
-    (local $len i32)     ;; match length, unused bytes
-    (local $dist i32)    ;; match distance
-    (local $from i32)    ;; where to copy match from
+    (local $state  i32)
+    (local $in     i32) ;; local strm->next_in
+    (local $last   i32) ;; have enough input while $in < $last
+    (local $out    i32) ;; local strm->next_out
+    (local $beg    i32) ;; inflate()'s initial strm->next_out
+    (local $end    i32) ;; while $out < $end, enough space available
+    (local $wsize  i32) ;; window size or zero if not using window
+    (local $whave  i32) ;; valid bytes in the window
+    (local $wnext  i32) ;; window write index
+    (local $window i32) ;; allocated sliding window, if wsize != 0
+    (local $hold   i32) ;; local strm->hold
+    (local $bits   i32) ;; local strm->bits
+    (local $lcode  i32) ;; local strm->lencode
+    (local $dcode  i32) ;; local strm->distcode
+    (local $lmask  i32) ;; mask for first level of length codes
+    (local $dmask  i32) ;; mask for first level of distance codes
+    (local $here   i32) ;; retrieved table entry
+    (local $op     i32) ;; code bits, operation, extra bits, or window position, window bytes to copy
+    (local $len    i32) ;; match length, unused bytes
+    (local $dist   i32) ;; match distance
+    (local $from   i32) ;; where to copy match from
     
     ;; copy state to local variables
     (set_local $state   (i32.load (; state ;)    offset=28 (get_local $strm)))
@@ -132,196 +137,221 @@
     ;; decode literals and length/distances until end-of-block or not enough
     ;; input data or output space
     
-    loop $do
-(;
-
-        if (bits < 15) {
-            hold += (unsigned long)(*in++) << bits;
-            bits += 8;
-            hold += (unsigned long)(*in++) << bits;
-            bits += 8;
-        }
-        here = lcode[hold & lmask];
-      dolen:
-        op = (unsigned)(here.bits);
-        hold >>= op;
-        bits -= op;
-        op = (unsigned)(here.op);
-        if (op == 0) {                          /* literal */
-            Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
-                    "inflate:         literal '%c'\n" :
-                    "inflate:         literal 0x%02x\n", here.val));
-            *out++ = (unsigned char)(here.val);
-        }
-        else if (op & 16) {                     /* length base */
-            len = (unsigned)(here.val);
-            op &= 15;                           /* number of extra bits */
-            if (op) {
-                if (bits < op) {
-                    hold += (unsigned long)(*in++) << bits;
-                    bits += 8;
-                }
-                len += (unsigned)hold & ((1U << op) - 1);
-                hold >>= op;
-                bits -= op;
-            }
-            Tracevv((stderr, "inflate:         length %u\n", len));
-            if (bits < 15) {
-                hold += (unsigned long)(*in++) << bits;
-                bits += 8;
-                hold += (unsigned long)(*in++) << bits;
-                bits += 8;
-            }
-            here = dcode[hold & dmask];
-          dodist:
-            op = (unsigned)(here.bits);
+    block $break
+      loop $top
+        block $do
+          (if (i32.lt_u (get_local $bits) (i32.const 15)) (then
+            (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+            (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
+            (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+            (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
+            (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+          ))
+          ;; $here = $lcode[$hold & $mask] (codes are 32-bit)
+          (set_local $here (i32.load (get_local $lcode) (i32.shl (i32.and (get_local $hold) (get_local $lmask)) (i32.const 2))))
+          loop $dolen
+            (set_local $op
+              (i32.and
+                (i32.shr_u (get_local $here) (i32.const 8))
+                (i32.const 255)
+              )
+            )
+  (;
             hold >>= op;
             bits -= op;
             op = (unsigned)(here.op);
-            if (op & 16) {                      /* distance base */
-                dist = (unsigned)(here.val);
-                op &= 15;                       /* number of extra bits */
-                if (bits < op) {
-                    hold += (unsigned long)(*in++) << bits;
-                    bits += 8;
+            if (op == 0) {                          /* literal */
+                Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
+                        "inflate:         literal '%c'\n" :
+                        "inflate:         literal 0x%02x\n", here.val));
+                *out++ = (unsigned char)(here.val);
+            }
+            else if (op & 16) {                     /* length base */
+                len = (unsigned)(here.val);
+                op &= 15;                           /* number of extra bits */
+                if (op) {
                     if (bits < op) {
                         hold += (unsigned long)(*in++) << bits;
                         bits += 8;
                     }
+                    len += (unsigned)hold & ((1U << op) - 1);
+                    hold >>= op;
+                    bits -= op;
                 }
-                dist += (unsigned)hold & ((1U << op) - 1);
+                Tracevv((stderr, "inflate:         length %u\n", len));
+                if (bits < 15) {
+                    hold += (unsigned long)(*in++) << bits;
+                    bits += 8;
+                    hold += (unsigned long)(*in++) << bits;
+                    bits += 8;
+                }
+                here = dcode[hold & dmask];
+              dodist:
+                op = (unsigned)(here.bits);
                 hold >>= op;
                 bits -= op;
-                Tracevv((stderr, "inflate:         distance %u\n", dist));
-                op = (unsigned)(out - beg);     /* max distance in output */
-                if (dist > op) {                /* see if copy from window */
-                    op = dist - op;             /* distance back in window */
-                    if (op > whave) {
-                        if (state->sane) {
-                            strm->msg =
-                                (char *)"invalid distance too far back";
-                            state->mode = BAD;
-                            break;
+                op = (unsigned)(here.op);
+                if (op & 16) {                      /* distance base */
+                    dist = (unsigned)(here.val);
+                    op &= 15;                       /* number of extra bits */
+                    if (bits < op) {
+                        hold += (unsigned long)(*in++) << bits;
+                        bits += 8;
+                        if (bits < op) {
+                            hold += (unsigned long)(*in++) << bits;
+                            bits += 8;
                         }
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-                        if (len <= op - whave) {
+                    }
+                    dist += (unsigned)hold & ((1U << op) - 1);
+                    hold >>= op;
+                    bits -= op;
+                    Tracevv((stderr, "inflate:         distance %u\n", dist));
+                    op = (unsigned)(out - beg);     /* max distance in output */
+                    if (dist > op) {                /* see if copy from window */
+                        op = dist - op;             /* distance back in window */
+                        if (op > whave) {
+                            if (state->sane) {
+                                strm->msg =
+                                    (char *)"invalid distance too far back";
+                                state->mode = BAD;
+         ;)
+                                (br $break)
+          (;
+                            }
+    #ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
+                            if (len <= op - whave) {
+                                do {
+                                    *out++ = 0;
+                                } while (--len);
+         ;)
+                                (br $do)
+          (;
+                            }
+                            len -= op - whave;
                             do {
                                 *out++ = 0;
-                            } while (--len);
-                            continue;
+                            } while (--op > whave);
+                            if (op == 0) {
+                                from = out - dist;
+                                do {
+                                    *out++ = *from++;
+                                } while (--len);
+         ;)
+                                (br $do)
+          (;
+                            }
+    #endif
                         }
-                        len -= op - whave;
-                        do {
-                            *out++ = 0;
-                        } while (--op > whave);
-                        if (op == 0) {
-                            from = out - dist;
-                            do {
-                                *out++ = *from++;
-                            } while (--len);
-                            continue;
-                        }
-#endif
-                    }
-                    from = window;
-                    if (wnext == 0) {           /* very common case */
-                        from += wsize - op;
-                        if (op < len) {         /* some from window */
-                            len -= op;
-                            do {
-                                *out++ = *from++;
-                            } while (--op);
-                            from = out - dist;  /* rest from output */
-                        }
-                    }
-                    else if (wnext < op) {      /* wrap around window */
-                        from += wsize + wnext - op;
-                        op -= wnext;
-                        if (op < len) {         /* some from end of window */
-                            len -= op;
-                            do {
-                                *out++ = *from++;
-                            } while (--op);
-                            from = window;
-                            if (wnext < len) {  /* some from start of window */
-                                op = wnext;
+                        from = window;
+                        if (wnext == 0) {           /* very common case */
+                            from += wsize - op;
+                            if (op < len) {         /* some from window */
                                 len -= op;
                                 do {
                                     *out++ = *from++;
                                 } while (--op);
-                                from = out - dist;      /* rest from output */
+                                from = out - dist;  /* rest from output */
                             }
                         }
-                    }
-                    else {                      /* contiguous in window */
-                        from += wnext - op;
-                        if (op < len) {         /* some from window */
-                            len -= op;
-                            do {
+                        else if (wnext < op) {      /* wrap around window */
+                            from += wsize + wnext - op;
+                            op -= wnext;
+                            if (op < len) {         /* some from end of window */
+                                len -= op;
+                                do {
+                                    *out++ = *from++;
+                                } while (--op);
+                                from = window;
+                                if (wnext < len) {  /* some from start of window */
+                                    op = wnext;
+                                    len -= op;
+                                    do {
+                                        *out++ = *from++;
+                                    } while (--op);
+                                    from = out - dist;      /* rest from output */
+                                }
+                            }
+                        }
+                        else {                      /* contiguous in window */
+                            from += wnext - op;
+                            if (op < len) {         /* some from window */
+                                len -= op;
+                                do {
+                                    *out++ = *from++;
+                                } while (--op);
+                                from = out - dist;  /* rest from output */
+                            }
+                        }
+                        while (len > 2) {
+                            *out++ = *from++;
+                            *out++ = *from++;
+                            *out++ = *from++;
+                            len -= 3;
+                        }
+                        if (len) {
+                            *out++ = *from++;
+                            if (len > 1)
                                 *out++ = *from++;
-                            } while (--op);
-                            from = out - dist;  /* rest from output */
                         }
                     }
-                    while (len > 2) {
-                        *out++ = *from++;
-                        *out++ = *from++;
-                        *out++ = *from++;
-                        len -= 3;
-                    }
-                    if (len) {
-                        *out++ = *from++;
-                        if (len > 1)
+                    else {
+                        from = out - dist;          /* copy direct from output */
+                        do {                        /* minimum length is three */
                             *out++ = *from++;
+                            *out++ = *from++;
+                            *out++ = *from++;
+                            len -= 3;
+                        } while (len > 2);
+                        if (len) {
+                            *out++ = *from++;
+                            if (len > 1)
+                                *out++ = *from++;
+                        }
                     }
+                }
+                else if ((op & 64) == 0) {          /* 2nd level distance code */
+                    here = dcode[here.val + (hold & ((1U << op) - 1))];
+                    goto dodist;
                 }
                 else {
-                    from = out - dist;          /* copy direct from output */
-                    do {                        /* minimum length is three */
-                        *out++ = *from++;
-                        *out++ = *from++;
-                        *out++ = *from++;
-                        len -= 3;
-                    } while (len > 2);
-                    if (len) {
-                        *out++ = *from++;
-                        if (len > 1)
-                            *out++ = *from++;
-                    }
+                    strm->msg = (char *)"invalid distance code";
+                    state->mode = BAD;
+       ;)
+                    (br $break)
+        (;
                 }
             }
-            else if ((op & 64) == 0) {          /* 2nd level distance code */
-                here = dcode[here.val + (hold & ((1U << op) - 1))];
-                goto dodist;
+            else if ((op & 64) == 0) {              /* 2nd level length code */
+                here = lcode[here.val + (hold & ((1U << op) - 1))];
+     ;)
+                (br $dolen)
+      (;
+            }
+            else if (op & 32) {                     /* end-of-block */
+                Tracevv((stderr, "inflate:         end of block\n"));
+                state->mode = TYPE;
+     ;)
+                (br $break)
+      (;
             }
             else {
-                strm->msg = (char *)"invalid distance code";
+                strm->msg = (char *)"invalid literal/length code";
                 state->mode = BAD;
-                break;
+     ;)
+                (br $break)
+      (;
             }
-        }
-        else if ((op & 64) == 0) {              /* 2nd level length code */
-            here = lcode[here.val + (hold & ((1U << op) - 1))];
-            goto dolen;
-        }
-        else if (op & 32) {                     /* end-of-block */
-            Tracevv((stderr, "inflate:         end of block\n"));
-            state->mode = TYPE;
-            break;
-        }
-        else {
-            strm->msg = (char *)"invalid literal/length code";
-            state->mode = BAD;
-            break;
-        }
-   ;)
-      (br_if $do
-        (i32.and
-          (i32.lt (get_local $in)  (get_local $last) )
-          (i32.lt (get_local $out) (get_local $end)  )
+     ;)
+          end $dolen
+        end $do
+        (br_if $top
+          (i32.and
+            (i32.lt (get_local $in)  (get_local $last) )
+            (i32.lt (get_local $out) (get_local $end)  )
+          )
         )
-      )
-    end
+      end
+    end $break
 
     ;; return unused bytes (on entry, bits < 8, so in won't go too far back)
     (set_local $len (i32.shr_u (get_local $bits) (i32.const 3)))
