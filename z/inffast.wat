@@ -13,7 +13,7 @@
   ;; state: (note: recent inflate.h has added strm reference as first field)
   ;;  offset=0  mode
   ;;  offset=4  last
-  ;;  offset=8 wrap
+  ;;  offset=8  wrap
   ;;  offset=12 havedict
   ;;  offset=16 flags
   ;;  offset=20 dmax
@@ -73,30 +73,68 @@
     (local $from i32)    ;; where to copy match from
     
     ;; copy state to local variables
-    (set_local $state (i32.load (; state ;) offset=28 (get_local $strm)))
-    (set_local $in (i32.load (; next_in ;) offset=0 (get_local $strm)))
-    (set_local $last (i32.add (get_local $in) (i32.sub (i32.load (; avail_in ;) offset=4 (get_local $strm)) (i32.const 5))))
-    (set_local $out (i32.load (; next_out ;) offset=12 (get_local $strm)))
-    (set_local $beg (i32.sub (get_local $out) (i32.sub (get_local start) (i32.load (; avail_out ;) offset=16 (get_local $strm))))
-    (set_local $end (i32.add (get_local $out) (i32.sub (i32.load (; avail_out ;) offset=16 (get_local $strm)) (i32.const 257))))
-    (set_local $wsize (i32.load (; wsize ;) offset=40 (get_local $state)))
-
+    (set_local $state   (i32.load (; state ;)    offset=28 (get_local $strm)))
+    (set_local $in      (i32.load (; next_in ;)  offset=0  (get_local $strm)))
+    (set_local $last
+      (i32.add
+        (get_local $in)
+        (i32.sub
+                        (i32.load (; avail_in ;) offset=4  (get_local $strm))
+                        (i32.const 5)
+        )
+      )
+    )
+    (set_local $out     (i32.load (; next_out ;) offset=12 (get_local $strm)))
+    (set_local $beg
+      (i32.sub
+        (get_local $out)
+        (i32.sub
+                        (get_local $start)
+                        (i32.load (; avail_out ;) offset=16 (get_local $strm))
+        )
+      )
+    )
+    (set_local $end
+      (i32.add
+        (get_local $out)
+        (i32.sub
+                        (i32.load (; avail_out ;) offset=16 (get_local $strm))
+                        (i32.const 257)
+        )
+      )
+    )
+    (set_local $wsize  (i32.load (; wsize ;)     offset=40 (get_local $state)))
+    (set_local $whave  (i32.load (; whave ;)     offset=44 (get_local $state)))
+    (set_local $wnext  (i32.load (; wnext ;)     offset=48 (get_local $state)))
+    (set_local $window (i32.load (; window ;)    offset=52 (get_local $state)))
+    (set_local $hold   (i32.load (; hold ;)      offset=56 (get_local $state)))
+    (set_local $bits   (i32.load (; bits ;)      offset=60 (get_local $state)))
+    (set_local $lcode  (i32.load (; lencode ;)   offset=76 (get_local $state)))
+    (set_local $dcode  (i32.load (; distcode ;)  offset=80 (get_local $state)))
+    (set_local $lmask
+      (i32.sub
+        (i32.shl
+                        (i32.const 1)
+                        (i32.load (; lenbits ;) offset=84 (get_local $state))
+        )
+        (i32.const 1)
+      )
+    )
+    (set_local $dmask
+      (i32.sub
+        (i32.shl
+                        (i32.const 1)
+                        (i32.load (; distbits ;) offset=88 (get_local $state))
+        )
+        (i32.const 1)
+      )
+    )
+    ;; decode literals and length/distances until end-of-block or not enough
+    ;; input data or output space
+    
+    loop $do
 (;
 
-    wsize = state->wsize;
-    whave = state->whave;
-    wnext = state->wnext;
-    window = state->window;
-    hold = state->hold;
-    bits = state->bits;
-    lcode = state->lencode;
-    dcode = state->distcode;
-    lmask = (1U << state->lenbits) - 1;
-    dmask = (1U << state->distbits) - 1;
-
-    /* decode literals and length/distances until end-of-block or not enough
-       input data or output space */
-    do {
         if (bits < 15) {
             hold += (unsigned long)(*in++) << bits;
             bits += 8;
@@ -152,13 +190,6 @@
                     }
                 }
                 dist += (unsigned)hold & ((1U << op) - 1);
-#ifdef INFLATE_STRICT
-                if (dist > dmax) {
-                    strm->msg = (char *)"invalid distance too far back";
-                    state->mode = BAD;
-                    break;
-                }
-#endif
                 hold >>= op;
                 bits -= op;
                 Tracevv((stderr, "inflate:         distance %u\n", dist));
@@ -283,24 +314,39 @@
             state->mode = BAD;
             break;
         }
-    } while (in < last && out < end);
+   ;)
+      (br_if $do
+        (i32.and
+          (i32.lt (get_local $in)  (get_local $last) )
+          (i32.lt (get_local $out) (get_local $end)  )
+        )
+      )
+    end
 
-    /* return unused bytes (on entry, bits < 8, so in won't go too far back) */
-    len = bits >> 3;
-    in -= len;
-    bits -= len << 3;
-    hold &= (1U << bits) - 1;
+    ;; return unused bytes (on entry, bits < 8, so in won't go too far back)
+    (set_local $len (i32.shr_u (get_local $bits) (i32.const 3)))
+    (set_local $in (i32.sub (get_local $in) (get_local $len)))
+    (set_local $bits (i32.sub (get_local $bits) (bit.shl (get_local $len) (i32.const 3))))
+    (set_local $hold (i32.and (i32.sub (i32.shl (i32.const 1) (get_local $bits)) (i32.const 1))))
 
-    /* update state and return */
-    strm->next_in = in;
-    strm->next_out = out;
-    strm->avail_in = (unsigned)(in < last ? 5 + (last - in) : 5 - (in - last));
-    strm->avail_out = (unsigned)(out < end ?
-                                 257 + (end - out) : 257 - (out - end));
-    state->hold = hold;
-    state->bits = bits;
-;)
-
+    ;; update state and return
+    (i32.store (; next_in ;)  offset=0  (get_local $strm) (get_local $in))
+    (i32.store (; next_out ;) offset=12 (get_local $strm) (get_local $out))
+    (i32.store (; avail_in ;) offset=4 (get_local $strm)
+      (select
+        (i32.sub (i32.const 5) (i32.sub (get_local $in) (get_local $last)))
+        (i32.add (i32.const 5) (i32.sub (get_local $last) (get_local $in)))
+        (i32.lt_u (get_local $in) (get_local $last))
+      )
+    )
+    (i32.store (; avail_out ;) offset=16 (get_local $strm)
+      (select
+        (i32.add (i32.const 257) (i32.sub (get_local $end) (get_local $out)))
+        (i32.sub (i32.const 257) (i32.sub (get_local $out) (get_local $end)))
+        (i32.lt_u (get_local $out) (get_local $end))
+      )
+    )
+    (i32.store (; hold ;) offset=56 (get_local $state) (get_local $hold))
+    (i32.store (; bits ;) offset=60 (get_local $state) (get_local $bits))
   )
-
 )
