@@ -144,6 +144,7 @@
             (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+            (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
           ))
@@ -185,28 +186,63 @@
               (br $do)
             ))
             
+            (if (i32.and (get_local $op) (i32.const 16)) (then
+              ;; length base
+              (set_local $len (i32.rsh_u (get_local $here) (i32.const 16)))
+              (set_local $op  (i32.and   (get_local $op)   (i32.const 15))) ;; number of extra bits
+              (if (get_local $op) (then
+                (if (i32.lt_u (get_local $bits) (get_local $op)) (then
+                  (set_local $hold
+                    (i32.add
+                      (get_local $hold)
+                      (i32.shl
+                        (i32.load8_u (get_local $in))
+                        (get_local $bits)
+                      )
+                    )
+                  )
+                  (set_local   $in (i32.add (get_local   $in) (i32.const 1)))
+                  (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                ))
+                (set_local $len
+                  (i32.add
+                    (get_local $len)
+                    (i32.and
+                      (get_local $hold)
+                      (i32.sub
+                        (i32.shl
+                          (i32.const 1)
+                          (get_local $op)
+                        )
+                        (i32.const 1)
+                      )
+                    )
+                  )
+                )
+              ))
+              ;; Tracevv((stderr, "inflate:         length %u\n", len));
+              (if (i32.lt_u (get_local $bits) (i32.const 15)) (then
+                (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+                (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
+                (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+                (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
+                (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+              ))
+              ;; $here = $dcode[$hold & $mask]
+              (set_local $here
+                (i32.load
+                  (i32.add
+                    (get_local $dcode)
+                    (i32.shl
+                      (i32.and (get_local $hold) (get_local $mask))
+                      (i32.const 2)
+                    )
+                  )
+                )
+              )
+              loop $dodist
   (;
-            if (op & 16) {                     /* length base */
-                len = (unsigned)(here.val);
-                op &= 15;                           /* number of extra bits */
-                if (op) {
-                    if (bits < op) {
-                        hold += (unsigned long)(*in++) << bits;
-                        bits += 8;
-                    }
-                    len += (unsigned)hold & ((1U << op) - 1);
-                    hold >>= op;
-                    bits -= op;
-                }
-                Tracevv((stderr, "inflate:         length %u\n", len));
-                if (bits < 15) {
-                    hold += (unsigned long)(*in++) << bits;
-                    bits += 8;
-                    hold += (unsigned long)(*in++) << bits;
-                    bits += 8;
-                }
-                here = dcode[hold & dmask];
-              dodist:
                 op = (unsigned)(here.bits);
                 hold >>= op;
                 bits -= op;
@@ -331,7 +367,9 @@
                 }
                 else if ((op & 64) == 0) {          /* 2nd level distance code */
                     here = dcode[here.val + (hold & ((1U << op) - 1))];
-                    goto dodist;
+       ;)
+                    (br $dodist)
+        (;
                 }
                 else {
                     strm->msg = (char *)"invalid distance code";
@@ -340,8 +378,12 @@
                     (br $break)
         (;
                 }
-            }
-            else if ((op & 64) == 0) {              /* 2nd level length code */
+        ;)
+              (br $do)
+            ))
+            
+        (;
+            if ((op & 64) == 0) {              /* 2nd level length code */
                 here = lcode[here.val + (hold & ((1U << op) - 1))];
      ;)
                 (br $dolen)
@@ -362,6 +404,7 @@
       (;
             }
      ;)
+            end $dodist
           end $dolen
         end $do
         (br_if $top
