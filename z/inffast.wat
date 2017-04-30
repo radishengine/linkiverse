@@ -289,12 +289,20 @@
                       (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
                     ))
                   ))
+                  (set_local $dist (i32.add (get_local $dist)
+                    (i32.and
+                      (get_local $hold)
+                      (i32.sub
+                        (i32.shl (i32.const 1) (get_local $op))
+                        (i32.const 1)
+                      )
+                    )
+                  ))
+                  (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
+                  (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
+                  ;; Tracevv((stderr, "inflate:         distance %u\n", dist));
+                  (set_local $op (i32.sub (get_local $out) (get_local $beg))) ;; max distance in output
   (;
-                    dist += (unsigned)hold & ((1U << op) - 1);
-                    hold >>= op;
-                    bits -= op;
-                    Tracevv((stderr, "inflate:         distance %u\n", dist));
-                    op = (unsigned)(out - beg);     /* max distance in output */
                     if (dist > op) {                /* see if copy from window */
                         op = dist - op;             /* distance back in window */
                         if (op > whave) {
