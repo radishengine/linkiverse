@@ -423,7 +423,7 @@
             (i32.lt (get_local $out) (get_local $end)  )
           )
         )
-      end
+      end ;; loop $top
     end $break
 
     ;; return unused bytes (on entry, $bits < 8, so $in won't go too far back)
