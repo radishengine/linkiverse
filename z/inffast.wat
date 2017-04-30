@@ -288,29 +288,6 @@
                                 (br $break)
           (;
                             }
-    #ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-                            if (len <= op - whave) {
-                                do {
-                                    *out++ = 0;
-                                } while (--len);
-         ;)
-                                (br $do)
-          (;
-                            }
-                            len -= op - whave;
-                            do {
-                                *out++ = 0;
-                            } while (--op > whave);
-                            if (op == 0) {
-                                from = out - dist;
-                                do {
-                                    *out++ = *from++;
-                                } while (--len);
-         ;)
-                                (br $do)
-          (;
-                            }
-    #endif
                         }
                         from = window;
                         if (wnext == 0) {           /* very common case */
