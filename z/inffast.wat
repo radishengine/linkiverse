@@ -150,16 +150,25 @@
           ;; $here = $lcode[$hold & $mask] (codes are 32-bit)
           (set_local $here (i32.load (get_local $lcode) (i32.shl (i32.and (get_local $hold) (get_local $lmask)) (i32.const 2))))
           loop $dolen
+            ;; $op = $here.bits (2nd-lowest byte)
             (set_local $op
               (i32.and
                 (i32.shr_u (get_local $here) (i32.const 8))
                 (i32.const 255)
               )
             )
+            (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
+            (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
+            
+            ;; $op = $here.op (low byte)
+            (set_local $op
+              (i32.and
+                (get_local $here)
+                (i32.const 255)
+              )
+            )
+            
   (;
-            hold >>= op;
-            bits -= op;
-            op = (unsigned)(here.op);
             if (op == 0) {                          /* literal */
                 Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
                         "inflate:         literal '%c'\n" :
