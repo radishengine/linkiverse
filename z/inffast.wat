@@ -167,15 +167,26 @@
                 (i32.const 255)
               )
             )
+            (if (i32.eqz (get_local $op)) (then
+              ;; literal
+              ;; Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
+              ;;   "inflate:         literal '%c'\n" :
+              ;;   "inflate:         literal 0x%02x\n", here.val));
+              
+              ;; *out = (unsigned char)($here.val) (low byte of high word)
+              (i32.store8 (get_local $out)
+                (i32.and
+                  (i32.rsh_u (get_local $here) (i32.const 16))
+                  (i32.const 255)
+                )
+              )
+              ;; out++
+              (set_local $out (i32.add (get_local $out) (i32.const 1)))
+              (br $do)
+            ))
             
   (;
-            if (op == 0) {                          /* literal */
-                Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
-                        "inflate:         literal '%c'\n" :
-                        "inflate:         literal 0x%02x\n", here.val));
-                *out++ = (unsigned char)(here.val);
-            }
-            else if (op & 16) {                     /* length base */
+            if (op & 16) {                     /* length base */
                 len = (unsigned)(here.val);
                 op &= 15;                           /* number of extra bits */
                 if (op) {
