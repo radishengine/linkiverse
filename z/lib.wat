@@ -290,6 +290,15 @@
     (return (i32.and (get_local 0) (i32.const 255)))
   )
   
+  (func $*code (param $code* i32) (param $i i32) (result i32)
+    (return (i32.load
+      (i32.add
+        (get_local $code*)
+        (i32.shl (get_local $i) (i32.const 2))
+      )
+    ))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -387,18 +396,10 @@
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
           ))
-          ;; $here = $lcode[$hold & $lmask] (codes are 32-bit)
-          (set_local $here
-            (i32.load
-              (i32.add
-                (get_local $lcode)
-                (i32.shl
-                  (i32.and (get_local $hold) (get_local $lmask))
-                  (i32.const 2)
-                )
-              )
-            )
-          )
+          (set_local $here (call $*code
+            (get_local $lcode)
+            (i32.and (get_local $hold) (get_local $lmask))
+          ))
           loop $dolen
             (set_local $op (call $code.bits (get_local $here)))
             (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
@@ -459,18 +460,10 @@
                 (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
                 (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
               ))
-              ;; $here = $dcode[$hold & $dmask]
-              (set_local $here
-                (i32.load
-                  (i32.add
-                    (get_local $dcode)
-                    (i32.shl
-                      (i32.and (get_local $hold) (get_local $dmask))
-                      (i32.const 2)
-                    )
-                  )
-                )
-              )
+              (set_local $here (call $*code
+                (get_local $dcode)
+                (i32.and (get_local $hold) (get_local $dmask))
+              ))
               loop $dodist
                 (set_local $op (call $code.bits (get_local $here)))
                 (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
@@ -679,22 +672,20 @@
                   ;; 2nd level distance code
                   
                   ;; here = dcode[here.val + (hold & ((1U << op) - 1))];
-                  (set_local $here (i32.load (get_local $dcode)
-                    (i32.shl
-                      (i32.add
-                        (call $code.val (get_local $here))
-                        (i32.and
-                          (get_local $hold)
-                          (i32.sub
-                            (i32.shl (i32.const 1) (get_local $op))
-                            (i32.const 1)
-                          )
+                  (set_local $here (call $*code
+                    (get_local $dcode)
+                    (i32.add
+                      (call $code.val (get_local $here))
+                      (i32.and
+                        (get_local $hold)
+                        (i32.sub
+                          (i32.shl (i32.const 1) (get_local $op))
+                          (i32.const 1)
                         )
                       )
-                      (i32.const 2)
                     )
                   ))
-
+                  
                   (br $dodist)
                 ))
                 ;; strm->msg = (char *)"invalid distance code";
@@ -707,19 +698,17 @@
               ;; 2nd level length code
               
               ;; here = lcode[here.val + (hold & ((1U << op) - 1))];
-              (set_local $here (i32.load (get_local $lcode)
-                (i32.shl
-                  (i32.add
-                    (call $code.val (get_local $here))
-                    (i32.and
-                      (get_local $hold)
-                      (i32.sub
-                        (i32.shl (i32.const 1) (get_local $op))
-                        (i32.const 1)
-                      )
+              (set_local $here (call $*code
+                (get_local $lcode)
+                (i32.add
+                  (call $code.val (get_local $here))
+                  (i32.and
+                    (get_local $hold)
+                    (i32.sub
+                      (i32.shl (i32.const 1) (get_local $op))
+                      (i32.const 1)
                     )
                   )
-                  (i32.const 2)
                 )
               ))
               
@@ -1342,26 +1331,20 @@
           block
             loop
               (set_local $_temp_bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits))))
-              (set_local $here (i32.load
-                (i32.add
-                  (i32.add (get_local $state) (get_global $inflate_state.&lencode))
-                  (i32.shl
-                    (;BITS;)
-                      (i32.and
-                        (get_local $hold)
-                        (i32.sub
-                          (i32.shl
-                            (i32.const 1)
-                            (get_local $_temp_bits)
-                          )
-                          (i32.const 1)
-                        )
+              (set_local $here (call $*code
+                (i32.add (get_local $state) (get_global $inflate_state.&lencode))
+                (;BITS;)
+                  (i32.and
+                    (get_local $hold)
+                    (i32.sub
+                      (i32.shl
+                        (i32.const 1)
+                        (get_local $_temp_bits)
                       )
-                    (;/BITS;)
-
-                    (i32.const 2)
+                      (i32.const 1)
+                    )
                   )
-                )
+                (;/BITS;)
               ))
               (br_if 1 (i32.le_u (call $code.bits (get_local $here)) (get_local $bits)))
               (;PULLBYTE;)
