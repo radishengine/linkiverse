@@ -1,12 +1,29 @@
 (module
 
-  (; https://github.com/madler/zlib/blob/v1.2.11/inffast.h ;)
+  (import "memory" "main" (memory 0))
 
   ;; code as i32: VVVVBBPP
   ;; VVVV = val
   ;; BB = bits
   ;; PP = op
 
+  (; https://github.com/madler/zlib/blob/v1.2.11/zlib.h#L86 ;)
+  (global $z_stream.&next_in   i32 i32.const 0)
+  (global $z_stream.&avail_in  i32 i32.const 4)
+  (global $z_stream.&total_in  i32 i32.const 8)
+  (global $z_stream.&next_out  i32 i32.const 12)
+  (global $z_stream.&avail_out i32 i32.const 16)
+  (global $z_stream.&total_out i32 i32.const 20)
+  (global $z_stream.&msg       i32 i32.const 24)
+  (global $z_stream.&state     i32 i32.const 28)
+  (global $z_stream.&zalloc    i32 i32.const 32)
+  (global $z_stream.&zfree     i32 i32.const 36)
+  (global $z_stream.&opaque    i32 i32.const 40)
+  (global $z_stream.&data_type i32 i32.const 44)
+  (global $z_stream.&adler     i32 i32.const 48)
+  (global $z_stream.&reserved  i32 i32.const 52)
+  (global $#z_stream           i32 i32.const 56)
+  
   ;; stream:
   ;;  offset=0 next_in
   ;;  offset=4 avail_in
@@ -55,8 +72,7 @@
   ;;  offset=7116 was
   ;; length:7120
   
-  (import "memory" "main" (memory 0))
-  
+  (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
       (param $start i32) ;; inflate()'s starting value for strm->avail_out
@@ -83,24 +99,24 @@
     (local $from   i32) ;; where to copy match from
     
     ;; copy state to local variables
-    (set_local $state   (i32.load (; state ;)    offset=28 (get_local $strm)))
-    (set_local $in      (i32.load (; next_in ;)  offset=0  (get_local $strm)))
+    (set_local $state   (i32.load (i32.add (get_local $strm) (get_global $z_stream.&state))))
+    (set_local $in      (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_in))))
     (set_local $last
       (i32.add
         (get_local $in)
         (i32.sub
-                        (i32.load (; avail_in ;) offset=4  (get_local $strm))
+                        (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in)))
                         (i32.const 5)
         )
       )
     )
-    (set_local $out     (i32.load (; next_out ;) offset=12 (get_local $strm)))
+    (set_local $out     (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_out))))
     (set_local $beg
       (i32.sub
         (get_local $out)
         (i32.sub
                         (get_local $start)
-                        (i32.load (; avail_out ;) offset=16 (get_local $strm))
+                        (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_out)))
         )
       )
     )
@@ -108,7 +124,7 @@
       (i32.add
         (get_local $out)
         (i32.sub
-                        (i32.load (; avail_out ;) offset=16 (get_local $strm))
+                        (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in)))
                         (i32.const 257)
         )
       )
@@ -552,16 +568,17 @@
     )
 
     ;; update state and return
-    (i32.store (; next_in ;)  offset=0  (get_local $strm) (get_local $in))
-    (i32.store (; next_out ;) offset=12 (get_local $strm) (get_local $out))
-    (i32.store (; avail_in ;) offset=4 (get_local $strm)
+    
+    (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_in)) (get_local $in))
+    (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out)) (get_local $out))
+    (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in))
       (select
         (i32.sub (i32.const 5) (i32.sub (get_local $in) (get_local $last)))
         (i32.add (i32.const 5) (i32.sub (get_local $last) (get_local $in)))
         (i32.lt_u (get_local $in) (get_local $last))
       )
     )
-    (i32.store (; avail_out ;) offset=16 (get_local $strm)
+    (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out))
       (select
         (i32.add (i32.const 257) (i32.sub (get_local $end) (get_local $out)))
         (i32.sub (i32.const 257) (i32.sub (get_local $out) (get_local $end)))
