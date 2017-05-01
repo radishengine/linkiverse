@@ -445,7 +445,7 @@
                     (set_local  $out (i32.add (get_local  $out) (i32.const 3)))
                     (set_local $from (i32.add (get_local $from) (i32.const 3)))
                     (set_local  $len (i32.sub (get_local  $len) (i32.const 3)))
-                    (br_if 0 (i32.gt (get_local $len) (i32.const 2)))
+                    (br_if 0 (i32.gt_u (get_local $len) (i32.const 2)))
                   end
                   (if (get_local $len) (then
                     (i32.store8 (get_local $out) (i32.load8_u (get_local $from)))
