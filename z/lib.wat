@@ -1175,6 +1175,14 @@
           ))
           ;; fall through:
         end $TYPEDO: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L851 ;)
+          (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&last))) (then
+            (;BYTEBITS;)
+              (set_local $hold (i32.shr_u (get_local $hold) (i32.and (get_local $bits) (i32.const 7))))
+              (set_local $bits (i32.sub   (get_local $bits) (i32.and (get_local $bits) (i32.const 7))))
+            (;/BYTEBITS;)
+            (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $CHECK))
+            br $CHECK:
+          ))
           unreachable
         end $STORED: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L887 ;)
         
