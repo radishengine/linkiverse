@@ -324,13 +324,18 @@
                       )
                       (if (i32.lt_u (get_local $op) (get_local $len)) (then
                         ;; some from window
-      (;
-                        len -= op;
-                        do {
-                            *out++ = *from++;
-                        } while (--op);
-      ;)
-                        (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; rest from output
+                        
+                        ;; len -= op; do { *out++ = *from++; } while (--op);
+                        (set_local $len (i32.sub (get_local $len) (get_local $op)))
+                        loop
+                          (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                          (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                          (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                          (br_if 0 (tee_local $op (i32.sub (get_local $op) (i32.const 1))))
+                        end
+                        
+                        ;; rest from output
+                        (set_local $from (i32.sub (get_local $out) (get_local $dist)))
                       ))
                     )
                     (else
@@ -348,23 +353,32 @@
                         (set_local $op (i32.sub (get_local $op) (get_local $wnext)))
                         (if (i32.lt_u (get_local $op) (get_local $len)) (then
                           ;; some from end of window
-      (;
-                          len -= op;
-                          do {
-                              *out++ = *from++;
-                          } while (--op);
-      ;)
+
+                          ;; len -= op; do { *out++ = *from++; } while (--op);
+                          (set_local $len (i32.sub (get_local $len) (get_local $op)))
+                          loop
+                            (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                            (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                            (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                            (br_if 0 (tee_local $op (i32.sub (get_local $op) (i32.const 1))))
+                          end
+
                           (set_local $from (get_local $window))
                           (if (i32.lt_u (get_local $wnext) (get_local $len)) (then
                             ;; some from start of window
                             (set_local $op (get_local $wnext))
-      (;
-                            len -= op;
-                            do {
-                                *out++ = *from++;
-                            } while (--op);
-      ;)
-                            (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; rest from output
+                            
+                            ;; len -= op; do { *out++ = *from++; } while (--op);
+                            (set_local $len (i32.sub (get_local $len) (get_local $op)))
+                            loop
+                              (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                              (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                              (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                              (br_if 0 (tee_local $op (i32.sub (get_local $op) (i32.const 1))))
+                            end
+                            
+                            ;; rest from output
+                            (set_local $from (i32.sub (get_local $out) (get_local $dist)))
                           ))
                         ))
                       )
@@ -378,13 +392,18 @@
                         )
                         (if (i32.lt_u (get_local $op) (get_local $len)) (then
                           ;; some from window
-      (;
-                          len -= op;
-                          do {
-                              *out++ = *from++;
-                          } while (--op);
-      ;)
-                          (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; rest from output
+                          
+                          ;; len -= op; do { *out++ = *from++; } while (--op);
+                          (set_local $len (i32.sub (get_local $len) (get_local $op)))
+                          loop
+                            (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                            (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                            (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                            (br_if 0 (tee_local $op (i32.sub (get_local $op) (i32.const 1))))
+                          end
+                          
+                          ;; rest from output
+                          (set_local $from (i32.sub (get_local $out) (get_local $dist)))
                         ))
                       ))
                     ))
