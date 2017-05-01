@@ -314,47 +314,56 @@
                       ))
                     ))
                     (set_local $from (get_local $window))
-          (;
-                        if (wnext == 0) {           /* very common case */
-                            from += wsize - op;
-                            if (op < len) {         /* some from window */
-                                len -= op;
-                                do {
-                                    *out++ = *from++;
-                                } while (--op);
-                                from = out - dist;  /* rest from output */
-                            }
-                        }
-                        else if (wnext < op) {      /* wrap around window */
-                            from += wsize + wnext - op;
-                            op -= wnext;
-                            if (op < len) {         /* some from end of window */
-                                len -= op;
-                                do {
-                                    *out++ = *from++;
-                                } while (--op);
-                                from = window;
-                                if (wnext < len) {  /* some from start of window */
-                                    op = wnext;
-                                    len -= op;
-                                    do {
-                                        *out++ = *from++;
-                                    } while (--op);
-                                    from = out - dist;      /* rest from output */
-                                }
-                            }
-                        }
-                        else {                      /* contiguous in window */
-                            from += wnext - op;
-                            if (op < len) {         /* some from window */
-                                len -= op;
-                                do {
-                                    *out++ = *from++;
-                                } while (--op);
-                                from = out - dist;  /* rest from output */
-                            }
-                        }
-     ;)
+                    (if (i32.eqz (get_local $wnext)) (then
+                      ;; very common case
+      (;
+                      from += wsize - op;
+                      if (op < len) {         /* some from window */
+                          len -= op;
+                          do {
+                              *out++ = *from++;
+                          } while (--op);
+                          from = out - dist;  /* rest from output */
+                      }
+      ;)
+                    )
+                    (else
+                      (if (i32.lt_u (get_local $wnext) (get_local $op)) (then
+                        ;; wrap around window
+      (;
+                          from += wsize + wnext - op;
+                          op -= wnext;
+                          if (op < len) {         /* some from end of window */
+                              len -= op;
+                              do {
+                                  *out++ = *from++;
+                              } while (--op);
+                              from = window;
+                              if (wnext < len) {  /* some from start of window */
+                                  op = wnext;
+                                  len -= op;
+                                  do {
+                                      *out++ = *from++;
+                                  } while (--op);
+                                  from = out - dist;      /* rest from output */
+                              }
+                          }
+      ;)
+                      )
+                      (else
+                        ;; contiguous in window
+      (;
+                          from += wnext - op;
+                          if (op < len) {         /* some from window */
+                              len -= op;
+                              do {
+                                  *out++ = *from++;
+                              } while (--op);
+                              from = out - dist;  /* rest from output */
+                          }
+      ;)
+                      ))
+                    ))
                     block $len_le_2
                       loop
                         (br_if $len_le_2 (i32.le_u (get_local $len) (i32.const 2)))
