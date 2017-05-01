@@ -1178,50 +1178,43 @@
                 br 0
               end
             end
-          (;/NEEDBITS(n);)
+          (;/NEEDBITS;)
           
-          (i32.const 257)
-          (set_local $_temp_bits (i32.const 5)) (;BITS;)
-            (i32.and
-              (get_local $hold)
-              (call $bitmask (get_local $_temp_bits))
+          (i32.store
+            (i32.add (get_local $state) (get_global $inflate_state.&nlen))
+            (i32.add
+              (i32.const 257)
+              (i32.and (get_local $hold) (call $bitmask (i32.const 5))) ;; BITS(5)
             )
-          (;/BITS;)
-          (i32.add)
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&nlen)))
-          (;DROPBITS;)
-            (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
-            (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-          (;/DROPBITS;)
+          )
+          (;DROPBITS(5);)
+            (set_local $hold (i32.shr_u (get_local $hold) (i32.const 5)))
+            (set_local $bits (i32.sub   (get_local $bits) (i32.const 5)))
+          (;/DROPBITS(5);)
           
-          (i32.const 1)
-          (set_local $_temp_bits (i32.const 5)) (;BITS;)
-            (i32.and
-              (get_local $hold)
-              (call $bitmask (get_local $_temp_bits))
+          (i32.store
+            (i32.add (get_local $state) (get_global $inflate_state.&ndist))
+            (i32.add
+              (i32.const 1)
+              (i32.and (get_local $hold) (call $bitmask (i32.const 5))) ;; BITS(5)
             )
-          (;/BITS;)
-          (i32.add)
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&ndist)))
-          (;DROPBITS;)
-            (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
-            (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-          (;/DROPBITS;)
+          )
+          (;DROPBITS(5);)
+            (set_local $hold (i32.shr_u (get_local $hold) (i32.const 5)))
+            (set_local $bits (i32.sub   (get_local $bits) (i32.const 5)))
+          (;/DROPBITS(5);)
           
-          (i32.const 4)
-          (i32.const 4) (;BITS(n);)
-            (set_local $_temp_bits)
-            (i32.and
-              (get_local $hold)
-              (call $bitmask (get_local $_temp_bits))
+          (i32.store
+            (i32.add (get_local $state) (get_global $inflate_state.&ncode))
+            (i32.add
+              (i32.const 4)
+              (i32.and (get_local $hold) (call $bitmask (i32.const 4))) ;; BITS(4)
             )
-          (;/BITS(n);)
-          (i32.add)
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&ncode)))
-          (;DROPBITS;)
-            (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
-            (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-          (;/DROPBITS;)
+          )
+          (;DROPBITS(4);)
+            (set_local $hold (i32.shr_u (get_local $hold) (i32.const 4)))
+            (set_local $bits (i32.sub   (get_local $bits) (i32.const 4)))
+          (;/DROPBITS(4);)
           
           ;; #ifndef PKZIP_BUG_WORKAROUND
           ;; if (state->nlen > 286 || state->ndist > 30) {
@@ -1270,15 +1263,12 @@
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const 0))
           block
             loop
-              (set_local $_temp_bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits))))
               (set_local $here (call $*code
                 (i32.add (get_local $state) (get_global $inflate_state.&lencode))
-                (;BITS;)
-                  (i32.and
-                    (get_local $hold)
-                    (call $bitmask (get_local $_temp_bits))
-                  )
-                (;/BITS;)
+                (i32.and
+                  (get_local $hold)
+                  (call $bitmask (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits))))
+                )
               ))
               (br_if 1 (i32.le_u (call $code.bits (get_local $here)) (get_local $bits)))
               (;PULLBYTE;)
@@ -1327,25 +1317,26 @@
               end
             (;/NEEDBITS;)
 
-            (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length)))
-            (;BITS;)
-              (i32.and
-                (get_local $hold)
-                (call $bitmask (get_local $_temp_bits))
+            (i32.store
+              (i32.add (get_local $state) (get_global $inflate_state.&length))
+              (i32.add
+                (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length)))
+                (i32.and (get_local $hold) (call $bitmask (get_local $_temp_bits))) ;; BITS($_temp_bits)
               )
-            (;/BITS;)
-            i32.add
-            (i32.store (i32.add (get_local $state) (get_global $inflate_state.&length)))
+            )
 
-            (;DROPBITS;)
+            (;DROPBITS($_temp_bits);)
               (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
               (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-            (;/DROPBITS;)
+            (;/DROPBITS($_temp_bits);)
             
-            (i32.load (i32.add (get_local $state) (get_global $inflate_state.&back)))
-            (get_local $_temp_bits)
-            i32.add
-            (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)))
+            (i32.store
+              (i32.add (get_local $state) (get_global $inflate_state.&back))
+              (i32.add
+                (i32.load (i32.add (get_local $state) (get_global $inflate_state.&back)))
+                (get_local $_temp_bits)
+              )
+            )
           ))
         
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
