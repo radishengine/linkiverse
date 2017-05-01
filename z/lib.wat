@@ -768,7 +768,7 @@
             (i32.const 1)
           )
         )
-      (;/BITS(n);)
+      (;/BITS(n);) (...)
 
       (...) (;DROPBITS(n);)
         (set_local $_temp_bits)
@@ -1025,8 +1025,83 @@
               end
             end
           (;/NEEDBITS(n);)
-        
-          unreachable
+          
+          (i32.const 257)
+          (i32.const 5) (;BITS(n);)
+            (set_local $_temp_bits)
+            (i32.and
+              (get_local $hold)
+              (i32.sub
+                (i32.shl
+                  (i32.const 1)
+                  (get_local $_temp_bits)
+                )
+                (i32.const 1)
+              )
+            )
+          (;/BITS(n);)
+          (i32.add)
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&nlen)))
+          (;DROPBITS(n);)
+            (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
+            (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
+          (;/DROPBITS(n);)
+          
+          (i32.const 1)
+          (i32.const 5) (;BITS(n);)
+            (set_local $_temp_bits)
+            (i32.and
+              (get_local $hold)
+              (i32.sub
+                (i32.shl
+                  (i32.const 1)
+                  (get_local $_temp_bits)
+                )
+                (i32.const 1)
+              )
+            )
+          (;/BITS(n);)
+          (i32.add)
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&ndist)))
+          (;DROPBITS(n);)
+            (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
+            (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
+          (;/DROPBITS(n);)
+          
+          (i32.const 4)
+          (i32.const 4) (;BITS(n);)
+            (set_local $_temp_bits)
+            (i32.and
+              (get_local $hold)
+              (i32.sub
+                (i32.shl
+                  (i32.const 1)
+                  (get_local $_temp_bits)
+                )
+                (i32.const 1)
+              )
+            )
+          (;/BITS(n);)
+          (i32.add)
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&ncode)))
+          (;DROPBITS(n);)
+            (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
+            (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
+          (;/DROPBITS(n);)
+          
+          ;; #ifndef PKZIP_BUG_WORKAROUND
+          ;; if (state->nlen > 286 || state->ndist > 30) {
+          ;;   strm->msg = (char *)"too many length or distance symbols";
+          ;;   state->mode = BAD;
+          ;;   break;
+          ;; }
+          ;; #endif
+          ;; Tracev((stderr, "inflate:       table sizes ok\n"));
+          
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&have)) (i32.const 0))
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $LENLENS))
+          
+          ;; fall through:
         end $LENLENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L938 ;)
           unreachable
         end $CODELENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L959 ;)
