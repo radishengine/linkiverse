@@ -630,4 +630,98 @@
       (get_local $bits)
     )
   )
+  
+  (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L622 ;)
+  (func $inflate (param $strm i32) (param $flush i32) (result i32)
+    (local $state i32)
+    ;; TODO: up to https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L655
+    block $inf_leave
+      loop $continue
+      
+        ;; this is what a big ol' switch table looks like in wasm, better get used to it
+        
+        block $SYNC:default: block $MEM:     block $BAD:     block $DONE: block $LENGTH: block $CHECK:
+        block $LIT:          block $MATCH:   block $DISTEXT: block $DIST: block $LENEXT: block $LEN:   block $LEN_:
+        block $CODELENS:     block $LENLENS: block $TABLE:   block $COPY: block $COPY_:
+        block $STORED:       block $TYPEDO:  block $TYPE:    block $DICT: block $DICTID: block $HCRC:  block $COMMENT:
+        block $NAME:         block $EXTRA:   block $EXLEN:   block $OS:   block $TIME:   block $FLAGS: block $HEAD:
+      
+        (i32.load (i32.add (get_local $state) (get_global $inflate_state.&mode)))
+        (i32.sub (get_global $HEAD))
+        br_table
+          $HEAD: $FLAGS: $TIME: $OS: $EXLEN: $EXTRA: $NAME: $COMMENT: $HCRC: $DICTID: $DICT:
+            $TYPE: $TYPEDO: $STORED: $COPY_: $COPY: $TABLE: $LENLENS: $CODELENS:
+              $LEN_: $LEN: $LENEXT: $DIST: $DISTEXT: $MATCH: $LIT:
+          $CHECK: $LENGTH: $DONE: $BAD: $MEM: $SYNC:default:
+        
+        end $HEAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L657 ;)
+          unreachable
+        end $FLAGS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L706 ;)
+          unreachable
+        end $TIME: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L725 ;)
+          unreachable
+        end $OS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L733 ;)
+          unreachable
+        end $EXLEN: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L743 ;)
+          unreachable
+        end $EXTRA: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L756 ;)
+          unreachable
+        end $NAME: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L778 ;)
+          unreachable
+        end $COMMENT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L799 ;)
+          unreachable
+        end $HCRC: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L819 ;)
+          unreachable
+        end $DICTID: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L837 ;)
+          unreachable
+        end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
+          unreachable
+        end $TYPE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L849 ;)
+          unreachable
+        end $TYPEDO: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L851 ;)
+          unreachable
+        end $STORED: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L887 ;)
+          unreachable
+        end $COPY_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L901 ;)
+          unreachable
+        end $COPY: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L903 ;)
+          unreachable
+        end $TABLE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L920 ;)
+          unreachable
+        end $LENLENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L938 ;)
+          unreachable
+        end $CODELENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L959 ;)
+          unreachable
+        end $LEN_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1042 ;)
+          unreachable
+        end $LEN: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1044 ;)
+          unreachable
+        end $LENEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1093 ;)
+          unreachable
+        end $DIST: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1103 ;)
+          unreachable
+        end $DISTEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1130 ;)
+          unreachable
+        end $MATCH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1146 ;)
+          unreachable
+        end $LIT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1191 ;)
+          unreachable
+        end $CHECK: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1197 ;)
+          unreachable
+        end $LENGTH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1221 ;)
+          unreachable
+        end $DONE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1234 ;)
+          unreachable
+        end $BAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1237 ;)
+          unreachable
+        end $MEM: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1240 ;)
+          unreachable
+        end $SYNC:default: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1242 ;)
+          unreachable
+      end
+      unreachable
+    end
+    ;; TODO: from https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1253
+    unreachable
+  )
 )
