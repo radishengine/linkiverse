@@ -1096,7 +1096,8 @@
         end $CODELENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L959 ;)
           unreachable
         end $LEN_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1042 ;)
-          unreachable
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $LEN))
+          ;; fall through:
         end $LEN: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1044 ;)
           unreachable
         end $LENEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1093 ;)
