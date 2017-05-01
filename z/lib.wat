@@ -3,7 +3,7 @@
   (import "memory" "main" (memory 0))
   
   (; https://github.com/madler/zlib/blob/v1.2.11/zlib.h#L166 ;)
-  (global $Z_NO_FLUSH           i32 i32.const 0)
+  (global $Z_NO_FLUSH            i32 i32.const 0)
   (global $Z_PARTIAL_FLUSH       i32 i32.const 1)
   (global $Z_SYNC_FLUSH          i32 i32.const 2)
   (global $Z_FULL_FLUSH          i32 i32.const 3)
@@ -297,6 +297,16 @@
         (i32.shl (get_local $i) (i32.const 2))
       )
     ))
+  )
+  
+  (func $v->i32+= (param $struct i32) (param $field_offset i32) (param $value i32)
+    (i32.store
+      (i32.add (get_local $struct) (get_local $field_offset))
+      (i32.add
+        (i32.load (i32.add (get_local $struct) (get_local $field_offset)))
+        (get_local $value)
+      )
+    )
   )
   
   (func $bitmask (param $numbits i32) (result i32)
@@ -1316,13 +1326,9 @@
                 end
               end
             (;/NEEDBITS;)
-
-            (i32.store
-              (i32.add (get_local $state) (get_global $inflate_state.&length))
-              (i32.add
-                (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length)))
-                (i32.and (get_local $hold) (call $bitmask (get_local $_temp_bits))) ;; BITS($_temp_bits)
-              )
+            
+            (call $v->i32+= (get_local $state) (get_global $inflate_state.&length)
+              (i32.and (get_local $hold) (call $bitmask (get_local $_temp_bits))) ;; BITS($_temp_bits)
             )
 
             (;DROPBITS($_temp_bits);)
@@ -1330,13 +1336,7 @@
               (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
             (;/DROPBITS($_temp_bits);)
             
-            (i32.store
-              (i32.add (get_local $state) (get_global $inflate_state.&back))
-              (i32.add
-                (i32.load (i32.add (get_local $state) (get_global $inflate_state.&back)))
-                (get_local $_temp_bits)
-              )
-            )
+            (call $v->i32+= (get_local $state) (get_global $inflate_state.&back) (get_local $_temp_bits))
           ))
         
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
