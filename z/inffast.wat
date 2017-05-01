@@ -523,8 +523,8 @@
         end $do
         (br_if $top
           (i32.and
-            (i32.lt (get_local  $in) (get_local $last))
-            (i32.lt (get_local $out) (get_local  $end))
+            (i32.lt_u (get_local  $in) (get_local $last))
+            (i32.lt_u (get_local $out) (get_local  $end))
           )
         )
       end ;; loop $top
