@@ -329,8 +329,8 @@
                         do {
                             *out++ = *from++;
                         } while (--op);
-                        from = out - dist;  /* rest from output */
       ;)
+                        (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; rest from output
                       ))
                     )
                     (else
@@ -353,18 +353,18 @@
                           do {
                               *out++ = *from++;
                           } while (--op);
-                          from = window;
       ;)
+                          (set_local $from (get_local $window))
                           (if (i32.lt_u (get_local $wnext) (get_local $len)) (then
                             ;; some from start of window
+                            (set_local $op (get_local $wnext))
       (;
-                            op = wnext;
                             len -= op;
                             do {
                                 *out++ = *from++;
                             } while (--op);
-                            from = out - dist;      /* rest from output */
       ;)
+                            (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; rest from output
                           ))
                         ))
                       )
@@ -383,8 +383,8 @@
                           do {
                               *out++ = *from++;
                           } while (--op);
-                          from = out - dist;  /* rest from output */
       ;)
+                          (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; rest from output
                         ))
                       ))
                     ))
