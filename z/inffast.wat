@@ -459,9 +459,24 @@
                 ))
                 (if (i32.eqz (i32.and (get_local $op) (i32.const 64))) (then
                   ;; 2nd level distance code
-                  (;
-                    here = dcode[here.val + (hold & ((1U << op) - 1))];
-                  ;)
+                  
+                  ;; here = dcode[here.val + (hold & ((1U << op) - 1))];
+                  (set_local $here (i32.load (get_local $dcode)
+                    (i32.shl
+                      (i32.add
+                        (i32.rsh_u (get_local $here) (i32.const 16)) ;; here.val
+                        (i32.and
+                          (get_local $hold)
+                          (i32.sub
+                            (i32.shl (i32.const 1) (get_local $op))
+                            (i32.const 1)
+                          )
+                        )
+                      )
+                      (i32.const 2)
+                    )
+                  ))
+
                   (br $dodist)
                 ))
                 ;; strm->msg = (char *)"invalid distance code";
@@ -472,9 +487,24 @@
             ))
             (if (i32.eqz (i32.and (get_local $op) (i32.const 64))) (then
               ;; 2nd level length code
-              (;
-                here = lcode[here.val + (hold & ((1U << op) - 1))];
-              ;)
+              
+              ;; here = lcode[here.val + (hold & ((1U << op) - 1))];
+              (set_local $here (i32.load (get_local $lcode)
+                (i32.shl
+                  (i32.add
+                    (i32.rsh_u (get_local $here) (i32.const 16)) ;; here.val
+                    (i32.and
+                      (get_local $hold)
+                      (i32.sub
+                        (i32.shl (i32.const 1) (get_local $op))
+                        (i32.const 1)
+                      )
+                    )
+                  )
+                  (i32.const 2)
+                )
+              ))
+              
               (br $dolen)
             ))
             (if (i32.and (get_local $op) (i32.const 32)) (then
