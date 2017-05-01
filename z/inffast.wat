@@ -1,5 +1,7 @@
 (module
 
+  (; https://github.com/madler/zlib/blob/v1.2.11/inffast.h ;)
+
   ;; code as i32: VVVVBBPP
   ;; VVVV = val
   ;; BB = bits
@@ -477,16 +479,13 @@
             (if (i32.and (get_local $op) (i32.const 32)) (then
               ;; end of block
               ;; Tracevv((stderr, "inflate:         end of block\n"));
-              (;
-                state->mode = TYPE;
-              ;)
+              (i32.store (; mode ;) offset=0 (get_local $state) (i32.const (; TYPE ;) 16180))
               (br $break)
             ))
-            (;
-              strm->msg = (char *)"invalid literal/length code";
-              state->mode = BAD;
-            ;)
-            (br $break)
+            ;; strm->msg = (char *)"invalid literal/length code";
+            ;; state->mode = BAD;
+            ;; break
+            unreachable
           end ;; loop $dolen
         end $do
         (br_if $top
