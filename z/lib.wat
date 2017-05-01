@@ -717,7 +717,7 @@
     (;
       ;; bit macro templates
       
-      (;PULLBYTE();)
+      (;PULLBYTE;)
         (br_if $inf_leave (i32.eqz (get_local $have)))
         (set_local $have (i32.sub (get_local $have) (i32.const 1)))
         (set_local $hold
@@ -730,14 +730,13 @@
           )
         )
         (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-      (;/PULLBYTE();)
+      (;/PULLBYTE;)
 
-      (...) (;NEEDBITS(n);)
-        (set_local $_temp_bits)
+      (set_local $_temp_bits (...)) (;NEEDBITS;)
         block
           loop
             (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-            (;PULLBYTE();)
+            (;PULLBYTE;)
               (br_if $inf_leave (i32.eqz (get_local $have)))
               (set_local $have (i32.sub (get_local $have) (i32.const 1)))
               (set_local $hold
@@ -750,13 +749,13 @@
                 )
               )
               (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-            (;/PULLBYTE();)
+            (;/PULLBYTE;)
             br 0
           end
         end
-      (;/NEEDBITS(n);)
+      (;/NEEDBITS;)
 
-      (...) (;BITS(n);)
+      (set_local $_temp_bits (...)) (;BITS;)
         (set_local $_temp_bits)
         (i32.and
           (get_local $hold)
@@ -768,18 +767,17 @@
             (i32.const 1)
           )
         )
-      (;/BITS(n);) (...)
+      (;/BITS;) (...)
 
-      (...) (;DROPBITS(n);)
-        (set_local $_temp_bits)
+      (set_local $_temp_bits (...))  (;DROPBITS;)
         (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
         (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-      (;/DROPBITS(n);)
+      (;/DROPBITS;)
 
-      (;BYTEBITS();)
+      (;BYTEBITS;)
         (set_local $hold (i32.shr_u (get_local $hold) (i32.and (get_local $bits) (i32.const 7))))
         (set_local $bits (i32.sub   (get_local $bits) (i32.and (get_local $bits) (i32.const 7))))
-      (;/BYTEBITS();)
+      (;/BYTEBITS;)
       
     ;)
     
@@ -809,12 +807,11 @@
             br $TYPEDO:
           ))
           
-          (i32.const 16) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 16)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-                (;PULLBYTE();)
+                (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
                   (set_local $hold
@@ -827,21 +824,20 @@
                     )
                   )
                   (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-                (;/PULLBYTE();)
+                (;/PULLBYTE;)
                 br 0
               end
             end
-          (;/NEEDBITS(n);)
+          (;/NEEDBITS;)
           
           unreachable
         end $FLAGS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L706 ;)
         
-          (i32.const 16) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 16)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-                (;PULLBYTE();)
+                (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
                   (set_local $hold
@@ -854,21 +850,20 @@
                     )
                   )
                   (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-                (;/PULLBYTE();)
+                (;/PULLBYTE;)
                 br 0
               end
             end
-          (;/NEEDBITS(n);)
+          (;/NEEDBITS;)
           
           unreachable
         end $TIME: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L725 ;)
         
-          (i32.const 32) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 32)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-                (;PULLBYTE();)
+                (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
                   (set_local $hold
@@ -881,21 +876,20 @@
                     )
                   )
                   (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-                (;/PULLBYTE();)
+                (;/PULLBYTE;)
                 br 0
               end
             end
-          (;/NEEDBITS(n);)
+          (;/NEEDBITS;)
           
           unreachable
         end $OS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L733 ;)
         
-          (i32.const 16) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 16)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-                (;PULLBYTE();)
+                (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
                   (set_local $hold
@@ -927,12 +921,11 @@
           unreachable
         end $DICTID: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L837 ;)
         
-          (i32.const 32) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 32)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-                (;PULLBYTE();)
+                (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
                   (set_local $hold
@@ -945,11 +938,11 @@
                     )
                   )
                   (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-                (;/PULLBYTE();)
+                (;/PULLBYTE;)
                 br 0
               end
             end
-          (;/NEEDBITS(n);)
+          (;/NEEDBITS;)
         
           unreachable
         end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
@@ -964,17 +957,16 @@
           unreachable
         end $STORED: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L887 ;)
         
-          (;BYTEBITS();)
+          (;BYTEBITS;)
             (set_local $hold (i32.shr_u (get_local $hold) (i32.and (get_local $bits) (i32.const 7))))
             (set_local $bits (i32.sub   (get_local $bits) (i32.and (get_local $bits) (i32.const 7))))
-          (;/BYTEBITS();)
+          (;/BYTEBITS;)
           
-          (i32.const 32) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 32)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-                (;PULLBYTE();)
+                (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
                   (set_local $hold
@@ -987,11 +979,11 @@
                     )
                   )
                   (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-                (;/PULLBYTE();)
+                (;/PULLBYTE;)
                 br 0
               end
             end
-          (;/NEEDBITS(n);)
+          (;/NEEDBITS;)
         
           unreachable
         end $COPY_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L901 ;)
@@ -1002,8 +994,7 @@
           unreachable
         end $TABLE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L920 ;)
         
-          (i32.const 14) (;NEEDBITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 14)) (;NEEDBITS;)
             block
               loop
                 (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
@@ -1027,8 +1018,7 @@
           (;/NEEDBITS(n);)
           
           (i32.const 257)
-          (i32.const 5) (;BITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 5)) (;BITS;)
             (i32.and
               (get_local $hold)
               (i32.sub
@@ -1039,17 +1029,16 @@
                 (i32.const 1)
               )
             )
-          (;/BITS(n);)
+          (;/BITS;)
           (i32.add)
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&nlen)))
-          (;DROPBITS(n);)
+          (;DROPBITS;)
             (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
             (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-          (;/DROPBITS(n);)
+          (;/DROPBITS;)
           
           (i32.const 1)
-          (i32.const 5) (;BITS(n);)
-            (set_local $_temp_bits)
+          (set_local $_temp_bits (i32.const 5)) (;BITS;)
             (i32.and
               (get_local $hold)
               (i32.sub
@@ -1063,10 +1052,10 @@
           (;/BITS(n);)
           (i32.add)
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&ndist)))
-          (;DROPBITS(n);)
+          (;DROPBITS;)
             (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
             (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-          (;/DROPBITS(n);)
+          (;/DROPBITS;)
           
           (i32.const 4)
           (i32.const 4) (;BITS(n);)
@@ -1084,10 +1073,10 @@
           (;/BITS(n);)
           (i32.add)
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&ncode)))
-          (;DROPBITS(n);)
+          (;DROPBITS;)
             (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
             (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
-          (;/DROPBITS(n);)
+          (;/DROPBITS;)
           
           ;; #ifndef PKZIP_BUG_WORKAROUND
           ;; if (state->nlen > 286 || state->ndist > 30) {
@@ -1111,7 +1100,67 @@
         end $LEN: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1044 ;)
           unreachable
         end $LENEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1093 ;)
-          unreachable
+          (if (tee_local $_temp_bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&extra)))) (then
+            
+            (;NEEDBITS;)
+              block
+                loop
+                  (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
+                  (;PULLBYTE;)
+                    (br_if $inf_leave (i32.eqz (get_local $have)))
+                    (set_local $have (i32.sub (get_local $have) (i32.const 1)))
+                    (set_local $hold
+                      (i32.add
+                        (get_local $hold)
+                        (i32.shl
+                          (i32.load8_u (get_local $next))
+                          (get_local $bits)
+                        )
+                      )
+                    )
+                    (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                  (;/PULLBYTE;)
+                  br 0
+                end
+              end
+            (;/NEEDBITS;)
+
+            (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length)))
+            (;BITS;)
+              (i32.and
+                (get_local $hold)
+                (i32.sub
+                  (i32.shl
+                    (i32.const 1)
+                    (get_local $_temp_bits)
+                  )
+                  (i32.const 1)
+                )
+              )
+            (;/BITS;)
+            i32.add
+            (i32.store (i32.add (get_local $state) (get_global $inflate_state.&length)))
+
+            (;DROPBITS;)
+              (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
+              (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
+            (;/DROPBITS;)
+            
+            (i32.load (i32.add (get_local $state) (get_global $inflate_state.&back)))
+            (get_local $_temp_bits)
+            i32.add
+            (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)))
+          ))
+        
+          ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
+          
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&was))
+            (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length)))
+          )
+          
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $DIST))
+        
+          ;; fall through:
         end $DIST: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1103 ;)
           unreachable
         end $DISTEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1130 ;)
