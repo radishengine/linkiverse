@@ -302,21 +302,19 @@
                   (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
                   ;; Tracevv((stderr, "inflate:         distance %u\n", dist));
                   (set_local $op (i32.sub (get_local $out) (get_local $beg))) ;; max distance in output
-                  (if (i32.lt_u (get_local $dist) (get_local $op)) (then
+                  (if (i32.gt_u (get_local $dist) (get_local $op)) (then
                     ;; see if copy from window
-       (;
-                        op = dist - op;             /* distance back in window */
-                        if (op > whave) {
-                            if (state->sane) {
-                                strm->msg =
-                                    (char *)"invalid distance too far back";
-                                state->mode = BAD;
-         ;)
-                                (br $break)
+                    (set_local $op (i32.sub (get_local $dist) (get_local $op))) ;; distance back in window
+                    (if (i32.gt_u (get_local $op) (get_local $whave)) (then
+                      (if (i32.load (; sane ;) offset=7104 (get_local $state)) (then
+                        ;; strm->msg = (char *)"invalid distance too far back";
+                        ;; state->mode = BAD;
+                        ;; break;
+                        unreachable
+                      ))
+                    ))
+                    (set_local $from (get_local $window))
           (;
-                            }
-                        }
-                        from = window;
                         if (wnext == 0) {           /* very common case */
                             from += wsize - op;
                             if (op < len) {         /* some from window */
