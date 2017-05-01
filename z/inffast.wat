@@ -354,19 +354,30 @@
                                 from = out - dist;  /* rest from output */
                             }
                         }
-                        while (len > 2) {
-                            *out++ = *from++;
-                            *out++ = *from++;
-                            *out++ = *from++;
-                            len -= 3;
-                        }
-                        if (len) {
-                            *out++ = *from++;
-                            if (len > 1)
-                                *out++ = *from++;
-                        }
      ;)
-                    (br $do)
+                    block $len_le_2
+                      loop
+                        (br_if $len_le_2 (i32.le_u (get_local $len) (i32.const 2)))
+                        (i32.store8 offset=0 (get_local $out) (i32.load8 offset=0 (get_local $from)))
+                        (i32.store8 offset=1 (get_local $out) (i32.load8 offset=1 (get_local $from)))
+                        (i32.store8 offset=2 (get_local $out) (i32.load8 offset=2 (get_local $from)))
+                        (set_local  $out (i32.add (get_local  $out) (i32.const 3)))
+                        (set_local $from (i32.add (get_local $from) (i32.const 3)))
+                        (set_local  $len (i32.sub (get_local  $len) (i32.const 3)))
+                        br 0
+                      end
+                    end $len_le_2
+                    (if (get_local $len) (then
+                      (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                      (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                      (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                      (if (i32.gt_u (get_local $len) (i32.const 1)) (then
+                        (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                        (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                        (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                      ))
+                    ))
+                    br $do
                   ))
      (;
                   from = out - dist;          /* copy direct from output */
