@@ -1,11 +1,6 @@
 (module
 
   (import "memory" "main" (memory 0))
-
-  ;; code as i32: VVVVBBPP
-  ;; VVVV = val
-  ;; BB = bits
-  ;; PP = op
   
   (; https://github.com/madler/zlib/blob/v1.2.11/zlib.h#L166 ;)
   (global $Z_NO_FLUSH           i32 i32.const 0)
@@ -280,6 +275,21 @@
     (return (i32.or (get_local $adler) (i32.shl (get_local $sum2) (i32.const 16))))      
   )
   
+  ;; code as i32: VVVVBBPP
+  ;; VVVV = val
+  ;; BB = bits
+  ;; PP = op
+  
+  (func $code.val  (param i32) (result i32)
+    (return (i32.shr_u (get_local 0) (i32.const 16)))
+  )
+  (func $code.bits (param i32) (result i32)
+    (return (i32.and (i32.shr_u (get_local 0) (i32.const 8)) (i32.const 255)))
+  )
+  (func $code.op (param i32) (result i32)
+    (return (i32.and (get_local 0) (i32.const 255)))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -390,44 +400,25 @@
             )
           )
           loop $dolen
-            ;; $op = $here.bits (2nd-lowest byte)
-            (set_local $op
-              (i32.and
-                (i32.shr_u (get_local $here) (i32.const 8))
-                (i32.const 255)
-              )
-            )
+            (set_local $op (call $code.bits (get_local $here)))
             (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
             (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
             
-            ;; $op = $here.op (low byte)
-            (set_local $op
-              (i32.and
-                (get_local $here)
-                (i32.const 255)
-              )
-            )
+            (set_local $op (call $code.op (get_local $here)))
             (if (i32.eqz (get_local $op)) (then
               ;; literal
               ;; Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
               ;;   "inflate:         literal '%c'\n" :
               ;;   "inflate:         literal 0x%02x\n", here.val));
               
-              ;; *out = (unsigned char)($here.val) (low byte of high word)
-              (i32.store8 (get_local $out)
-                (i32.and
-                  (i32.shr_u (get_local $here) (i32.const 16))
-                  (i32.const 255)
-                )
-              )
-              ;; out++
+              (i32.store8 (get_local $out) (call $code.val (get_local $here)))
               (set_local $out (i32.add (get_local $out) (i32.const 1)))
               (br $do)
             ))
             
             (if (i32.and (get_local $op) (i32.const 16)) (then
               ;; length base
-              (set_local $len (i32.shr_u (get_local $here) (i32.const 16)))
+              (set_local $len (call $code.val (get_local $here)))
               (set_local $op  (i32.and   (get_local $op)   (i32.const 15))) ;; number of extra bits
               (if (get_local $op) (then
                 (if (i32.lt_u (get_local $bits) (get_local $op)) (then
@@ -481,26 +472,14 @@
                 )
               )
               loop $dodist
-                ;; $op = $here.bits
-                (set_local $op
-                  (i32.and
-                    (i32.shr_u (get_local $here) (i32.const 8))
-                    (i32.const 255)
-                  )
-                )
+                (set_local $op (call $code.bits (get_local $here)))
                 (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
                 (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
                 
-                ;; $op = $here.op
-                (set_local $op
-                  (i32.and
-                    (get_local $here)
-                    (i32.const 255)
-                  )
-                )
+                (set_local $op (call $code.op (get_local $here)))
                 (if (i32.and (get_local $op) (i32.const 16)) (then
                   ;; distance base
-                  (set_local $dist (i32.shr_u (get_local $here) (i32.const 16)))
+                  (set_local $dist (call $code.val (get_local $here)))
                   (set_local $op (i32.and (get_local $op) (i32.const 15))) ;; number of extra bits
                   (if (i32.lt_u (get_local $bits) (get_local $op)) (then
                     (set_local $hold
@@ -703,7 +682,7 @@
                   (set_local $here (i32.load (get_local $dcode)
                     (i32.shl
                       (i32.add
-                        (i32.shr_u (get_local $here) (i32.const 16)) ;; here.val
+                        (call $code.val (get_local $here))
                         (i32.and
                           (get_local $hold)
                           (i32.sub
@@ -731,7 +710,7 @@
               (set_local $here (i32.load (get_local $lcode)
                 (i32.shl
                   (i32.add
-                    (i32.shr_u (get_local $here) (i32.const 16)) ;; here.val
+                    (call $code.val (get_local $here))
                     (i32.and
                       (get_local $hold)
                       (i32.sub
@@ -1384,7 +1363,7 @@
                   )
                 )
               ))
-              (br_if 1 (i32.le_u (i32.and (i32.shr_u (get_local $here) (i32.const 8)) (i32.const 255)) (get_local $bits)))
+              (br_if 1 (i32.le_u (call $code.bits (get_local $here)) (get_local $bits)))
               (;PULLBYTE;)
                 (br_if $inf_leave (i32.eqz (get_local $have)))
                 (set_local $have (i32.sub (get_local $have) (i32.const 1)))
