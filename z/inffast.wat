@@ -182,7 +182,7 @@
               ;; *out = (unsigned char)($here.val) (low byte of high word)
               (i32.store8 (get_local $out)
                 (i32.and
-                  (i32.rsh_u (get_local $here) (i32.const 16))
+                  (i32.shr_u (get_local $here) (i32.const 16))
                   (i32.const 255)
                 )
               )
@@ -193,7 +193,7 @@
             
             (if (i32.and (get_local $op) (i32.const 16)) (then
               ;; length base
-              (set_local $len (i32.rsh_u (get_local $here) (i32.const 16)))
+              (set_local $len (i32.shr_u (get_local $here) (i32.const 16)))
               (set_local $op  (i32.and   (get_local $op)   (i32.const 15))) ;; number of extra bits
               (if (get_local $op) (then
                 (if (i32.lt_u (get_local $bits) (get_local $op)) (then
@@ -250,11 +250,11 @@
                 ;; $op = $here.bits
                 (set_local $op
                   (i32.and
-                    (i32.rsh_u (get_local $here) (i32.const 8))
+                    (i32.shr_u (get_local $here) (i32.const 8))
                     (i32.const 255)
                   )
                 )
-                (set_local $hold (i32.rsh_u (get_local $hold) (get_local $op)))
+                (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
                 (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
                 
                 ;; $op = $here.op
@@ -466,7 +466,7 @@
                   (set_local $here (i32.load (get_local $dcode)
                     (i32.shl
                       (i32.add
-                        (i32.rsh_u (get_local $here) (i32.const 16)) ;; here.val
+                        (i32.shr_u (get_local $here) (i32.const 16)) ;; here.val
                         (i32.and
                           (get_local $hold)
                           (i32.sub
@@ -494,7 +494,7 @@
               (set_local $here (i32.load (get_local $lcode)
                 (i32.shl
                   (i32.add
-                    (i32.rsh_u (get_local $here) (i32.const 16)) ;; here.val
+                    (i32.shr_u (get_local $here) (i32.const 16)) ;; here.val
                     (i32.and
                       (get_local $hold)
                       (i32.sub
