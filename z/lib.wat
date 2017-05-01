@@ -6,7 +6,7 @@
   ;; VVVV = val
   ;; BB = bits
   ;; PP = op
-
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/zlib.h#L86 ;)
   (global $z_stream.&next_in   i32 i32.const 0)
   (global $z_stream.&avail_in  i32 i32.const 4)
@@ -24,43 +24,80 @@
   (global $z_stream.&reserved  i32 i32.const 52)
   (global $#z_stream           i32 i32.const 56)
   
-  ;; state: (note: recent inflate.h has added strm reference as first field)
-  ;;  offset=0  strm
-  ;;  offset=4  mode
-  ;;  offset=8  last
-  ;;  offset=12  wrap
-  ;;  offset=16 havedict
-  ;;  offset=20 flags
-  ;;  offset=24 dmax
-  ;;  offset=28 check
-  ;;  offset=32 total
-  ;;  offset=36 head
-  ;;  offset=40 wbits
-  ;;  offset=44 wsize
-  ;;  offset=48 whave
-  ;;  offset=52 wnext
-  ;;  offset=56 window
-  ;;  offset=60 hold
-  ;;  offset=64 bits
-  ;;  offset=68 length
-  ;;  offset=72 offset
-  ;;  offset=76 extra
-  ;;  offset=80 lencode
-  ;;  offset=84 distcode
-  ;;  offset=88 lenbits
-  ;;  offset=92 distbits
-  ;;  offset=96 ncode
-  ;;  offset=100 nlen
-  ;;  offset=104 ndist
-  ;;  offset=108 have
-  ;;  offset=112 next
-  ;;  offset=116 lens[320]
-  ;;  offset=756 work[288]
-  ;;  offset=1332 codes[1444]
-  ;;  offset=7108 sane
-  ;;  offset=7112 back
-  ;;  offset=7116 was
-  ;; length:7120
+  (; https://github.com/madler/zlib/blob/v1.2.11/inflate.h#L20 ;)
+  (global $HEAD        i32 i32.const 16180) ;; i: waiting for magic header
+  (global $FLAGS       i32 i32.const 16181) ;; i: waiting for method and flags (gzip)
+  (global $TIME        i32 i32.const 16182) ;; i: waiting for modification time (gzip)
+  (global $OS          i32 i32.const 16183) ;; i: waiting for extra flags and operating system (gzip)
+  (global $EXLEN       i32 i32.const 16184) ;; i: waiting for extra length (gzip)
+  (global $EXTRA       i32 i32.const 16185) ;; i: waiting for extra bytes (gzip)
+  (global $NAME        i32 i32.const 16186) ;; i: waiting for end of file name (gzip)
+  (global $COMMENT     i32 i32.const 16187) ;; i: waiting for end of comment (gzip)
+  (global $HCRC        i32 i32.const 16188) ;; i: waiting for header crc (gzip)
+  (global $DICTID      i32 i32.const 16189) ;; i: waiting for dictionary check value
+  (global $DICT        i32 i32.const 16190) ;; waiting for inflateSetDictionary() call
+    (global $TYPE      i32 i32.const 16191) ;; i: waiting for type bits, including last-flag bit
+    (global $TYPEDO    i32 i32.const 16192) ;; i: same, but skip check to exit inflate on new block
+    (global $STORED    i32 i32.const 16193) ;; i: waiting for stored size (length and complement)
+    (global $COPY_     i32 i32.const 16194) ;; i/o: same as COPY below, but only first time in
+    (global $COPY      i32 i32.const 16195) ;; i/o: waiting for input or output to copy stored block
+    (global $TABLE     i32 i32.const 16196) ;; i: waiting for dynamic block table lengths
+    (global $LENLENS   i32 i32.const 16197) ;; i: waiting for code length code lengths
+    (global $CODELENS  i32 i32.const 16198) ;; i: waiting for length/lit and distance code lengths
+      (global $LEN_    i32 i32.const 16199) ;; i: same as LEN below, but only first time in
+      (global $LEN     i32 i32.const 16200) ;; i: waiting for length/lit/eob code
+      (global $LENEXT  i32 i32.const 16201) ;; i: waiting for length extra bits
+      (global $DIST    i32 i32.const 16202) ;; i: waiting for distance code
+      (global $DISTEXT i32 i32.const 16203) ;; i: waiting for distance extra bits
+      (global $MATCH   i32 i32.const 16204) ;; o: waiting for output space to copy string
+      (global $LIT     i32 i32.const 16205) ;; o: waiting for output space to write literal
+  (global $CHECK       i32 i32.const 16206) ;; i: waiting for 32-bit check value
+  (global $LENGTH      i32 i32.const 16207) ;; i: waiting for 32-bit length (gzip)
+  (global $DONE        i32 i32.const 16208) ;; finished check, done -- remain here until reset
+  (global $BAD         i32 i32.const 16209) ;; got a data error -- remain here until reset
+  (global $MEM         i32 i32.const 16210) ;; got an inflate() memory error -- remain here until reset
+  (global $SYNC        i32 i32.const 16211) ;; looking for synchronization bytes to restart inflate()
+  
+  (; https://github.com/madler/zlib/blob/v1.2.11/inflate.h#L82 ;)
+  (global $inflate_state.&strm     i32 i32.const 0)
+  (global $inflate_state.&mode     i32 i32.const 4)
+  (global $inflate_state.&last     i32 i32.const 8)
+  (global $inflate_state.&wrap     i32 i32.const 12)
+  (global $inflate_state.&havedict i32 i32.const 16)
+  (global $inflate_state.&flags    i32 i32.const 20)
+  (global $inflate_state.&dmax     i32 i32.const 24)
+  (global $inflate_state.&check    i32 i32.const 28)
+  (global $inflate_state.&total    i32 i32.const 32)
+  (global $inflate_state.&head     i32 i32.const 36)
+  (global $inflate_state.&wbits    i32 i32.const 40)
+  (global $inflate_state.&wsize    i32 i32.const 44)
+  (global $inflate_state.&whave    i32 i32.const 48)
+  (global $inflate_state.&wnext    i32 i32.const 52)
+  (global $inflate_state.&window   i32 i32.const 56)
+  (global $inflate_state.&hold     i32 i32.const 60)
+  (global $inflate_state.&bits     i32 i32.const 64)
+  (global $inflate_state.&length   i32 i32.const 68)
+  (global $inflate_state.&offset   i32 i32.const 72)
+  (global $inflate_state.&extra    i32 i32.const 76)
+  (global $inflate_state.&lencode  i32 i32.const 80)
+  (global $inflate_state.&distcode i32 i32.const 84)
+  (global $inflate_state.&lenbits  i32 i32.const 88)
+  (global $inflate_state.&distbits i32 i32.const 92)
+  (global $inflate_state.&ncode    i32 i32.const 96)
+  (global $inflate_state.&nlen     i32 i32.const 100)
+  (global $inflate_state.&ndist    i32 i32.const 104)
+  (global $inflate_state.&have     i32 i32.const 108)
+  (global $inflate_state.&next     i32 i32.const 112)
+  (global $inflate_state.&lens     i32 i32.const 116)
+   (global $inflate_state.#lens    i32 i32.const 320)
+  (global $inflate_state.&work     i32 i32.const 756)
+   (global $inflate_state.#work    i32 i32.const 288)
+  (global $inflate_state.&codes    i32 i32.const 1332)
+   (global $inflate_state.#codes   i32 i32.const 1444)
+  (global $inflate_state.&sane     i32 i32.const 7108)
+  (global $inflate_state.&back     i32 i32.const 7112)
+  (global $inflate_state.&was      i32 i32.const 7116)
+  (global $#inflate_state          i32 i32.const 7120)
   
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
@@ -119,19 +156,19 @@
         )
       )
     )
-    (set_local $wsize  (i32.load (; wsize ;)     offset=44 (get_local $state)))
-    (set_local $whave  (i32.load (; whave ;)     offset=48 (get_local $state)))
-    (set_local $wnext  (i32.load (; wnext ;)     offset=52 (get_local $state)))
-    (set_local $window (i32.load (; window ;)    offset=56 (get_local $state)))
-    (set_local $hold   (i32.load (; hold ;)      offset=60 (get_local $state)))
-    (set_local $bits   (i32.load (; bits ;)      offset=64 (get_local $state)))
-    (set_local $lcode  (i32.load (; lencode ;)   offset=80 (get_local $state)))
-    (set_local $dcode  (i32.load (; distcode ;)  offset=84 (get_local $state)))
+    (set_local $wsize  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wsize))))
+    (set_local $whave  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&whave))))
+    (set_local $wnext  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wnext))))
+    (set_local $window (i32.load (i32.add (get_local $state) (get_global $inflate_state.&window))))
+    (set_local $hold   (i32.load (i32.add (get_local $state) (get_global $inflate_state.&hold))))
+    (set_local $bits   (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
+    (set_local $lcode  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lencode))))
+    (set_local $dcode  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distcode))))
     (set_local $lmask
       (i32.sub
         (i32.shl
                         (i32.const 1)
-                        (i32.load (; lenbits ;) offset=88 (get_local $state))
+                        (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits)))
         )
         (i32.const 1)
       )
@@ -140,7 +177,7 @@
       (i32.sub
         (i32.shl
                         (i32.const 1)
-                        (i32.load (; distbits ;) offset=92 (get_local $state))
+                        (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distbits)))
         )
         (i32.const 1)
       )
@@ -327,9 +364,12 @@
                     ;; see if copy from window
                     (set_local $op (i32.sub (get_local $dist) (get_local $op))) ;; distance back in window
                     (if (i32.gt_u (get_local $op) (get_local $whave)) (then
-                      (if (i32.load (; sane ;) offset=7108 (get_local $state)) (then
+                      (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&sane))) (then
                         ;; strm->msg = (char *)"invalid distance too far back";
-                        ;; state->mode = BAD;
+                        (i32.store
+                          (i32.add (get_local $state) (get_global $inflate_state.&mode))
+                          (get_global $BAD)
+                        )
                         ;; break;
                         unreachable
                       ))
@@ -528,11 +568,17 @@
             (if (i32.and (get_local $op) (i32.const 32)) (then
               ;; end of block
               ;; Tracevv((stderr, "inflate:         end of block\n"));
-              (i32.store (; mode ;) offset=4 (get_local $state) (i32.const (; TYPE ;) 16180))
+              (i32.store
+                (i32.add (get_local $state) (get_global $inflate_state.&mode))
+                (get_global $TYPE)
+              )
               (br $break)
             ))
             ;; strm->msg = (char *)"invalid literal/length code";
-            ;; state->mode = BAD;
+            (i32.store
+              (i32.add (get_local $state) (get_global $inflate_state.&mode))
+              (get_global $BAD)
+            )
             ;; break
             unreachable
           end ;; loop $dolen
@@ -575,7 +621,13 @@
         (i32.lt_u (get_local $out) (get_local $end))
       )
     )
-    (i32.store (; hold ;) offset=60 (get_local $state) (get_local $hold))
-    (i32.store (; bits ;) offset=64 (get_local $state) (get_local $bits))
+    (i32.store
+      (i32.add (get_local $state) (get_global $inflate_state.&hold))
+      (get_local $hold)
+    )
+    (i32.store
+      (i32.add (get_local $state) (get_global $inflate_state.&bits))
+      (get_local $bits)
+    )
   )
 )
