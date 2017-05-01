@@ -131,6 +131,155 @@
   (global $inflate_state.&was      i32 i32.const 7116)
   (global $#inflate_state          i32 i32.const 7120)
   
+  (global $adler32_initial i32 i32.const 1)
+  
+  (; https://github.com/madler/zlib/blob/v1.2.11/adler32.c#L63 ;)
+  (func (export "adler32") (param $adler i32) (param $in i32) (param $len i32)
+    (param $sum2 i32)
+    (param $n i32)
+    
+    (set_local $sum2 (i32.shr_u (get_local $adler) (i32.const 16)))
+    (set_local $adler (i32.and (get_local $adler) (i32.const 0xffff)))
+    
+    (if (i32.eq (get_local $len) (i32.const 1)) (then
+      (set_local $adler (i32.add (get_local $adler) (i32.load8_u (get_local $in))))
+      (if (i32.ge_u (get_local $adler) (i32.const 65521)) (then
+        (set_local $adler (i32.sub (get_local $adler) (i32.const 65521)))
+      ))
+      (set_local $sum2 (i32.add (get_local $sum2) (get_local $adler)))
+      (if (i32.ge_u (get_local $sum2) (i32.const 65521)) (then
+        (set_local $adler (i32.sub (get_local $sum2) (i32.const 65521)))
+      ))
+      (return (i32.or (get_local $adler) (i32.shl (get_local $sum2) (i32.const 16))))
+    ))
+    
+    (if (i32.lt_u (get_local $len) (i32.const 16)) (then
+      (if (get_local $len) (then
+        loop $top
+          ;; sum2 += (adler += *buf++);
+          get_local $sum2
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u (get_local $in))))
+          i32.add
+          set_local $sum2
+          (set_local $in (i32.add (get_local $in) (i32.const 1)))
+          (br_if $top (tee_local $len (i32.sub (get_local $len) (i32.const 1))))
+        end
+      ))
+      (if (i32.ge_u (get_local $adler) (i32.const 65521)) (then
+        (set_local $adler (i32.sub (get_local $adler) (i32.const 65521)))
+      ))
+      (set_local $sum2 (i32.rem_u (get_local $sum2) (i32.const 65521)))
+      (return (i32.or (get_local $adler) (i32.shl (get_local $sum2) (i32.const 16))))      
+    ))
+    
+    block $break
+      loop $top
+        (br_if $break (i32.lt_u (get_local $len) (i32.const 5552)))
+        (set_local $len (i32.sub (get_local $len) (i32.const 5552)))
+        (set_local $n (i32.const 347)) ;; 347 = 5552 / 16
+        loop $top2
+          ;; un-rollin'-rollin'-rollin'
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=0 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=1 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=2 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=3 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=4 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=5 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=6 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=7 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=8 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=9 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=10 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=11 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=12 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=13 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=14 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=15 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (set_local $in (i32.add (get_local $in) (i32.const 16)))
+          (br_if $top2 (tee_local $n (i32.sub (get_local $n) (i32.const 1))))
+        end
+        (set_local $adler (i32.rem_u (get_local $adler) (i32.const 65521)))
+        (set_local $sum2 (i32.rem_u (get_local $sum2) (i32.const 65521)))
+        br $top
+      end
+    end $break
+    
+    (if (get_local $len) (then
+      block $break
+        loop $top
+          (br_if $break (i32.lt_u (get_local $len) (i32.const 16)))
+          (set_local $len (i32.sub (get_local $len) (i32.const 16)))
+          ;; un-rollin'-rollin'-rollin'
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=0 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=1 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=2 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=3 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=4 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=5 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=6 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=7 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=8 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=9 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=10 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=11 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=12 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=13 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=14 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (tee_local $adler (i32.add (get_local $adler) (i32.load8_u offset=15 (get_local $in))))
+            (get_local $sum2) (i32.add) (set_local $sum2)
+          (set_local $in (i32.add (get_local $in) (i32.const 16)))
+        end
+        ;; same as an earlier loop, for the $len<16 case
+        (if (get_local $len) (then
+          loop $top
+            ;; sum2 += (adler += *buf++);
+            get_local $sum2
+            (tee_local $adler (i32.add (get_local $adler) (i32.load8_u (get_local $in))))
+            i32.add
+            set_local $sum2
+            (set_local $in (i32.add (get_local $in) (i32.const 1)))
+            (br_if $top (tee_local $len (i32.sub (get_local $len) (i32.const 1))))
+          end
+        ))
+        (set_local $adler (i32.rem_u (get_local $adler) (i32.const 65521)))
+        (set_local $sum2 (i32.rem_u (get_local $sum2) (i32.const 65521)))        
+      end $break
+    ))
+    
+    (return (i32.or (get_local $adler) (i32.shl (get_local $sum2) (i32.const 16))))      
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -976,7 +1125,7 @@
             end
           (;/NEEDBITS;)
           
-          (;ZSWAP($hold);)
+          (;$_temp_bits=ZSWAP($hold);)
           (set_local $_temp_bits
             (i32.or
               (i32.shr_u (get_local $hold) (i32.const 24))
@@ -989,20 +1138,36 @@
               )
             )
           )
-          (;/ZSWAP($hold);)
+          (;/$_temp_bits=ZSWAP($hold);)
           
           (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $_temp_bits))
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $_temp_bits))
           
           (;INITBITS;)
-            (setlocal $hold (i32.const 0))
-            (setlocal $bits (i32.const 0))
+            (set_local $hold (i32.const 0))
+            (set_local $bits (i32.const 0))
           (;/INITBITS;)
         
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $DICT))
           ;; fall through:
         end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
-          unreachable
+          (if (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&havedict)))) (then
+            (;RESTORE;)
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out) (get_local $put)))
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out) (get_local $left)))
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_in) (get_local $next)))
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in) (get_local $have)))
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold) (get_local $hold)))
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits) (get_local $bits)))
+            (;RESTORE;)
+            (return (get_global $Z_NEED_DICT))
+          ))
+          
+          (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_global $adler32_initial))
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_global $adler32_initial))
+          
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $TYPE))
+          ;; fall through:
         end $TYPE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L849 ;)
           (br_if $inf_leave (i32.or
             (i32.eq (get_local $flush) (get_global $Z_BLOCK))
