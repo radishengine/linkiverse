@@ -663,9 +663,56 @@
     )
   )
   
+  (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L642 ;)
+  (func $order (param $i i32) (result i32)
+    ;; inline const short array in C version
+    block $18 block $17 block $16 block $15 block $14 block $13 block $12 block $11 block $10
+    block  $9 block  $8 block  $7 block  $6 block  $5 block  $4 block  $3 block  $2 block  $1
+    block  $0
+    
+    (get_local $i)
+    br_table $16 $17 $18 $0 $8 $7 $9 $6 $10 $5 $11 $4 $12 $3 $13 $2 $14 $1 $15
+    
+    end $0 (return (i32.const 0))
+    end $1 (return (i32.const 1))
+    end $2 (return (i32.const 2))
+    end $3 (return (i32.const 3))
+    end $4 (return (i32.const 4))
+    end $5 (return (i32.const 5))
+    end $6 (return (i32.const 6))
+    end $7 (return (i32.const 7))
+    end $8 (return (i32.const 8))
+    end $9 (return (i32.const 9))
+    end $10 (return (i32.const 10))
+    end $11 (return (i32.const 11))
+    end $12 (return (i32.const 12))
+    end $13 (return (i32.const 13))
+    end $14 (return (i32.const 14))
+    end $15 (return (i32.const 15))
+    end $16 (return (i32.const 16))
+    end $17 (return (i32.const 17))
+    end $18 (return (i32.const 18))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L622 ;)
   (func $inflate (param $strm i32) (param $flush i32) (result i32)
     (local $state i32)
+    (local $next i32)
+    (local $put i32)
+    (local $have i32)
+    (local $left i32)
+    (local $hold i32)
+    (local $bits i32)
+    (local $in i32)
+    (local $out i32)
+    (local $copy i32)
+    (local $from i32)
+    (local $here i32)
+    (local $len i32)
+    (local $ret i32)
+    (local $hbuf i32) ;; unsigned char[4]
+    ;; $order is a function, see above
+    
     ;; TODO: up to https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L655
     block $inf_leave
       loop $continue
@@ -747,12 +794,12 @@
         end $BAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1237 ;)
           unreachable
         end $MEM: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1240 ;)
-          unreachable
+          (return (get_global $Z_MEM_ERROR))
         end $SYNC:default: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1242 ;)
-          unreachable
+          (return (get_global $Z_STREAM_ERROR))
       end
     end
     ;; TODO: from https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1253
-    unreachable
+    (return (get_local $ret))
   )
 )
