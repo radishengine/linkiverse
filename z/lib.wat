@@ -793,7 +793,11 @@
         end $MATCH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1146 ;)
           unreachable
         end $LIT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1191 ;)
-          unreachable
+          (br_if $inf_leave (i32.eqz (get_local $left)))
+          (i32.store8 (get_local $put) (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length))))
+          (set_local $left (i32.sub (get_local $left) (i32.const 1)))
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $LEN))
+          br $continue
         end $CHECK: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1197 ;)
           unreachable
         end $LENGTH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1221 ;)
