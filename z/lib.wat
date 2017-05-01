@@ -975,8 +975,32 @@
               end
             end
           (;/NEEDBITS;)
+          
+          (;ZSWAP($hold);)
+          (set_local $_temp_bits
+            (i32.or
+              (i32.shr_u (get_local $hold) (i32.const 24))
+              (i32.or
+                (i32.and (i32.shr_u (get_local $hold) (i32.const 8)) (i32.const 0x0000ff00))
+                (i32.or
+                  (i32.and (i32.shl (get_local $hold) (i32.const 8)) (i32.const 0x00ff0000))
+                  (i32.shl (get_local $hold) (i32.const 24))
+                )
+              )
+            )
+          )
+          (;/ZSWAP($hold);)
+          
+          (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $_temp_bits))
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $_temp_bits))
+          
+          (;INITBITS;)
+            (setlocal $hold (i32.const 0))
+            (setlocal $bits (i32.const 0))
+          (;/INITBITS;)
         
-          unreachable
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $DICT))
+          ;; fall through:
         end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
           unreachable
         end $TYPE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L849 ;)
