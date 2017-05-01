@@ -55,6 +55,8 @@
   ;;  offset=7116 was
   ;; length:7120
   
+  (import "memory" "main" (memory 0))
+  
   (func $inflate_fast
       (param $strm i32)
       (param $start i32) ;; inflate()'s starting value for strm->avail_out
