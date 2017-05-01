@@ -354,15 +354,18 @@
                               *out++ = *from++;
                           } while (--op);
                           from = window;
-                          if (wnext < len) {  /* some from start of window */
-                              op = wnext;
-                              len -= op;
-                              do {
-                                  *out++ = *from++;
-                              } while (--op);
-                              from = out - dist;      /* rest from output */
-                          }
       ;)
+                          (if (i32.lt_u (get_local $wnext) (get_local $len)) (then
+                            ;; some from start of window
+      (;
+                            op = wnext;
+                            len -= op;
+                            do {
+                                *out++ = *from++;
+                            } while (--op);
+                            from = out - dist;      /* rest from output */
+      ;)
+                          ))
                         ))
                       )
                       (else
