@@ -302,8 +302,9 @@
                   (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
                   ;; Tracevv((stderr, "inflate:         distance %u\n", dist));
                   (set_local $op (i32.sub (get_local $out) (get_local $beg))) ;; max distance in output
-  (;
-                    if (dist > op) {                /* see if copy from window */
+                  (if (i32.lt_u (get_local $dist) (get_local $op)) (then
+                    ;; see if copy from window
+       (;
                         op = dist - op;             /* distance back in window */
                         if (op > whave) {
                             if (state->sane) {
@@ -366,21 +367,22 @@
                             if (len > 1)
                                 *out++ = *from++;
                         }
-                    }
-                    else {
-                        from = out - dist;          /* copy direct from output */
-                        do {                        /* minimum length is three */
-                            *out++ = *from++;
-                            *out++ = *from++;
-                            *out++ = *from++;
-                            len -= 3;
-                        } while (len > 2);
-                        if (len) {
-                            *out++ = *from++;
-                            if (len > 1)
-                                *out++ = *from++;
-                        }
-                    }
+     ;)
+                    (br $do)
+                  ))
+     (;
+                  from = out - dist;          /* copy direct from output */
+                  do {                        /* minimum length is three */
+                      *out++ = *from++;
+                      *out++ = *from++;
+                      *out++ = *from++;
+                      len -= 3;
+                  } while (len > 2);
+                  if (len) {
+                      *out++ = *from++;
+                      if (len > 1)
+                          *out++ = *from++;
+                  }
        ;)
                   (br $do)
                 ))
