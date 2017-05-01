@@ -882,7 +882,7 @@
         (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in) (get_local $have)))
         (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold) (get_local $hold)))
         (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits) (get_local $bits)))
-      (;RESTORE;)
+      (;/RESTORE;)
 
       (;PULLBYTE;)
         (br_if $inf_leave (i32.eqz (get_local $have)))
@@ -1159,7 +1159,7 @@
               (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in) (get_local $have)))
               (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold) (get_local $hold)))
               (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits) (get_local $bits)))
-            (;RESTORE;)
+            (;/RESTORE;)
             (return (get_global $Z_NEED_DICT))
           ))
           
@@ -1418,7 +1418,7 @@
       (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in) (get_local $have)))
       (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold) (get_local $hold)))
       (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits) (get_local $bits)))
-    (;RESTORE;)
+    (;/RESTORE;)
     ;; TODO: from https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1255
     (return (get_local $ret))
   )
