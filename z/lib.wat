@@ -299,6 +299,10 @@
     ))
   )
   
+  (func $bitmask (param $numbits i32) (result i32)
+    (return (i32.sub (i32.shl (i32.const 1) (get_local $numbits)) (i32.const 1)))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -332,8 +336,8 @@
       (i32.add
         (get_local $in)
         (i32.sub
-                        (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in)))
-                        (i32.const 5)
+          (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in)))
+          (i32.const 5)
         )
       )
     )
@@ -342,8 +346,8 @@
       (i32.sub
         (get_local $out)
         (i32.sub
-                        (get_local $start)
-                        (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_out)))
+          (get_local $start)
+          (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_out)))
         )
       )
     )
@@ -351,8 +355,8 @@
       (i32.add
         (get_local $out)
         (i32.sub
-                        (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in)))
-                        (i32.const 257)
+          (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in)))
+          (i32.const 257)
         )
       )
     )
@@ -364,24 +368,12 @@
     (set_local $bits   (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
     (set_local $lcode  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lencode))))
     (set_local $dcode  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distcode))))
-    (set_local $lmask
-      (i32.sub
-        (i32.shl
-                        (i32.const 1)
-                        (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits)))
-        )
-        (i32.const 1)
-      )
-    )
-    (set_local $dmask
-      (i32.sub
-        (i32.shl
-                        (i32.const 1)
-                        (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distbits)))
-        )
-        (i32.const 1)
-      )
-    )
+    (set_local $lmask (call $bitmask
+      (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits)))
+    ))
+    (set_local $dmask (call $bitmask
+      (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distbits)))
+    ))
     ;; decode literals and length/distances until end-of-block or not enough
     ;; input data or output space
     
@@ -392,6 +384,7 @@
             (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+            
             (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
@@ -435,27 +428,17 @@
                   (set_local   $in (i32.add (get_local   $in) (i32.const 1)))
                   (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
                 ))
-                (set_local $len
-                  (i32.add
-                    (get_local $len)
-                    (i32.and
-                      (get_local $hold)
-                      (i32.sub
-                        (i32.shl
-                          (i32.const 1)
-                          (get_local $op)
-                        )
-                        (i32.const 1)
-                      )
-                    )
-                  )
-                )
+                (set_local $len (i32.add
+                  (get_local $len)
+                  (i32.and (get_local $hold) (call $bitmask (get_local $op)))
+                ))
               ))
               ;; Tracevv((stderr, "inflate:         length %u\n", len));
               (if (i32.lt_u (get_local $bits) (i32.const 15)) (then
                 (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
                 (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
                 (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                
                 (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
                 (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
                 (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
@@ -500,14 +483,9 @@
                       (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
                     ))
                   ))
-                  (set_local $dist (i32.add (get_local $dist)
-                    (i32.and
-                      (get_local $hold)
-                      (i32.sub
-                        (i32.shl (i32.const 1) (get_local $op))
-                        (i32.const 1)
-                      )
-                    )
+                  (set_local $dist (i32.add
+                    (get_local $dist)
+                    (i32.and (get_local $hold) (call $bitmask (get_local $op)))
                   ))
                   (set_local $hold (i32.shr_u (get_local $hold) (get_local $op)))
                   (set_local $bits (i32.sub   (get_local $bits) (get_local $op)))
@@ -676,13 +654,7 @@
                     (get_local $dcode)
                     (i32.add
                       (call $code.val (get_local $here))
-                      (i32.and
-                        (get_local $hold)
-                        (i32.sub
-                          (i32.shl (i32.const 1) (get_local $op))
-                          (i32.const 1)
-                        )
-                      )
+                      (i32.and (get_local $hold) (call $bitmask (get_local $op)))
                     )
                   ))
                   
@@ -702,13 +674,7 @@
                 (get_local $lcode)
                 (i32.add
                   (call $code.val (get_local $here))
-                  (i32.and
-                    (get_local $hold)
-                    (i32.sub
-                      (i32.shl (i32.const 1) (get_local $op))
-                      (i32.const 1)
-                    )
-                  )
+                  (i32.and (get_local $hold) (call $bitmask (get_local $op)))
                 )
               ))
               
@@ -745,12 +711,10 @@
     (set_local  $len (i32.shr_u (get_local $bits) (i32.const 3)))
     (set_local   $in (i32.sub   (get_local   $in) (get_local $len)))
     (set_local $bits (i32.sub   (get_local $bits) (i32.shl (get_local $len) (i32.const 3))))
-    (set_local $hold
-      (i32.and
-        (get_local $hold)
-        (i32.sub (i32.shl (i32.const 1) (get_local $bits)) (i32.const 1))
-      )
-    )
+    (set_local $hold (i32.and
+      (get_local $hold)
+      (call $bitmask (get_local $bits))
+    ))
 
     ;; update state and return
     
@@ -896,13 +860,7 @@
         (set_local $_temp_bits)
         (i32.and
           (get_local $hold)
-          (i32.sub
-            (i32.shl
-              (i32.const 1)
-              (get_local $_temp_bits)
-            )
-            (i32.const 1)
-          )
+          (call $bitmask (get_local $_temp_bits))
         )
       (;/BITS;) (...)
 
@@ -1226,13 +1184,7 @@
           (set_local $_temp_bits (i32.const 5)) (;BITS;)
             (i32.and
               (get_local $hold)
-              (i32.sub
-                (i32.shl
-                  (i32.const 1)
-                  (get_local $_temp_bits)
-                )
-                (i32.const 1)
-              )
+              (call $bitmask (get_local $_temp_bits))
             )
           (;/BITS;)
           (i32.add)
@@ -1246,13 +1198,7 @@
           (set_local $_temp_bits (i32.const 5)) (;BITS;)
             (i32.and
               (get_local $hold)
-              (i32.sub
-                (i32.shl
-                  (i32.const 1)
-                  (get_local $_temp_bits)
-                )
-                (i32.const 1)
-              )
+              (call $bitmask (get_local $_temp_bits))
             )
           (;/BITS;)
           (i32.add)
@@ -1267,13 +1213,7 @@
             (set_local $_temp_bits)
             (i32.and
               (get_local $hold)
-              (i32.sub
-                (i32.shl
-                  (i32.const 1)
-                  (get_local $_temp_bits)
-                )
-                (i32.const 1)
-              )
+              (call $bitmask (get_local $_temp_bits))
             )
           (;/BITS(n);)
           (i32.add)
@@ -1336,13 +1276,7 @@
                 (;BITS;)
                   (i32.and
                     (get_local $hold)
-                    (i32.sub
-                      (i32.shl
-                        (i32.const 1)
-                        (get_local $_temp_bits)
-                      )
-                      (i32.const 1)
-                    )
+                    (call $bitmask (get_local $_temp_bits))
                   )
                 (;/BITS;)
               ))
@@ -1397,13 +1331,7 @@
             (;BITS;)
               (i32.and
                 (get_local $hold)
-                (i32.sub
-                  (i32.shl
-                    (i32.const 1)
-                    (get_local $_temp_bits)
-                  )
-                  (i32.const 1)
-                )
+                (call $bitmask (get_local $_temp_bits))
               )
             (;/BITS;)
             i32.add
