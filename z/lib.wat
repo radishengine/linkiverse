@@ -1328,6 +1328,30 @@
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $LEN))
           ;; fall through:
         end $LEN: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1044 ;)
+          (if (i32.and (i32.ge_u (get_local $have) (i32.const 6)) (i32.ge_u (get_local $left) (i32.const 258))) (then
+            (;RESTORE;)
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out)) (get_local $put))
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out)) (get_local $left))
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_in)) (get_local $next))
+              (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in)) (get_local $have))
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold)) (get_local $hold))
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits)) (get_local $bits))
+            (;/RESTORE;)
+            (call $inflate_fast (get_local $strm) (get_local $out))
+            (;LOAD;)
+              (set_local $put (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_out))))
+              (set_local $left (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_out))))
+              (set_local $next (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_in))))
+              (set_local $have (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in))))
+              (set_local $hold (i32.load (i32.add (get_local $state) (get_global $inflate_state.&hold))))
+              (set_local $bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
+            (;LOAD;)
+            (if (i32.eq (i32.load (i32.add (get_local $state) (get_global $inflate_state.&mode))) (get_global $TYPE)) (then
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const -1))
+            ))
+            br $continue
+          ))
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const 0))
           unreachable
         end $LENEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1093 ;)
           (if (tee_local $_temp_bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&extra)))) (then
