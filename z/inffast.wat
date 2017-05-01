@@ -379,20 +379,27 @@
                     ))
                     br $do
                   ))
-     (;
-                  from = out - dist;          /* copy direct from output */
-                  do {                        /* minimum length is three */
-                      *out++ = *from++;
-                      *out++ = *from++;
-                      *out++ = *from++;
-                      len -= 3;
-                  } while (len > 2);
-                  if (len) {
-                      *out++ = *from++;
-                      if (len > 1)
-                          *out++ = *from++;
-                  }
-       ;)
+                  (set_local $from (i32.sub (get_local $out) (get_local $dist))) ;; copy direct from output
+                  loop
+                    ;; minimum length is 3
+                    (i32.store8 offset=0 (get_local $out) (i32.load8 offset=0 (get_local $from)))
+                    (i32.store8 offset=1 (get_local $out) (i32.load8 offset=1 (get_local $from)))
+                    (i32.store8 offset=2 (get_local $out) (i32.load8 offset=2 (get_local $from)))
+                    (set_local  $out (i32.add (get_local  $out) (i32.const 3)))
+                    (set_local $from (i32.add (get_local $from) (i32.const 3)))
+                    (set_local  $len (i32.sub (get_local  $len) (i32.const 3)))
+                    (br_if 0 (i32.gt (get_local $len) (i32.const 2)))
+                  end
+                  (if (get_local $len) (then
+                    (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                    (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                    (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                    (if (i32.gt_u (get_local $len) (i32.const 1)) (then
+                      (i32.store8 (get_local $out) (i32.load8 (get_local $from)))
+                      (set_local  $out (i32.add (get_local  $out) (i32.const 1)))
+                      (set_local $from (i32.add (get_local $from) (i32.const 1)))
+                    ))
+                  ))
                   (br $do)
                 ))
                 (if (i32.eqz (i32.and (get_local $op) (i32.const 64))) (then
@@ -402,11 +409,10 @@
                   ;)
                   (br $dodist)
                 ))
-                (;
-                  strm->msg = (char *)"invalid distance code";
-                  state->mode = BAD;
-                ;)
-                (br $break)
+                ;; strm->msg = (char *)"invalid distance code";
+                ;; state->mode = BAD;
+                ;; break
+                unreachable
               end ;; loop $dodist
             ))
             (if (i32.eqz (i32.and (get_local $op) (i32.const 64))) (then
