@@ -316,8 +316,13 @@
                     (set_local $from (get_local $window))
                     (if (i32.eqz (get_local $wnext)) (then
                       ;; very common case
+                      (set_local $from
+                        (i32.add
+                          (get_local $from)
+                          (i32.sub (get_local $wsize) (get_local $op))
+                        )
+                      )
       (;
-                      from += wsize - op;
                       if (op < len) {         /* some from window */
                           len -= op;
                           do {
@@ -330,30 +335,43 @@
                     (else
                       (if (i32.lt_u (get_local $wnext) (get_local $op)) (then
                         ;; wrap around window
+                        (set_local $from
+                          (i32.add
+                            (get_local $from)
+                            (i32.sub
+                              (i32.add (get_local $wsize) (get_local $wnext))
+                              (get_local $op)
+                            )
+                          )
+                        )
+                        (set_local $op (i32.sub (get_local $op) (get_local $wnext)))
       (;
-                          from += wsize + wnext - op;
-                          op -= wnext;
-                          if (op < len) {         /* some from end of window */
-                              len -= op;
-                              do {
-                                  *out++ = *from++;
-                              } while (--op);
-                              from = window;
-                              if (wnext < len) {  /* some from start of window */
-                                  op = wnext;
-                                  len -= op;
-                                  do {
-                                      *out++ = *from++;
-                                  } while (--op);
-                                  from = out - dist;      /* rest from output */
-                              }
-                          }
+                        if (op < len) {         /* some from end of window */
+                            len -= op;
+                            do {
+                                *out++ = *from++;
+                            } while (--op);
+                            from = window;
+                            if (wnext < len) {  /* some from start of window */
+                                op = wnext;
+                                len -= op;
+                                do {
+                                    *out++ = *from++;
+                                } while (--op);
+                                from = out - dist;      /* rest from output */
+                            }
+                        }
       ;)
                       )
                       (else
                         ;; contiguous in window
+                        (set_local $from
+                          (i32.add
+                            (get_local $from)
+                            (i32.sub (get_local $wnext) (get_local $op))
+                          )
+                        )
       (;
-                          from += wnext - op;
                           if (op < len) {         /* some from window */
                               len -= op;
                               do {
