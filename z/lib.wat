@@ -756,13 +756,18 @@
         end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
           unreachable
         end $TYPE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L849 ;)
-          unreachable
+          (br_if $inf_leave (i32.or
+            (i32.eq (get_local $flush) (get_global $Z_BLOCK))
+            (i32.eq (get_local $flush) (get_global $Z_TREES))
+          ))
+          ;; fall through:
         end $TYPEDO: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L851 ;)
           unreachable
         end $STORED: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L887 ;)
           unreachable
         end $COPY_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L901 ;)
-          unreachable
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $COPY))
+          ;; fall through:
         end $COPY: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L903 ;)
           unreachable
         end $TABLE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L920 ;)
@@ -790,9 +795,11 @@
         end $LENGTH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1221 ;)
           unreachable
         end $DONE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1234 ;)
-          unreachable
+          (set_local $ret (get_global $Z_STREAM_END))
+          br $inf_leave
         end $BAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1237 ;)
-          unreachable
+          (set_local $ret (get_global $Z_DATA_ERROR))
+          br $inf_leave
         end $MEM: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1240 ;)
           (return (get_global $Z_MEM_ERROR))
         end $SYNC:default: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1242 ;)
