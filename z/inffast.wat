@@ -24,16 +24,6 @@
   (global $z_stream.&reserved  i32 i32.const 52)
   (global $#z_stream           i32 i32.const 56)
   
-  ;; stream:
-  ;;  offset=0 next_in
-  ;;  offset=4 avail_in
-  ;;  offset=8 total_in
-  ;;  offset=12 next_out
-  ;;  offset=16 avail_out
-  ;;  offset=20 total_out
-  ;;  offset=24 msg
-  ;;  offset=28 state
-
   ;; state: (note: recent inflate.h has added strm reference as first field)
   ;;  offset=0  strm
   ;;  offset=4  mode
