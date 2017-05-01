@@ -7,6 +7,38 @@
   ;; BB = bits
   ;; PP = op
   
+  (; https://github.com/madler/zlib/blob/v1.2.11/zlib.h#L166 ;)
+  (global $Z_NO_FLUSH           i32 i32.const 0)
+  (global $Z_PARTIAL_FLUSH       i32 i32.const 1)
+  (global $Z_SYNC_FLUSH          i32 i32.const 2)
+  (global $Z_FULL_FLUSH          i32 i32.const 3)
+  (global $Z_FINISH              i32 i32.const 4)
+  (global $Z_BLOCK               i32 i32.const 5)
+  (global $Z_TREES               i32 i32.const 6)
+  (global $Z_OK                  i32 i32.const 0)
+  (global $Z_STREAM_END          i32 i32.const 1)
+  (global $Z_NEED_DICT           i32 i32.const 2)
+  (global $Z_ERRNO               i32 i32.const -1)
+  (global $Z_STREAM_ERROR        i32 i32.const -2)
+  (global $Z_DATA_ERROR          i32 i32.const -3)
+  (global $Z_MEM_ERROR           i32 i32.const -4)
+  (global $Z_BUF_ERROR           i32 i32.const -5)
+  (global $Z_VERSION_ERROR       i32 i32.const -6)
+  (global $Z_NO_COMPRESSION      i32 i32.const 0)
+  (global $Z_BEST_SPEED          i32 i32.const 1)
+  (global $Z_BEST_COMPRESSION    i32 i32.const 9)
+  (global $Z_DEFAULT_COMPRESSION i32 i32.const -1)
+  (global $Z_FILTERED            i32 i32.const 1)
+  (global $Z_HUFFMAN_ONLY        i32 i32.const 2)
+  (global $Z_RLE                 i32 i32.const 3)
+  (global $Z_FIXED               i32 i32.const 4)
+  (global $Z_DEFAULT_STRATEGY    i32 i32.const 0)
+  (global $Z_BINARY              i32 i32.const 0)
+  (global $Z_TEXT                i32 i32.const 1)
+  (global $Z_UNKNOWN             i32 i32.const 2)
+  (global $Z_DEFLATED            i32 i32.const 8)
+  (global $Z_NULL                i32 i32.const 0)
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/zlib.h#L86 ;)
   (global $z_stream.&next_in   i32 i32.const 0)
   (global $z_stream.&avail_in  i32 i32.const 4)
@@ -638,7 +670,7 @@
     block $inf_leave
       loop $continue
       
-        ;; this is what a big ol' switch table looks like in wasm, better get used to it
+        ;; this is what a big ol' switch table looks like in wasm. better get used to it
         
         block $SYNC:default: block $MEM:     block $BAD:     block $DONE: block $LENGTH: block $CHECK:
         block $LIT:          block $MATCH:   block $DISTEXT: block $DIST: block $LENEXT: block $LEN:   block $LEN_:
@@ -719,7 +751,6 @@
         end $SYNC:default: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1242 ;)
           unreachable
       end
-      unreachable
     end
     ;; TODO: from https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1253
     unreachable
