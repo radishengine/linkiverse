@@ -734,6 +734,10 @@
           $CHECK: $LENGTH: $DONE: $BAD: $MEM: $SYNC:default:
         
         end $HEAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L657 ;)
+          (if (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))) (then
+            (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $TYPEDO))
+            br $TYPEDO:
+          ))
           unreachable
         end $FLAGS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L706 ;)
           unreachable
