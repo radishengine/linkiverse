@@ -715,8 +715,26 @@
     ;; $order is a function, see above
     
     (;
-      ;; bit macro templates
+      ;; macro templates
       
+      (;LOAD;)
+        (set_local $put (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_out))))
+        (set_local $left (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_out))))
+        (set_local $next (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_in))))
+        (set_local $have (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in))))
+        (set_local $hold (i32.load (i32.add (get_local $state) (get_global $inflate_state.&hold))))
+        (set_local $bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
+      (;LOAD;)
+
+      (;RESTORE;)
+        (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out) (get_local $put)))
+        (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out) (get_local $left)))
+        (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_in) (get_local $next)))
+        (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in) (get_local $have)))
+        (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold) (get_local $hold)))
+        (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits) (get_local $bits)))
+      (;RESTORE;)
+
       (;PULLBYTE;)
         (br_if $inf_leave (i32.eqz (get_local $have)))
         (set_local $have (i32.sub (get_local $have) (i32.const 1)))
@@ -781,7 +799,21 @@
       
     ;)
     
-    ;; TODO: up to https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L655
+    ;; TODO: up to https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L651
+    
+    (;LOAD;)
+      (set_local $put (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_out))))
+      (set_local $left (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_out))))
+      (set_local $next (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_in))))
+      (set_local $have (i32.load (i32.add (get_local $strm) (get_global $z_stream.&avail_in))))
+      (set_local $hold (i32.load (i32.add (get_local $state) (get_global $inflate_state.&hold))))
+      (set_local $bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
+    (;LOAD;)
+    
+    (set_local $in (get_local $have))
+    (set_local $out (get_local $left))
+    (set_local $ret (get_global $Z_OK))
+        
     block $inf_leave
       loop $continue
       
@@ -1189,8 +1221,16 @@
         end $SYNC:default: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1242 ;)
           (return (get_global $Z_STREAM_ERROR))
       end
-    end
-    ;; TODO: from https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1253
+    end $inf_leave
+    (;RESTORE;)
+      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out) (get_local $put)))
+      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out) (get_local $left)))
+      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_in) (get_local $next)))
+      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in) (get_local $have)))
+      (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold) (get_local $hold)))
+      (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits) (get_local $bits)))
+    (;RESTORE;)
+    ;; TODO: from https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1255
     (return (get_local $ret))
   )
 )
