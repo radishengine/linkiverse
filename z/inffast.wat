@@ -533,7 +533,7 @@
     ;; return unused bytes (on entry, $bits < 8, so $in won't go too far back)
     (set_local $len (i32.shr_u (get_local $bits) (i32.const 3)))
     (set_local $in (i32.sub (get_local $in) (get_local $len)))
-    (set_local $bits (i32.sub (get_local $bits) (bit.shl (get_local $len) (i32.const 3))))
+    (set_local $bits (i32.sub (get_local $bits) (i32.shl (get_local $len) (i32.const 3))))
     (set_local $hold (i32.and (i32.sub (i32.shl (i32.const 1) (get_local $bits)) (i32.const 1))))
 
     ;; update state and return
