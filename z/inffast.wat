@@ -146,10 +146,10 @@
       loop $top
         block $do
           (if (i32.lt_u (get_local $bits) (i32.const 15)) (then
-            (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+            (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-            (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+            (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
           ))
@@ -227,10 +227,10 @@
               ))
               ;; Tracevv((stderr, "inflate:         length %u\n", len));
               (if (i32.lt_u (get_local $bits) (i32.const 15)) (then
-                (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+                (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
                 (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
                 (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-                (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits)))))
+                (set_local $hold (i32.add (get_local $hold) (i32.shl (i32.load8_u (get_local $in)) (get_local $bits))))
                 (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
                 (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
               ))
