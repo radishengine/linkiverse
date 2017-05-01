@@ -154,7 +154,17 @@
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
           ))
           ;; $here = $lcode[$hold & $lmask] (codes are 32-bit)
-          (set_local $here (i32.load (get_local $lcode) (i32.shl (i32.and (get_local $hold) (get_local $lmask)) (i32.const 2))))
+          (set_local $here
+            (i32.load
+              (i32.add
+                (get_local $lcode)
+                (i32.shl
+                  (i32.and (get_local $hold) (get_local $lmask))
+                  (i32.const 2)
+                )
+              )
+            )
+          )
           loop $dolen
             ;; $op = $here.bits (2nd-lowest byte)
             (set_local $op
