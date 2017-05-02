@@ -354,6 +354,10 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))))
   )
   
+  (func $inflate_state->check (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1433,14 +1437,14 @@
               (call $inflate_state->check=z_stream->adler= (get_local $state) (get_local $strm)
                 (if i32 (call $inflate_state->flags (get_local $state)) (then
                   (call $crc32
-                    (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                    (call $inflate_state->check (get_local $state))
                     (i32.sub (get_local $put) (get_local $out))
                     (get_local $out)
                   )
                 )
                 (else
                   (call $adler32
-                    (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                    (call $inflate_state->check (get_local $state))
                     (i32.sub (get_local $put) (get_local $out))
                     (get_local $out)
                   )
@@ -1456,7 +1460,7 @@
                   (get_local $hold)
                   (call $ZSWAP32 (get_local $hold))
                 )
-                (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                (call $inflate_state->check (get_local $state))
               ))
               ;; strm->msg = (char *)"incorrect data check";
               (call $inflate_state->mode= (get_local $state) (get_global $BAD))
