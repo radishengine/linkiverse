@@ -338,6 +338,14 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length))))
   )
   
+  (func $inflate_state->length+= (param $state i32) (param $value i32)
+    (call $v->i32+= (get_local $state) (get_global $inflate_state.&length) (get_local $value))
+  )
+  
+  (func $inflate_state->total (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&total))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1344,7 +1352,8 @@
               end
             (;/NEEDBITS;)
             
-            (call $v->i32+= (get_local $state) (get_global $inflate_state.&length)
+            (call $inflate_state->length+=
+              (get_local $state)
               (i32.and (get_local $hold) (call $bitmask (get_local $_temp_bits))) ;; BITS($_temp_bits)
             )
 
@@ -1483,7 +1492,7 @@
               end
             (;/NEEDBITS(32);)
             
-            (if (i32.ne (get_local $hold) (i32.load (i32.add (get_local $state) (get_global $inflate_state.&total)))) (then
+            (if (i32.ne (get_local $hold) (call $inflate_state->total (get_local $state))) (then
               ;; strm->msg = (char *)"incorrect length check";
               (call $inflate_state->mode= (get_local $state) (get_global $BAD))
               br $BAD:
