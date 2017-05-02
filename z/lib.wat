@@ -386,6 +386,18 @@
     (i32.store (i32.add (get_local $state) (get_global $inflate_state.&have)) (get_local $val))
   )
   
+  (func $inflate_state->back= (param $state i32) (param $val i32)
+    (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (get_local $val))
+  )
+  
+  (func $inflate_state->lenbits (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits))))
+  )
+  
+  (func $inflate_state->distbits (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distbits))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -451,12 +463,8 @@
     (set_local $bits   (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
     (set_local $lcode  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lencode))))
     (set_local $dcode  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distcode))))
-    (set_local $lmask (call $bitmask
-      (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits)))
-    ))
-    (set_local $dmask (call $bitmask
-      (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distbits)))
-    ))
+    (set_local $lmask (call $bitmask (call $inflate_state->lenbits (get_local $state))))
+    (set_local $dmask (call $bitmask (call $inflate_state->distbits (get_local $state))))
     ;; decode literals and length/distances until end-of-block or not enough
     ;; input data or output space
     
@@ -1318,18 +1326,18 @@
               (set_local $bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
             (;LOAD;)
             (if (call $inflate_state->mode== (get_local $state) (get_global $TYPE)) (then
-              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const -1))
+              (call $inflate_state->back= (get_local $state) (i32.const -1))
             ))
             br $continue
           ))
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const 0))
+          (call $inflate_state->back= (get_local $state) (i32.const 0))
           block
             loop
               (set_local $here (call $*code
                 (i32.add (get_local $state) (get_global $inflate_state.&lencode))
                 (i32.and
                   (get_local $hold)
-                  (call $bitmask (i32.load (i32.add (get_local $state) (get_global $inflate_state.&lenbits))))
+                  (call $bitmask (call $inflate_state->lenbits (get_local $state)))
                 )
               ))
               (br_if 1 (i32.le_u (call $code.bits (get_local $here)) (get_local $bits)))
@@ -1389,7 +1397,7 @@
               (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
             (;/DROPBITS($_temp_bits);)
             
-            (call $v->i32+= (get_local $state) (get_global $inflate_state.&back) (get_local $_temp_bits))
+            (call $inflate_state->back= (get_local $state) (get_local $_temp_bits))
           ))
         
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
