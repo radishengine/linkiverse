@@ -358,6 +358,10 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check))))
   )
   
+  (func $inflate_state->sane (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&sane))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -550,7 +554,7 @@
                     ;; see if copy from window
                     (set_local $op (i32.sub (get_local $dist) (get_local $op))) ;; distance back in window
                     (if (i32.gt_u (get_local $op) (get_local $whave)) (then
-                      (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&sane))) (then
+                      (if (call $inflate_state->sane (get_local $state)) (then
                         ;; strm->msg = (char *)"invalid distance too far back";
                         (call $inflate_state->mode= (get_local $state) (get_global $BAD))
                         ;; break;
