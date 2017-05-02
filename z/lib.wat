@@ -317,6 +317,16 @@
     )
   )
   
+  (func $v->i32-= (param $struct i32) (param $field_offset i32) (param $value i32)
+    (i32.store
+      (i32.add (get_local $struct) (get_local $field_offset))
+      (i32.sub
+        (i32.load (i32.add (get_local $struct) (get_local $field_offset)))
+        (get_local $value)
+      )
+    )
+  )
+  
   (func $bitmask (param $numbits i32) (result i32)
     (return (i32.sub (i32.shl (i32.const 1) (get_local $numbits)) (i32.const 1)))
   )
@@ -340,6 +350,10 @@
   
   (func $inflate_state->length+= (param $state i32) (param $value i32)
     (call $v->i32+= (get_local $state) (get_global $inflate_state.&length) (get_local $value))
+  )
+  
+  (func $inflate_state->length-= (param $state i32) (param $value i32)
+    (call $v->i32-= (get_local $state) (get_global $inflate_state.&length) (get_local $value))
   )
   
   (func $inflate_state->total (param $state i32) (result i32)
@@ -400,6 +414,26 @@
   
   (func $inflate_state->extra (param $state i32) (result i32)
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&extra))))
+  )
+  
+  (func $inflate_state->whave (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&whave))))
+  )
+  
+  (func $inflate_state->wnext (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wnext))))
+  )
+  
+  (func $inflate_state->window (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&window))))
+  )
+  
+  (func $inflate_state->wsize (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wsize))))
+  )
+  
+  (func $inflate_state->offset (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&offset))))
   )
   
   (func $inflate_state->was= (param $state i32) (param $val i32)
@@ -1431,7 +1465,54 @@
         end $DISTEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1130 ;)
           unreachable
         end $MATCH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1146 ;)
-          unreachable
+          (br_if $inf_leave (i32.eqz (get_local $left)))
+          (set_local $copy (i32.sub (get_local $out) (get_local $left)))
+          (if (i32.gt_u (call $inflate_state->offset (get_local $state)) (get_local $copy)) (then
+            (set_local $copy (i32.sub (call $inflate_state->offset (get_local $state)) (get_local $copy)))
+            (if (i32.gt_u (get_local $copy) (call $inflate_state->whave (get_local $state))) (then
+              (if (call $inflate_state->sane (get_local $state)) (then
+                ;; strm->msg = (char *)"invalid distance too far back";
+                (call $inflate_state->mode= (get_local $state) (get_global $BAD))
+                br $BAD:
+              ))
+            ))
+            (if (i32.gt_u (get_local $copy) (call $inflate_state->wnext (get_local $state))) (then
+              (set_local $copy (i32.sub (get_local $copy) (call $inflate_state->wnext (get_local $state))))
+              (set_local $from (i32.add
+                (call $inflate_state->window (get_local $state))
+                (i32.sub (call $inflate_state->wsize (get_local $state)) (get_local $copy))
+              ))
+            )
+            (else
+              (set_local $from (i32.add
+                (call $inflate_state->window (get_local $state))
+                (i32.sub (call $inflate_state->wnext (get_local $state)) (get_local $copy))
+              ))
+            ))
+            (if (i32.gt_u (get_local $copy) (call $inflate_state->length (get_local $state))) (then
+              (set_local $copy (i32.sub (get_local $copy) (call $inflate_state->length (get_local $state))))
+            ))
+          )
+          (else
+            ;; copy from output
+            (set_local $from (i32.sub (get_local $put) (call $inflate_state->offset (get_local $state))))
+            (set_local $copy (call $inflate_state->length (get_local $state)))
+          ))
+          (if (i32.gt_u (get_local $copy) (get_local $left)) (then
+            (set_local $copy (get_local $left))
+          ))
+          (set_local $left (i32.sub (get_local $left) (get_local $copy)))
+          (call $inflate_state->length-= (get_local $state) (get_local $copy))
+          loop
+            (i32.store8 (get_local $put) (i32.load8_u (get_local $from)))
+            (set_local  $put (i32.add (get_local  $put) (i32.const 1)))
+            (set_local $from (i32.add (get_local $from) (i32.const 1)))
+            (br_if 0 (tee_local $copy (i32.sub (get_local $copy) (i32.const 1))))
+          end
+          (if (i32.eqz (call $inflate_state->length (get_local $state)))
+            (call $inflate_state->mode= (get_local $state) (get_global $LEN))
+          )
+          br $continue
         end $LIT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1191 ;)
           (br_if $inf_leave (i32.eqz (get_local $left)))
           (i32.store8 (get_local $put) (call $inflate_state->length (get_local $state)))
