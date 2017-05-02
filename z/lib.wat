@@ -352,6 +352,14 @@
     (call $v->i32+= (get_local $state) (get_global $inflate_state.&length) (get_local $value))
   )
   
+  (func $inflate_state->back+= (param $state i32) (param $value i32)
+    (call $v->i32+= (get_local $state) (get_global $inflate_state.&back) (get_local $value))
+  )
+  
+  (func $inflate_state->offset+= (param $state i32) (param $value i32)
+    (call $v->i32+= (get_local $state) (get_global $inflate_state.&offset) (get_local $value))
+  )
+  
   (func $inflate_state->length-= (param $state i32) (param $value i32)
     (call $v->i32-= (get_local $state) (get_global $inflate_state.&length) (get_local $value))
   )
@@ -1440,10 +1448,9 @@
                   br 0
                 end
               end
-            (;/NEEDBITS;)
+            (;/NEEDBITS($_temp_bits);)
             
-            (call $inflate_state->length+=
-              (get_local $state)
+            (call $inflate_state->length+= (get_local $state)
               (i32.and (get_local $hold) (call $bitmask (get_local $_temp_bits))) ;; BITS($_temp_bits)
             )
 
@@ -1452,7 +1459,7 @@
               (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
             (;/DROPBITS($_temp_bits);)
             
-            (call $inflate_state->back= (get_local $state) (get_local $_temp_bits))
+            (call $inflate_state->back+= (get_local $state) (get_local $_temp_bits))
           ))
         
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
@@ -1463,7 +1470,46 @@
         end $DIST: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1103 ;)
           unreachable
         end $DISTEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1130 ;)
-          unreachable
+          (if (tee_local $_temp_bits (call $inflate_state->extra (get_local $state))) (then
+          
+            (;NEEDBITS($_temp_bits);)
+              block
+                loop
+                  (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
+                  (;PULLBYTE;)
+                    (br_if $inf_leave (i32.eqz (get_local $have)))
+                    (set_local $have (i32.sub (get_local $have) (i32.const 1)))
+                    (set_local $hold
+                      (i32.add
+                        (get_local $hold)
+                        (i32.shl
+                          (i32.load8_u (get_local $next))
+                          (get_local $bits)
+                        )
+                      )
+                    )
+                    (set_local $next (i32.add (get_local $next) (i32.const 1)))
+                    (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                  (;/PULLBYTE;)
+                  br 0
+                end
+              end
+            (;/NEEDBITS($_temp_bits);)
+            
+            (call $inflate_state->offset+= (get_local $state)
+              (i32.and (get_local $hold) (call $bitmask (get_local $_temp_bits))) ;; BITS($_temp_bits)
+            )
+
+            (;DROPBITS($_temp_bits);)
+              (set_local $hold (i32.shr_u (get_local $hold) (get_local $_temp_bits)))
+              (set_local $bits (i32.sub   (get_local $bits) (get_local $_temp_bits)))
+            (;/DROPBITS($_temp_bits);)
+            
+            (call $inflate_state->back+= (get_local $state) (get_local $_temp_bits))
+          ))
+          ;; Tracevv((stderr, "inflate:         distance %u\n", state->offset));
+          (call $inflate_state->mode= (get_local $state) (get_global $MATCH))
+          ;; fall through:
         end $MATCH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1146 ;)
           (br_if $inf_leave (i32.eqz (get_local $left)))
           (set_local $copy (i32.sub (get_local $out) (get_local $left)))
