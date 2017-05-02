@@ -275,6 +275,14 @@
     (return (i32.or (get_local $adler) (i32.shl (get_local $sum2) (i32.const 16))))      
   )
   
+  (func $crc32 (param i32) (param i32) (param i32) (result i32)
+    unreachable
+  )
+  
+  (func $adler32 (param i32) (param i32) (param i32) (result i32)
+    unreachable
+  )
+  
   ;; code as i32: VVVVBBPP
   ;; VVVV = val
   ;; BB = bits
@@ -754,6 +762,20 @@
     )
   )
   
+  (; https://github.com/madler/zlib/blob/v1.2.11/zutil.h#L268 ;)
+  (func $ZSWAP32 (param i32) (result i32)
+    (return (i32.or
+      (i32.shr_u (get_local 0) (i32.const 24))
+      (i32.or
+        (i32.and (i32.shr_u (get_local 0) (i32.const 8)) (i32.const 0x0000ff00))
+        (i32.or
+          (i32.and (i32.shl (get_local 0) (i32.const 8)) (i32.const 0x00ff0000))
+          (i32.shl (get_local 0) (i32.const 24))
+        )
+      )
+    ))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L642 ;)
   (func $order (param $i i32) (result i32)
     ;; inline const short array in C version
@@ -1068,20 +1090,7 @@
             end
           (;/NEEDBITS;)
           
-          (;$_temp_bits=ZSWAP($hold);)
-          (set_local $_temp_bits
-            (i32.or
-              (i32.shr_u (get_local $hold) (i32.const 24))
-              (i32.or
-                (i32.and (i32.shr_u (get_local $hold) (i32.const 8)) (i32.const 0x0000ff00))
-                (i32.or
-                  (i32.and (i32.shl (get_local $hold) (i32.const 8)) (i32.const 0x00ff0000))
-                  (i32.shl (get_local $hold) (i32.const 24))
-                )
-              )
-            )
-          )
-          (;/$_temp_bits=ZSWAP($hold);)
+          (set_local $_temp_bits (call $ZSWAP32 (get_local $hold)))
           
           (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $_temp_bits))
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $_temp_bits))
@@ -1361,7 +1370,82 @@
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $LEN))
           br $continue
         end $CHECK: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1197 ;)
-          unreachable
+          (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap))) (then
+            (;NEEDBITS(32);)
+              block
+                loop
+                  (br_if 1 (i32.ge_u (get_local $bits) (i32.const 32)))
+                  (;PULLBYTE;)
+                    (br_if $inf_leave (i32.eqz (get_local $have)))
+                    (set_local $have (i32.sub (get_local $have) (i32.const 1)))
+                    (set_local $hold
+                      (i32.add
+                        (get_local $hold)
+                        (i32.shl
+                          (i32.load8_u (get_local $next))
+                          (get_local $bits)
+                        )
+                      )
+                    )
+                    (set_local $next (i32.add (get_local $next) (i32.const 1)))
+                    (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+                  (;/PULLBYTE;)
+                  br 0
+                end
+              end
+            (;/NEEDBITS(32);)
+            
+            (set_local $out (i32.sub (get_local $out) (get_local $left)))
+            
+            (call $v->i32+= (get_local $strm ) (get_global $z_stream.&total_out ) (get_local $out))
+            (call $v->i32+= (get_local $state) (get_global $inflate_state.&total) (get_local $out))
+            
+            (if (i32.and
+                  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))
+                  (i32.const 4)
+                ) (then
+              (br_if 0 (i32.eqz (get_local $out)))
+              (set_local $_temp_bits (if i32 (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))) (then
+                (call $crc32
+                  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                  (i32.sub (get_local $put) (get_local $out))
+                  (get_local $out)
+                )
+              )
+              (else
+                (call $adler32
+                  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                  (i32.sub (get_local $put) (get_local $out))
+                  (get_local $out)
+                )
+              )))
+              (i32.store (i32.add (get_local $strm ) (get_global $z_stream.&adler     )) (get_local $_temp_bits))
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $_temp_bits))
+            ))
+            
+            (set_local $out (get_local $left))
+            
+            (if (i32.and (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap))) (i32.const 4)) (then
+              (br_if 0 (i32.eq
+                (if i32 (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))))
+                  (get_local $hold)
+                  (call $ZSWAP32 (get_local $hold))
+                )
+                (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+              ))
+              ;; strm->msg = (char *)"incorrect data check";
+              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $BAD))
+              br $BAD:
+            ))
+
+            (;INITBITS;)
+              (set_local $hold (i32.const 0))
+              (set_local $bits (i32.const 0))
+            (;/INITBITS;)
+            ;; Tracev((stderr, "inflate:   check matches trailer\n"));
+          ))
+          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_global $LENGTH))
+          ;; fall through:
         end $LENGTH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1221 ;)
           block
             (br_if 0 (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))))
@@ -1397,8 +1481,8 @@
               br $BAD:
             ))
             (;INITBITS;)
-            (set_local $hold (i32.const 0))
-            (set_local $bits (i32.const 0))
+              (set_local $hold (i32.const 0))
+              (set_local $bits (i32.const 0))
             (;/INITBITS;)
             ;; Tracev((stderr, "inflate:   length matches trailer\n"));
           end
@@ -1417,10 +1501,10 @@
       end
     end $inf_leave
     (;RESTORE;)
-      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out)) (get_local $put))
-      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out)) (get_local $left))
-      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_in)) (get_local $next))
-      (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_in)) (get_local $have))
+      (i32.store (i32.add (get_local  $strm) (get_global $z_stream.&next_out )) (get_local $put ))
+      (i32.store (i32.add (get_local  $strm) (get_global $z_stream.&avail_out)) (get_local $left))
+      (i32.store (i32.add (get_local  $strm) (get_global $z_stream.&next_in  )) (get_local $next))
+      (i32.store (i32.add (get_local  $strm) (get_global $z_stream.&avail_in )) (get_local $have))
       (i32.store (i32.add (get_local $state) (get_global $inflate_state.&hold)) (get_local $hold))
       (i32.store (i32.add (get_local $state) (get_global $inflate_state.&bits)) (get_local $bits))
     (;/RESTORE;)
