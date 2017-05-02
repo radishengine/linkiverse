@@ -321,20 +321,20 @@
     (return (i32.sub (i32.shl (i32.const 1) (get_local $numbits)) (i32.const 1)))
   )
   
-  (func $inflate_state.mode= (param $state i32) (param $mode i32)
+  (func $inflate_state->mode= (param $state i32) (param $mode i32)
     (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_local $mode))
   )
   
-  (func $inflate_state.mode== (param $state i32) (param $mode i32) (result i32)
+  (func $inflate_state->mode== (param $state i32) (param $mode i32) (result i32)
     (return (i32.eq (i32.load (i32.add (get_local $state) (get_global $inflate_state.&mode))) (get_local $mode)))
   )
   
-  (func $inflate_state.check=z_stream.adler= (param $state i32) (param $strm i32) (param $val i32)
+  (func $inflate_state->check=z_stream->adler= (param $state i32) (param $strm i32) (param $val i32)
     (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $val))
     (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $val))
   )
   
-  (func $inflate_state.length (param $state i32) (result i32)
+  (func $inflate_state->length (param $state i32) (result i32)
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length))))
   )
   
@@ -532,7 +532,7 @@
                     (if (i32.gt_u (get_local $op) (get_local $whave)) (then
                       (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&sane))) (then
                         ;; strm->msg = (char *)"invalid distance too far back";
-                        (call $inflate_state.mode= (get_local $state) (get_global $BAD))
+                        (call $inflate_state->mode= (get_local $state) (get_global $BAD))
                         ;; break;
                         unreachable
                       ))
@@ -715,11 +715,11 @@
             (if (i32.and (get_local $op) (i32.const 32)) (then
               ;; end of block
               ;; Tracevv((stderr, "inflate:         end of block\n"));
-              (call $inflate_state.mode= (get_local $state) (get_global $TYPE))
+              (call $inflate_state->mode= (get_local $state) (get_global $TYPE))
               (br $break)
             ))
             ;; strm->msg = (char *)"invalid literal/length code";
-            (call $inflate_state.mode= (get_local $state) (get_global $BAD))
+            (call $inflate_state->mode= (get_local $state) (get_global $BAD))
             ;; break
             unreachable
           end ;; loop $dolen
@@ -952,7 +952,7 @@
         
         end $HEAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L657 ;)
           (if (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))) (then
-            (call $inflate_state.mode= (get_local $state) (get_global $TYPEDO))
+            (call $inflate_state->mode= (get_local $state) (get_global $TYPEDO))
             br $TYPEDO:
           ))
           
@@ -1098,7 +1098,7 @@
             end
           (;/NEEDBITS;)
           
-          (call $inflate_state.check=z_stream.adler= (get_local $state) (get_local $strm)
+          (call $inflate_state->check=z_stream->adler= (get_local $state) (get_local $strm)
             (call $ZSWAP32 (get_local $hold))
           )
           
@@ -1107,7 +1107,7 @@
             (set_local $bits (i32.const 0))
           (;/INITBITS;)
         
-          (call $inflate_state.mode= (get_local $state) (get_global $DICT))
+          (call $inflate_state->mode= (get_local $state) (get_global $DICT))
           ;; fall through:
         end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
           (if (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&havedict)))) (then
@@ -1122,11 +1122,11 @@
             (return (get_global $Z_NEED_DICT))
           ))
           
-          (call $inflate_state.check=z_stream.adler= (get_local $state) (get_local $strm)
+          (call $inflate_state->check=z_stream->adler= (get_local $state) (get_local $strm)
             (get_global $adler32_initial)
           )
           
-          (call $inflate_state.mode= (get_local $state) (get_global $TYPE))
+          (call $inflate_state->mode= (get_local $state) (get_global $TYPE))
           ;; fall through:
         end $TYPE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L849 ;)
           (br_if $inf_leave (i32.or
@@ -1140,7 +1140,7 @@
               (set_local $hold (i32.shr_u (get_local $hold) (i32.and (get_local $bits) (i32.const 7))))
               (set_local $bits (i32.sub   (get_local $bits) (i32.and (get_local $bits) (i32.const 7))))
             (;/BYTEBITS;)
-            (call $inflate_state.mode= (get_local $state) (get_global $CHECK))
+            (call $inflate_state->mode= (get_local $state) (get_global $CHECK))
             br $CHECK:
           ))
           unreachable
@@ -1177,10 +1177,10 @@
         
           unreachable
         end $COPY_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L901 ;)
-          (call $inflate_state.mode= (get_local $state) (get_global $COPY))
+          (call $inflate_state->mode= (get_local $state) (get_global $COPY))
           ;; fall through:
         end $COPY: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L903 ;)
-          (set_local $copy (call $inflate_state.length (get_local $state)))
+          (set_local $copy (call $inflate_state->length (get_local $state)))
           unreachable
         end $TABLE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L920 ;)
         
@@ -1253,7 +1253,7 @@
           ;; Tracev((stderr, "inflate:       table sizes ok\n"));
           
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&have)) (i32.const 0))
-          (call $inflate_state.mode= (get_local $state) (get_global $LENLENS))
+          (call $inflate_state->mode= (get_local $state) (get_global $LENLENS))
           
           ;; fall through:
         end $LENLENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L938 ;)
@@ -1261,7 +1261,7 @@
         end $CODELENS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L959 ;)
           unreachable
         end $LEN_: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1042 ;)
-          (call $inflate_state.mode= (get_local $state) (get_global $LEN))
+          (call $inflate_state->mode= (get_local $state) (get_global $LEN))
           ;; fall through:
         end $LEN: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1044 ;)
           (if (i32.and (i32.ge_u (get_local $have) (i32.const 6)) (i32.ge_u (get_local $left) (i32.const 258))) (then
@@ -1282,7 +1282,7 @@
               (set_local $hold (i32.load (i32.add (get_local $state) (get_global $inflate_state.&hold))))
               (set_local $bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
             (;LOAD;)
-            (if (call $inflate_state.mode== (get_local $state) (get_global $TYPE)) (then
+            (if (call $inflate_state->mode== (get_local $state) (get_global $TYPE)) (then
               (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const -1))
             ))
             br $continue
@@ -1359,10 +1359,10 @@
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
           
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&was))
-            (call $inflate_state.length (get_local $state))
+            (call $inflate_state->length (get_local $state))
           )
           
-          (call $inflate_state.mode= (get_local $state) (get_global $DIST))
+          (call $inflate_state->mode= (get_local $state) (get_global $DIST))
           ;; fall through:
         end $DIST: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1103 ;)
           unreachable
@@ -1372,10 +1372,10 @@
           unreachable
         end $LIT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1191 ;)
           (br_if $inf_leave (i32.eqz (get_local $left)))
-          (i32.store8 (get_local $put) (call $inflate_state.length (get_local $state)))
+          (i32.store8 (get_local $put) (call $inflate_state->length (get_local $state)))
           (set_local $left (i32.sub (get_local $left) (i32.const 1)))
           
-          (call $inflate_state.mode= (get_local $state) (get_global $LEN))
+          (call $inflate_state->mode= (get_local $state) (get_global $LEN))
           br $continue
         end $CHECK: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1197 ;)
           (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap))) (then
@@ -1413,7 +1413,7 @@
                   (i32.const 4)
                 ) (then
               (br_if 0 (i32.eqz (get_local $out)))
-              (call $inflate_state.check=z_stream.adler= (get_local $state) (get_local $strm)
+              (call $inflate_state->check=z_stream->adler= (get_local $state) (get_local $strm)
                 (if i32 (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))) (then
                   (call $crc32
                     (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
@@ -1442,7 +1442,7 @@
                 (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
               ))
               ;; strm->msg = (char *)"incorrect data check";
-              (call $inflate_state.mode= (get_local $state) (get_global $BAD))
+              (call $inflate_state->mode= (get_local $state) (get_global $BAD))
               br $BAD:
             ))
 
@@ -1452,7 +1452,7 @@
             (;/INITBITS;)
             ;; Tracev((stderr, "inflate:   check matches trailer\n"));
           ))
-          (call $inflate_state.mode= (get_local $state) (get_global $LENGTH))
+          (call $inflate_state->mode= (get_local $state) (get_global $LENGTH))
           ;; fall through:
         end $LENGTH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1221 ;)
           block
@@ -1485,7 +1485,7 @@
             
             (if (i32.ne (get_local $hold) (i32.load (i32.add (get_local $state) (get_global $inflate_state.&total)))) (then
               ;; strm->msg = (char *)"incorrect length check";
-              (call $inflate_state.mode= (get_local $state) (get_global $BAD))
+              (call $inflate_state->mode= (get_local $state) (get_global $BAD))
               br $BAD:
             ))
             (;INITBITS;)
@@ -1494,7 +1494,7 @@
             (;/INITBITS;)
             ;; Tracev((stderr, "inflate:   length matches trailer\n"));
           end
-          (call $inflate_state.mode= (get_local $state) (get_global $DONE))
+          (call $inflate_state->mode= (get_local $state) (get_global $DONE))
           ;; fall through:
         end $DONE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1234 ;)
           (set_local $ret (get_global $Z_STREAM_END))
