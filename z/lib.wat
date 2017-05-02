@@ -346,6 +346,10 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&total))))
   )
   
+  (func $inflate_state->wrap (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -959,7 +963,7 @@
           $CHECK: $LENGTH: $DONE: $BAD: $MEM: $SYNC:default:
         
         end $HEAD: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L657 ;)
-          (if (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))) (then
+          (if (i32.eqz (call $inflate_state->wrap (get_local $state))) (then
             (call $inflate_state->mode= (get_local $state) (get_global $TYPEDO))
             br $TYPEDO:
           ))
@@ -1387,7 +1391,7 @@
           (call $inflate_state->mode= (get_local $state) (get_global $LEN))
           br $continue
         end $CHECK: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1197 ;)
-          (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap))) (then
+          (if (call $inflate_state->wrap (get_local $state)) (then
             (;NEEDBITS(32);)
               block
                 loop
@@ -1418,7 +1422,7 @@
             (call $v->i32+= (get_local $state) (get_global $inflate_state.&total) (get_local $out))
             
             (if (i32.and
-                  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))
+                  (call $inflate_state->wrap (get_local $state))
                   (i32.const 4)
                 ) (then
               (br_if 0 (i32.eqz (get_local $out)))
@@ -1442,7 +1446,7 @@
             
             (set_local $out (get_local $left))
             
-            (if (i32.and (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap))) (i32.const 4)) (then
+            (if (i32.and (call $inflate_state->wrap (get_local $state)) (i32.const 4)) (then
               (br_if 0 (i32.eq
                 (if i32 (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))))
                   (get_local $hold)
@@ -1465,7 +1469,7 @@
           ;; fall through:
         end $LENGTH: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1221 ;)
           block
-            (br_if 0 (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wrap)))))
+            (br_if 0 (i32.eqz (call $inflate_state->wrap (get_local $state))))
             (br_if 0 (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags)))))
             
             (;NEEDBITS(32);)
