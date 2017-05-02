@@ -362,6 +362,10 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&sane))))
   )
   
+  (func $inflate_state->havedict (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&havedict))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1130,7 +1134,7 @@
           (call $inflate_state->mode= (get_local $state) (get_global $DICT))
           ;; fall through:
         end $DICT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L842 ;)
-          (if (i32.eqz (i32.load (i32.add (get_local $state) (get_global $inflate_state.&havedict)))) (then
+          (if (i32.eqz (call $inflate_state->havedict (get_local $state))) (then
             (;RESTORE;)
               (i32.store (i32.add (get_local $strm) (get_global $z_stream.&next_out)) (get_local $put))
               (i32.store (i32.add (get_local $strm) (get_global $z_stream.&avail_out)) (get_local $left))
