@@ -366,6 +366,10 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&havedict))))
   )
   
+  (func $inflate_state->last (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&last))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1159,7 +1163,7 @@
           ))
           ;; fall through:
         end $TYPEDO: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L851 ;)
-          (if (i32.load (i32.add (get_local $state) (get_global $inflate_state.&last))) (then
+          (if (call $inflate_state->last (get_local $state)) (then
             (;BYTEBITS;)
               (set_local $hold (i32.shr_u (get_local $hold) (i32.and (get_local $bits) (i32.const 7))))
               (set_local $bits (i32.sub   (get_local $bits) (i32.and (get_local $bits) (i32.const 7))))
