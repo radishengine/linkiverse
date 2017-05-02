@@ -325,6 +325,10 @@
     (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_local $mode))
   )
   
+  (func $inflate_state.mode== (param $state i32) (param $mode i32) (result i32)
+    (return (i32.eq (i32.load (i32.add (get_local $state) (get_global $inflate_state.&mode))) (get_local $mode)))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1269,7 +1273,7 @@
               (set_local $hold (i32.load (i32.add (get_local $state) (get_global $inflate_state.&hold))))
               (set_local $bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&bits))))
             (;LOAD;)
-            (if (i32.eq (i32.load (i32.add (get_local $state) (get_global $inflate_state.&mode))) (get_global $TYPE)) (then
+            (if (call $inflate_state.mode== (get_local $state) (get_global $TYPE)) (then
               (i32.store (i32.add (get_local $state) (get_global $inflate_state.&back)) (i32.const -1))
             ))
             br $continue
