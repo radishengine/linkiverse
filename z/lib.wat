@@ -436,6 +436,10 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wnext))))
   )
   
+  (func $inflate_state->wbits (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&wbits))))
+  )
+  
   (func $inflate_state->window (param $state i32) (result i32)
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&window))))
   )
@@ -450,6 +454,14 @@
   
   (func $inflate_state->was= (param $state i32) (param $val i32)
     (i32.store (i32.add (get_local $state) (get_global $inflate_state.&was)) (get_local $val))
+  )
+  
+  (func $inflate_state->wbits= (param $state i32) (param $val i32)
+    (i32.store (i32.add (get_local $state) (get_global $inflate_state.&wbits)) (get_local $val))
+  )
+  
+  (func $inflate_state->check= (param $state i32) (param $val i32)
+    (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $val))
   )
   
   (func $*inflate_state->lencode (param $state i32) (param $i i32) (result i32)
@@ -1089,10 +1101,10 @@
             br $TYPEDO:
           ))
           
-          (set_local $_temp_bits (i32.const 16)) (;NEEDBITS;)
+          (;NEEDBITS(16);)
             block
               loop
-                (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
+                (br_if 1 (i32.ge_u (get_local $bits) (i32.const 16)))
                 (;PULLBYTE;)
                   (br_if $inf_leave (i32.eqz (get_local $have)))
                   (set_local $have (i32.sub (get_local $have) (i32.const 1)))
@@ -1113,6 +1125,17 @@
             end
           (;/NEEDBITS;)
           
+          (if (i32.eq (get_local $hold) (i32.const 0x8b1f)) (then
+            (br_if 0 (i32.eqz (i32.and (call $inflate_state->wrap (get_local $state)) (i32.const 2))))
+            ;; gzip header
+            (if (i32.eqz (call $inflate_state->wbits (get_local $state))) (then
+              (call $inflate_state->wbits= (get_local $state) (i32.const 15))
+              (call $inflate_state->check= (get_local $state)
+                (call $crc32 (i32.const 0) (i32.const 0) (i32.const 0))
+              )
+              unreachable ;; TODO: CRC2
+            ))
+          ))
           unreachable
         end $FLAGS: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L706 ;)
           (;NEEDBITS(16);)
