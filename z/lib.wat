@@ -1429,10 +1429,7 @@
             (call $v->i32+= (get_local $strm ) (get_global $z_stream.&total_out ) (get_local $out))
             (call $v->i32+= (get_local $state) (get_global $inflate_state.&total) (get_local $out))
             
-            (if (i32.and
-                  (call $inflate_state->wrap (get_local $state))
-                  (i32.const 4)
-                ) (then
+            (if (i32.and (call $inflate_state->wrap (get_local $state)) (i32.const 4)) (then
               (br_if 0 (i32.eqz (get_local $out)))
               (call $inflate_state->check=z_stream->adler= (get_local $state) (get_local $strm)
                 (if i32 (call $inflate_state->flags (get_local $state)) (then
