@@ -298,7 +298,7 @@
     (return (i32.and (get_local 0) (i32.const 255)))
   )
   
-  (func $*code (param $code* i32) (param $i i32) (result i32)
+  (func $*i32 (param $code* i32) (param $i i32) (result i32)
     (return (i32.load
       (i32.add
         (get_local $code*)
@@ -398,6 +398,28 @@
     (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&distbits))))
   )
   
+  (func $inflate_state->extra (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&extra))))
+  )
+  
+  (func $inflate_state->was= (param $state i32) (param $val i32)
+    (i32.store (i32.add (get_local $state) (get_global $inflate_state.&was)) (get_local $val))
+  )
+  
+  (func $*inflate_state->lencode (param $state i32) (param $i i32) (result i32)
+    (return (call $*i32
+      (i32.add (get_local $state) (get_global $inflate_state.&lencode))
+      (get_local $i)
+    ))
+  )
+  
+  (func $*inflate_state->distcode (param $state i32) (param $i i32) (result i32)
+    (return (call $*i32
+      (i32.add (get_local $state) (get_global $inflate_state.&distcode))
+      (get_local $i)
+    ))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -480,7 +502,7 @@
             (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
             (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
           ))
-          (set_local $here (call $*code
+          (set_local $here (call $*i32
             (get_local $lcode)
             (i32.and (get_local $hold) (get_local $lmask))
           ))
@@ -534,7 +556,7 @@
                 (set_local $in   (i32.add (get_local $in)   (i32.const 1)))
                 (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
               ))
-              (set_local $here (call $*code
+              (set_local $here (call $*i32
                 (get_local $dcode)
                 (i32.and (get_local $hold) (get_local $dmask))
               ))
@@ -738,7 +760,7 @@
                   ;; 2nd level distance code
                   
                   ;; here = dcode[here.val + (hold & ((1U << op) - 1))];
-                  (set_local $here (call $*code
+                  (set_local $here (call $*i32
                     (get_local $dcode)
                     (i32.add
                       (call $code.val (get_local $here))
@@ -758,7 +780,7 @@
               ;; 2nd level length code
               
               ;; here = lcode[here.val + (hold & ((1U << op) - 1))];
-              (set_local $here (call $*code
+              (set_local $here (call $*i32
                 (get_local $lcode)
                 (i32.add
                   (call $code.val (get_local $here))
@@ -1333,8 +1355,7 @@
           (call $inflate_state->back= (get_local $state) (i32.const 0))
           block
             loop
-              (set_local $here (call $*code
-                (i32.add (get_local $state) (get_global $inflate_state.&lencode))
+              (set_local $here (call $*inflate_state->lencode (get_local $state)
                 (i32.and
                   (get_local $hold)
                   (call $bitmask (call $inflate_state->lenbits (get_local $state)))
@@ -1361,7 +1382,7 @@
           end
           unreachable
         end $LENEXT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1093 ;)
-          (if (tee_local $_temp_bits (i32.load (i32.add (get_local $state) (get_global $inflate_state.&extra)))) (then
+          (if (tee_local $_temp_bits (call $inflate_state->extra (get_local $state))) (then
             
             (;NEEDBITS($_temp_bits);)
               block
@@ -1402,10 +1423,7 @@
         
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
           
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&was))
-            (call $inflate_state->length (get_local $state))
-          )
-          
+          (call $inflate_state->was= (get_local $state) (call $inflate_state->length (get_local $state)))
           (call $inflate_state->mode= (get_local $state) (get_global $DIST))
           ;; fall through:
         end $DIST: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1103 ;)
