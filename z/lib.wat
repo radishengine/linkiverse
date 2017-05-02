@@ -846,21 +846,21 @@
         block
           loop
             (br_if 1 (i32.ge_u (get_local $bits) (get_local $_temp_bits)))
-              (;PULLBYTE;)
-                (br_if $inf_leave (i32.eqz (get_local $have)))
-                (set_local $have (i32.sub (get_local $have) (i32.const 1)))
-                (set_local $hold
-                  (i32.add
-                    (get_local $hold)
-                    (i32.shl
-                      (i32.load8_u (get_local $next))
-                      (get_local $bits)
-                    )
+            (;PULLBYTE;)
+              (br_if $inf_leave (i32.eqz (get_local $have)))
+              (set_local $have (i32.sub (get_local $have) (i32.const 1)))
+              (set_local $hold
+                (i32.add
+                  (get_local $hold)
+                  (i32.shl
+                    (i32.load8_u (get_local $next))
+                    (get_local $bits)
                   )
                 )
-                (set_local $next (i32.add (get_local $next) (i32.const 1)))
-                (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
-              (;/PULLBYTE;)
+              )
+              (set_local $next (i32.add (get_local $next) (i32.const 1)))
+              (set_local $bits (i32.add (get_local $bits) (i32.const 8)))
+            (;/PULLBYTE;)
             br 0
           end
         end
