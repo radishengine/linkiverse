@@ -334,6 +334,10 @@
     (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $val))
   )
   
+  (func $inflate_state.length (param $state i32) (result i32)
+    (return (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length))))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1176,7 +1180,7 @@
           (call $inflate_state.mode= (get_local $state) (get_global $COPY))
           ;; fall through:
         end $COPY: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L903 ;)
-          (set_local $copy (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length))))
+          (set_local $copy (call $inflate_state.length (get_local $state)))
           unreachable
         end $TABLE: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L920 ;)
         
@@ -1355,7 +1359,7 @@
           ;; Tracevv((stderr, "inflate:         length %u\n", state->length));
           
           (i32.store (i32.add (get_local $state) (get_global $inflate_state.&was))
-            (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length)))
+            (call $inflate_state.length (get_local $state))
           )
           
           (call $inflate_state.mode= (get_local $state) (get_global $DIST))
@@ -1368,7 +1372,7 @@
           unreachable
         end $LIT: (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L1191 ;)
           (br_if $inf_leave (i32.eqz (get_local $left)))
-          (i32.store8 (get_local $put) (i32.load (i32.add (get_local $state) (get_global $inflate_state.&length))))
+          (i32.store8 (get_local $put) (call $inflate_state.length (get_local $state)))
           (set_local $left (i32.sub (get_local $left) (i32.const 1)))
           
           (call $inflate_state.mode= (get_local $state) (get_global $LEN))
