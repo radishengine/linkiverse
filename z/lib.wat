@@ -329,6 +329,11 @@
     (return (i32.eq (i32.load (i32.add (get_local $state) (get_global $inflate_state.&mode))) (get_local $mode)))
   )
   
+  (func $inflate_state.check=z_stream.adler= (param $state i32) (param $strm i32) (param $val i32)
+    (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $val))
+    (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $val))
+  )
+  
   (; https://github.com/madler/zlib/blob/v1.2.11/inffast.c#L50 ;)
   (func $inflate_fast
       (param $strm i32)
@@ -1089,10 +1094,9 @@
             end
           (;/NEEDBITS;)
           
-          (set_local $_temp_bits (call $ZSWAP32 (get_local $hold)))
-          
-          (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_local $_temp_bits))
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $_temp_bits))
+          (call $inflate_state.check=z_stream.adler= (get_local $state) (get_local $strm)
+            (call $ZSWAP32 (get_local $hold))
+          )
           
           (;INITBITS;)
             (set_local $hold (i32.const 0))
@@ -1114,8 +1118,9 @@
             (return (get_global $Z_NEED_DICT))
           ))
           
-          (i32.store (i32.add (get_local  $strm) (get_global      $z_stream.&adler)) (get_global $adler32_initial))
-          (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_global $adler32_initial))
+          (call $inflate_state.check=z_stream.adler= (get_local $state) (get_local $strm)
+            (get_global $adler32_initial)
+          )
           
           (call $inflate_state.mode= (get_local $state) (get_global $TYPE))
           ;; fall through:
@@ -1404,22 +1409,22 @@
                   (i32.const 4)
                 ) (then
               (br_if 0 (i32.eqz (get_local $out)))
-              (set_local $_temp_bits (if i32 (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))) (then
-                (call $crc32
-                  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
-                  (i32.sub (get_local $put) (get_local $out))
-                  (get_local $out)
+              (call $inflate_state.check=z_stream.adler= (get_local $state) (get_local $strm)
+                (if i32 (i32.load (i32.add (get_local $state) (get_global $inflate_state.&flags))) (then
+                  (call $crc32
+                    (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                    (i32.sub (get_local $put) (get_local $out))
+                    (get_local $out)
+                  )
                 )
+                (else
+                  (call $adler32
+                    (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
+                    (i32.sub (get_local $put) (get_local $out))
+                    (get_local $out)
+                  )
+                ))
               )
-              (else
-                (call $adler32
-                  (i32.load (i32.add (get_local $state) (get_global $inflate_state.&check)))
-                  (i32.sub (get_local $put) (get_local $out))
-                  (get_local $out)
-                )
-              )))
-              (i32.store (i32.add (get_local $strm ) (get_global $z_stream.&adler     )) (get_local $_temp_bits))
-              (i32.store (i32.add (get_local $state) (get_global $inflate_state.&check)) (get_local $_temp_bits))
             ))
             
             (set_local $out (get_local $left))
