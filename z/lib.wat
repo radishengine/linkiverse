@@ -331,6 +331,10 @@
     (return (i32.sub (i32.shl (i32.const 1) (get_local $numbits)) (i32.const 1)))
   )
   
+  (func $z_stream->state (param $strm i32) (result i32)
+    (return (i32.load (i32.add (get_local $strm) (get_global $z_stream.&state))))
+  )
+  
   (func $inflate_state->mode= (param $state i32) (param $mode i32)
     (i32.store (i32.add (get_local $state) (get_global $inflate_state.&mode)) (get_local $mode))
   )
@@ -1036,7 +1040,16 @@
       
     ;)
     
-    ;; TODO: up to https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L651
+    ;;  if (inflateStateCheck(strm) || strm->next_out == Z_NULL ||
+    ;;    (strm->next_in == Z_NULL && strm->avail_in != 0))
+    ;;    return Z_STREAM_ERROR;
+    
+    (set_local $state (call $z_stream->state (get_local $strm)))
+    
+    (if (call $inflate_state->mode== (get_local $state) (get_global $TYPE)) (then
+      ;; skip check
+      (call $inflate_state->mode= (get_local $state) (get_global $TYPEDO))
+    ))
     
     (;LOAD;)
       (set_local $put (i32.load (i32.add (get_local $strm) (get_global $z_stream.&next_out))))
