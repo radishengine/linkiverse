@@ -19,6 +19,12 @@
   (global $ptr<distanceCodes0_29Extra> (mut i32) i32.const -1)
   (global $sizeof<distanceCodes0_29Extra> i32 i32.const 64)
   
+  (global $ptr<codesOfLength> (mut i32) i32.const -1)
+  (global $sizeof<codesOfLength> i32 i32.const 32)
+  
+  (global $ptr<lengthTableOffsets> (mut i32) i32.const -1)
+  (global $sizeof<lengthTableOffsets> i32 i32.const 32)
+  
   (global $ptr<unreserved> (mut i32) i32.const -1)
 
   (func $alignMask (param $ptr i32) (param $mask i32) (result i32)
@@ -199,6 +205,10 @@
       (call $write_i16 (i32.const 29))
       (call $write_i16 (i32.const 64))
       (call $write_i16 (i32.const 64))
+    (set_global $ptr<codesOfLength> (get_local $ptr))
+    (i32.add (get_global $sizeof<codesOfLength>))
+    (set_global $ptr<lengthTableOffsets> (get_local $ptr))
+    (i32.add (get_global $sizeof<lengthTableOffsets>))
     (set_global $ptr<unreserved>)
   )
 
