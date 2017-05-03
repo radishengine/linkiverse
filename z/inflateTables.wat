@@ -1,8 +1,14 @@
 (module
 
   (import "memory" "main" (memory 0))
-
+  
   (global $ptr<reserved> (import "ptr" "inflateTables") i32)
+
+  (global $CODES (export "CODES") i32 i32.const 0)
+  (global $LENS (export "LENS") i32 i32.const 1)
+  (global $DISTS (export "DISTS") i32 i32.const 2)
+  
+  (global $MAXBITS i32 i32.const 15)
 
   (global $ptr<codeLengthPermutations> (mut i32) i32.const -1)
   (global $sizeof<codeLengthPermutations> i32 i32.const 19)
@@ -24,6 +30,15 @@
   
   (global $ptr<lengthTableOffsets> (mut i32) i32.const -1)
   (global $sizeof<lengthTableOffsets> i32 i32.const 32)
+  
+  (global $ptr<fixedLengthTable> (mut i32) i32.const -1)
+  (global $sizeof<fixedLengthTable> i32 i32.const 2048)
+  
+  (global $ptr<fixedDistanceTable> (mut i32) i32.const -1)
+  (global $sizeof<fixedDistanceTable> i32 i32.const 128)
+  
+  (global $sizeof<dynamicLengthTable> i32 i32.const 3408)
+  (global $sizeof<dynamicDistanceTable> i32 i32.const 2368)
   
   (global $ptr<unreserved> (mut i32) i32.const -1)
 
@@ -50,11 +65,25 @@
     (return (i32.add (get_local $ptr) (i32.const 2)))
   )
 
+  (func $write_i16_n (param $ptr i32) (param $v i32) (param $n i32) (result i32)
+    block
+      loop
+        (br_if 1 (i32.eqz (get_local $n)))
+        (i32.store16 (get_local $ptr) (get_local $v))
+        (set_local $ptr (i32.add (get_local $ptr) (i32.const 2)))
+        (set_local $n (i32.sub (get_local $n) (i32.const 1)))
+        br 0
+      end
+    end
+    (return (get_local $ptr))
+  )
+
   (func $init
     (local $ptr i32)
 
-    (tee_local $ptr (get_global $ptr<reserved>))
-    (set_global $ptr<codeLengthPermutations> (get_local $ptr))
+    (set_global $ptr<codeLengthPermutations> (tee_local $ptr (get_global $ptr<reserved>)))
+    
+    (get_local $ptr)
       (call $write_i8 (i32.const 16))
       (call $write_i8 (i32.const 17))
       (call $write_i8 (i32.const 18))
@@ -74,8 +103,10 @@
       (call $write_i8 (i32.const 14))
       (call $write_i8 (i32.const 1))
       (call $write_i8 (i32.const 15))
-    (call $align16)
-    (set_global $ptr<lengthCodes257_285Base> (get_local $ptr))
+      (call $align16)
+    (set_global $ptr<lengthCodes257_285Base> (tee_local $ptr))
+    
+    (get_local $ptr)
       (call $write_i16 (i32.const 3))
       (call $write_i16 (i32.const 4))
       (call $write_i16 (i32.const 5))
@@ -107,39 +138,21 @@
       (call $write_i16 (i32.const 258))
       (call $write_i16 (i32.const 0))
       (call $write_i16 (i32.const 0))
-    (set_global $ptr<lengthCodes257_285Extra> (get_local $ptr))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 17))
-      (call $write_i16 (i32.const 17))
-      (call $write_i16 (i32.const 17))
-      (call $write_i16 (i32.const 17))
-      (call $write_i16 (i32.const 18))
-      (call $write_i16 (i32.const 18))
-      (call $write_i16 (i32.const 18))
-      (call $write_i16 (i32.const 18))
-      (call $write_i16 (i32.const 19))
-      (call $write_i16 (i32.const 19))
-      (call $write_i16 (i32.const 19))
-      (call $write_i16 (i32.const 19))
-      (call $write_i16 (i32.const 20))
-      (call $write_i16 (i32.const 20))
-      (call $write_i16 (i32.const 20))
-      (call $write_i16 (i32.const 20))
-      (call $write_i16 (i32.const 21))
-      (call $write_i16 (i32.const 21))
-      (call $write_i16 (i32.const 21))
-      (call $write_i16 (i32.const 21))
+    (set_global $ptr<lengthCodes257_285Extra> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (call $write_i16_n (i32.const 16) (i32.const 8))
+      (call $write_i16_n (i32.const 17) (i32.const 4))
+      (call $write_i16_n (i32.const 18) (i32.const 4))
+      (call $write_i16_n (i32.const 19) (i32.const 4))
+      (call $write_i16_n (i32.const 20) (i32.const 4))
+      (call $write_i16_n (i32.const 21) (i32.const 4))
       (call $write_i16 (i32.const 16))
       (call $write_i16 (i32.const 77))
       (call $write_i16 (i32.const 202))
-    (set_global $ptr<distanceCodes0_29Base> (get_local $ptr))
+    (set_global $ptr<distanceCodes0_29Base> (tee_local $ptr))
+    
+    (get_local $ptr)
       (call $write_i16 (i32.const 1))
       (call $write_i16 (i32.const 2))
       (call $write_i16 (i32.const 3))
@@ -172,44 +185,66 @@
       (call $write_i16 (i32.const 24577))
       (call $write_i16 (i32.const 0))
       (call $write_i16 (i32.const 0))
-    (set_global $ptr<distanceCodes0_29Extra> (get_local $ptr))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 16))
-      (call $write_i16 (i32.const 17))
-      (call $write_i16 (i32.const 17))
-      (call $write_i16 (i32.const 18))
-      (call $write_i16 (i32.const 18))
-      (call $write_i16 (i32.const 19))
-      (call $write_i16 (i32.const 19))
-      (call $write_i16 (i32.const 20))
-      (call $write_i16 (i32.const 20))
-      (call $write_i16 (i32.const 21))
-      (call $write_i16 (i32.const 21))
-      (call $write_i16 (i32.const 22))
-      (call $write_i16 (i32.const 22))
-      (call $write_i16 (i32.const 23))
-      (call $write_i16 (i32.const 23))
-      (call $write_i16 (i32.const 24))
-      (call $write_i16 (i32.const 24))
-      (call $write_i16 (i32.const 25))
-      (call $write_i16 (i32.const 25))
-      (call $write_i16 (i32.const 26))
-      (call $write_i16 (i32.const 26))
-      (call $write_i16 (i32.const 27))
-      (call $write_i16 (i32.const 27))
-      (call $write_i16 (i32.const 28))
-      (call $write_i16 (i32.const 28))
-      (call $write_i16 (i32.const 29))
-      (call $write_i16 (i32.const 29))
-      (call $write_i16 (i32.const 64))
-      (call $write_i16 (i32.const 64))
-    (set_global $ptr<codesOfLength> (get_local $ptr))
-    (i32.add (get_global $sizeof<codesOfLength>))
-    (set_global $ptr<lengthTableOffsets> (get_local $ptr))
-    (i32.add (get_global $sizeof<lengthTableOffsets>))
+    (set_global $ptr<distanceCodes0_29Extra> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (call $write_i16_n (i32.const 16) (i32.const 4))
+      (call $write_i16_n (i32.const 17) (i32.const 2))
+      (call $write_i16_n (i32.const 18) (i32.const 2))
+      (call $write_i16_n (i32.const 19) (i32.const 2))
+      (call $write_i16_n (i32.const 20) (i32.const 2))
+      (call $write_i16_n (i32.const 21) (i32.const 2))
+      (call $write_i16_n (i32.const 22) (i32.const 2))
+      (call $write_i16_n (i32.const 23) (i32.const 2))
+      (call $write_i16_n (i32.const 24) (i32.const 2))
+      (call $write_i16_n (i32.const 25) (i32.const 2))
+      (call $write_i16_n (i32.const 26) (i32.const 2))
+      (call $write_i16_n (i32.const 27) (i32.const 2))
+      (call $write_i16_n (i32.const 28) (i32.const 2))
+      (call $write_i16_n (i32.const 29) (i32.const 2))
+      (call $write_i16_n (i32.const 64) (i32.const 2))
+    (set_global $ptr<codesOfLength> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<codesOfLength>))
+    (set_global $ptr<lengthTableOffsets> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<lengthTableOffsets>))
     (set_global $ptr<unreserved>)
+    
+    ;; (call $buildFixedTables (get_global $ptr<unreserved>))
+  )
+  
+  (func $buildFixedTables (export "buildFixedTables") (param $ptr<temp> i32)
+    ;; fixed length table
+    (get_local $ptr<temp>)
+      (call $write_i16_n (i32.const 8) (i32.const 144))
+      (call $write_i16_n (i32.const 9) (i32.const 112))
+      (call $write_i16_n (i32.const 7) (i32.const 24))
+      (call $write_i16_n (i32.const 8) (i32.const 8))
+    drop
+    (call $buildTable
+      (get_global $ptr<fixedLengthTable>)
+      (get_global $LENS)
+      (i32.const 9)
+      (get_local $ptr<temp>)
+      (i32.mul (i32.const 288) (i32.const 2))
+    )
+    drop
+    
+    ;; fixed distance table
+    (get_local $ptr<temp>)
+      (call $write_i16_n (i32.const 5) (i32.const 32))
+    drop
+    (call $buildTable
+      (get_global $ptr<fixedDistanceTable>)
+      (get_global $DISTS)
+      (i32.const 5)
+      (get_local $ptr<temp>)
+      (i32.mul (i32.const 32) (i32.const 2))
+    )
+    drop
   )
 
   (func (export "ptr_codeLengthPermutations") (result i32)
@@ -222,6 +257,122 @@
 
   (func (export "ptr_unreserved") (result i32)
     (return (get_global $ptr<unreserved>))
+  )
+  
+  (func (export "sizeof_dynamicDistanceTable") (result i32)
+    (return (get_global $sizeof<dynamicDistanceTable>))
+  )
+
+  (func (export "sizeof_dynamicLengthTable") (result i32)
+    (return (get_global $sizeof<dynamicLengthTable>))
+  )
+  
+  (func $clear_codesOfLength
+    (call $write_i16_n
+      (get_global $ptr<codesOfLength>)
+      (i32.const 0)
+      (i32.add (get_global $MAXBITS) (i32.const 1))
+    )
+    drop
+  )
+  
+  (func $getCodeOfLengthPtr (param $i i32) (result i32)
+    (return (i32.add
+      (get_global $ptr<codesOfLength>)
+      (i32.mul (get_local $i) (i32.const 2))
+    ))
+  )
+  
+  (func $inc_codeOfLength (param $i i32)
+    (local $ptr i32)
+    (set_local $ptr (call $getCodeOfLengthPtr (get_local $i)))
+    (i32.store16 (get_local $ptr) (i32.add
+      (i32.load16_u (get_local $ptr))
+      (i32.const 1)
+    ))
+  )
+
+  (func $code (param $op i32) (param $bits i32) (param $val i32) (result i32)
+    (return (i32.or
+      (i32.shl (get_local $val) (i32.const 16))
+      (i32.or
+        (i32.shl (get_local $bits) (i32.const 8))
+        (get_local $op)
+      )
+    ))
+  )
+  
+  (func $write_code (param $ptr i32) (param $op i32) (param $bits i32) (param $val i32) (result i32)
+    (i32.store (get_local $ptr) (call $code (get_local $op) (get_local $bits) (get_local $val)))
+    (return (i32.add (get_local $ptr) (i32.const 4)))
+  )
+
+  (func $buildTable (export "buildTable")
+    (param $ptr<table> i32)
+    (param $mode i32)
+    (param $bitWidth i32)
+    (param $ptr<lens> i32)
+    (param $sizeof<lens> i32)
+    (result i32)
+    (local $ptr i32)
+    (local $ptr<end> i32)
+    (local $root i32)
+    (local $max i32)
+    (local $min i32)
+    
+    ;; populate codesOfLength
+    (call $clear_codesOfLength)
+    (set_local $ptr<end> (i32.add (tee_local $ptr (get_local $ptr<lens>)) (get_local $sizeof<lens>)))
+    block
+      loop
+        (br_if 1 (i32.ge_u (get_local $ptr) (get_local $ptr<end>)))
+        (call $inc_codeOfLength (i32.load16_u (get_local $ptr)))
+        (set_local $ptr (i32.add (get_local $ptr) (i32.const 2)))
+        br 0
+      end
+    end
+    
+    ;; bound code lengths, force root to be within code lengths
+    (set_local $root (get_local $bitWidth))
+    (set_local $ptr (call $getCodeOfLengthPtr (get_global $MAXBITS)))
+    (set_local $ptr<end> (get_global $ptr<codesOfLength>))
+    block
+      loop
+        (br_if 1 (i32.load16_u (get_local $ptr)))
+        (br_if 0 (i32.gt_u (tee_local $ptr (i32.sub (get_local $ptr) (i32.const 2))) (get_local $ptr<end>)))
+      end
+    end
+    (set_local $max (i32.div_u (i32.sub (get_local $ptr) (get_global $ptr<codesOfLength>)) (i32.const 2)))
+    
+    (if (i32.gt_u (get_local $root) (get_local $max)) (then
+      (set_local $root (get_local $max))
+    ))
+    
+    (if (i32.eqz (get_local $max)) (then
+      ;; no symbols. set an invalid code number and wait for decoding to report an error
+      (tee_local $ptr (get_local $ptr<table>))
+        (call $write_code (i32.const 64) (i32.const 1) (i32.const 0))
+        (call $write_code (i32.const 64) (i32.const 1) (i32.const 0))
+      drop
+      (return (i32.const 1))
+    ))
+    
+    (set_local $ptr<end> (get_local $ptr)) ;; $ptr is $ptr<max>
+    (set_local $ptr (call $getCodeOfLengthPtr (i32.const 1)))
+    block
+      loop
+        (br_if 1 (i32.load16_u (get_local $ptr)))
+        (br_if 0 (i32.lt_u (tee_local $ptr (i32.add (get_local $ptr) (i32.const 2))) (get_local $ptr<end>)))
+      end
+    end
+    (set_local $min (i32.div_u (i32.sub (get_local $ptr) (get_global $ptr<codesOfLength>)) (i32.const 2)))
+    (if (i32.lt_u (get_local $root) (get_local $min)) (then
+      (set_local $root (get_local $min))
+    ))
+    
+    ;; TODO
+    
+    (return (get_local $root))
   )
 
   (start $init)
