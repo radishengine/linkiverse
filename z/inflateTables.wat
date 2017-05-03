@@ -292,6 +292,27 @@
     ))
   )
 
+  (func $countCodesOfLength (param $i i32) (result i32)
+    (return (i32.load16_u (call $getCodeOfLengthPtr (get_local $i))))
+  )
+  
+  (func $setLengthTableOffset (param $i i32) (param $v i32)
+    (i32.store16
+      (i32.add
+        (get_global $ptr<lengthTableOffsets>)
+        (i32.mul (get_local $i) (i32.const 2))
+      )
+      (get_local $v)
+    )
+  )
+
+  (func $getLengthTableOffset (param $i i32) (result i32)
+    (return (i32.load16_u (i32.add
+      (get_global $ptr<lengthTableOffsets>)
+      (i32.mul (get_local $i) (i32.const 2))
+    )))
+  )
+
   (func $code (param $op i32) (param $bits i32) (param $val i32) (result i32)
     (return (i32.or
       (i32.shl (get_local $val) (i32.const 16))
@@ -319,6 +340,8 @@
     (local $root i32)
     (local $max i32)
     (local $min i32)
+    (local $left i32)
+    (local $len i32)
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
@@ -332,7 +355,7 @@
       end
     end
     
-    ;; bound code lengths, force root to be within code lengths
+    ;; find max
     (set_local $root (get_local $bitWidth))
     (set_local $ptr (call $getCodeOfLengthPtr (get_global $MAXBITS)))
     (set_local $ptr<end> (get_global $ptr<codesOfLength>))
@@ -344,6 +367,7 @@
     end
     (set_local $max (i32.div_u (i32.sub (get_local $ptr) (get_global $ptr<codesOfLength>)) (i32.const 2)))
     
+    ;; make sure root is no greater than max
     (if (i32.gt_u (get_local $root) (get_local $max)) (then
       (set_local $root (get_local $max))
     ))
@@ -357,6 +381,7 @@
       (return (i32.const 1))
     ))
     
+    ;; find min
     (set_local $ptr<end> (get_local $ptr)) ;; $ptr is $ptr<max>
     (set_local $ptr (call $getCodeOfLengthPtr (i32.const 1)))
     block
@@ -366,9 +391,47 @@
       end
     end
     (set_local $min (i32.div_u (i32.sub (get_local $ptr) (get_global $ptr<codesOfLength>)) (i32.const 2)))
+    
+    ;; make sure root is no less than min
     (if (i32.lt_u (get_local $root) (get_local $min)) (then
       (set_local $root (get_local $min))
     ))
+    
+    ;; check: over-subscribed
+    (set_local $left (i32.const 1))
+    (set_local $len (i32.const 1))
+    loop
+      (set_local $left (i32.shl (get_local $left) (i32.const 1)))
+      (set_local $left (i32.sub (get_local $left) (call $countCodesOfLength (get_local $len))))
+      (if (i32.lt_s (get_local $left) (i32.const 0)) (then
+        unreachable
+      ))
+      (br_if 0 (i32.le_u (tee_local $len (i32.add (get_local $len) (i32.const 1))) (get_global $MAXBITS)))
+    end
+    
+    ;; check: incomplete set of lengths
+    (if (i32.gt_s (get_local $left) (i32.const 0)) (then
+      block
+        (br_if 0 (i32.eq (get_local $mode) (get_global $CODES)))
+        (br_if 0 (i32.ne (get_local $max) (i32.const 1)))
+        br 1
+      end
+      unreachable
+    ))
+    
+    ;; generate offsets into symbol table for each length for sorting
+    (call $setLengthTableOffset (i32.const 0) (i32.const 0))
+    (call $setLengthTableOffset (i32.const 1) (i32.const 0))
+    (set_local $len (i32.const 1))
+    loop
+      (call $setLengthTableOffset (i32.add (get_local $len) (i32.const 1))
+        (i32.add
+          (call $getLengthTableOffset (get_local $len))
+          (call $countCodesOfLength (get_local $len))
+        )
+      )
+      (br_if 0 (i32.lt_u (tee_local $len (i32.add (get_local $len) (i32.const 1))) (get_global $MAXBITS)))
+    end
     
     ;; TODO
     
