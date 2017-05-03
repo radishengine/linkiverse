@@ -296,8 +296,8 @@
     (return (i32.or
       (i32.shl (get_local $val) (i32.const 16))
       (i32.or
-        (i32.shl (get_local $bits) (i32.const 8))
-        (get_local $op)
+        (i32.shl (i32.and (get_local $bits) (i32.const 255)) (i32.const 8))
+        (i32.and (get_local $op) (i32.const 255))
       )
     ))
   )
