@@ -477,6 +477,9 @@ define(function() {
     });
   }
   ItemSet.prototype = {
+    toString: function() {
+      return this.query; // TODO: normalize?
+    },
     parseQuery: function(query) {
       var queryToken = / *(AND( NOT)?|OR|"[^"]*"|\[([^\]]*) TO ([^\]]*)\]|[\(\)]|[^ \[\]"\(\)\:]+:?) */g;
       var match, nextAt = 0;
