@@ -89,7 +89,8 @@ function(require
                 entries.push(
                   'awards/'+year+'/nominees/'+categories[j].toLowerCase().replace(/ /g, '-')
                   +'/'+item.identifier
-                  +((winCategories.indexOf(categories[j])!==-1)?' (*)':'')));
+                  +(((winCategories.indexOf(categories[j])!==-1)?' (*)':'')))
+                );
               }
             }
           }
