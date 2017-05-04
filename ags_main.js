@@ -20,12 +20,23 @@ function(require
         return true;
       });
       var subjects = [].concat(item.subject || []).filter(function(subject) {
-        if (subject === 'Adventure Game Studio games') return false;
+        subject = subject.toLowerCase();
+        if (subject === 'adventure game studio games') return false;
         return true;
       });
       var title = item.title;
-      var mediatype = item.mediatype;
-      console.log(title, mediatype, collections, subjects);
+      var existingPath = false;
+      if (collections.indexOf('realityonthenorm') !== -1) {
+        existingPath = true;
+        console.log('realityonthenorm/'+item.identifier);
+      }
+      if (collections.indexOf('magscompetitiongames') !== -1) {
+        existingPath = true;
+        console.log('magscompetitiongames/'+item.identifier);
+      }
+      if (!existingPath) {
+        console.log(title, collections, subjects);
+      }
     });
   }
 });
