@@ -12,7 +12,11 @@ function(require
   var identifiers = Object.keys(iaItems.set);
   for (var i = 0; i < identifiers.length; i++) {
     require(['storage/ia!'+identifiers[i]], function(item) {
-      console.log(item);
+      var collections = [].concat(item.collection || []);
+      var subjects = [].concat(item.subject || []);
+      var title = item.title;
+      var mediatype = item.mediatype;
+      console.log(title, mediatype, collections, subjects);
     });
   }
 });
