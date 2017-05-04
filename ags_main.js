@@ -65,6 +65,9 @@ function(require
     }));
   }
   Promise.all(list).then(function(list) {
-    list.join('\n').split('\n').sort().forEach(console.log);
+    list = list.join('\n').split('\n').sort();
+    for (var i = 0; i < list.length; i++) {
+      console.log(list[i]);
+    }
   });
 });
