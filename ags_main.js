@@ -70,7 +70,7 @@ function(require
               if (match) year = +match[1];
               match = subjects[j].match(/^AGS (.+) Award (nominees|winners)$/i);
               if (match) {
-                if (match[2]) {
+                if (match[2] === 'winners') {
                   winCategories.push(match[1]);
                 }
                 if (categories.indexOf(match[1]) === -1) {
