@@ -60,6 +60,7 @@ function(require
       if (!existingPath) {
         console.log((item.date+'').slice(0,4) + '/' + item.identifier, collections, subjects);
       }
+      iaItems.populate();
     });
   }
 });
