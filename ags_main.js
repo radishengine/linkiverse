@@ -53,8 +53,13 @@ function(require
         for (var i = 0; i < subjects.length; i++) {
           var series = subjects[i].match(/^(.*) series$/);
           if (series) {
-            series = series[1].toLowerCase().replace(' ', '-');
+            series = series[1].toLowerCase().replace(/ /g, '-');
             entries.push(series + '/' + item.identifier);
+          }
+          var fangame = subjects[i].match(/^(.*) fangames$/);
+          if (fangame) {
+            fangame = fangame[1].toLowerCase().replace(/ /g, '-');
+            entries.push('fangames/' + fangame + '/' + item.identifier);
           }
         }
         if (entries.length === 0) {
