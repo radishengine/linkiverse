@@ -35,7 +35,7 @@ function(require
         console.log('magscompetitiongames/'+item.identifier);
       }
       if (!existingPath) {
-        console.log(title, collections, subjects);
+        console.log((item.date+'').slice(0,4) + '/' + item.identifier, collections, subjects);
       }
     });
   }
