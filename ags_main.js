@@ -47,7 +47,7 @@ function(require
             }
           }
           if (year) {
-            entries.push('mags/'+year+'/'+month+'/'+item.identifier + (winner?' (*)':'') + (yearWinner?' (**)':''));
+            entries.push('mags/'+year+'-'+('0' + month).slice(-2)+'/'+item.identifier + (winner?' (*)':'') + (yearWinner?' (**)':''));
           }
         }
         for (var i = 0; i < subjects.length; i++) {
