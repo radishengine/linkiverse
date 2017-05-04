@@ -61,6 +61,38 @@ function(require
             fangame = fangame[1].toLowerCase().replace(/ /g, '-');
             entries.push('fangames/' + fangame + '/' + item.identifier);
           }
+          if (/^ags award nominees$/i.test(subjects[i])) {
+            var year;
+            var categories = [];
+            var winCategories = [];
+            for (var j = 0; j < subjects.length; j++) {
+              var match = subjects[j].match(/^AGS Awards (\d+)$/i);
+              if (match) year = +match[1];
+              match = subjects[j].match(/^AGS (.+) Award (nominees|winners)$/i);
+              if (match) {
+                if (match[2]) {
+                  winCategories.push(match[1]);
+                }
+                if (categories.indexOf(match[1]) === -1) {
+                  categories.push(match[1]);
+                }
+              }
+            }
+            if (year) {
+              if (winCategories.length !== 0) {
+                entries.push('awards/'+year+'/winners/' + item.identifier);
+                for (var j = 0; j < winCategories.length; j++) {
+                  entries.push('awards/' + winCategories[i].toLowerCase().replace(/ /g, '-') + '/' + item.identifier);
+                }
+              }
+              for (var j = 0; j < categories.length) {
+                entries.push(
+                  'awards/'+year+'/nominees/'+categories[i].toLowerCase().replace(/ /g, '-')
+                  +'/'+item.identifier
+                  +(winCategories.indexOf(categories[i])!==-1?' (*)':'')))
+              }
+            }
+          }
         }
         if (entries.length === 0) {
           entries.push((item.date+'').slice(0,4) + '/' + item.identifier);
