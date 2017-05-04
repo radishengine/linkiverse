@@ -9,5 +9,10 @@ define(['require'
 function(require
   ,iaItems
 ) {
-  console.log(iaItems);
+  var identifiers = Object.keys(iaItems.set);
+  for (var i = 0; i < identifiers.length; i++) {
+    require(['storage/ia!'+identifiers[i]], function(item) {
+      console.log(item);
+    });
+  }
 });
