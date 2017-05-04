@@ -28,11 +28,34 @@ function(require
       var existingPath = false;
       if (collections.indexOf('realityonthenorm') !== -1) {
         existingPath = true;
-        console.log('realityonthenorm/'+item.identifier);
+        console.log('reality-on-the-norm/'+(item.date+'').slice(0,4) + '/' + item.identifier);
       }
       if (collections.indexOf('magscompetitiongames') !== -1) {
-        existingPath = true;
-        console.log('magscompetitiongames/'+item.identifier);
+        var year, month, topic, winner, yearWinner;
+        for (var i = 0; i < subjects.length; i++) {
+          winner = winner || /^mags winners$/i.test(subjects[i]);
+          var match = subjects[i].match(/^MAGS (\d{4})-(\d{4}) (.*)$/i);
+          if (match) {
+            year = +match[1];
+            month = +match[2];
+            topic = match[3];
+          }
+          if (/^mags favourite of the year$/.test(subjects[i])) {
+            yearWinner = true;
+          }
+        }
+        if (year) {
+          existingPath = true;
+          console.log('mags/'+year+'/'+month+'/'+item.identifier + (winner?' (*)':'') + (yearWinner?' (**)':''));
+        }
+      }
+      for (var i = 0; i < subjects.length) {
+        var series = subjects[i].match(/^(.*) series$/);
+        if (series) {
+          series = series[1].toLowerCase().replace(' ', '-');
+          existingPath = true;
+          console.log(series + '/' + item.identifier);
+        }
       }
       if (!existingPath) {
         console.log((item.date+'').slice(0,4) + '/' + item.identifier, collections, subjects);
