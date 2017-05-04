@@ -58,7 +58,7 @@ function(require
           }
         }
         if (entries.length === 0) {
-          entries.push((item.date+'').slice(0,4) + '/' + item.identifier, collections, subjects);
+          entries.push((item.date+'').slice(0,4) + '/' + item.identifier);
         }
         resolve(entries.join('\n'));
       });
