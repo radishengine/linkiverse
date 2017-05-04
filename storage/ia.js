@@ -93,7 +93,7 @@ define(function() {
 
   var iaStorage = {
     load: function(name, parentRequire, onload, config) {
-      var path = name.match(/^([a-zA-Z0-9\.-_]+)(?:\/(.*))?$/);
+      var path = name.match(/^([a-zA-Z0-9\.\-_]+)(?:\/(.*))?$/);
       if (path) {
         if (path[2]) {
           this.getFileBlob(path[1], path[2]).then(onload, onload.error);
@@ -105,7 +105,7 @@ define(function() {
       this.getItemSet(name).then(onload, onload.error);
     },
     normalize: function(name, normalize) {
-      if (/^[a-zA-Z0-9\.-_]+(\/.*)?$/.test(name)) return name;
+      if (/^[a-zA-Z0-9\.\-_]+(\/.*)?$/.test(name)) return name;
       try {
         return new ItemSet(name).toString();
       }
