@@ -3,7 +3,7 @@ requirejs.config({
   enforceDefine: true,
 });
 
-requirejs(['require'
+define(['require'
   ,'storage/ia!(collection:adventuregamestudio AND mediatype:software)'
 ],
 function(require
