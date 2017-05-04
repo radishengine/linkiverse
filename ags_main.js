@@ -36,7 +36,7 @@ function(require
           var year, month, topic, winner, yearWinner;
           for (var i = 0; i < subjects.length; i++) {
             winner = winner || /^mags winners$/i.test(subjects[i]);
-            var match = subjects[i].match(/^MAGS (\d{4})-(\d{4}) (.*)$/i);
+            var match = subjects[i].match(/^MAGS (\d{4})-(\d{2}) (.*)$/i);
             if (match) {
               year = +match[1];
               month = +match[2];
