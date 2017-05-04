@@ -82,14 +82,14 @@ function(require
               if (winCategories.length !== 0) {
                 entries.push('awards/'+year+'/winners/' + item.identifier);
                 for (var j = 0; j < winCategories.length; j++) {
-                  entries.push('awards/' + winCategories[i].toLowerCase().replace(/ /g, '-') + '/' + item.identifier);
+                  entries.push('awards/' + winCategories[j].toLowerCase().replace(/ /g, '-') + '/' + item.identifier);
                 }
               }
-              for (var j = 0; j < categories.length) {
+              for (var j = 0; j < categories.length; j++) {
                 entries.push(
-                  'awards/'+year+'/nominees/'+categories[i].toLowerCase().replace(/ /g, '-')
+                  'awards/'+year+'/nominees/'+categories[j].toLowerCase().replace(/ /g, '-')
                   +'/'+item.identifier
-                  +(winCategories.indexOf(categories[i])!==-1?' (*)':'')))
+                  +(winCategories.indexOf(categories[j])!==-1?' (*)':'')))
               }
             }
           }
