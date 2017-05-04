@@ -49,7 +49,7 @@ function(require
           console.log('mags/'+year+'/'+month+'/'+item.identifier + (winner?' (*)':'') + (yearWinner?' (**)':''));
         }
       }
-      for (var i = 0; i < subjects.length) {
+      for (var i = 0; i < subjects.length; i++) {
         var series = subjects[i].match(/^(.*) series$/);
         if (series) {
           series = series[1].toLowerCase().replace(' ', '-');
