@@ -28,6 +28,9 @@
   (global $ptr<codesOfLength> (mut i32) i32.const -1)
   (global $sizeof<codesOfLength> i32 i32.const 32)
   
+  (global $ptr<workspace> (mut i32) i32.const -1)
+  (global $sizeof<workspace> i32 i32.const 576)
+  
   (global $ptr<lengthTableOffsets> (mut i32) i32.const -1)
   (global $sizeof<lengthTableOffsets> i32 i32.const 32)
   
@@ -211,6 +214,10 @@
     
     (get_local $ptr)
       (i32.add (get_global $sizeof<lengthTableOffsets>))
+    (set_global $ptr<workspace> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<workspace>))
     (set_global $ptr<unreserved>)
     
     ;; (call $buildFixedTables (get_global $ptr<unreserved>))
