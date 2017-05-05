@@ -737,8 +737,8 @@
       ;; fill in remaining table entry if code is incomplete (guaranteed to have
       ;; at most one remaining entry, since if the code is incomplete, the
       ;; maximum code length that was allowed to get this far is one bit)
-      get_local $ptr<table>
       (call $write_code
+        (i32.add (get_local $ptr<next>) (i32.const 4))
         (i32.const 64) ;; invalid code marker
         (i32.sub (get_local $len) (get_local $drop))
         (i32.const 0)
