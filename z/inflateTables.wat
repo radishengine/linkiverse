@@ -630,11 +630,11 @@
           (set_local $drop (select (get_local $drop) (get_local $root) (get_local $drop)))
           ;; increment past last table
           (set_local $ptr<next> (i32.add (get_local $ptr<next>) (get_local $min))) ;; here $min is 1 << $curr
+          
+          ;; determine length of next table
+          (set_local $curr (i32.sub (get_local $len) (get_local $drop)))
+          (set_local $left (i32.shl (i32.const 1) (get_local $curr)))
           (;
-
-            /* determine length of next table */
-            curr = len - drop;
-            left = (int)(1 << curr);
             while (curr + drop < max) {
                 left -= count[curr + drop];
                 if (left <= 0) break;
