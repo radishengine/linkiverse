@@ -302,6 +302,15 @@
     ))
   )
 
+  (func $dec_codeOfLength (param $i i32) (result i32)
+    (local $ptr i32)
+    (local $val i32)
+    (set_local $ptr (call $getCodeOfLengthPtr (get_local $i)))
+    (get_local $val (i32.sub (i32.load16_u (get_local $ptr)) (i32.const 1)))
+    (i32.store16 (get_local $ptr) (get_local $val))
+    (return (get_local $val))
+  )
+
   (func $countCodesOfLength (param $i i32) (result i32)
     (return (i32.load16_u (call $getCodeOfLengthPtr (get_local $i))))
   )
@@ -324,6 +333,13 @@
       )
       (get_local $v)
     )
+  )
+
+  (func $getWork (param $i i32) (result i32)
+    (return (i32.load16_u (i32.add
+      (get_global $ptr<workspace>)
+      (i32.mul (get_local $i) (i32.const 2))
+    )))
   )
 
   (func $getLengthTableOffset (param $i i32) (result i32)
@@ -535,109 +551,114 @@
     ))
     
     ;; process all codes and make table entries
-    loop
-      ;; create table entry
-      (set_local $here_bits (i32.and (i32.const 0xff) (i32.sub (get_local $len) (get_local $drop))))
-      
-      (;
-      if (work[sym] + 1U < match) {
-          here.op = (unsigned char)0;
-          here.val = work[sym];
-      }
-      else if (work[sym] >= match) {
-          here.op = (unsigned char)(extra[work[sym] - match]);
-          here.val = base[work[sym] - match];
-      }
-      else {
-          here.op = (unsigned char)(32 + 64);         /* end of block */
-          here.val = 0;
-      }
-      ;)
-
-      ;; replicate for those indices with low len bits equal to huff
-      (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (get_local $drop))))
-      (set_local $fill (i32.shl (i32.const 1) (get_local $curr)))
-      (set_local $min (get_local $fill)) ;; save offset to next table
+    block $break
       loop
-        (set_local $fill (i32.sub (get_local $fill) (get_local $incr)))
-        (call $write_code
-          (i32.add
-            (get_local $ptr<next>)
-            (i32.mul
-              (i32.add
-                (i32.shr_u (get_local $huff) (get_local $drop))
-                (get_local $fill)
-              )
-              (i32.const 4)
-            )
-          )
-          (get_local $here_op)
-          (get_local $here_bits)
-          (get_local $here_val)
-        )
-        drop
-        (br_if 0 (get_local $fill))
-      end
+        ;; create table entry
+        (set_local $here_bits (i32.and (i32.const 0xff) (i32.sub (get_local $len) (get_local $drop))))
 
-      ;; backwards increment the len-bit code huff
-      (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (i32.const 1))))
-      block
+        (;
+        if (work[sym] + 1U < match) {
+            here.op = (unsigned char)0;
+            here.val = work[sym];
+        }
+        else if (work[sym] >= match) {
+            here.op = (unsigned char)(extra[work[sym] - match]);
+            here.val = base[work[sym] - match];
+        }
+        else {
+            here.op = (unsigned char)(32 + 64);         /* end of block */
+            here.val = 0;
+        }
+        ;)
+
+        ;; replicate for those indices with low len bits equal to huff
+        (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (get_local $drop))))
+        (set_local $fill (i32.shl (i32.const 1) (get_local $curr)))
+        (set_local $min (get_local $fill)) ;; save offset to next table
         loop
-          (br_if 1 (i32.eqz (i32.and (get_local $huff) (get_local $incr))))
-          (set_local $incr (i32.shr_u (get_local $incr) (i32.const 1)))
-          br 0
+          (set_local $fill (i32.sub (get_local $fill) (get_local $incr)))
+          (call $write_code
+            (i32.add
+              (get_local $ptr<next>)
+              (i32.mul
+                (i32.add
+                  (i32.shr_u (get_local $huff) (get_local $drop))
+                  (get_local $fill)
+                )
+                (i32.const 4)
+              )
+            )
+            (get_local $here_op)
+            (get_local $here_bits)
+            (get_local $here_val)
+          )
+          drop
+          (br_if 0 (get_local $fill))
         end
+
+        ;; backwards increment the len-bit code huff
+        (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (i32.const 1))))
+        block
+          loop
+            (br_if 1 (i32.eqz (i32.and (get_local $huff) (get_local $incr))))
+            (set_local $incr (i32.shr_u (get_local $incr) (i32.const 1)))
+            br 0
+          end
+        end
+        (if (get_local $incr) (then
+          (set_local $huff (i32.and (get_local $huff) (i32.sub (get_local $incr) (i32.const 1))))
+          (set_local $huff (i32.add (get_local $huff) (get_local $incr)))
+        )
+        (else
+          (set_local $huff (i32.const 0))
+        ))
+
+        ;; go to next symbol, update count, len
+        (set_local $sym (i32.add (get_local $sym) (i32.const 1)))
+        (if (i32.eqz (call $dec_codeOfLength (get_local $len))) (then
+          (br_if $break (i32.eq (get_local $len) (get_local $max)))
+          (set_local $len (i32.load16_u (i32.add
+            (get_local $ptr<lens>)
+            (i32.mul (call $getWork (get_local $sym)) (i32.const 2))
+          )))
+        ))
+        
+        (;
+        /* create new sub-table if needed */
+        if (len > root && (huff & mask) != low) {
+            /* if first time, transition to sub-tables */
+            if (drop == 0)
+                drop = root;
+
+            /* increment past last table */
+            next += min;            /* here min is 1 << curr */
+
+            /* determine length of next table */
+            curr = len - drop;
+            left = (int)(1 << curr);
+            while (curr + drop < max) {
+                left -= count[curr + drop];
+                if (left <= 0) break;
+                curr++;
+                left <<= 1;
+            }
+
+            /* check for enough space */
+            used += 1U << curr;
+            if ((type == LENS && used > ENOUGH_LENS) ||
+                (type == DISTS && used > ENOUGH_DISTS))
+                return 1;
+
+            /* point entry in root table to sub-table */
+            low = huff & mask;
+            (*table)[low].op = (unsigned char)curr;
+            (*table)[low].bits = (unsigned char)root;
+            (*table)[low].val = (unsigned short)(next - *table);
+        }
+      ;)
+        br 0
       end
-      (if (get_local $incr) (then
-        (set_local $huff (i32.and (get_local $huff) (i32.sub (get_local $incr) (i32.const 1))))
-        (set_local $huff (i32.add (get_local $huff) (get_local $incr)))
-      )
-      (else
-        (set_local $huff (i32.const 0))
-      ))
-
-      ;; go to next symbol, update count, len
-      (set_local $sym (i32.add (get_local $sym) (i32.const 1)))
-      (;
-      if (--(count[len]) == 0) {
-          if (len == max) break;
-          len = lens[work[sym]];
-      }
-
-      /* create new sub-table if needed */
-      if (len > root && (huff & mask) != low) {
-          /* if first time, transition to sub-tables */
-          if (drop == 0)
-              drop = root;
-
-          /* increment past last table */
-          next += min;            /* here min is 1 << curr */
-
-          /* determine length of next table */
-          curr = len - drop;
-          left = (int)(1 << curr);
-          while (curr + drop < max) {
-              left -= count[curr + drop];
-              if (left <= 0) break;
-              curr++;
-              left <<= 1;
-          }
-
-          /* check for enough space */
-          used += 1U << curr;
-          if ((type == LENS && used > ENOUGH_LENS) ||
-              (type == DISTS && used > ENOUGH_DISTS))
-              return 1;
-
-          /* point entry in root table to sub-table */
-          low = huff & mask;
-          (*table)[low].op = (unsigned char)curr;
-          (*table)[low].bits = (unsigned char)root;
-          (*table)[low].val = (unsigned short)(next - *table);
-      }
-    ;)
-      br 0
-    end
+    end $break
     
     (if (get_local $huff) (then
       ;; fill in remaining table entry if code is incomplete (guaranteed to have
