@@ -579,18 +579,24 @@
         (br_if 0 (get_local $fill))
       end
 
-      (;
-      /* backwards increment the len-bit code huff */
-      incr = 1U << (len - 1);
-      while (huff & incr)
-          incr >>= 1;
-      if (incr != 0) {
-          huff &= incr - 1;
-          huff += incr;
-      }
-      else
-          huff = 0;
+      ;; backwards increment the len-bit code huff
+      (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (i32.const 1))))
+      block
+        loop
+          (br_if 1 (i32.eqz (i32.and (get_local $huff) (get_local $incr))))
+          (set_local $incr (i32.shr_u (get_local $incr) (i32.const 1)))
+          br 0
+        end
+      end
+      (if (get_local $incr) (then
+        (set_local $huff (i32.and (get_local $huff) (i32.sub (get_local $incr) (i32.const 1))))
+        (set_local $huff (i32.add (get_local $huff) (get_local $incr)))
+      )
+      (else
+        (set_local $huff (i32.const 0))
+      ))
 
+      (;
       /* go to next symbol, update count, len */
       sym++;
       if (--(count[len]) == 0) {
@@ -630,6 +636,7 @@
           (*table)[low].val = (unsigned short)(next - *table);
       }
     ;)
+      br 0
     end
     
     (if (get_local $huff) (then
