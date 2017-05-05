@@ -651,13 +651,20 @@
               br 0
             end
           end
+          ;; check for enough space
+          (set_local $used (i32.add
+            (get_local $used)
+            (i32.shl (i32.const 1) (get_local $curr))
+          ))
+          
+          (if (i32.or
+            (i32.and (i32.eq (get_local $mode) (get_global $LENS )) (i32.gt_u (get_local $used) (get_global $ENOUGH_LENS )))
+            (i32.and (i32.eq (get_local $mode) (get_global $DISTS)) (i32.gt_u (get_local $used) (get_global $ENOUGH_DISTS)))
+          ) (then
+            unreachable
+          ))
+          
           (;
-            /* check for enough space */
-            used += 1U << curr;
-            if ((type == LENS && used > ENOUGH_LENS) ||
-                (type == DISTS && used > ENOUGH_DISTS))
-                return 1;
-
             /* point entry in root table to sub-table */
             low = huff & mask;
             (*table)[low].op = (unsigned char)curr;
