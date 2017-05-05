@@ -388,6 +388,8 @@
     (local $here_op i32)
     (local $here_bits i32)
     (local $here_val i32)
+    (local $incr i32)
+    (local $fill i32)
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
@@ -536,7 +538,8 @@
     loop
       ;; create table entry
       (set_local $here_bits (i32.and (i32.const 0xff) (i32.sub (get_local $len) (get_local $drop))))
-    (;
+      
+      (;
       if (work[sym] + 1U < match) {
           here.op = (unsigned char)0;
           here.val = work[sym];
@@ -549,16 +552,34 @@
           here.op = (unsigned char)(32 + 64);         /* end of block */
           here.val = 0;
       }
+      ;)
 
-      /* replicate for those indices with low len bits equal to huff */
-      incr = 1U << (len - drop);
-      fill = 1U << curr;
-      min = fill;                 /* save offset to next table */
-      do {
-          fill -= incr;
-          next[(huff >> drop) + fill] = here;
-      } while (fill != 0);
+      ;; replicate for those indices with low len bits equal to huff
+      (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (get_local $drop))))
+      (set_local $fill (i32.shl (i32.const 1) (get_local $curr)))
+      (set_local $min (get_local $fill)) ;; save offset to next table
+      loop
+        (set_local $fill (i32.sub (get_local $fill) (get_local $incr)))
+        (call $write_code
+          (i32.add
+            (get_local $ptr<next>)
+            (i32.mul
+              (i32.add
+                (i32.shr_u (get_local $huff) (get_local $drop))
+                (get_local $fill)
+              )
+              (i32.const 4)
+            )
+          )
+          (get_local $here_op)
+          (get_local $here_bits)
+          (get_local $here_val)
+        )
+        drop
+        (br_if 0 (get_local $fill))
+      end
 
+      (;
       /* backwards increment the len-bit code huff */
       incr = 1U << (len - 1);
       while (huff & incr)
