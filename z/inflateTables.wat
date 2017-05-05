@@ -626,13 +626,11 @@
         ;; create new sub-table if needed
         (if (i32.gt_u (get_local $len) (get_local $root)) (then
           (br_if 0 (i32.ne (i32.and (get_local $huff) (get_local $mask)) (get_local $low)))
+          ;; if first time, transition to sub-tables
+          (set_local $drop (select (get_local $drop) (get_local $root) (get_local $drop)))
+          ;; increment past last table
+          (set_local $ptr<next> (i32.add (get_local $ptr<next>) (get_local $min))) ;; here $min is 1 << $curr
           (;
-            /* if first time, transition to sub-tables */
-            if (drop == 0)
-                drop = root;
-
-            /* increment past last table */
-            next += min;            /* here min is 1 << curr */
 
             /* determine length of next table */
             curr = len - drop;
