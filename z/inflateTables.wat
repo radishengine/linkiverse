@@ -231,6 +231,14 @@
     
     (get_local $ptr)
       (i32.add (get_global $sizeof<workspace>))
+    (set_global $ptr<fixedLengthTable> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<fixedLengthTable>))
+    (set_global $ptr<fixedDistanceTable> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<fixedDistanceTable>))
     (set_global $ptr<unreserved>)
     
     ;; (call $buildFixedTables (get_global $ptr<unreserved>))
