@@ -313,11 +313,33 @@
     )
   )
 
+  (func $setWork (param $i i32) (param $v i32)
+    (i32.store16
+      (i32.add
+        (get_global $ptr<workspace>)
+        (i32.mul (get_local $i) (i32.const 2))
+      )
+      (get_local $v)
+    )
+  )
+
   (func $getLengthTableOffset (param $i i32) (result i32)
     (return (i32.load16_u (i32.add
       (get_global $ptr<lengthTableOffsets>)
       (i32.mul (get_local $i) (i32.const 2))
     )))
+  )
+
+  (func $incLengthTableOffset (param $i i32) (result i32)
+    (local $ptr i32)
+    (local $v i32)
+    (set_local $ptr (i32.add
+      (get_global $ptr<lengthTableOffsets>)
+      (i32.mul (get_local $i) (i32.const 2))
+    ))
+    (set_local $v (i32.load16_u (get_local $ptr)))
+    (i32.store16 (get_local $ptr) (i32.add (get_local $v) (i32.const 1)))
+    (return (get_local $v))
   )
 
   (func $code (param $op i32) (param $bits i32) (param $val i32) (result i32)
@@ -352,6 +374,7 @@
     (local $huff i32)
     (local $ptr<next> i32)
     (local $drop i32)
+    (local $sym i32)
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
@@ -441,6 +464,22 @@
         )
       )
       (br_if 0 (i32.lt_u (tee_local $len (i32.add (get_local $len) (i32.const 1))) (get_global $MAXBITS)))
+    end
+    
+    ;; sort symbols by length, by symbol order within each length
+    (set_local $sym (i32.const 0))
+    (set_local $ptr<end> (i32.add (get_local $ptr<lens>) (get_local $sizeof<lens>)))
+    block
+      loop
+        (set_local $ptr (i32.add (get_local $ptr<lens>) (i32.mul (get_local $sym) (i32.const 2))))
+        (br_if 1 (i32.ge_u (get_local $ptr) (get_local $ptr<end>)))
+        (set_local $len (i32.load16_u (get_local $ptr)))
+        (if (get_local $len) (then
+          (call $setWork (call $incLengthTableOffset (get_local $len)) (get_local $sym))
+        ))
+        (set_local $sym (i32.add (get_local $sym) (i32.const 1)))
+        br 0
+      end
     end
     
     ;; TODO
