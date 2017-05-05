@@ -752,6 +752,30 @@
     (set_global $ptr<lastTableEnd> (i32.add (get_local $ptr<table>) (i32.mul (get_local $used) (i32.const 4))))
     (set_global $lastTableBits (get_local $root))
   )
+  
+  (func (export "ptr_lengthCodes257_285Base") (result i32) (return (get_global $ptr<lengthCodes257_285Base>)))
+  (func (export "sizeof_lengthCodes257_285Base") (result i32) (return (get_global $sizeof<lengthCodes257_285Base>)))
+  
+  (func (export "ptr_lengthCodes257_285Extra") (result i32) (return (get_global $ptr<lengthCodes257_285Extra>)))
+  (func (export "sizeof_lengthCodes257_285Extra") (result i32) (return (get_global $sizeof<lengthCodes257_285Extra>)))
+  
+  (func (export "ptr_distanceCodes0_29Base") (result i32) (return (get_global $ptr<distanceCodes0_29Base>)))
+  (func (export "sizeof_distanceCodes0_29Base") (result i32) (return (get_global $sizeof<distanceCodes0_29Base>)))
+  
+  (func (export "ptr_distanceCodes0_29Extra") (result i32) (return (get_global $ptr<distanceCodes0_29Extra>)))
+  (func (export "sizeof_distanceCodes0_29Extra") (result i32) (return (get_global $sizeof<distanceCodes0_29Extra>)))
+  
+  (func (export "ptr_codesOfLength") (result i32) (return (get_global $ptr<codesOfLength>)))
+  (func (export "sizeof_codesOfLength") (result i32) (return (get_global $sizeof<codesOfLength>)))
+  
+  (func (export "ptr_lens") (result i32) (return (get_global $ptr<lens>)))
+  (func (export "sizeof_lens") (result i32) (return (get_global $sizeof<lens>)))
+  
+  (func (export "ptr_workspace") (result i32) (return (get_global $ptr<workspace>)))
+  (func (export "sizeof_workspace") (result i32) (return (get_global $sizeof<workspace>)))
+  
+  (func (export "ptr_lengthTableOffsets") (result i32) (return (get_global $ptr<lengthTableOffsets>)))
+  (func (export "sizeof_lengthTableOffsets") (result i32) (return (get_global $sizeof<lengthTableOffsets>)))
 
   (start $init)
 
