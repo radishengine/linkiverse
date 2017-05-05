@@ -666,11 +666,20 @@
           
           ;; point entry in root table to sub-table
           (set_local $low (i32.and (get_local $huff) (get_local $mask)))
-          (;
-            (*table)[low].op = (unsigned char)curr;
-            (*table)[low].bits = (unsigned char)root;
-            (*table)[low].val = (unsigned short)(next - *table);
-          ;)
+          (i32.store
+            (i32.add (get_local $ptr<table>) (i32.mul (get_local $low) (i32.const 4)))
+            (call $code
+              (get_local $curr)
+              (get_local $root)
+              (i32.div_u
+                (i32.sub
+                  (get_local $ptr<next>)
+                  (get_local $ptr<table>)
+                )
+                (i32.const 2)
+              )
+            )
+          )
         ))
         br 0
       end
