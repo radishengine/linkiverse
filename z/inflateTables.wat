@@ -664,9 +664,9 @@
             unreachable
           ))
           
+          ;; point entry in root table to sub-table
+          (set_local $low (i32.and (get_local $huff) (get_local $mask)))
           (;
-            /* point entry in root table to sub-table */
-            low = huff & mask;
             (*table)[low].op = (unsigned char)curr;
             (*table)[low].bits = (unsigned char)root;
             (*table)[low].val = (unsigned short)(next - *table);
