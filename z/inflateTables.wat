@@ -681,7 +681,10 @@
           ;; if first time, transition to sub-tables
           (set_local $drop (select (get_local $drop) (get_local $root) (get_local $drop)))
           ;; increment past last table
-          (set_local $ptr<next> (i32.add (get_local $ptr<next>) (get_local $min))) ;; here $min is 1 << $curr
+          (set_local $ptr<next> (i32.add
+            (get_local $ptr<next>)
+            (i32.mul (i32.const 4) (get_local $min)) ;; here $min is 1 << $curr
+          )) 
           
           ;; determine length of next table
           (set_local $curr (i32.sub (get_local $len) (get_local $drop)))
