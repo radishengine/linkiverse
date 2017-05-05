@@ -375,6 +375,9 @@
     (local $ptr<next> i32)
     (local $drop i32)
     (local $sym i32)
+    (local $match i32)
+    (local $ptr<base> i32)
+    (local $ptr<extra> i32)
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
@@ -481,6 +484,26 @@
         br 0
       end
     end
+    
+    block $break
+      block $DISTS: block $LENS: block $CODES:
+      get_local $mode
+      br_table $CODES: $LENS: $DISTS:
+      end $CODES:
+        ;; $ptr<base> and $ptr<extra> unused
+        (set_local $match (i32.const 20))
+        br $break
+      end $LENS:
+        (set_local $ptr<base> (get_global $ptr<lengthCodes257_285Base>))
+        (set_local $ptr<extra> (get_global $ptr<lengthCodes257_285Extra>))
+        (set_local $match (i32.const 257))
+        br $break
+      end $DISTS:
+        (set_local $ptr<base> (get_global $ptr<distanceCodes0_29Base>))
+        (set_local $ptr<extra> (get_global $ptr<distanceCodes0_29Extra>))
+        ;; (set_local $match (i32.const 0))
+        ;; br $break
+    end $break
     
     ;; TODO
     
