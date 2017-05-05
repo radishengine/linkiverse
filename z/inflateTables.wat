@@ -596,9 +596,9 @@
         (set_local $huff (i32.const 0))
       ))
 
+      ;; go to next symbol, update count, len
+      (set_local $sym (i32.add (get_local $sym) (i32.const 1)))
       (;
-      /* go to next symbol, update count, len */
-      sym++;
       if (--(count[len]) == 0) {
           if (len == max) break;
           len = lens[work[sym]];
