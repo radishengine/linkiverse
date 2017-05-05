@@ -293,6 +293,10 @@
     ))
   )
   
+  (func $getCodeOfLength (param $i i32) (result i32)
+    (return (i32.load16_u (call $getCodeOfLengthPtr (get_local $i))))
+  )
+  
   (func $inc_codeOfLength (param $i i32)
     (local $ptr i32)
     (set_local $ptr (call $getCodeOfLengthPtr (get_local $i)))
@@ -634,14 +638,20 @@
           ;; determine length of next table
           (set_local $curr (i32.sub (get_local $len) (get_local $drop)))
           (set_local $left (i32.shl (i32.const 1) (get_local $curr)))
+          block
+            loop
+              (br_if 1 (i32.ge_u (i32.add (get_local $curr) (get_local $drop)) (get_local $max)))
+              (set_local $left (i32.sub
+                (get_local $left)
+                (call $getCodeOfLength (i32.add (get_local $curr) (get_local $drop)))
+              ))
+              (br_if 1 (i32.le_s (get_local $left) (i32.const 0)))
+              (set_local $curr (i32.add (get_local $curr) (i32.const 1)))
+              (set_local $left (i32.shl (get_local $left) (i32.const 1)))
+              br 0
+            end
+          end
           (;
-            while (curr + drop < max) {
-                left -= count[curr + drop];
-                if (left <= 0) break;
-                curr++;
-                left <<= 1;
-            }
-
             /* check for enough space */
             used += 1U << curr;
             if ((type == LENS && used > ENOUGH_LENS) ||
