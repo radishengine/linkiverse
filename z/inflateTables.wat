@@ -378,6 +378,10 @@
     (local $match i32)
     (local $ptr<base> i32)
     (local $ptr<extra> i32)
+    (local $curr i32)
+    (local $low i32)
+    (local $used i32)
+    (local $mask i32)
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
@@ -504,6 +508,16 @@
         ;; (set_local $match (i32.const 0))
         ;; br $break
     end $break
+    
+    (set_local $huff (i32.const 0)) ;; starting code
+    (set_local $sym (i32.const 0)) ;; starting code symbol
+    (set_local $len (get_local $min)) ;; starting code length
+    (set_local $ptr<next> (get_local $ptr<table>)) ;; current table to fill in
+    (set_local $curr (get_local $root)) ;; current table index bits
+    (set_local $drop (i32.const 0)) ;; current bits to drop from code for index
+    (set_local $low (i32.const 0xffffffff)) ;; trigger new sub-table when len > root
+    (set_local $used (i32.shl (i32.const 1) (get_local $root))) ;; use root table entries
+    (set_local $mask (i32.sub (get_local $used) (i32.const 1))) ;; mask for comparing low
     
     ;; TODO
     
