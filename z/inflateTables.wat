@@ -8,6 +8,9 @@
   (global $LENS (export "LENS") i32 i32.const 1)
   (global $DISTS (export "DISTS") i32 i32.const 2)
   
+  (global $ENOUGH_LENS (export "ENOUGH_LENS") i32 i32.const 852)
+  (global $ENOUGH_DISTS (export "ENOUGH_DISTS") i32 i32.const 592)
+  
   (global $MAXBITS i32 i32.const 15)
 
   (global $ptr<codeLengthPermutations> (mut i32) i32.const -1)
@@ -518,6 +521,13 @@
     (set_local $low (i32.const 0xffffffff)) ;; trigger new sub-table when len > root
     (set_local $used (i32.shl (i32.const 1) (get_local $root))) ;; use root table entries
     (set_local $mask (i32.sub (get_local $used) (i32.const 1))) ;; mask for comparing low
+    
+    (if (i32.or
+      (i32.and (i32.eq (get_local $mode) (get_global $LENS )) (i32.gt_u (get_local $used) (get_global $ENOUGH_LENS )))
+      (i32.and (i32.eq (get_local $mode) (get_global $DISTS)) (i32.gt_u (get_local $used) (get_global $ENOUGH_DISTS)))
+    ) (then
+      unreachable
+    ))
     
     ;; TODO
     
