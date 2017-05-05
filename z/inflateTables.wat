@@ -291,6 +291,22 @@
     (return (get_global $sizeof<dynamicLengthTable>))
   )
   
+  (func (export "ptr_fixedLengthTable") (result i32)
+    (return (get_global $ptr<fixedLengthTable>))
+  )
+  
+  (func (export "sizeof_fixedLengthTable") (result i32)
+    (return (get_global $sizeof<fixedLengthTable>))
+  )
+  
+  (func (export "ptr_fixedDistanceTable") (result i32)
+    (return (get_global $ptr<fixedDistanceTable>))
+  )
+  
+  (func (export "sizeof_fixedDistanceTable") (result i32)
+    (return (get_global $sizeof<fixedDistanceTable>))
+  )
+  
   (func (export "ptr_lastTableEnd") (result i32)
     (return (get_global $ptr<lastTableEnd>))
   )
