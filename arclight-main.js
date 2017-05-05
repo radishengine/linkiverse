@@ -1,3 +1,7 @@
+requirejs.config({
+  waitSeconds: 0,
+});
+
 require(
 ['z/inflate', 'ags/GameView', 'ags/RoomView', 'ags/Runtime', 'playback/smf', 'playback/flic', 'specify'],
 function(inflate, GameView, RoomView, Runtime, smf, flic, specify) {
