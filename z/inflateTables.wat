@@ -410,6 +410,7 @@
     (local $here_val i32)
     (local $incr i32)
     (local $fill i32)
+    (local $work i32)
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
@@ -523,6 +524,8 @@
       br_table $CODES: $LENS: $DISTS:
       end $CODES:
         ;; $ptr<base> and $ptr<extra> unused
+        (set_local $ptr<base> (get_global $ptr<workspace>))
+        (set_local $ptr<extra> (get_global $ptr<workspace>))
         (set_local $match (i32.const 20))
         br $break
       end $LENS:
@@ -533,8 +536,8 @@
       end $DISTS:
         (set_local $ptr<base> (get_global $ptr<distanceCodes0_29Base>))
         (set_local $ptr<extra> (get_global $ptr<distanceCodes0_29Extra>))
-        ;; (set_local $match (i32.const 0))
-        ;; br $break
+        (set_local $match (i32.const 0))
+        br $break
     end $break
     
     (set_local $huff (i32.const 0)) ;; starting code
@@ -559,21 +562,29 @@
       loop
         ;; create table entry
         (set_local $here_bits (i32.and (i32.const 0xff) (i32.sub (get_local $len) (get_local $drop))))
-
-        (;
-        if (work[sym] + 1U < match) {
-            here.op = (unsigned char)0;
-            here.val = work[sym];
-        }
-        else if (work[sym] >= match) {
-            here.op = (unsigned char)(extra[work[sym] - match]);
-            here.val = base[work[sym] - match];
-        }
-        else {
-            here.op = (unsigned char)(32 + 64);         /* end of block */
-            here.val = 0;
-        }
-        ;)
+        
+        (set_local $work (call $getWork (get_local $sym)))
+        (if (i32.lt_u (i32.add (get_local $work) (i32.const 1)) (get_local $match)) (then
+          (set_local $here_op (i32.const 0))
+          (set_local $here_val (get_local $work))
+        )
+        (else
+          (if (i32.ge_u (get_local $work) (get_local $match)) (then
+            (set_local $work (i32.sub (get_local $work) (get_local $match)))
+            (set_local $here_op (i32.load16_u (i32.add
+              (get_local $ptr<extra>)
+              (i32.mul (get_local $work) (i32.const 2))
+            )))
+            (set_local $here_val (i32.load16_u (i32.add
+              (get_local $ptr<base>)
+              (i32.mul (get_local $work) (i32.const 2))
+            )))
+          )
+          (else
+            (set_local $here_op (i32.const 96)) ;; end of block
+            (set_local $here_val (i32.const 0))
+          ))
+        ))
 
         ;; replicate for those indices with low len bits equal to huff
         (set_local $incr (i32.shl (i32.const 1) (i32.sub (get_local $len) (get_local $drop))))
