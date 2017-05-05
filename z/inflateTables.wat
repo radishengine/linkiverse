@@ -31,6 +31,9 @@
   (global $ptr<codesOfLength> (mut i32) i32.const -1)
   (global $sizeof<codesOfLength> i32 i32.const 32)
   
+  (global $ptr<lens> (mut i32) i32.const -1)
+  (global $sizeof<lens> i32 i32.const 640)
+  
   (global $ptr<workspace> (mut i32) i32.const -1)
   (global $sizeof<workspace> i32 i32.const 576)
   
@@ -47,6 +50,9 @@
   (global $sizeof<dynamicDistanceTable> i32 i32.const 2368)
   
   (global $ptr<unreserved> (mut i32) i32.const -1)
+  
+  (global $ptr<lastTableEnd> (mut i32) i32.const -1)
+  (global $lastTableBits (mut i32) i32.const 0)
 
   (func $alignMask (param $ptr i32) (param $mask i32) (result i32)
     block
@@ -217,6 +223,10 @@
     
     (get_local $ptr)
       (i32.add (get_global $sizeof<lengthTableOffsets>))
+    (set_global $ptr<lens> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<lens>))
     (set_global $ptr<workspace> (tee_local $ptr))
     
     (get_local $ptr)
@@ -226,9 +236,9 @@
     ;; (call $buildFixedTables (get_global $ptr<unreserved>))
   )
   
-  (func $buildFixedTables (export "buildFixedTables") (param $ptr<temp> i32)
+  (func $buildFixedTables (export "buildFixedTables")
     ;; fixed length table
-    (get_local $ptr<temp>)
+    (get_global $ptr<lens>)
       (call $write_i16_n (i32.const 8) (i32.const 144))
       (call $write_i16_n (i32.const 9) (i32.const 112))
       (call $write_i16_n (i32.const 7) (i32.const 24))
@@ -238,23 +248,19 @@
       (get_global $ptr<fixedLengthTable>)
       (get_global $LENS)
       (i32.const 9)
-      (get_local $ptr<temp>)
       (i32.mul (i32.const 288) (i32.const 2))
     )
-    drop
     
     ;; fixed distance table
-    (get_local $ptr<temp>)
+    (get_global $ptr<lens>)
       (call $write_i16_n (i32.const 5) (i32.const 32))
     drop
     (call $buildTable
       (get_global $ptr<fixedDistanceTable>)
       (get_global $DISTS)
       (i32.const 5)
-      (get_local $ptr<temp>)
       (i32.mul (i32.const 32) (i32.const 2))
     )
-    drop
   )
 
   (func (export "ptr_codeLengthPermutations") (result i32)
@@ -275,6 +281,14 @@
 
   (func (export "sizeof_dynamicLengthTable") (result i32)
     (return (get_global $sizeof<dynamicLengthTable>))
+  )
+  
+  (func (export "ptr_lastTableEnd") (result i32)
+    (return (get_global $ptr<lastTableEnd>))
+  )
+  
+  (func (export "get_lastTableBits") (result i32)
+    (return (get_global $lastTableBits))
   )
   
   (func $clear_codesOfLength
@@ -384,9 +398,7 @@
     (param $ptr<table> i32)
     (param $mode i32)
     (param $bitWidth i32)
-    (param $ptr<lens> i32)
     (param $sizeof<lens> i32)
-    (result i32)
     (local $ptr i32)
     (local $ptr<end> i32)
     (local $root i32)
@@ -414,7 +426,7 @@
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
-    (set_local $ptr<end> (i32.add (tee_local $ptr (get_local $ptr<lens>)) (get_local $sizeof<lens>)))
+    (set_local $ptr<end> (i32.add (tee_local $ptr (get_global $ptr<lens>)) (get_local $sizeof<lens>)))
     block
       loop
         (br_if 1 (i32.ge_u (get_local $ptr) (get_local $ptr<end>)))
@@ -443,11 +455,12 @@
     
     (if (i32.eqz (get_local $max)) (then
       ;; no symbols. set an invalid code number and wait for decoding to report an error
-      (tee_local $ptr (get_local $ptr<table>))
+      (get_local $ptr<table>)
         (call $write_code (i32.const 64) (i32.const 1) (i32.const 0))
         (call $write_code (i32.const 64) (i32.const 1) (i32.const 0))
-      drop
-      (return (i32.const 1))
+      (set_global $ptr<lastTableEnd>)
+      (set_global $lastTableBits (i32.const 1))
+      return
     ))
     
     ;; find min
@@ -504,10 +517,10 @@
     
     ;; sort symbols by length, by symbol order within each length
     (set_local $sym (i32.const 0))
-    (set_local $ptr<end> (i32.add (get_local $ptr<lens>) (get_local $sizeof<lens>)))
+    (set_local $ptr<end> (i32.add (get_global $ptr<lens>) (get_local $sizeof<lens>)))
     block
       loop
-        (set_local $ptr (i32.add (get_local $ptr<lens>) (i32.mul (get_local $sym) (i32.const 2))))
+        (set_local $ptr (i32.add (get_global $ptr<lens>) (i32.mul (get_local $sym) (i32.const 2))))
         (br_if 1 (i32.ge_u (get_local $ptr) (get_local $ptr<end>)))
         (set_local $len (i32.load16_u (get_local $ptr)))
         (if (get_local $len) (then
@@ -633,7 +646,7 @@
         (if (i32.eqz (call $dec_codeOfLength (get_local $len))) (then
           (br_if $break (i32.eq (get_local $len) (get_local $max)))
           (set_local $len (i32.load16_u (i32.add
-            (get_local $ptr<lens>)
+            (get_global $ptr<lens>)
             (i32.mul (call $getWork (get_local $sym)) (i32.const 2))
           )))
         ))
@@ -709,7 +722,8 @@
       drop
     ))
     
-    (return (get_local $root))
+    (set_global $ptr<lastTableEnd> (i32.add (get_local $ptr<table>) (i32.mul (get_local $used) (i32.const 4))))
+    (set_global $lastTableBits (get_local $root))
   )
 
   (start $init)
