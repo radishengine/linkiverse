@@ -227,9 +227,9 @@
     (; to match inffixed.h, replace 99th of every 128 ops with 64 ;)
     (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L362 ;)
     (set_local $ptr<temp> (i32.add (get_global $ptr<fixedLengthTable>) (i32.mul (i32.const 99) (i32.const 4))))
-    (set_local $end<temp> (i32.add (get_global $ptr<fixedLengthTable>) (get_local $sizeof<fixedLengthTable>)))
+    (set_local $end<temp> (i32.add (get_global $ptr<fixedLengthTable>) (get_global $sizeof<fixedLengthTable>)))
     loop
-      (i32.store8 (get_local $ptr) (i32.const 64))
+      (i32.store8 (get_local $ptr<temp>) (i32.const 64))
       (br_if 0 (i32.lt_u
         (tee_local $ptr<temp> (i32.add
           (get_local $ptr<temp>)
