@@ -31,8 +31,14 @@
   (global $ptr<codesOfLength> (mut i32) i32.const -1)
   (global $sizeof<codesOfLength> i32 i32.const 32)
   
-  (global $ptr<lens> (mut i32) i32.const -1)
-  (global $sizeof<lens> i32 i32.const 640)
+  (global $ptr<literalLengthLens> (mut i32) i32.const -1)
+  (global $sizeof<literalLengthLens> i32 i32.const 576)
+  
+  (global $ptr<distanceLens> (mut i32) i32.const -1)
+  (global $sizeof<distanceLens> i32 i32.const 64)
+  
+  (global $ptr<codeLens> (mut i32) i32.const -1)
+  (global $sizeof<codeLens> i32 i32.const 38)
   
   (global $ptr<workspace> (mut i32) i32.const -1)
   (global $sizeof<workspace> i32 i32.const 576)
@@ -46,6 +52,7 @@
   (global $ptr<fixedDistanceTable> (mut i32) i32.const -1)
   (global $sizeof<fixedDistanceTable> i32 i32.const 128)
   
+  (global $sizeof<dynamicCodeTable> i32 i32.const 1280) (; inflate.h: lens[320] ;)
   (global $sizeof<dynamicLengthTable> i32 i32.const 3408)
   (global $sizeof<dynamicDistanceTable> i32 i32.const 2368)
   
@@ -187,10 +194,18 @@
     
     (get_local $ptr)
       (i32.add (get_global $sizeof<lengthTableOffsets>))
-    (set_global $ptr<lens> (tee_local $ptr))
+    (set_global $ptr<literalLengthLens> (tee_local $ptr))
     
     (get_local $ptr)
-      (i32.add (get_global $sizeof<lens>))
+      (i32.add (get_global $sizeof<literalLengthLens>))
+    (set_global $ptr<distanceLens> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<distanceLens>))
+    (set_global $ptr<codeLens> (tee_local $ptr))
+    
+    (get_local $ptr)
+      (i32.add (get_global $sizeof<codeLens>))
     (set_global $ptr<workspace> (tee_local $ptr))
     
     (get_local $ptr)
@@ -209,10 +224,10 @@
     (call $buildFixedDistanceTable)
   )
   
-  (func $buildFixedLengthTables (export "buildFixedLengthTable")
+  (func $buildFixedLengthTable
     (local $ptr<temp> i32)
     (local $end<temp> i32)
-    (get_global $ptr<lens>)
+    (get_global $ptr<literalLengthLens>)
       (call $write_i16_n (i32.const 8) (i32.const 144))
       (call $write_i16_n (i32.const 9) (i32.const 112))
       (call $write_i16_n (i32.const 7) (i32.const 24))
@@ -222,7 +237,8 @@
       (get_global $ptr<fixedLengthTable>)
       (get_global $LENS)
       (i32.const 9)
-      (i32.mul (i32.const 288) (i32.const 2))
+      (get_global $ptr<literalLengthLens>)
+      (get_global $sizeof<literalLengthLens>)
     )
     (; to match inffixed.h, replace 99th of every 128 ops with 64 ;)
     (; https://github.com/madler/zlib/blob/v1.2.11/inflate.c#L362 ;)
@@ -240,15 +256,16 @@
     end
   )
   
-  (func $buildFixedDistanceTable (export "buildFixedDistanceTable")
-    (get_global $ptr<lens>)
+  (func $buildFixedDistanceTable
+    (get_global $ptr<distanceLens>)
       (call $write_i16_n (i32.const 5) (i32.const 32))
     drop
     (call $buildTable
       (get_global $ptr<fixedDistanceTable>)
       (get_global $DISTS)
       (i32.const 5)
-      (i32.mul (i32.const 32) (i32.const 2))
+      (get_global $ptr<distanceLens>)
+      (get_global $sizeof<distanceLens>)
     )
   )
 
@@ -439,6 +456,7 @@
     (param $ptr<table> i32)
     (param $mode i32)
     (param $bitWidth i32)
+    (param $ptr<lens> i32)
     (param $sizeof<lens> i32)
     (local $ptr i32)
     (local $ptr<end> i32)
@@ -467,7 +485,7 @@
     
     ;; populate codesOfLength
     (call $clear_codesOfLength)
-    (set_local $ptr<end> (i32.add (tee_local $ptr (get_global $ptr<lens>)) (get_local $sizeof<lens>)))
+    (set_local $ptr<end> (i32.add (tee_local $ptr (get_local $ptr<lens>)) (get_local $sizeof<lens>)))
     block
       loop
         (br_if 1 (i32.ge_u (get_local $ptr) (get_local $ptr<end>)))
@@ -558,10 +576,10 @@
     
     ;; sort symbols by length, by symbol order within each length
     (set_local $sym (i32.const 0))
-    (set_local $ptr<end> (i32.add (get_global $ptr<lens>) (get_local $sizeof<lens>)))
+    (set_local $ptr<end> (i32.add (get_local $ptr<lens>) (get_local $sizeof<lens>)))
     block
       loop
-        (set_local $ptr (i32.add (get_global $ptr<lens>) (i32.mul (get_local $sym) (i32.const 2))))
+        (set_local $ptr (i32.add (get_local $ptr<lens>) (i32.mul (get_local $sym) (i32.const 2))))
         (br_if 1 (i32.ge_u (get_local $ptr) (get_local $ptr<end>)))
         (set_local $len (i32.load16_u (get_local $ptr)))
         (if (get_local $len) (then
@@ -687,7 +705,7 @@
         (if (i32.eqz (call $dec_codeOfLength (get_local $len))) (then
           (br_if $break (i32.eq (get_local $len) (get_local $max)))
           (set_local $len (i32.load16_u (i32.add
-            (get_global $ptr<lens>)
+            (get_local $ptr<lens>)
             (i32.mul (call $getWork (get_local $sym)) (i32.const 2))
           )))
         ))
@@ -785,8 +803,14 @@
   (func (export "ptr_codesOfLength") (result i32) (return (get_global $ptr<codesOfLength>)))
   (func (export "sizeof_codesOfLength") (result i32) (return (get_global $sizeof<codesOfLength>)))
   
-  (func (export "ptr_lens") (result i32) (return (get_global $ptr<lens>)))
-  (func (export "sizeof_lens") (result i32) (return (get_global $sizeof<lens>)))
+  (func (export "ptr_literalLengthLens") (result i32) (return (get_global $ptr<literalLengthLens>)))
+  (func (export "sizeof_literalLengthLens") (result i32) (return (get_global $sizeof<literalLengthLens>)))
+  
+  (func (export "ptr_distanceLens") (result i32) (return (get_global $ptr<distanceLens>)))
+  (func (export "sizeof_distanceLens") (result i32) (return (get_global $sizeof<distanceLens>)))
+  
+  (func (export "ptr_codeLens") (result i32) (return (get_global $ptr<codeLens>)))
+  (func (export "sizeof_codeLens") (result i32) (return (get_global $sizeof<codeLens>)))
   
   (func (export "ptr_workspace") (result i32) (return (get_global $ptr<workspace>)))
   (func (export "sizeof_workspace") (result i32) (return (get_global $sizeof<workspace>)))
