@@ -3,6 +3,7 @@
   (import "memory" "main" (memory 1))
 
   (func $get_lastTableBits (import "inflateTables" "get_lastTableBits") (result i32))
+  (func $code_op (import "inflateTables" "code_op") (param i32) (result i32))
   (func $code_val (import "inflateTables" "code_val") (param i32) (result i32))
   (func $code_bits (import "inflateTables" "code_bits") (param i32) (result i32))
   (func $buildTable (import "inflateTables" "buildTable")
@@ -64,6 +65,7 @@
   (global $distanceCodes (mut i32) i32.const 0)
   (global $codeLengthCodes (mut i32) i32.const 0)
   (global $back (mut i32) i32.const 0)
+  (global $length (mut i32) i32.const 0)
 
   (func $start
     (set_global $ptr<dynamicCodeTable> (get_global $ptr<reserved>))
@@ -238,6 +240,8 @@
 
   (func $inflate
     (local $size i32)
+    (local $op i32)
+    (local $last i32)
     block $break
       loop $continue
 
@@ -391,6 +395,44 @@
               br 0
             end
           end
+          (if (tee_local $op (call $code_op (get_global $here))) (then
+            (br_if 0 (i32.and (get_local $op) (i32.const 0xf0)))
+            (set_local $last (get_global $here))
+            block
+              loop
+                (set_global $here (i32.load (i32.add
+                  (get_global $ptr<dynamicLengthTable>)
+                  (i32.mul
+                    (i32.add
+                      (call $code_val (get_local $last))
+                      (i32.shr_u
+                        (call $peekbits (i32.add
+                          (call $code_bits (get_local $last))
+                          (call $code_op (get_local $last))
+                        ))
+                        (call $code_bits (get_local $last))
+                      )
+                    )
+                    (i32.const 4)
+                  )
+                )))
+                (br_if 1 (i32.le_u
+                  (i32.add
+                    (call $code_bits (get_local $last))
+                    (call $code_bits (get_global $here))
+                  )
+                  (get_global $bits)
+                ))
+                (br_if $break (call $cantpullbyte))
+                br 0
+              end
+            end
+            (call $dropbits (call $code_bits (get_local $last)))
+            (set_global $back (i32.add (get_global $back) (call $code_bits (get_local $last))))
+          ))
+          (call $dropbits (call $code_bits (get_global $here)))
+          (set_global $back (i32.add (get_global $back) (call $code_bits (get_global $here))))
+          (set_global $length (call $code_val (get_global $here)))
           unreachable
           (set_global $mode (select (get_global $MODE_FINISHED) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
           br $continue
