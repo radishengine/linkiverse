@@ -205,8 +205,8 @@
       (i32.add (get_global $sizeof<fixedDistanceTable>))
     (set_global $ptr<unreserved>)
     
-    ;; call $buildFixedLengthTable
-    ;; call $buildFixedDistanceTable
+    (call $buildFixedLengthTable)
+    (call $buildFixedDistanceTable)
   )
   
   (func $buildFixedLengthTables (export "buildFixedLengthTable")
