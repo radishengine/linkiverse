@@ -349,7 +349,7 @@
     (local $ptr i32)
     (local $val i32)
     (set_local $ptr (call $getCodeOfLengthPtr (get_local $i)))
-    (get_local $val (i32.sub (i32.load16_u (get_local $ptr)) (i32.const 1)))
+    (set_local $val (i32.sub (i32.load16_u (get_local $ptr)) (i32.const 1)))
     (i32.store16 (get_local $ptr) (get_local $val))
     (return (get_local $val))
   )
