@@ -63,6 +63,7 @@
   (global $literalLengthCodes (mut i32) i32.const 0)
   (global $distanceCodes (mut i32) i32.const 0)
   (global $codeLengthCodes (mut i32) i32.const 0)
+  (global $back (mut i32) i32.const 0)
 
   (func $start
     (set_global $ptr<dynamicCodeTable> (get_global $ptr<reserved>))
@@ -377,6 +378,19 @@
           (set_global $mode (get_global $MODE_DECOMPRESS))
           ;; fall through:
         end $DECOMPRESS:
+          ;; TODO: fast track
+          (set_global $back (i32.const 0))
+          block
+            loop
+              (set_global $here (i32.load (i32.add
+                (get_global $ptr<dynamicLengthTable>)
+                (i32.mul (call $peekbits (get_global $lengthBits)) (i32.const 4))
+              )))
+              (br_if 1 (i32.le_u (call $code_bits (get_global $here)) (get_global $bits)))
+              (br_if $break (call $cantpullbyte))
+              br 0
+            end
+          end
           unreachable
           (set_global $mode (select (get_global $MODE_FINISHED) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
           br $continue
