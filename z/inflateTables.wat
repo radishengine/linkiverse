@@ -54,42 +54,6 @@
   (global $ptr<lastTableEnd> (mut i32) i32.const -1)
   (global $lastTableBits (mut i32) i32.const 0)
 
-  (func $alignMask (param $ptr i32) (param $mask i32) (result i32)
-    block
-      loop
-        (br_if 1 (i32.eqz (i32.and (get_local $ptr) (get_local $mask))))
-        (set_local $ptr (i32.add (get_local $ptr) (i32.const 1)))
-        br 0
-      end
-    end
-    (return (get_local $ptr))
-  )
-  (func $align16 (param i32) (result i32) (return (call $alignMask (get_local 0) (i32.const 1))))
-  (func $align32 (param i32) (result i32) (return (call $alignMask (get_local 0) (i32.const 3))))
-
-  (func $write_i8 (param $ptr i32) (param $v i32) (result i32)
-    (i32.store8 (get_local $ptr) (get_local $v))
-    (return (i32.add (get_local $ptr) (i32.const 1)))
-  )
-
-  (func $write_i16 (param $ptr i32) (param $v i32) (result i32)
-    (i32.store16 (get_local $ptr) (get_local $v))
-    (return (i32.add (get_local $ptr) (i32.const 2)))
-  )
-
-  (func $write_i16_n (param $ptr i32) (param $v i32) (param $n i32) (result i32)
-    block
-      loop
-        (br_if 1 (i32.eqz (get_local $n)))
-        (i32.store16 (get_local $ptr) (get_local $v))
-        (set_local $ptr (i32.add (get_local $ptr) (i32.const 2)))
-        (set_local $n (i32.sub (get_local $n) (i32.const 1)))
-        br 0
-      end
-    end
-    (return (get_local $ptr))
-  )
-
   (func $init
     (local $ptr i32)
 
@@ -241,11 +205,11 @@
       (i32.add (get_global $sizeof<fixedDistanceTable>))
     (set_global $ptr<unreserved>)
     
-    ;; (call $buildFixedTables (get_global $ptr<unreserved>))
+    ;; call $buildFixedLengthTable
+    ;; call $buildFixedDistanceTable
   )
   
-  (func $buildFixedTables (export "buildFixedTables")
-    ;; fixed length table
+  (func $buildFixedLengthTables (export "buildFixedLengthTable")
     (get_global $ptr<lens>)
       (call $write_i16_n (i32.const 8) (i32.const 144))
       (call $write_i16_n (i32.const 9) (i32.const 112))
@@ -258,8 +222,9 @@
       (i32.const 9)
       (i32.mul (i32.const 288) (i32.const 2))
     )
-    
-    ;; fixed distance table
+  )
+  
+  (func $buildFixedDistanceTable (export "buildFixedDistanceTable")
     (get_global $ptr<lens>)
       (call $write_i16_n (i32.const 5) (i32.const 32))
     drop
@@ -269,6 +234,42 @@
       (i32.const 5)
       (i32.mul (i32.const 32) (i32.const 2))
     )
+  )
+
+  (func $alignMask (param $ptr i32) (param $mask i32) (result i32)
+    block
+      loop
+        (br_if 1 (i32.eqz (i32.and (get_local $ptr) (get_local $mask))))
+        (set_local $ptr (i32.add (get_local $ptr) (i32.const 1)))
+        br 0
+      end
+    end
+    (return (get_local $ptr))
+  )
+  (func $align16 (param i32) (result i32) (return (call $alignMask (get_local 0) (i32.const 1))))
+  (func $align32 (param i32) (result i32) (return (call $alignMask (get_local 0) (i32.const 3))))
+
+  (func $write_i8 (param $ptr i32) (param $v i32) (result i32)
+    (i32.store8 (get_local $ptr) (get_local $v))
+    (return (i32.add (get_local $ptr) (i32.const 1)))
+  )
+
+  (func $write_i16 (param $ptr i32) (param $v i32) (result i32)
+    (i32.store16 (get_local $ptr) (get_local $v))
+    (return (i32.add (get_local $ptr) (i32.const 2)))
+  )
+
+  (func $write_i16_n (param $ptr i32) (param $v i32) (param $n i32) (result i32)
+    block
+      loop
+        (br_if 1 (i32.eqz (get_local $n)))
+        (i32.store16 (get_local $ptr) (get_local $v))
+        (set_local $ptr (i32.add (get_local $ptr) (i32.const 2)))
+        (set_local $n (i32.sub (get_local $n) (i32.const 1)))
+        br 0
+      end
+    end
+    (return (get_local $ptr))
   )
 
   (func (export "ptr_codeLengthPermutations") (result i32)
