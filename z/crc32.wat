@@ -1,6 +1,6 @@
 (module
 
-  (import "memory" "main" (memory 0))
+  (import "memory" "main" (memory 1))
   (import "memory" "crc32Tables*" (global $ptr<reserved> i32))
   (global (export "initialValue") i32 i32.const 0)
   (global $sizeof<reserved> (export "sizeof crc32Tables") i32 i32.const 4096) (; 256 * 4 * 4 ;)
