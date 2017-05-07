@@ -9,7 +9,7 @@
   (global $ptr<table2> (mut i32) i32.const -1)
   (global $ptr<table3> (mut i32) i32.const -1)
 
-  (func $start
+  (func $start (export "start")
     (local $c i32)
     (local $k i32)
     (local $poly i32)
@@ -161,6 +161,6 @@
     (return (i32.xor (get_local $crc) (i32.const -1)))
   )
 
-  (start $start)
+  (; (start $start) ;)
 
 )
