@@ -15,9 +15,9 @@
   (global $ptr<reserved> (import "memory" "inflateState*") i32)
   (global $ptr<fixedLengthTable> (import "memory" "fixedLengthTable*") i32)
   (global $ptr<fixedDistanceTable> (import "memory" "fixedDistanceTable*") i32)
-  (global $sizeof<dynamicCodeTable> (import "memory" "sizeof dynamicCodeTable") i32)
-  (global $sizeof<dynamicLengthTable> (import "memory" "sizeof dynamicLengthTable") i32)
-  (global $sizeof<dynamicDistanceTable> (import "memory" "sizeof dynamicDistanceTable") i32)
+  (global $sizeof<codeTable> (import "memory" "sizeof codeTable") i32)
+  (global $sizeof<dynamicLengthTable> (import "memory" "sizeof lengthTable") i32)
+  (global $sizeof<dynamicDistanceTable> (import "memory" "sizeof distanceTable") i32)
   (global $ptr<codeLengthPermutations> (import "memory" "codeLengthPermutations*") i32)
   (global $ptr<literalLengthLens> (import "memory" "literalLengthLens*") i32)
   (global $sizeof<literalLengthLens> (import "memory" "sizeof literalLengthLens") i32)
@@ -29,28 +29,35 @@
   (global $fixedDistanceBits (import "inflateTables" "fixedDistanceBits") i32)
   (global $sizeof<reserved> (mut i32) i32.const -1)
   (global $MAXBITS i32 i32.const 15)
-  (global $in (mut i32) i32.const 0)
-  (global $in_end (mut i32) i32.const 0)
-  (global $out (mut i32) i32.const 0)
+  (global $ptr<in> (mut i32) i32.const 0)
+  (global $end<in> (mut i32) i32.const 0)
+  (global $start<out> (mut i32) i32.const 0)
+  (global $ptr<out> (mut i32) i32.const 0)
+  (global $end<out> (mut i32) i32.const 0)
   (global $bits (mut i32) i32.const 0)
   (global $bitcount (mut i32) i32.const 0)
   (global $MODE_NEXT_BLOCK i32 i32.const 0)
   (global $MODE_UNCOMPRESSED_SIZE i32 i32.const 1)
   (global $MODE_UNCOMPRESSED_DATA i32 i32.const 2)
   (global $MODE_READ_TREES i32 i32.const 3)
-  (global $MODE_CODE_LENGTH_CODES i32 i32.const 3)
-  (global $MODE_LITERAL_LENGTH_CODES i32 i32.const 4)
-  (global $MODE_DISTANCE_CODES i32 i32.const 5)
-  (global $MODE_DECOMPRESS i32 i32.const 6)
-  (global $MODE_FINISHED i32 i32.const 7)
-  (global $MODE_ERROR i32 i32.const 8)
+  (global $MODE_CODE_LENGTH_CODES i32 i32.const 4)
+  (global $MODE_LITERAL_LENGTH_CODES i32 i32.const 5)
+  (global $MODE_DISTANCE_CODES i32 i32.const 6)
+  (global $MODE_DECOMPRESS i32 i32.const 7)
+  (global $MODE_DECOMPRESS_LENEXT i32 i32.const 8)
+  (global $MODE_DECOMPRESS_DIST i32 i32.const 9)
+  (global $MODE_DECOMPRESS_DISTEXT i32 i32.const 10)
+  (global $MODE_DECOMPRESS_MATCH i32 i32.const 11)
+  (global $MODE_DECOMPRESS_LIT i32 i32.const 12)
+  (global $MODE_FINISHED i32 i32.const 13)
+  (global $MODE_ERROR i32 i32.const 14)
   (global $mode (mut i32) i32.const 0)
   (global $BLOCK_UNCOMPRESSED i32 i32.const 0)
   (global $BLOCK_FIXED i32 i32.const 1)
   (global $BLOCK_DYNAMIC i32 i32.const 1)
   (global $is_final_block i32 i32.const 0)
   (global $uncompressed_size (mut i32) i32.const 0)
-  (global $ptr<dynamicCodeTable> (mut i32) i32.const -1)
+  (global $ptr<codeTable> (mut i32) i32.const -1)
   (global $ptr<dynamicLengthTable> (mut i32) i32.const -1)
   (global $ptr<dynamicDistanceTable> (mut i32) i32.const -1)
   (global $ptr<lengthTable> (mut i32) i32.const -1)
@@ -66,19 +73,21 @@
   (global $codeLengthCodes (mut i32) i32.const 0)
   (global $back (mut i32) i32.const 0)
   (global $length (mut i32) i32.const 0)
+  (global $extra (mut i32) i32.const 0)
+  (global $offset (mut i32) i32.const 0)
 
   (func $start
-    (set_global $ptr<dynamicCodeTable> (get_global $ptr<reserved>))
+    (set_global $ptr<codeTable> (get_global $ptr<reserved>))
     (set_global $ptr<dynamicLengthTable> (i32.add
-      (get_global $ptr<dynamicCodeTable>)
-      (get_global $sizeof<dynamicCodeTable>)
+      (get_global $ptr<codeTable>)
+      (get_global $sizeof<codeTable>)
     ))
     (set_global $ptr<dynamicDistanceTable> (i32.add
       (get_global $ptr<dynamicLengthTable>)
       (get_global $sizeof<dynamicLengthTable>)
     ))
     (set_global $sizeof<reserved> (i32.add
-      (get_global $sizeof<dynamicCodeTable>)
+      (get_global $sizeof<codeTable>)
       (i32.add
         (get_global $sizeof<dynamicLengthTable>)
         (get_global $sizeof<dynamicDistanceTable>)
@@ -96,34 +105,36 @@
     (set_global $bitcount (i32.const 0))
   )
 
-  (func (export "input") (param $in i32) (param $in_end i32)
-    (set_global $in (get_local $in))
-    (set_global $in_end (get_local $in_end))
+  (func (export "input") (param $ptr<in> i32) (param $end<in> i32)
+    (set_global $ptr<in> (get_local $ptr<in>))
+    (set_global $end<in> (get_local $end<in>))
   )
 
-  (func (export "output") (param $out i32)
-    (set_global $out (get_local $out))
+  (func (export "output") (param $start<out> i32) (param $end<out> i32)
+    (set_global $start<out> (get_local $start<out>))
+    (set_global $ptr<out> (get_local $start<out>))
+    (set_global $end<out> (get_local $end<out>))
   )
 
   (func $literal (param $size i32)
     block
       (br_if 0 (i32.eqz (get_local $size)))
       loop
-        (i32.store8 (get_global $out) (i32.load8_u (get_global $in)))
-        (set_global $out (i32.add (get_global $out) (i32.const 1)))
-        (set_global $in  (i32.add (get_global $in ) (i32.const 1)))
+        (i32.store8 (get_global $ptr<out>) (i32.load8_u (get_global $ptr<in>)))
+        (set_global $ptr<out> (i32.add (get_global $ptr<out>) (i32.const 1)))
+        (set_global $ptr<in>  (i32.add (get_global $ptr<in> ) (i32.const 1)))
         (br_if 0 (tee_local $size (i32.sub (get_local $size) (i32.const 1))))
       end
     end
   )
 
   (func $cantpullbyte (result i32)
-    (if (i32.ge_u (get_global $in) (get_global $in_end))
+    (if (i32.ge_u (get_global $ptr<in>) (get_global $end<in>))
       (return (i32.const 1))
     )
-    (set_global $bits (i32.or (get_global $bits) (i32.shl (i32.load8_u (get_global $in)) (get_global $bitcount))))
+    (set_global $bits (i32.or (get_global $bits) (i32.shl (i32.load8_u (get_global $ptr<in>)) (get_global $bitcount))))
     (set_global $bitcount (i32.add (get_global $bitcount) (i32.const 8)))
-    (set_global $in (i32.add (get_global $in) (i32.const 1)))
+    (set_global $ptr<in> (i32.add (get_global $ptr<in>) (i32.const 1)))
     (return (i32.const 0))
   )
 
@@ -172,7 +183,7 @@
       block
         loop
           (set_global $here (i32.load (i32.add
-            (get_global $ptr<dynamicCodeTable>)
+            (get_global $ptr<codeTable>)
             (i32.mul (call $peekbits (get_global $codeBits)) (i32.const 4))
           )))
           (br_if 1 (i32.le_u (call $code_bits (get_global $here)) (get_global $bits)))
@@ -239,14 +250,22 @@
   )
 
   (func $inflate
-    (local $size i32)
+    (local $copy i32)
     (local $op i32)
     (local $last i32)
+    (local $ptr<from> i32)
+    (local $end<from> i32)
     block $break
       loop $continue
 
         block $ERROR:
         block $FINISHED:
+        block $END_OF_BLOCK:
+        block $DECOMPRESS_LIT:
+        block $DECOMPRESS_MATCH:
+        block $DECOMPRESS_DISTEXT:
+        block $DECOMPRESS_DIST:
+        block $DECOMPRESS_LENEXT:
         block $DECOMPRESS:
         block $DISTANCE_CODES:
         block $LITERAL_LENGTH_CODES:
@@ -266,6 +285,12 @@
                     $LITERAL_LENGTH_CODES:
                     $DISTANCE_CODES:
                   $DECOMPRESS:
+                  $DECOMPRESS_LENEXT:
+                  $DECOMPRESS_DIST:
+                  $DECOMPRESS_DISTEXT:
+                  $DECOMPRESS_MATCH:
+                  $DECOMPRESS_LIT:
+                  $END_OF_BLOCK:
                   $FINISHED:
                   $ERROR:
 
@@ -300,15 +325,14 @@
           (set_global $mode (get_global $MODE_UNCOMPRESSED_DATA))
           ;; fall through:
         end $UNCOMPRESSED_DATA:
-          (tee_local $size (i32.sub (get_global $in_end) (get_global $in)))
+          (tee_local $copy (i32.sub (get_global $end<in>) (get_global $ptr<in>)))
           (get_global $uncompressed_size)
-          (i32.le_u (get_local $size) (get_global $uncompressed_size))
-          (set_local $size (select))
-          (call $literal (get_local $size))
-          (set_global $uncompressed_size (i32.sub (get_global $uncompressed_size) (get_local $size)))
+          (i32.le_u (get_local $copy) (get_global $uncompressed_size))
+          (set_local $copy (select))
+          (call $literal (get_local $copy))
+          (set_global $uncompressed_size (i32.sub (get_global $uncompressed_size) (get_local $copy)))
           (br_if $break (get_global $uncompressed_size))
-          (set_global $mode (select (get_global $MODE_FINISHED) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
-          br $continue
+          br $END_OF_BLOCK:
         end $READ_TREES:
           (br_if $break (call $cantgetbits (i32.const 14)))
           (set_global $literalLengthCodes (i32.add (call $getbits (i32.const 5)) (i32.const 257)))
@@ -344,7 +368,7 @@
             end
           end
           (call $buildTable
-            (get_global $ptr<dynamicCodeTable>)
+            (get_global $ptr<codeTable>)
             (get_global $CODES)
             (i32.const 7)
             (get_global $ptr<codeLens>)
@@ -358,7 +382,7 @@
         end $LITERAL_LENGTH_CODES:
           (br_if $break (call $codeLengthExpansionMustContinue))
           (call $buildTable
-            (get_global $ptr<dynamicLengthTable>)
+            (get_global $ptr<lengthTable>)
             (get_global $LENS)
             (i32.const 9)
             (get_global $ptr<literalLengthLens>)
@@ -372,7 +396,7 @@
         end $DISTANCE_CODES:
           (br_if $break (call $codeLengthExpansionMustContinue))
           (call $buildTable
-            (get_global $ptr<dynamicDistanceTable>)
+            (get_global $ptr<distanceTable>)
             (get_global $DISTS)
             (i32.const 6)
             (get_global $ptr<distanceLens>)
@@ -387,7 +411,7 @@
           block
             loop
               (set_global $here (i32.load (i32.add
-                (get_global $ptr<dynamicLengthTable>)
+                (get_global $ptr<lengthTable>)
                 (i32.mul (call $peekbits (get_global $lengthBits)) (i32.const 4))
               )))
               (br_if 1 (i32.le_u (call $code_bits (get_global $here)) (get_global $bits)))
@@ -401,7 +425,7 @@
             block
               loop
                 (set_global $here (i32.load (i32.add
-                  (get_global $ptr<dynamicLengthTable>)
+                  (get_global $ptr<lengthTable>)
                   (i32.mul
                     (i32.add
                       (call $code_val (get_local $last))
@@ -433,9 +457,129 @@
           (call $dropbits (call $code_bits (get_global $here)))
           (set_global $back (i32.add (get_global $back) (call $code_bits (get_global $here))))
           (set_global $length (call $code_val (get_global $here)))
-          unreachable
-          (set_global $mode (select (get_global $MODE_FINISHED) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
+          (if (i32.eqz (call $code_op (get_global $here))) (then
+            (set_global $mode (get_global $MODE_DECOMPRESS_LIT))
+            br $DECOMPRESS_LIT:
+          ))
+          (if (i32.and (call $code_op (get_global $here)) (i32.const 32)) (then
+            (set_global $back (i32.const -1))
+            br $END_OF_BLOCK:
+          ))
+          (if (i32.and (call $code_op (get_global $here)) (i32.const 64)) (then
+            br $ERROR:
+          ))
+          (set_global $extra (i32.and (call $code_op (get_global $here)) (i32.const 15)))
+          (set_global $mode (get_global $MODE_DECOMPRESS_LENEXT))
+          ;; fall through:
+        end $DECOMPRESS_LENEXT:
+          (if (get_global $extra) (then
+            (br_if $break (call $cantgetbits (get_global $extra)))
+            (set_global $length (i32.add (get_global $length) (call $getbits (get_global $extra))))
+            (set_global $back (i32.add (get_global $back) (get_global $extra)))
+          ))
+          (set_global $mode (get_global $MODE_DECOMPRESS_DIST))
+          ;; fall through:
+        end $DECOMPRESS_DIST:
+          block
+            loop
+              (set_global $here (i32.load (i32.add
+                (get_global $ptr<distanceTable>)
+                (i32.mul (call $peekbits (get_global $distanceBits)) (i32.const 4))
+              )))
+              (br_if 1 (i32.le_u (call $code_bits (get_global $here)) (get_global $bits)))
+              (br_if $break (call $cantpullbyte))
+              br 0
+            end
+          end
+          (if (i32.eqz (i32.and (call $code_op (get_global $here)) (i32.const 0xf0))) (then
+            (set_local $last (get_global $here))
+            block
+              loop
+                (set_global $here (i32.load (i32.add
+                  (get_global $ptr<lengthTable>)
+                  (i32.mul
+                    (i32.add
+                      (call $code_val (get_local $last))
+                      (i32.shr_u
+                        (call $peekbits (i32.add
+                          (call $code_bits (get_local $last))
+                          (call $code_op (get_local $last))
+                        ))
+                        (call $code_bits (get_local $last))
+                      )
+                    )
+                    (i32.const 4)
+                  )
+                )))
+                (br_if 1 (i32.le_u
+                  (i32.add
+                    (call $code_bits (get_local $last))
+                    (call $code_bits (get_global $here))
+                  )
+                  (get_global $bits)
+                ))
+                (br_if $break (call $cantpullbyte))
+                br 0
+              end
+            end
+            (call $dropbits (call $code_bits (get_local $last)))
+            (set_global $back (i32.add (get_global $back) (call $code_bits (get_local $last))))
+          ))
+          (call $dropbits (call $code_bits (get_global $here)))
+          (set_global $back (i32.add (get_global $back) (call $code_bits (get_global $here))))
+          (if (i32.and (call $code_op (get_global $here)) (i32.const 64)) (then
+            br $ERROR:
+          ))
+          (set_global $offset (call $code_val (get_global $here)))
+          (set_global $extra (i32.and (call $code_op (get_global $here)) (i32.const 15)))
+          (set_global $mode (get_global $MODE_DECOMPRESS_DISTEXT))
+          ;; fall through:
+        end $DECOMPRESS_DISTEXT:
+          (if (get_global $extra) (then
+            (br_if $break (call $cantgetbits (get_global $extra)))
+            (set_global $offset (i32.add (get_global $offset) (call $getbits (get_global $extra))))
+            (set_global $back (i32.add (get_global $back) (get_global $extra)))
+          ))
+          (set_global $mode (get_global $MODE_DECOMPRESS_MATCH))
+          ;; fall through:
+        end $DECOMPRESS_MATCH:
+          loop
+            (br_if $break (i32.eq (get_global $ptr<out>) (get_global $end<out>)))
+            (set_local $ptr<from> (i32.sub (get_global $ptr<out>) (get_global $offset)))
+            (if (i32.lt_s (get_local $ptr<from>) (get_global $start<out>)) (then
+              ;; no window: caller must ensure 32K of backlog is available
+              br $ERROR:
+            ))
+            (set_local $end<from> (i32.add (get_local $ptr<from>) (get_global $length)))
+            (set_local $end<from> (select
+              (get_global $ptr<out>)
+              (get_local $end<from>)
+              (i32.lt_u (get_global $ptr<out>) (get_local $end<from>))
+            ))
+            (set_local $copy (i32.sub (get_local $end<from>) (get_local $ptr<from>)))
+            (set_global $length (i32.sub (get_global $length) (get_local $copy)))
+            loop
+              (i32.store8 (get_global $ptr<out>) (i32.load8_u (get_local $ptr<from>)))
+              (set_global $ptr<out> (i32.add (get_global $ptr<out>) (i32.const 1)))
+              (br_if 0 (i32.eq
+                (tee_local $ptr<from> (i32.add (get_local $ptr<from>) (i32.const 1)))
+                (get_local $end<from>)
+              ))
+            end
+            (br_if 0 (get_global $length))
+          end
+          (set_global $mode (get_global $MODE_DECOMPRESS))
           br $continue
+        end $DECOMPRESS_LIT:
+          (br_if $break (i32.eq (get_global $ptr<out>) (get_global $end<out>)))
+          (i32.store8 (get_global $ptr<out>) (get_global $length))
+          (set_global $ptr<out> (i32.add (get_global $ptr<out>) (i32.const 1)))
+          (set_global $mode (get_global $MODE_DECOMPRESS))
+          br $continue
+        end $END_OF_BLOCK:
+          (set_global $mode (select (get_global $MODE_FINISHED) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
+          (br_if $continue (i32.eqz (get_global $is_final_block)))
+          ;; fall through:
         end $FINISHED:
           (return (i32.const 1))
         end $ERROR:
