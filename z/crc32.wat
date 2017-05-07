@@ -22,6 +22,10 @@
     (set_local $ptr<entry> (get_local $ptr<base>))
     (set_local $end<entry> (i32.add (get_local $ptr<entry>) (i32.const 1024))) (; 256 * 4 ;)
     loop
+      (set_local $c (i32.shr_u
+        (i32.sub (get_local $ptr<entry>) (get_local $ptr<base>))
+        (i32.const 2)
+      ))
       (set_local $k (i32.const 0))
       loop
         (set_local $c (i32.xor
