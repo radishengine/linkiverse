@@ -95,160 +95,6 @@
     ))
   )
 
-  (func (export "sizeof_inflateState") (result i32)
-    (return (get_global $sizeof<reserved>))
-  )
-
-  (func (export "resetReader")
-    (set_global $mode (get_global $MODE_NEXT_BLOCK))
-    (set_global $bits (i32.const 0))
-    (set_global $bitcount (i32.const 0))
-  )
-
-  (func (export "input") (param $ptr<in> i32) (param $end<in> i32)
-    (set_global $ptr<in> (get_local $ptr<in>))
-    (set_global $end<in> (get_local $end<in>))
-  )
-
-  (func (export "output") (param $start<out> i32) (param $end<out> i32)
-    (set_global $start<out> (get_local $start<out>))
-    (set_global $ptr<out> (get_local $start<out>))
-    (set_global $end<out> (get_local $end<out>))
-  )
-
-  (func $literal (param $size i32)
-    block
-      (br_if 0 (i32.eqz (get_local $size)))
-      loop
-        (i32.store8 (get_global $ptr<out>) (i32.load8_u (get_global $ptr<in>)))
-        (set_global $ptr<out> (i32.add (get_global $ptr<out>) (i32.const 1)))
-        (set_global $ptr<in>  (i32.add (get_global $ptr<in> ) (i32.const 1)))
-        (br_if 0 (tee_local $size (i32.sub (get_local $size) (i32.const 1))))
-      end
-    end
-  )
-
-  (func $cantpullbyte (result i32)
-    (if (i32.ge_u (get_global $ptr<in>) (get_global $end<in>))
-      (return (i32.const 1))
-    )
-    (set_global $bits (i32.or (get_global $bits) (i32.shl (i32.load8_u (get_global $ptr<in>)) (get_global $bitcount))))
-    (set_global $bitcount (i32.add (get_global $bitcount) (i32.const 8)))
-    (set_global $ptr<in> (i32.add (get_global $ptr<in>) (i32.const 1)))
-    (return (i32.const 0))
-  )
-
-  (func $cantgetbits (param $required i32) (result i32)
-    block $false
-      block $true
-        loop
-          (br_if $true (i32.ge_u (get_global $bitcount) (get_local $required)))
-          (br_if $false (call $cantpullbyte))
-          br 0
-        end
-      end $true
-      (return (i32.const 1))
-    end $false
-    (return (i32.const 0))
-  )
-
-  (func $peekbits (param $count i32) (result i32)
-    (return (i32.and (get_global $bits) (i32.sub (i32.shl (i32.const 1) (get_local $count)) (i32.const 1))))
-  )
-
-  (func $dropbits (param $count i32)
-    (set_global $bits (i32.shr_u (get_global $bits) (get_local $count)))
-    (set_global $bitcount (i32.sub (get_global $bits) (get_local $count)))
-  )
-
-  (func $getbits (param $count i32) (result i32)
-    (local $result i32)
-    (set_local $result (call $peekbits (get_local $count)))
-    (call $dropbits (get_local $count))
-    (return (get_local $result))
-  )
-
-  (func $tobyteboundary
-    (set_global $bits     (i32.shr_u (get_global $bits) (i32.and (get_global $bitcount) (i32.const 7))))
-    (set_global $bitcount (i32.sub   (get_global $bits) (i32.and (get_global $bitcount) (i32.const 7))))
-  )
-
-  (func $codeLengthExpansionMustContinue (result i32)
-    (local $len i32)
-    (local $copy i32)
-
-    block $false
-
-    loop
-      block
-        loop
-          (set_global $here (i32.load (i32.add
-            (get_global $ptr<codeTable>)
-            (i32.mul (call $peekbits (get_global $codeBits)) (i32.const 4))
-          )))
-          (br_if 1 (i32.le_u (call $code_bits (get_global $here)) (get_global $bits)))
-          (br_if $false (call $cantpullbyte))
-          br 0
-        end
-      end
-      block $continue
-        block $copy:
-          block $val>17: block $val=17: block $val=16: block $val<16:
-          (call $code_val (get_global $here))
-          br_table
-            $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16:
-            $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16:
-            $val=16: $val=17: $val>17:
-          end $val<16:
-            (call $dropbits (call $code_bits (get_global $here)))
-            (i32.store16 (get_global $ptr<lens>) (call $code_val (get_global $here)))
-            (set_global $ptr<lens> (i32.add (get_global $ptr<lens>) (i32.const 2)))
-            br $continue
-          end $val=16:
-            (br_if $false (call $cantgetbits (i32.add (call $code_bits (get_global $here)) (i32.const 2))))
-            (call $dropbits (call $code_bits (get_global $here)))
-            (if (i32.eq (get_global $ptr<lens>) (get_global $ptr<literalLengthLens>)) (then
-              unreachable
-            ))
-            (set_local $len (i32.load16_u (i32.sub (get_global $ptr<lens>) (i32.const 2))))
-            (set_local $copy (i32.add (i32.const 3) (call $peekbits (i32.const 2))))
-            (call $dropbits (i32.const 2))
-            br $copy:
-          end $val=17:
-            (br_if $false (call $cantgetbits (i32.add (call $code_bits (get_global $here)) (i32.const 3))))
-            (call $dropbits (call $code_bits (get_global $here)))
-            (set_local $len (i32.const 0))
-            (set_local $copy (i32.add (i32.const 3) (call $peekbits (i32.const 3))))
-            (call $dropbits (i32.const 3))
-            br $copy:
-          end $val>17:
-            (br_if $false (call $cantgetbits (i32.add (call $code_bits (get_global $here)) (i32.const 7))))
-            (call $dropbits (call $code_bits (get_global $here)))
-            (set_local $len (i32.const 0))
-            (set_local $copy (i32.add (i32.const 11) (call $peekbits (i32.const 7))))
-            (call $dropbits (i32.const 7))
-            br $copy:
-        end $copy:
-        (if (i32.gt_u
-          (i32.add (get_global $ptr<lens>) (i32.mul (get_local $copy) (i32.const 2)))
-          (get_global $end<lens>)
-        ) (then
-          unreachable
-        ))
-        loop
-          ;; $copy must be >0 for the first iteration
-          (i32.store16 (get_global $ptr<lens>) (get_local $len))
-          (set_global $ptr<lens> (i32.add (get_global $ptr<lens>) (i32.const 2)))
-          (br_if 0 (tee_local $copy (i32.sub (get_local $copy) (i32.const 1))))
-        end
-      end $continue
-      (br_if 0 (i32.lt_u (get_global $ptr<lens>) (get_global $end<lens>)))
-      (return (i32.const 1))
-    end
-
-    end $false (return (i32.const 0))
-  )
-
   (func $inflate
     (local $copy i32)
     (local $op i32)
@@ -589,6 +435,160 @@
       unreachable
     end $break
     (return (i32.const 0))
+  )
+  
+  (func $literal (param $size i32)
+    block
+      (br_if 0 (i32.eqz (get_local $size)))
+      loop
+        (i32.store8 (get_global $ptr<out>) (i32.load8_u (get_global $ptr<in>)))
+        (set_global $ptr<out> (i32.add (get_global $ptr<out>) (i32.const 1)))
+        (set_global $ptr<in>  (i32.add (get_global $ptr<in> ) (i32.const 1)))
+        (br_if 0 (tee_local $size (i32.sub (get_local $size) (i32.const 1))))
+      end
+    end
+  )
+
+  (func $codeLengthExpansionMustContinue (result i32)
+    (local $len i32)
+    (local $copy i32)
+
+    block $false
+
+    loop
+      block
+        loop
+          (set_global $here (i32.load (i32.add
+            (get_global $ptr<codeTable>)
+            (i32.mul (call $peekbits (get_global $codeBits)) (i32.const 4))
+          )))
+          (br_if 1 (i32.le_u (call $code_bits (get_global $here)) (get_global $bits)))
+          (br_if $false (call $cantpullbyte))
+          br 0
+        end
+      end
+      block $continue
+        block $copy:
+          block $val>17: block $val=17: block $val=16: block $val<16:
+          (call $code_val (get_global $here))
+          br_table
+            $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16:
+            $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16: $val<16:
+            $val=16: $val=17: $val>17:
+          end $val<16:
+            (call $dropbits (call $code_bits (get_global $here)))
+            (i32.store16 (get_global $ptr<lens>) (call $code_val (get_global $here)))
+            (set_global $ptr<lens> (i32.add (get_global $ptr<lens>) (i32.const 2)))
+            br $continue
+          end $val=16:
+            (br_if $false (call $cantgetbits (i32.add (call $code_bits (get_global $here)) (i32.const 2))))
+            (call $dropbits (call $code_bits (get_global $here)))
+            (if (i32.eq (get_global $ptr<lens>) (get_global $ptr<literalLengthLens>)) (then
+              unreachable
+            ))
+            (set_local $len (i32.load16_u (i32.sub (get_global $ptr<lens>) (i32.const 2))))
+            (set_local $copy (i32.add (i32.const 3) (call $peekbits (i32.const 2))))
+            (call $dropbits (i32.const 2))
+            br $copy:
+          end $val=17:
+            (br_if $false (call $cantgetbits (i32.add (call $code_bits (get_global $here)) (i32.const 3))))
+            (call $dropbits (call $code_bits (get_global $here)))
+            (set_local $len (i32.const 0))
+            (set_local $copy (i32.add (i32.const 3) (call $peekbits (i32.const 3))))
+            (call $dropbits (i32.const 3))
+            br $copy:
+          end $val>17:
+            (br_if $false (call $cantgetbits (i32.add (call $code_bits (get_global $here)) (i32.const 7))))
+            (call $dropbits (call $code_bits (get_global $here)))
+            (set_local $len (i32.const 0))
+            (set_local $copy (i32.add (i32.const 11) (call $peekbits (i32.const 7))))
+            (call $dropbits (i32.const 7))
+            br $copy:
+        end $copy:
+        (if (i32.gt_u
+          (i32.add (get_global $ptr<lens>) (i32.mul (get_local $copy) (i32.const 2)))
+          (get_global $end<lens>)
+        ) (then
+          unreachable
+        ))
+        loop
+          ;; $copy must be >0 for the first iteration
+          (i32.store16 (get_global $ptr<lens>) (get_local $len))
+          (set_global $ptr<lens> (i32.add (get_global $ptr<lens>) (i32.const 2)))
+          (br_if 0 (tee_local $copy (i32.sub (get_local $copy) (i32.const 1))))
+        end
+      end $continue
+      (br_if 0 (i32.lt_u (get_global $ptr<lens>) (get_global $end<lens>)))
+      (return (i32.const 1))
+    end
+
+    end $false (return (i32.const 0))
+  )
+
+  (func $cantpullbyte (result i32)
+    (if (i32.ge_u (get_global $ptr<in>) (get_global $end<in>))
+      (return (i32.const 1))
+    )
+    (set_global $bits (i32.or (get_global $bits) (i32.shl (i32.load8_u (get_global $ptr<in>)) (get_global $bitcount))))
+    (set_global $bitcount (i32.add (get_global $bitcount) (i32.const 8)))
+    (set_global $ptr<in> (i32.add (get_global $ptr<in>) (i32.const 1)))
+    (return (i32.const 0))
+  )
+
+  (func $cantgetbits (param $required i32) (result i32)
+    block $false
+      block $true
+        loop
+          (br_if $true (i32.ge_u (get_global $bitcount) (get_local $required)))
+          (br_if $false (call $cantpullbyte))
+          br 0
+        end
+      end $true
+      (return (i32.const 1))
+    end $false
+    (return (i32.const 0))
+  )
+
+  (func $peekbits (param $count i32) (result i32)
+    (return (i32.and (get_global $bits) (i32.sub (i32.shl (i32.const 1) (get_local $count)) (i32.const 1))))
+  )
+
+  (func $dropbits (param $count i32)
+    (set_global $bits (i32.shr_u (get_global $bits) (get_local $count)))
+    (set_global $bitcount (i32.sub (get_global $bits) (get_local $count)))
+  )
+
+  (func $getbits (param $count i32) (result i32)
+    (local $result i32)
+    (set_local $result (call $peekbits (get_local $count)))
+    (call $dropbits (get_local $count))
+    (return (get_local $result))
+  )
+
+  (func $tobyteboundary
+    (set_global $bits     (i32.shr_u (get_global $bits) (i32.and (get_global $bitcount) (i32.const 7))))
+    (set_global $bitcount (i32.sub   (get_global $bits) (i32.and (get_global $bitcount) (i32.const 7))))
+  )
+
+  (func (export "sizeof_inflateState") (result i32)
+    (return (get_global $sizeof<reserved>))
+  )
+
+  (func (export "resetReader")
+    (set_global $mode (get_global $MODE_NEXT_BLOCK))
+    (set_global $bits (i32.const 0))
+    (set_global $bitcount (i32.const 0))
+  )
+
+  (func (export "input") (param $ptr<in> i32) (param $end<in> i32)
+    (set_global $ptr<in> (get_local $ptr<in>))
+    (set_global $end<in> (get_local $end<in>))
+  )
+
+  (func (export "output") (param $start<out> i32) (param $end<out> i32)
+    (set_global $start<out> (get_local $start<out>))
+    (set_global $ptr<out> (get_local $start<out>))
+    (set_global $end<out> (get_local $end<out>))
   )
 
   (start $start)
