@@ -27,7 +27,7 @@ define(['wasm/load!./crc32'], function(module) {
       var pos = 0;
       function nextSlice() {
         return new Promise(function(resolve, reject) {
-          var sliceSize = Math.min(blob.size - pos, (1024*1024) - memory['free*']);
+          var sliceSize = Math.min(blob.size - pos, (1024*1024*2) - memory['free*']);
           var fr = new FileReader;
           fr.onload = function() {
             resolve(new Uint8Array(this.result));
