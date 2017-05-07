@@ -60,7 +60,7 @@
           ))
           (i32.shr_u (get_local $c) (get_local $k))
         ))
-        (set_local $ptr<entry2> (i32.add (get_local $ptr<entry>) (i32.const 4)))
+        (set_local $ptr<entry2> (i32.add (get_local $ptr<entry2>) (i32.const 4)))
         (br_if 0 (i32.lt_u
           (tee_local $ptr<entry> (i32.add (get_local $ptr<entry>) (i32.const 4)))
           (get_local $end<entry>)
