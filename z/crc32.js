@@ -10,12 +10,14 @@ define(['wasm/load!./crc32'], function(module) {
   .then(function(instance) {
     for (var k in instance.exports) {
       if (/(^sizeof )|(\*$)/.test(k)) {
-        var v = instance.exports[v];
+        var v = instance.exports[k];
         if (typeof v === 'function') v = v();
         memory[k] = v;
       }
     }
-    memory['free*'] = memory['crc32Tables*'] + memory['sizeof crc32Tables'];
+    if (isNaN(memory['free*'] = memory['crc32Tables*'] + memory['sizeof crc32Tables'])) {
+      return Promise.reject('free space could not be calculated');
+    }
     return instance;
   });
   
