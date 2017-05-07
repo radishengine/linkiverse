@@ -43,14 +43,14 @@
         (get_local $end<entry>)
       ))
     end
-    (set_local $k (i32.const 8))
+    (set_local $k (i32.const 1))
     loop
       (set_local $end<entry> (i32.add (get_local $ptr<entry>) (i32.const 1024)))
       loop
         (set_local $c (i32.load (i32.sub
           (get_local $ptr<entry>)
           (i32.const 1024)
-         )))
+        )))
         (i32.store (get_local $ptr<entry>) (i32.xor
           (i32.load (i32.add
             (get_local $ptr<base>)
@@ -59,7 +59,7 @@
               (i32.const 2)
             )
           ))
-          (i32.shr_u (get_local $c) (get_local $k))
+          (i32.shr_u (get_local $c) (i32.const 8))
         ))
         (br_if 0 (i32.lt_u
           (tee_local $ptr<entry> (i32.add (get_local $ptr<entry>) (i32.const 4)))
@@ -67,8 +67,8 @@
         ))
       end
       (br_if 0 (i32.lt_u
-        (tee_local $k (i32.add (get_local $k) (i32.const 8)))
-        (i32.const 32)
+        (tee_local $k (i32.add (get_local $k) (i32.const 1)))
+        (i32.const 4)
       ))
     end
     (set_global $ptr<table0> (get_local $ptr<base>))
