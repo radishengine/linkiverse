@@ -3,7 +3,7 @@ define(['wasm/load!./crc32'], function(module) {
   'use strict';
 
   var memory = {
-    main: mem = new WebAssembly.Memory(1),
+    main: new WebAssembly.Memory({initial:1}),
     'crc32Tables*': 0,
   };
   var gotInstance = WebAssembly.instantiate(module, {memory:memory})
