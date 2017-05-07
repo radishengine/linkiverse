@@ -9,14 +9,13 @@
   (global $ptr<table2> (mut i32) i32.const -1)
   (global $ptr<table3> (mut i32) i32.const -1)
 
-  (func $start (export "start")
+  (func $start
     (local $c i32)
     (local $k i32)
     (local $poly i32)
     (local $ptr<base> i32)
     (local $ptr<entry> i32)
     (local $end<entry> i32)
-    (local $ptr<entry2> i32)
     (set_local $poly (i32.const 0xedb88320))
     (set_local $ptr<base> (get_global $ptr<reserved>))
     (set_local $ptr<entry> (get_local $ptr<base>))
@@ -47,9 +46,11 @@
     (set_local $k (i32.const 8))
     loop
       (set_local $end<entry> (i32.add (get_local $ptr<entry>) (i32.const 1024)))
-      (set_local $ptr<entry2> (get_local $ptr<base>))
       loop
-        (set_local $c (i32.load (get_local $ptr<entry2>)))
+        (set_local $c (i32.load (i32.sub
+          (get_local $ptr<entry>)
+          (i32.const 1024)
+         )))
         (i32.store (get_local $ptr<entry>) (i32.xor
           (i32.load (i32.add
             (get_local $ptr<base>)
@@ -60,7 +61,6 @@
           ))
           (i32.shr_u (get_local $c) (get_local $k))
         ))
-        (set_local $ptr<entry2> (i32.add (get_local $ptr<entry2>) (i32.const 4)))
         (br_if 0 (i32.lt_u
           (tee_local $ptr<entry> (i32.add (get_local $ptr<entry>) (i32.const 4)))
           (get_local $end<entry>)
@@ -165,6 +165,6 @@
     (return (i32.xor (get_local $crc) (i32.const -1)))
   )
 
-  (; (start $start) ;)
+  (start $start)
 
 )
