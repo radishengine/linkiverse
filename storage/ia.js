@@ -92,7 +92,7 @@ define(function() {
   var loading = {};
   
   function getItemFilePath(itemName, path) {
-    return itemName + '/' + (path.match(/\//g) || []).length + '/' + path;
+    return itemName + '/' + (path.match(/\//g) || []).length + '/' + path.toLowerCase();
   }
 
   var iaStorage = {
