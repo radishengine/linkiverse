@@ -252,13 +252,12 @@
           (set_global $mode (get_global $MODE_DECOMPRESS))
           ;; fall through:
         end $DECOMPRESS:
+          (;
           (if (call $guaranteedDecompress) (then
-            (if (i32.eq (get_global $mode) (get_global $MODE_NEXT_BLOCK)) (then
-              (set_global $back (i32.const -1))
-              br $END_OF_BLOCK:
-            ))
+            (br_if $END_OF_BLOCK: (i32.eq (get_global $mode) (get_global $MODE_NEXT_BLOCK)))
             (br_if $continue (i32.ne (get_global $mode) (get_global $MODE_DECOMPRESS)))
           ))
+          ;)
           (set_global $back (i32.const 0))
           block
             loop
