@@ -6,8 +6,6 @@
   
   (func (export "adler32") (param $s1 i32) (param $ptr<buf> i32) (param $end<buf> i32)
     (local $s2 i32)
-    (local $chunk_size i32)
-    (local $unrolled_iterations i32)
     (local $sizeof<chunk> i32)
     (local $end<chunk> i32)
     (local $end<align4> i32)
