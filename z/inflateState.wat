@@ -49,8 +49,9 @@
   (global $MODE_DECOMPRESS_DISTEXT i32 i32.const 10)
   (global $MODE_DECOMPRESS_MATCH i32 i32.const 11)
   (global $MODE_DECOMPRESS_LIT i32 i32.const 12)
-  (global $MODE_FINISHED i32 i32.const 13)
-  (global $MODE_ERROR i32 i32.const 14)
+  (global $MODE_CHECKSUM i32 i32.const 13)
+  (global $MODE_FINISHED i32 i32.const 14)
+  (global $MODE_ERROR i32 i32.const 15)
   (global $mode (mut i32) i32.const 0)
   (global $BLOCK_UNCOMPRESSED i32 i32.const 0)
   (global $BLOCK_FIXED i32 i32.const 1)
@@ -106,6 +107,7 @@
 
         block $ERROR:
         block $FINISHED:
+        block $CHECKSUM:
         block $END_OF_BLOCK:
         block $DECOMPRESS_LIT:
         block $DECOMPRESS_MATCH:
@@ -137,6 +139,7 @@
                   $DECOMPRESS_MATCH:
                   $DECOMPRESS_LIT:
                   $END_OF_BLOCK:
+                  $CHECKSUM:
                   $FINISHED:
                   $ERROR:
 
@@ -428,8 +431,13 @@
           (set_global $mode (get_global $MODE_DECOMPRESS))
           br $continue
         end $END_OF_BLOCK:
-          (set_global $mode (select (get_global $MODE_FINISHED) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
+          (set_global $mode (select (get_global $MODE_CHECKSUM) (get_global $MODE_NEXT_BLOCK) (get_global $is_final_block)))
           (br_if $continue (i32.eqz (get_global $is_final_block)))
+          ;; fall through:
+        end $CHECKSUM:
+          (call $tobyteboundary)
+          (br_if $break (call $cantgetbits (i32.const 32)))
+          (set_global $mode (get_global $MODE_FINISHED))
           ;; fall through:
         end $FINISHED:
           (return (i32.const 1))
@@ -440,6 +448,14 @@
       unreachable
     end $break
     (return (i32.const 0))
+  )
+  
+  (func (export "getChecksum") (result i32)
+    (return (select
+      (get_global $bits)
+      (i32.const 0)
+      (i32.eq (get_global $mode) (get_global $MODE_FINISHED))
+    ))
   )
 
   (func $bitmask (param $nbits i32) (result i32)
