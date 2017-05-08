@@ -90,6 +90,10 @@ define(function() {
   }
 
   var loading = {};
+  
+  function getItemFilePath(itemName, path) {
+    return itemName + '/' + (path.match(/\//g) || []).length + '/' + path;
+  }
 
   var iaStorage = {
     load: function(name, parentRequire, onload, config) {
@@ -269,10 +273,10 @@ define(function() {
     },
     explodeFile: function(item, path, components) {
       var updates = {file:{}};
-      updates.file[item+'/'+path] = {blob:null};
+      updates.file[getItemFilePath(item, path)] = {blob:null};
       var filenames = Object.keys(components);
       for (var i = 0; i < filenames.length; i++) {
-        var componentPath = item+'/'+path+'/'+filenames[i];
+        var componentPath = getItemFilePath(item, path+'/'+filenames[i]);
         updates.file[componentPath] = Object.assign(
           {path:componentPath},
           components[filenames[i]]);
@@ -280,7 +284,7 @@ define(function() {
       return this.updateStored(updates);
     },
     getFileBlob: function(item, path, mustDownload) {
-      var fullPath = item+'/'+path;
+      var fullPath = getItemFilePath(item, path);
       var self = this;
       function getFromServer() {
         if (fullPath in loading) return loading[fullPath];
@@ -311,13 +315,13 @@ define(function() {
       });
     },
     deleteFileBlob: function(item, path) {
-      return this.updateStored('file', item+'/'+path, {blob:null});
+      return this.updateStored('file', getItemFilePath(item, path), {blob:null});
     },
     loadAllFileInfo: function(item, mustDownload) {
       var xmlPath = item+'_files.xml';
       var pseudopath = 'files:'+item;
       var self = this;
-      return this.getStored('file', item+'/'+xmlPath).then(function(record) {
+      return this.getStored('file', getItemFilePath(item, xmlPath)).then(function(record) {
         if (record && record.loaded && !mustDownload) return;
         if (pseudopath in loading) {
           return loading[pseudopath];
@@ -329,15 +333,15 @@ define(function() {
           for (var node = xml.documentElement.firstChild; node; node = node.nextSibling) {
             if (node.nodeName !== 'file') continue;
             var path = node.getAttribute('name');
-            var obj = {path:item+'/'+path, source:node.getAttribute('source')};
+            var obj = {path:getItemFilePath(item, path), source:node.getAttribute('source')};
             for (var node2 = node.firstChild; node2; node2 = node2.nextSibling) {
               if (node2.nodeType !== 1) continue;
               obj[node2.nodeName] = node2.textContent;
             }
-            updates.file[item+'/'+path] = obj;
+            updates.file[getItemFilePath(item, path)] = obj;
           }
-          updates.file[item+'/'+xmlPath] = Object.assign(
-            updates.file[item+'/'+xmlPath] || {path:item+'/'+xmlPath},
+          updates.file[getItemFilePath(item, xmlPath)] = Object.assign(
+            updates.file[getItemFilePath(item, xmlPath)] || {path:getItemFilePath(item, xmlPath)},
             {blob:null, loaded:new Date()});
           loading[pseudopath] = self.updateStored(updates).then(
             function(result) { delete loading[pseudopath]; },
@@ -352,7 +356,7 @@ define(function() {
       // TODO: mustDownload option
       var self = this;
       function tryNow(elseTry) {
-        return self.getStored('file', item+'/'+path).then(function(info) {
+        return self.getStored('file', getItemFilePath(item, path)).then(function(info) {
           if ('size' in info) return info;
           return elseTry();
         });
@@ -428,7 +432,7 @@ define(function() {
           record = Object.assign(record, additions, {serverFields: Object.keys(additions)});
           var updates = {item:{}, file:{}};
           updates.item[item] = record;
-          updates.file[item+'/'+xmlPath] = {blob:null};
+          updates.file[getItemFilePath(item, xmlPath)] = {blob:null};
           loading[pseudopath] = self.updateStored(updates)
           .then(
             function(result) { delete loading[pseudopath]; return result; },
@@ -453,7 +457,7 @@ define(function() {
       })
       .then(function(keys) {
         for (var i = 0; i < keys.length; i++) {
-          keys[i] = keys[i].slice(item.length + 1);
+          keys[i] = keys[i].replace(/^[^\/]+\/\d+\//, '');
         }
         return keys;
       });
