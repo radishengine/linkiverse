@@ -35,11 +35,11 @@
         (br_if $done (i32.ge_u (get_local $ptr<buf>) (get_local $end<buf>)))
 
         (set_local $sizeof<chunk> (i32.sub (get_local $end<buf>) (get_local $ptr<buf>)))
-        (set_local $sizeof<chunk>
+        (set_local $sizeof<chunk> (select
           (i32.const 5552)
           (get_local $sizeof<chunk>)
           (i32.gt_u (get_local $sizeof<chunk>) (i32.const 5552))
-        )
+        ))
 
         (set_local $end<chunk> (i32.add (get_local $ptr<buf>) (get_local $sizeof<chunk>)))
         (set_local $end<align4> (i32.and (get_local $end<chunk>) (i32.const -4)))
