@@ -337,7 +337,18 @@ define(function() {
             var obj = {path:getItemFilePath(item, path), source:node.getAttribute('source')};
             for (var node2 = node.firstChild; node2; node2 = node2.nextSibling) {
               if (node2.nodeType !== 1) continue;
-              obj[node2.nodeName] = node2.textContent;
+              var value = node2.textContent;
+              switch (node2.nodeName) {
+                case 'mtime':
+                  obj[node2.nodeName] = new Date(+node2.textContent * 1000);
+                  break;
+                case 'size':
+                  obj[node2.nodeName] = +node2.textContent;
+                  break;
+                default:
+                  obj[node2.nodeName] = node2.textContent;
+                  break;
+              }
             }
             updates.file[getItemFilePath(item, path)] = obj;
           }
