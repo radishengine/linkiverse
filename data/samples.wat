@@ -1,8 +1,9 @@
 (module
 
   (import "memory" "main" (memory 0))
+  (import "memory" "bigEndian" (global $bigEndian i32))
 
-  (func (export "swap32") (param $ptr<buf> i32) (param $end<buf> i32)
+  (func $swap32 (param $ptr<buf> i32) (param $end<buf> i32)
     (local $v i32)
     block
       loop
@@ -62,6 +63,9 @@
   (func (export "samples_i8_u") (param $ptr<i8_u> i32) (param $end<i8_u> i32) (param $ptr<out> i32)
     (local $end<align4> i32)
     (local $block32 i32)
+    (local $ptr<buf> i32)
+    
+    (set_local $ptr<buf> (get_local $ptr<i8_u>))
 
     (call $ensureOut (get_local $ptr<out>) (i32.sub (get_local $end<i8_u>) (get_local $ptr<i8_u>)))
 
@@ -115,6 +119,8 @@
       unreachable
 
     end $done
+    
+    (if (get_global $bigEndian) (call $swap32 (get_local $ptr<buf>) (get_local $end<i8_u>)))
   )
 
 )
