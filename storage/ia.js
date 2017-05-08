@@ -284,11 +284,12 @@ define(function() {
       return this.updateStored(updates);
     },
     getFileBlob: function(item, path, mustDownload) {
-      var fullPath = getItemFilePath(item, path);
+      var urlPath = item+'/'+path;
+      var dbPath = getItemFilePath(item, path);
       var self = this;
       function getFromServer() {
-        if (fullPath in loading) return loading[fullPath];
-        return loading[fullPath] = fetch('//cors.archive.org/cors/'+fullPath)
+        if (urlPath in loading) return loading[urlPath];
+        return loading[urlPath] = fetch('//cors.archive.org/cors/'+urlPath)
         .then(function(req) {
           if (req.status >= 200 && req.status < 300) return req.blob();
           // TODO: wait and try again a few times?
@@ -296,18 +297,18 @@ define(function() {
         })
         .then(function(blob) {
           var updates = {file:{}};
-          updates.file[fullPath] = {blob:blob, retrieved:new Date()};
-          loading[fullPath] = self.updateStored(updates).then(
-            function(result) { delete loading[fullPath]; return blob; },
-            function(reason) { delete loading[fullPath]; return Promise.reject(reason); });
+          updates.file[dbPath] = {blob:blob, retrieved:new Date()};
+          loading[urlPath] = self.updateStored(updates).then(
+            function(result) { delete loading[urlPath]; return blob; },
+            function(reason) { delete loading[urlPath]; return Promise.reject(reason); });
           return blob;
         })
         .then(
           null,
-          function(reason) { delete loading[fullPath]; return Promise.reject(reason); });
+          function(reason) { delete loading[urlPath]; return Promise.reject(reason); });
       }
       if (mustDownload) return getFromServer();
-      return this.getStored('file', fullPath).then(function(fileRecord) {
+      return this.getStored('file', dbPath).then(function(fileRecord) {
         if (fileRecord && fileRecord.blob instanceof Blob) {
           return fileRecord.blob;
         }
