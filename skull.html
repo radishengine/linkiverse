@@ -22,8 +22,6 @@
               }
               else {
                 var html = 'rando(';
-                containerNode.parentNode.insertBefore(document.createTextNode(' '), containerNode);
-                containerNode.parentNode.insertBefore(prefix, containerNode);
                 for (var sibling = containerNode.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
                   html += sibling.innerHTML;
                   if (sibling.nextElementSibling) {
