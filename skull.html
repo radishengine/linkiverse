@@ -14,20 +14,25 @@
     .spec .item {
       border-radius: 5px;
       border: 1px solid black;
-      padding: 5px;
       margin: 10px;
     }
     .spec .presented,
     .spec .rando {
-      background: #eee;
       border-radius: 5px;
       border: 1px solid black;
+      margin: 5px;
+    }
+    .spec .presented {
+      background: #eee;
+    }
+    .spec .rando {
+      background: #afa;
     }
     .spec .presented::before,
     .spec .rando::before {
       font-variant: small-caps;
       display: block;
-      color: #aaa;
+      color: rgba(0,0,0, 0.5);
       letter-spacing: 0.1em;
     }
     .spec .presented::before {
