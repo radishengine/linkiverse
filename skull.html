@@ -21,26 +21,21 @@
                 el.parentNode.removeChild(el);
               }
               else {
-                var prefix = document.createTextNode('rando(');
+                var html = 'rando(';
                 containerNode.parentNode.insertBefore(document.createTextNode(' '), containerNode);
                 containerNode.parentNode.insertBefore(prefix, containerNode);
                 for (var sibling = containerNode.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
-                  for (var node = sibling.firstChild; node; node = sibling.firstChild) {
-                    containerNode.parentNode.insertBefore(sibling.removeChild(node), containerNode);
-                  }
+                  html += sibling.innerHTML;
                   if (sibling.nextElementSibling) {
-                    containerNode.parentNode.insertBefore(document.createTextNode(', '), containerNode);
+                    html += ', ';
                   }
                 }
-                var suffix = document.createTextNode(')');
-                containerNode.parentNode.insertBefore(suffix, containerNode);
-                containerNode.parentNode.insertBefore(document.createTextNode(' '), containerNode);
-                containerNode.parentNode.removeChild(containerNode);
-                sel.removeAllRanges();
+                html += ')';
                 var range = document.createRange();
-                range.setStartBefore(prefix);
-                range.setEndAfter(suffix);
+                range.setStartBefore(containerNode);
+                range.setEndAfter(containerNode);
                 sel.addRange(range);
+                document.execCommand('insertHTML', false, html);
               }
               e.preventDefault();
               return;
