@@ -26,10 +26,10 @@
                 containerNode.parentNode.insertBefore(prefix, containerNode);
                 for (var sibling = el.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
                   for (var node = sibling.firstChild; node; node = sibling.firstChild) {
-                    containerNode.parentNode.insertBefore(node.removeChild(sibling), containerNode);
-                    if (sibling.firstChild) {
-                      containerNode.parentNode.insertBefore(document.createTextNode(', '), containerNode);
-                    }
+                    containerNode.parentNode.insertBefore(sibling.removeChild(node), containerNode);
+                  }
+                  if (sibling.nextElementSibling) {
+                    containerNode.parentNode.insertBefore(document.createTextNode(', '), containerNode);
                   }
                 }
                 var suffix = document.createTextNode(')');
