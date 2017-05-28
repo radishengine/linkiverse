@@ -22,7 +22,8 @@
               }
               else {
                 var prefix = document.createTextNode('rando(');
-                containerNode.parentNode.insertBefore(prefix, el);
+                containerNode.parentNode.insertBefore(document.createTextNode(' '), containerNode);
+                containerNode.parentNode.insertBefore(prefix, containerNode);
                 for (var sibling = el.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
                   for (var node = sibling.firstChild; node; node = sibling.firstChild) {
                     containerNode.parentNode.insertBefore(node.removeChild(sibling), containerNode);
@@ -31,8 +32,9 @@
                     }
                   }
                 }
-                var suffix = document.createTextNode(')');
-                containerNode.parentNode.insertAfter(suffix, el);
+                var suffix = document.createTextNode(') ');
+                containerNode.parentNode.insertAfter(document.createTextNode(' '), containerNode);
+                containerNode.parentNode.insertAfter(suffix, containerNode);
                 containerNode.parentNode.removeChild(containerNode);
                 sel.removeAllRanges();
                 var range = document.createRange();
