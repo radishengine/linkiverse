@@ -1,31 +1,41 @@
 <html>
 <head>
-  <style type='text/css'>
-    .verbs {
-      display: flex;
+  <script type='text/javascript'>
+    
+    function loadSpec(spec) {
     }
-    .item {
-      outline: 1px solid black;
+    
+  </script>
+  <style type='text/css'>
+    .spec {
+      border-radius: 10px;
+      border: 2px solid red;
+      padding: 10px;
+    }
+    .spec .item {
+      border-radius: 5px;
+      border: 1px solid black;
+      padding: 5px;
+    }
+    .spec .presented::before {
+      content: 'Presented';
+      font-variant: small-caps;
+      display: block;
+      color: silver;
+      letter-spacing: 0.1em;
     }
   </style>
 </head>
 <body>
-  <div id="verbs">
-    <label class="verb item">
-      <input type="radio" name="verbs">
-      Look at
-      <input type="checkbox" name="multiselect">
-    </label>
-    <label class="verb item">
-      <input type="radio" name="verbs">
-      Talk to
-      <input type="checkbox" name="multiselect">
-    </label>
-    <label class="verb item">
-      <input type="radio" name="verbs">
-      Pick up
-      <input type="checkbox" name="multiselect">
-    </label>
+  <div class='spec'>
+    <div class='act item' id='look'>
+    </div>
+    <div class='item' id='beans'>
+      <div class='presented first-time-only' contenteditable>
+        Some beans roll into view.
+      </div>
+    </div>
   </div>
+  <script> loadSpec(document.querySelector('.spec')); </script>
 </body>
 </html>
