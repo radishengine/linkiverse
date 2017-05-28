@@ -3,6 +3,44 @@
   <script type='text/javascript'>
     
     function loadSpec(spec) {
+      spec.onkeydown = function(e) {
+        if (e.which === 8) {
+          var sel = window.getSelection();
+          if (sel.anchorNode === sel.focusNode
+              && sel.anchorOffset === sel.focusOffset) {
+            if (!sel.anchorNode.previousSibling
+                && sel.anchorOffset === 0
+                && sel.anchorNode.parentNode.classList.contains('rando')) {
+              var el = sel.anchorNode.parentNode;
+              if (el.previousElementSibling) {
+                for (var node = el.firstChild; node; node = el.firstChild) {
+                  el.previousElementSibling.appendChild(el.removeChild(node));
+                }
+                el.parentNode.removeChild(el);
+              }
+              else {
+                var prefix = document.createTextNode('rando(');
+                el.parentNode.insertBefore(prefix, el);
+                for (var sibling = el.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
+                  for (var node = sibling.firstChild; node; node = sibling.firstChild) {
+                    el.parentNode.insertBefore(node.removeChild(sibling), el);
+                  }
+                }
+                var suffix = document.createTextNode(')');
+                el.parentNode.insertAfter(suffix, el);
+                el.parentNode.removeChild(el);
+                sel.removeAllRanges();
+                var range = document.createRange();
+                range.setStartBefore(prefix);
+                range.setEndAfter(suffix);
+                sel.addRange();
+              }
+              e.preventDefault();
+              return;
+            }
+          }
+        }
+      };
     }
     
   </script>
