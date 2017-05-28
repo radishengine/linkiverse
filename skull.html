@@ -8,10 +8,11 @@
           var sel = window.getSelection();
           if (sel.anchorNode === sel.focusNode
               && sel.anchorOffset === sel.focusOffset) {
+            var contextNode = sel.anchorNode.parentNode;
             if (!sel.anchorNode.previousSibling
                 && sel.anchorOffset === 0
-                && sel.anchorNode.parentNode.classList.contains('rando')) {
-              var el = sel.anchorNode.parentNode;
+                && contextNode.parentNode.classList.contains('rando')) {
+              var el = contextNode;
               if (el.previousElementSibling) {
                 for (var node = el.firstChild; node; node = el.firstChild) {
                   el.previousElementSibling.appendChild(el.removeChild(node));
