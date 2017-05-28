@@ -10,19 +10,35 @@
     .spec {
       border-radius: 10px;
       border: 2px solid red;
-      padding: 10px;
     }
     .spec .item {
       border-radius: 5px;
       border: 1px solid black;
       padding: 5px;
+      margin: 10px;
+    }
+    .spec .presented,
+    .spec .rando {
+      background: #eee;
+    }
+    .spec .presented::before,
+    .spec .rando::before {
+      font-variant: small-caps;
+      display: block;
+      color: #aaa;
+      letter-spacing: 0.1em;
     }
     .spec .presented::before {
       content: 'Presented';
-      font-variant: small-caps;
+    }
+    .spec .rando::before {
+      content: 'Rando';
+    }
+    .spec .rando {
       display: block;
-      color: silver;
-      letter-spacing: 0.1em;
+    }
+    .spec .rando > * {
+      display: block;
     }
   </style>
 </head>
@@ -32,7 +48,13 @@
     </div>
     <div class='item' id='beans'>
       <div class='presented first-time-only' contenteditable>
-        Some beans roll into view.
+        Some
+        <span class='rando' contenteditable='false'>
+          <span contenteditable>red</span>
+          <span contenteditable>green</span>
+          <span contenteditable>blue</span>
+        </span>
+        beans roll into view.
       </div>
     </div>
   </div>
