@@ -32,6 +32,7 @@
                 var range = document.createRange();
                 range.setStartBefore(containerNode);
                 range.setEndAfter(containerNode);
+                sel.removeAllRanges();
                 sel.addRange(range);
                 document.execCommand('insertHTML', false, html);
               }
