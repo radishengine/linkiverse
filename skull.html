@@ -9,9 +9,10 @@
           if (sel.anchorNode === sel.focusNode
               && sel.anchorOffset === sel.focusOffset) {
             var contextNode = sel.anchorNode.parentNode;
+            var containerNode = contextNode.parentNode;
             if (!sel.anchorNode.previousSibling
                 && sel.anchorOffset === 0
-                && contextNode.parentNode.classList.contains('rando')) {
+                && containerNode.classList.contains('rando')) {
               var el = contextNode;
               if (el.previousElementSibling) {
                 for (var node = el.firstChild; node; node = el.firstChild) {
@@ -21,20 +22,23 @@
               }
               else {
                 var prefix = document.createTextNode('rando(');
-                el.parentNode.insertBefore(prefix, el);
+                containerNode.parentNode.insertBefore(prefix, el);
                 for (var sibling = el.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
                   for (var node = sibling.firstChild; node; node = sibling.firstChild) {
-                    el.parentNode.insertBefore(node.removeChild(sibling), el);
+                    containerNode.parentNode.insertBefore(node.removeChild(sibling), containerNode);
+                    if (sibling.firstChild) {
+                      containerNode.parentNode.insertBefore(document.createTextNode(', '), containerNode);
+                    }
                   }
                 }
                 var suffix = document.createTextNode(')');
-                el.parentNode.insertAfter(suffix, el);
-                el.parentNode.removeChild(el);
+                containerNode.parentNode.insertAfter(suffix, el);
+                containerNode.parentNode.removeChild(containerNode);
                 sel.removeAllRanges();
                 var range = document.createRange();
                 range.setStartBefore(prefix);
                 range.setEndAfter(suffix);
-                sel.addRange();
+                sel.addRange(range);
               }
               e.preventDefault();
               return;
