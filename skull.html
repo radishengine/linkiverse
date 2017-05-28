@@ -32,9 +32,9 @@
                     }
                   }
                 }
-                var suffix = document.createTextNode(') ');
-                containerNode.parentNode.insertAfter(document.createTextNode(' '), containerNode);
-                containerNode.parentNode.insertAfter(suffix, containerNode);
+                var suffix = document.createTextNode(')');
+                containerNode.parentNode.insertBefore(suffix, containerNode);
+                containerNode.parentNode.insertBefore(document.createTextNode(' '), containerNode);
                 containerNode.parentNode.removeChild(containerNode);
                 sel.removeAllRanges();
                 var range = document.createRange();
