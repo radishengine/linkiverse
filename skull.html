@@ -3,6 +3,15 @@
   <script type='text/javascript'>
     
     function loadSpec(spec) {
+      var observer = new MutationObserver(function(mutations) {
+        console.log(mutations);
+      });
+      observer.observe(spec, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+      });
     }
     
   </script>
