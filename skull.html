@@ -151,7 +151,7 @@
           initialRead.onerror = function() {
             reject();
           };
-          initialRead.onsuccess = function() {
+          initialRead.oncomplete = function() {
             resolve();
           };
           var bulletinsByItem = initialRead.objectStore('bulletin').index('item');
@@ -188,7 +188,7 @@
       },
       function() {
         console.error('Failed to open indexedDB');
-      })
+      });
     }
         
   </script>
