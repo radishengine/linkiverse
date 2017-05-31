@@ -102,7 +102,7 @@
           };
         }
         function addItem(items, bulletins, el) {
-          items.put(el.getBulletinDef());
+          items.put(getBulletinDef(el));
         }
         function onmutant(mutant) {
           if (mutant.target === specRoot) {
@@ -129,7 +129,7 @@
           if (mutant.target.parentNode === specRoot) {
             if (mutant.target.classList.contains('item') && mutant.target.id) {
               var updating = db.transaction(['item'], 'readwrite');
-              updating.objectStore('item').put(mutant.target.getItemDef());
+              updating.objectStore('item').put(getItemDef(mutant.target));
             }
             return;
           }
