@@ -130,8 +130,25 @@
           }
           if (mutant.target.parentNode === specRoot) {
             if (mutant.target.classList.contains('item') && mutant.target.id) {
-              var updating = db.transaction(['item'], 'readwrite');
-              updating.objectStore('item').put(getItemDef(mutant.target));
+              if (mutant.type === 'attributes') {
+                db.transaction(['item'], 'readwrite').objectStore('item').put(getItemDef(mutant.target));
+              }
+              else if (mutant.type === 'childList') {
+                var updating = db.transaction(['bulletin'], 'readwrite');
+                var bulletins = updating.objectStore('bulletin');
+                for (var i = 0; i < mutant.removedNodes.length; i++) {
+                  var node = mutant.removedNodes[i];
+                  if (node.classList && node.classList.contains('bulletin') && node.id) {
+                    bulletins.delete(node.id);
+                  }
+                }
+                for (var i = 0; i < mutant.addedNodes.length; i++) {
+                  var node = mutant.addedNodes[i];
+                  if (node.classList && node.classList.contains('bulletin')) {
+                    bulletins.put(getBulletinDef(node));
+                  }
+                }
+              }
             }
             return;
           }
@@ -146,7 +163,6 @@
             if (itemRoot.classList.contains('item')) break;
           }
           if (itemRoot.parentNode !== specRoot) return;
-          
         }
         return new Promise(function(resolve, reject) {
           var initialRead = db.transaction(['item', 'bulletin'], 'readonly');
