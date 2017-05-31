@@ -150,7 +150,7 @@
           var initialRead = db.transaction(['item', 'bulletin'], 'read');
           initialRead.onerror = function() {
             reject();
-          });
+          };
           initialRead.onsuccess = function() {
             resolve();
           };
