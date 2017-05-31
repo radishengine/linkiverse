@@ -2,63 +2,200 @@
 <head>
   <script type='text/javascript'>
     
-    function loadSpec(spec) {
-      var observer = new MutationObserver(function(mutations) {
-        console.log(mutations);
+    var openedDB = new Promise(function(resolve, reject) {
+      var opening = indexedDB.open('spec');
+      opening.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        var items = db.createObjectStore('item', {keyPath:'id'});
+        items.createIndex('class', 'classList', {multiEntry:true});
+        var bulletins = db.createObjectStore('bulletin', {keyPath:'id'});
+        bulletins.createIndex('item', 'item');
+        bulletins.createIndex('class', 'classList', {multiEntry:true});
+      };
+      opening.onerror = function(e) {
+        reject();
+      };
+      opening.onsuccess = function(e) {
+        resolve(e.target.result);
+      };
+    });
+    
+    function makeItemElement(itemDef) {
+      var el = document.createElement('DIV');
+      el.classList.add('item');
+      Object.keys(itemDef).forEach(function(k) {
+        switch (k) {
+          case 'classList':
+            itemDef.classList.forEach(el.classList.add.bind(el.classList));
+            return;
+        }
+        el.setAttribute(k, itemDef[k]);
       });
-      observer.observe(spec, {
-        subtree: true,
-        childList: true,
-        characterData: true,
-        attributes: true,
-      });
+      return el;
     }
     
+    function getItemDef(el) {
+      if (!el.id) {
+        var idBase = 'item', inc = 1;
+        while (document.querySelector('#' + idBase + inc)) inc++;
+        el.setAttribute('id', idBase + inc);
+      }
+      var obj = {};
+      obj.classList = [].slice.apply(el.classList);
+      for (var i = 0; i < el.attributes.length; i++) {
+        var attr = el.attributes[i];
+        if (!attr.specified || /^(?:class|contenteditable)$/i.test(attr.name)) continue;
+        obj[attr.name] = attr.value;
+      }
+      return obj;
+    }
+    
+    function makeBulletinElement(bulletinDef) {
+      var el = document.createElement('DIV');
+      el.classList.add('bulletin');
+      el.innerHTML = bulletinDef.html || '';
+      Object.keys(bulletinDef).forEach(function(k) {
+        switch (k) {
+          case 'classList':
+            itemDef.classList.forEach(el.classList.add.bind(el.classList));
+            return;
+          case 'html':
+            return;
+        }
+        el.setAttribute(k, bulletinDef[k]);
+      });
+      return el;
+    }
+    
+    function getBulletinDef(el) {
+      var obj = {html:el.innerHTML};
+      for (var itemRoot = el.parentNode; itemRoot; itemRoot = itemRoot.parentNode) {
+        if (itemRoot.classList.contains('item')) {
+          obj.item = itemRoot.id;
+          if (!el.id) {
+            var idBase = itemRoot.id + '$', inc = 1;
+            while (document.querySelector('#' + idBase + inc)) inc++;
+            el.setAttribute('id', idBase + inc);
+          }
+          break;
+        }
+      }
+      obj.classList = [].slice.apply(el.classList);
+      for (var i = 0; i < el.attributes.length; i++) {
+        var attr = el.attributes[i];
+        if (!attr.specified || /^(?:class|contenteditable)$/.test(attr.name)) continue;
+        obj[attr.name] = attr.value;
+      }
+      return obj;
+    };
+    
+    function initialize(specRoot) {
+      specRoot.style.display = 'none';
+      return openedDB.then(function(db) {
+        function removeItem(items, bulletinsByItem, id) {
+          items.delete(id);
+          bulletinsByItem.openCursor(IDBKeyRange.only(id)).onsuccess = function(e) {
+            var cursor = e.target.result;
+            if (!cursor) return;
+            items.delete(cursor.value.id);
+            cursor.continue();
+          };
+        }
+        function addItem(items, bulletins, el) {
+          items.put(el.getBulletinDef());
+        }
+        function onmutant(mutant) {
+          if (mutant.target === specRoot) {
+            if (mutant.type === 'childList') {
+              var transaction = db.transaction(['item', 'bulletin'], 'readwrite');
+              var items = transaction.objectStore('item');
+              var bulletins = transaction.objectStore('bulletins');
+              bulletins.byItem = bulletins.index('item');
+              for (var i = 0; i < mutant.removedNodes.length; i++) {
+                var node = mutant.removedNodes[i];
+                if (node.classList && node.classList.contains('item') && node.id) {
+                  removeItem(items, bulletins.byItem, node.id);
+                }
+              }
+              for (var i = 0; i < mutant.addedNodes.length; i++) {
+                var node = mutant.addedNodes[i];
+                if (node.classList && node.classList.contains('item')) {
+                  addItem(items, bulletins, node);
+                }
+              }
+            }
+            return;
+          }
+          if (mutant.target.parentNode === specRoot) {
+            if (mutant.target.classList.contains('item') && mutant.target.id) {
+              var updating = db.transaction(['item'], 'readwrite');
+              updating.objectStore('item').put(mutant.target.getItemDef());
+            }
+            return;
+          }
+          var bulletinRoot;
+          for (bulletinRoot = mutant.target; ; bulletinRoot = bulletinRoot.parentNode) {
+            if (!bulletinRoot || bulletinRoot === specRoot) return;
+            if (bulletinRoot.classList.contains('bulletin')) break;
+          }
+          var itemRoot;
+          for (itemRoot = bulletinRoot.parentNode; ; itemRoot = itemRoot.parentNode) {
+            if (!itemRoot || itemRoot === specRoot) return;
+            if (itemRoot.classList.contains('item')) break;
+          }
+          if (itemRoot.parentNode !== specRoot) return;
+          
+        }
+        return new Promise(function(resolve, reject) {
+          var initialRead = db.transaction(['item', 'bulletin'], 'read');
+          initialRead.onerror = function() {
+            reject();
+          });
+          initialRead.onsuccess = function() {
+            resolve();
+          };
+          var bulletinsByItem = initialRead.objectStore('bullet').index('item');
+          initialRead.objectStore('item').openCursor().onsuccess = function(e) {
+            var cursor = e.target.result;
+            if (!cursor) return;
+            var itemDef = cursor.value;
+            var itemEl = makeItemElement(itemDef);
+            specRoot.appendChild(itemEl);
+            if (itemDef.id) {
+              bulletinsByItem.openCursor(IDBKeyRange.only(itemDef.id)).onsuccess = function(e) {
+                var cursor = e.target.result;
+                if (!cursor) return;
+                var bulletinDef = cursor.value;
+                var bulletinEl = makeBulletinEl(bulletinDef);
+                itemEl.appendChild(bulletinEl);
+              };
+            }
+            cursor.continue();
+          };
+        })
+        .then(function() {
+          var peeper = new MutationObserver(function(mutations) {
+            mutations.forEach(onmutant);
+          });
+          peeper.observe(specRoot, {
+            childList: true,
+            attributes: true,
+            subtree: true,
+            characterData: true,
+          });
+          specRoot.style.display = 'block';
+        });
+      },
+      function() {
+        console.error('Failed to open indexedDB');
+      })
+    }
+        
   </script>
-  <style type='text/css'>
-    .spec {
-      border-radius: 10px;
-      border: 2px solid red;
-    }
-    .spec .item {
-      border-radius: 5px;
-      border: 1px solid black;
-      margin: 10px;
-    }
-    .spec .presented {
-      border-radius: 5px;
-      border: 1px solid black;
-      margin: 5px;
-      box-shadow: 0 3px 8px rgba(0,0,0, 0.4);
-    }
-    .spec .presented {
-      background: #eee;
-    }
-    .spec .presented::before {
-      font-variant: small-caps;
-      display: block;
-      color: rgba(0,0,0, 0.4);
-      letter-spacing: 0.1em;
-      font-family: serif;
-      font-weight: 900;
-    }
-    .spec .presented::before {
-      content: 'Presented';
-    }
-  </style>
 </head>
 <body>
-  <div class='spec'>
-    <div class='act item' id='look'>
-    </div>
-    <div class='item' id='beans'>
-      <div class='presented first-time-only' contenteditable>
-        Some
-        [RANDO] red [OR] green [OR] blue [END]
-        beans roll into view.
-      </div>
-    </div>
+  <div id='spec'>
   </div>
-  <script> loadSpec(document.querySelector('.spec')); </script>
+  <script>initialize(document.getElementById('spec'));</script>
 </body>
 </html>
