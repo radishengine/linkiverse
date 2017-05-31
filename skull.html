@@ -109,7 +109,7 @@
             if (mutant.type === 'childList') {
               var transaction = db.transaction(['item', 'bulletin'], 'readwrite');
               var items = transaction.objectStore('item');
-              var bulletins = transaction.objectStore('bulletins');
+              var bulletins = transaction.objectStore('bulletin');
               bulletins.byItem = bulletins.index('item');
               for (var i = 0; i < mutant.removedNodes.length; i++) {
                 var node = mutant.removedNodes[i];
