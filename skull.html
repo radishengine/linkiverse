@@ -15,10 +15,15 @@
                 && containerNode.classList.contains('rando')) {
               var el = contextNode;
               if (el.previousElementSibling) {
-                for (var node = el.firstChild; node; node = el.firstChild) {
-                  el.previousElementSibling.appendChild(el.removeChild(node));
-                }
-                el.parentNode.removeChild(el);
+                var range = document.createRange();
+                range.setStartBefore(el.previousElementSibling);
+                range.setEndAfter(el);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('insertHTML', false,
+                  el.previousElementSibling.outerHTML.replace(/<[^>]+>\s*$/, function(endTag) {
+                    return el.innerHTML + endTag;
+                  }));
               }
               else {
                 var html = 'rando(';
