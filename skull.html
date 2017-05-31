@@ -147,7 +147,7 @@
           
         }
         return new Promise(function(resolve, reject) {
-          var initialRead = db.transaction(['item', 'bulletin'], 'read');
+          var initialRead = db.transaction(['item', 'bulletin'], 'readonly');
           initialRead.onerror = function() {
             reject();
           };
