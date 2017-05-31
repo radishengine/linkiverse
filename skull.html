@@ -43,7 +43,7 @@
         el.setAttribute('id', idBase + inc);
       }
       var obj = {};
-      obj.classList = [].filter.apply(el.classList, function(className) {
+      obj.classList = [].filter.call(el.classList, function(className) {
         return !/^(?:item)$/i.test(className);
       });
       for (var i = 0; i < el.attributes.length; i++) {
@@ -86,7 +86,7 @@
           break;
         }
       }
-      obj.classList = [].filter.apply(el.classList, function(className) {
+      obj.classList = [].filter.call(el.classList, function(className) {
         return !/^(?:bulletin)$/i.test(className);
       });
       for (var i = 0; i < el.attributes.length; i++) {
