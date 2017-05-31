@@ -3,50 +3,6 @@
   <script type='text/javascript'>
     
     function loadSpec(spec) {
-      spec.onkeydown = function(e) {
-        if (e.which === 8) {
-          var sel = window.getSelection();
-          if (sel.anchorNode === sel.focusNode
-              && sel.anchorOffset === sel.focusOffset) {
-            var contextNode = sel.anchorNode.parentNode;
-            var containerNode = contextNode.parentNode;
-            if (!sel.anchorNode.previousSibling
-                && sel.anchorOffset === 0
-                && containerNode.classList.contains('rando')) {
-              var el = contextNode;
-              if (el.previousElementSibling) {
-                var range = document.createRange();
-                range.setStartBefore(el.previousElementSibling);
-                range.setEndAfter(el);
-                sel.removeAllRanges();
-                sel.addRange(range);
-                document.execCommand('insertHTML', false,
-                  el.previousElementSibling.outerHTML.replace(/<[^>]+>\s*$/, function(endTag) {
-                    return el.innerHTML + endTag;
-                  }));
-              }
-              else {
-                var html = 'rando(';
-                for (var sibling = containerNode.firstElementChild; sibling; sibling = sibling.nextElementSibling) {
-                  html += sibling.innerHTML;
-                  if (sibling.nextElementSibling) {
-                    html += ', ';
-                  }
-                }
-                html += ')';
-                var range = document.createRange();
-                range.setStartBefore(containerNode);
-                range.setEndAfter(containerNode);
-                sel.removeAllRanges();
-                sel.addRange(range);
-                document.execCommand('insertHTML', false, html);
-              }
-              e.preventDefault();
-              return;
-            }
-          }
-        }
-      };
     }
     
   </script>
@@ -60,8 +16,7 @@
       border: 1px solid black;
       margin: 10px;
     }
-    .spec .presented,
-    .spec .rando {
+    .spec .presented {
       border-radius: 5px;
       border: 1px solid black;
       margin: 5px;
@@ -70,12 +25,7 @@
     .spec .presented {
       background: #eee;
     }
-    .spec .rando {
-      background: #afa;
-      border: none;
-    }
-    .spec .presented::before,
-    .spec .rando::before {
+    .spec .presented::before {
       font-variant: small-caps;
       display: block;
       color: rgba(0,0,0, 0.4);
@@ -86,19 +36,6 @@
     .spec .presented::before {
       content: 'Presented';
     }
-    .spec .rando::before {
-      content: 'Rando';
-    }
-    .spec span.rando {
-      display: flex;
-    }
-    .spec .rando > * {
-      display: block;
-      border: 1px solid black;
-      margin: 5px;
-      background: #eee;
-      padding: 2px;
-    }
   </style>
 </head>
 <body>
@@ -108,11 +45,7 @@
     <div class='item' id='beans'>
       <div class='presented first-time-only' contenteditable>
         Some
-        <span class='rando' contenteditable='false'>
-          <span contenteditable>red</span>
-          <span contenteditable>green</span>
-          <span contenteditable>blue</span>
-        </span>
+        [RANDO] red [OR] green [OR] blue [END]
         beans roll into view.
       </div>
     </div>
