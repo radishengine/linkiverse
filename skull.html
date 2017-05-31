@@ -43,7 +43,9 @@
         el.setAttribute('id', idBase + inc);
       }
       var obj = {};
-      obj.classList = [].slice.apply(el.classList);
+      obj.classList = [].filter.apply(el.classList, function(className) {
+        return !/^(?:item)$/i.test(className);
+      });
       for (var i = 0; i < el.attributes.length; i++) {
         var attr = el.attributes[i];
         if (!attr.specified || /^(?:class|contenteditable)$/i.test(attr.name)) continue;
@@ -82,7 +84,9 @@
           break;
         }
       }
-      obj.classList = [].slice.apply(el.classList);
+      obj.classList = [].filter.apply(el.classList, function(className) {
+        return !/^(?:bulletin)$/i.test(className);
+      });
       for (var i = 0; i < el.attributes.length; i++) {
         var attr = el.attributes[i];
         if (!attr.specified || /^(?:class|contenteditable)$/.test(attr.name)) continue;
