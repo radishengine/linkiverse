@@ -3,7 +3,7 @@
   <script type='text/javascript'>
     
     var openedDB = new Promise(function(resolve, reject) {
-      var opening = indexedDB.open('spec');
+      var opening = indexedDB.open('spec', 2);
       opening.onupgradeneeded = function(e) {
         var db = e.target.result;
         var items = db.createObjectStore('item', {keyPath:'id'});
