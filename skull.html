@@ -26,7 +26,9 @@
       Object.keys(itemDef).forEach(function(k) {
         switch (k) {
           case 'classList':
-            itemDef.classList.forEach(el.classList.add.bind(el.classList));
+            itemDef.classList.forEach(function(c) {
+              el.classList.add(c);
+            });
             return;
         }
         el.setAttribute(k, itemDef[k]);
