@@ -154,7 +154,7 @@
           initialRead.onsuccess = function() {
             resolve();
           };
-          var bulletinsByItem = initialRead.objectStore('bullet').index('item');
+          var bulletinsByItem = initialRead.objectStore('bulletin').index('item');
           initialRead.objectStore('item').openCursor().onsuccess = function(e) {
             var cursor = e.target.result;
             if (!cursor) return;
