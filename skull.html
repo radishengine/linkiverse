@@ -160,12 +160,12 @@
           var bulletinRoot;
           for (bulletinRoot = mutant.target; ; bulletinRoot = bulletinRoot.parentNode) {
             if (!bulletinRoot || bulletinRoot === specRoot) return;
-            if (bulletinRoot.classList.contains('bulletin')) break;
+            if (bulletinRoot.classList && bulletinRoot.classList.contains('bulletin')) break;
           }
           var itemRoot;
           for (itemRoot = bulletinRoot.parentNode; ; itemRoot = itemRoot.parentNode) {
             if (!itemRoot || itemRoot === specRoot) return;
-            if (itemRoot.classList.contains('item')) break;
+            if (itemRoot.classList && itemRoot.classList.contains('item')) break;
           }
           if (itemRoot.parentNode !== specRoot) return;
           transaction.objectStore('bulletin').put(getBulletinDef(bulletinRoot));
