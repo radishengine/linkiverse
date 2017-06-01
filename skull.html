@@ -140,7 +140,7 @@
                 var itemDef = getItemDef(mutant.target);
                 if (mutant.attributeName === 'id' && mutant.oldValue) {
                   items.delete(mutant.oldValue);
-                  bulletins.byItem.getCursor(IDBKeyRange.only(mutant.onlyValue)).onsuccess = function(e) {
+                  bulletins.byItem.getCursor(IDBKeyRange.only(mutant.oldValue)).onsuccess = function(e) {
                     var cursor = e.target.value;
                     if (!cursor) return;
                     var record = cursor.value;
