@@ -113,9 +113,9 @@
           items.put(getBulletinDef(el));
         }
         function onmutant(mutant) {
+          var transaction = this;
           if (mutant.target === specRoot) {
             if (mutant.type === 'childList') {
-              var transaction = db.transaction(['item', 'bulletin'], 'readwrite');
               var items = transaction.objectStore('item');
               var bulletins = transaction.objectStore('bulletin');
               bulletins.byItem = bulletins.index('item');
@@ -137,11 +137,10 @@
           if (mutant.target.parentNode === specRoot) {
             if (mutant.target.classList.contains('item') && mutant.target.id) {
               if (mutant.type === 'attributes') {
-                db.transaction(['item'], 'readwrite').objectStore('item').put(getItemDef(mutant.target));
+                transaction.objectStore('item').put(getItemDef(mutant.target));
               }
               else if (mutant.type === 'childList') {
-                var updating = db.transaction(['bulletin'], 'readwrite');
-                var bulletins = updating.objectStore('bulletin');
+                var bulletins = transaction.objectStore('bulletin');
                 for (var i = 0; i < mutant.removedNodes.length; i++) {
                   var node = mutant.removedNodes[i];
                   if (node.classList && node.classList.contains('bulletin') && node.id) {
@@ -169,6 +168,7 @@
             if (itemRoot.classList.contains('item')) break;
           }
           if (itemRoot.parentNode !== specRoot) return;
+          transaction.objectStore('bulletin').put(getBulletinDef(bulletinRoot));
         }
         return new Promise(function(resolve, reject) {
           var initialRead = db.transaction(['item', 'bulletin'], 'readonly');
@@ -199,7 +199,7 @@
         })
         .then(function() {
           var peeper = new MutationObserver(function(mutations) {
-            mutations.forEach(onmutant);
+            mutations.forEach(onmutant, db.transaction(['item', 'bulletin'], 'readwrite'));
           });
           peeper.observe(specRoot, {
             childList: true,
