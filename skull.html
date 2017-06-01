@@ -135,8 +135,11 @@
             return;
           }
           if (mutant.target.parentNode === specRoot) {
-            if (mutant.target.classList.contains('item') && mutant.target.id) {
+            if (mutant.target.classList.contains('item')) {
               if (mutant.type === 'attributes') {
+                if (mutant.attributeName === 'id' && mutant.oldValue) {
+                  transaction.objectStore('item').delete(mutant.oldValue);
+                }
                 transaction.objectStore('item').put(getItemDef(mutant.target));
               }
               else if (mutant.type === 'childList') {
@@ -206,6 +209,7 @@
             attributes: true,
             subtree: true,
             characterData: true,
+            attributeOldValue: true,
           });
           specRoot.style.display = 'block';
         });
