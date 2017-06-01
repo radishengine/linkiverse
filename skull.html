@@ -114,11 +114,11 @@
         }
         function onmutant(mutant) {
           var transaction = this;
+          var items = transaction.objectStore('item');
+          var bulletins = transaction.objectStore('bulletin');
+          bulletins.byItem = bulletins.index('item');
           if (mutant.target === specRoot) {
             if (mutant.type === 'childList') {
-              var items = transaction.objectStore('item');
-              var bulletins = transaction.objectStore('bulletin');
-              bulletins.byItem = bulletins.index('item');
               for (var i = 0; i < mutant.removedNodes.length; i++) {
                 var node = mutant.removedNodes[i];
                 if (node.classList && node.classList.contains('item') && node.id) {
@@ -137,10 +137,19 @@
           if (mutant.target.parentNode === specRoot) {
             if (mutant.target.classList.contains('item')) {
               if (mutant.type === 'attributes') {
+                var itemDef = getItemDef(mutant.target);
                 if (mutant.attributeName === 'id' && mutant.oldValue) {
-                  transaction.objectStore('item').delete(mutant.oldValue);
+                  items.delete(mutant.oldValue);
+                  bulletins.byItem.getCursor(IDBKeyRange.only(mutant.onlyValue)).onsuccess = function(e) {
+                    var cursor = e.target.value;
+                    if (!cursor) return;
+                    var record = cursor.value;
+                    record.item = itemDef.id;
+                    cursor.update(record);
+                    cursor.continue();
+                  };
                 }
-                transaction.objectStore('item').put(getItemDef(mutant.target));
+                transaction.objectStore('item').put(itemDef);
               }
               else if (mutant.type === 'childList') {
                 var bulletins = transaction.objectStore('bulletin');
