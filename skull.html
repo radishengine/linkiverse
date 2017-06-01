@@ -171,6 +171,12 @@
             if (itemRoot.classList && itemRoot.classList.contains('item')) break;
           }
           if (itemRoot.parentNode !== specRoot) return;
+          if (mutant.target === bulletinRoot
+              && mutant.type === 'attributes'
+              && mutant.attributeName === 'id'
+              && mutant.oldValue) {
+            transaction.objectStore('bulletin').delete(mutant.oldValue);
+          }
           transaction.objectStore('bulletin').put(getBulletinDef(bulletinRoot));
         }
         return new Promise(function(resolve, reject) {
