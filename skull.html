@@ -55,7 +55,7 @@
           ids[i] = id;
           if (++count < ids.length) return;
           var dup = el.cloneNode(true);
-          var nested = [].slice.apply(nested);
+          var nested = [].slice.apply(dup.querySelectorAll(specElements));
           for (var j = 0; j < ids.length; j++) {
             var replace = dup.querySelector('#'+ids[j]);
             var placeholder = document.createElement('DIV');
