@@ -169,8 +169,8 @@
                       nodeStore.delete(+removed.dataset.id);
                     }
                     var nested = removed.querySelectorAll('[data-id]');
-                    for (var i = 0; i < nested.length; i++) {
-                      nodeStore.delete(+nested[i].dataset.id);
+                    for (var k = 0; k < nested.length; k++) {
+                      nodeStore.delete(+nested[k].dataset.id);
                     }
                   }
                   for (var j = 0; j < mutant.addedNodes.length; j++) {
