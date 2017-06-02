@@ -132,7 +132,11 @@
         })
         .then(function(root) {
           specRoot.innerHTML = '';
-          if (!root) return specRoot;
+          if (!root) return new Promise(function(resolve, reject) {
+            putElement(db.transaction(['nodes'], 'readwrite'), specRoot, true, function() {
+              resolve(specRoot);
+            });
+          });
           while (root.childNodes.length > 0) {
             specRoot.appendChild(root.removeChild(root.childNodes[0]));
           }
