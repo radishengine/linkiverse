@@ -147,7 +147,7 @@
               var mutant = mutants[i];
               var container;
               switch (mutant.type) {
-                case 'childNodes':
+                case 'childList':
                   for (var j = 0; j < mutant.removedNodes.length; j++) {
                     var removed = mutant.removedNodes[j];
                     if (removed.nodeType !== Node.ELEMENT_NODE) continue;
