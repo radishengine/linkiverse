@@ -142,6 +142,7 @@
             specRoot.appendChild(root.removeChild(root.childNodes[0]));
           }
           specRoot.dataset.id = root.dataset.id;
+          return specRoot;
         })
         .then(function(specRoot) {
 
