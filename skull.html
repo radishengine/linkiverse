@@ -147,7 +147,8 @@
         .then(function(specRoot) {
 
           new MutationObserver(function(mutants) {
-            var nodeStore = db.transaction(['nodes'], 'readwrite').objectStore('nodes');
+            var transaction = db.transaction(['nodes'], 'readwrite');
+            var nodeStore = transaction.objectStore('nodes');
             var to_update = [];
             for (var i = 0; i < mutants.length; i++) {
               var mutant = mutants[i];
@@ -185,6 +186,9 @@
               }
               while (isNaN(container.dataset.id)) container = container.parentNode;
               if (to_update.indexOf(container) === -1) to_update.push(container);
+            }
+            for (var j = 0; j < to_update.length; j++) {
+              putElement(transaction, to_update[j], false, null);
             }
             
           })
