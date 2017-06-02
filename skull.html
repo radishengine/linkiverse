@@ -107,7 +107,7 @@
             return null;
           }
           function doPlaceholders(el) {
-            var placeholders = temp.querySelectorAll('*[data-placeholder]');
+            var placeholders = el.querySelectorAll('*[data-placeholder]');
             if (placeholders.length === 0) return;
             [].slice.apply(placeholders).forEach(function(placeholder) {
               var id, replacement;
