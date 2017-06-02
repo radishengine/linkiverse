@@ -87,7 +87,9 @@
               return;
             }
             var node = document.createElement(cursor.value.nodeName);
-            node.className = (cursor.value.classList || []).join(' ');
+            if (cursor.value.classList && cursor.value.classList.length > 0) {
+              node.className = cursor.value.classList.join(' ');
+            }
             node.innerHTML = cursor.value.innerHTML || '';
             Object.keys(cursor.value).forEach(function(k) {
               if (/^(?:nodeName|classList|innerHTML)$/i.test(k)) return;
