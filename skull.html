@@ -60,7 +60,7 @@
         var ids = new Array(nested.length);
         var count = 0;
         function gotId(i, id) {
-          ids[i] = '*[data-id='+id+']';
+          ids[i] = '*[data-id="'+id+'"]';
           if (++count < ids.length) return;
           var dup = el.cloneNode(true);
           var nested = [].slice.apply(dup.querySelectorAll(ids.join(', ')));
