@@ -49,17 +49,23 @@
           finalStore();
           return;
         }
+        // filter out >1 additional level deep
+        nested = [].filter.call(nested, function(el) {
+          var ancestor = nested[i].parentNode;
+          while (ancestor !== el && !ancestor.matches(specElements)) ancestor = ancestor.parentNode;
+          return (ancestor === el);
+        });
         var ids = new Array(nested.length);
         var count = 0;
         function gotId(i, id) {
-          ids[i] = id;
+          ids[i] = '*[data-id='+id+']';
           if (++count < ids.length) return;
           var dup = el.cloneNode(true);
-          var nested = [].slice.apply(dup.querySelectorAll(specElements));
-          for (var j = 0; j < ids.length; j++) {
-            var replace = dup.querySelector('*[data-id="'+ids[j]+'"]');
+          var nested = [].slice.apply(dup.querySelectorAll(ids.join(', ')));
+          for (var j = 0; j < nested.length; j++) {
+            var replace = nested[j];
             var placeholder = document.createElement('DIV');
-            placeholder.dataset.placeholder = ids[i];
+            placeholder.dataset.placeholder = replace.dataset.id;
             replace.parentNode.insertBefore(placeholder, replace);
             replace.parentNode.removeChild(replace);
           }
@@ -67,10 +73,6 @@
           finalStore();
         }
         for (var i = 0; i < nested.length; i++) {
-          // ignore if >1 level deep
-          var ancestor = nested[i].parentNode;
-          while (ancestor !== el && !ancestor.matches(specElements)) ancestor = ancestor.parentNode;
-          if (ancestor !== el) continue;
           putElement(transaction, nested[i], isNew, gotId.bind(null, i));
         }
       }
