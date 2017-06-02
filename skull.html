@@ -8,6 +8,7 @@
         var db = e.target.result;
         var nodeStore = db.createObjectStore('nodes', {autoIncrement:true});
         nodeStore.createIndex('byId', 'id', {unique:false});
+        nodeStore.createIndex('byNodeName', 'nodeName', {unique:false});
         nodeStore.createIndex('byClass', 'classList', {multiEntry:true});
       };
       opening.onerror = function(e) {
