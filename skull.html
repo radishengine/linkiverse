@@ -50,10 +50,12 @@
           return;
         }
         // filter out >1 additional level deep
-        nested = [].filter.call(nested, function(el) {
-          var ancestor = nested[i].parentNode;
-          while (ancestor !== el && !ancestor.matches(specElements)) ancestor = ancestor.parentNode;
-          return (ancestor === el);
+        nested = [].filter.call(nested, function(ancestor) {
+          do {
+            ancestor = ancestor.parentNode;
+            if (ancestor === el) return true;
+          } while (!ancestor.matches(specElements));
+          return false;
         });
         var ids = new Array(nested.length);
         var count = 0;
