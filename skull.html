@@ -57,7 +57,7 @@
           var dup = el.cloneNode(true);
           var nested = [].slice.apply(dup.querySelectorAll(specElements));
           for (var j = 0; j < ids.length; j++) {
-            var replace = dup.querySelector('#'+ids[j]);
+            var replace = dup.querySelector('*[data-id='+ids[j]+']');
             var placeholder = document.createElement('DIV');
             placeholder.dataset.placeholder = ids[i];
             replace.parentNode.insertBefore(placeholder, replace);
