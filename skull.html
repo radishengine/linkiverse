@@ -3,14 +3,12 @@
   <script type='text/javascript'>
     
     var openedDB = new Promise(function(resolve, reject) {
-      var opening = indexedDB.open('spec', 2);
+      var opening = indexedDB.open('spec', 1);
       opening.onupgradeneeded = function(e) {
         var db = e.target.result;
-        var items = db.createObjectStore('item', {keyPath:'id'});
-        items.createIndex('class', 'classList', {multiEntry:true});
-        var bulletins = db.createObjectStore('bulletin', {keyPath:'id'});
-        bulletins.createIndex('item', 'item');
-        bulletins.createIndex('class', 'classList', {multiEntry:true});
+        var nodeStore = db.createObjectStore('nodes', {autoIncrement:true});
+        nodeStore.createIndex('byId', 'id', {unique:false});
+        nodeStore.createIndex('byClass', 'classList', {multiEntry:true});
       };
       opening.onerror = function(e) {
         reject();
@@ -20,226 +18,187 @@
       };
     });
     
-    function makeItemElement(itemDef) {
-      var el = document.createElement('DIV');
-      el.classList.add('item');
-      Object.keys(itemDef).forEach(function(k) {
-        switch (k) {
-          case 'classList':
-            itemDef.classList.forEach(function(c) {
-              el.classList.add(c);
-            });
-            return;
-        }
-        el.setAttribute(k, itemDef[k]);
-      });
-      return el;
-    }
-    
-    function getItemDef(el) {
-      if (!el.id) {
-        var idBase = 'item', inc = 1;
-        while (document.querySelector('#' + idBase + inc)) inc++;
-        el.setAttribute('id', idBase + inc);
-      }
-      var obj = {};
-      obj.classList = [].filter.call(el.classList, function(className) {
-        return !/^(?:item)$/i.test(className);
-      });
-      for (var i = 0; i < el.attributes.length; i++) {
-        var attr = el.attributes[i];
-        if (!attr.specified || /^(?:class|contenteditable)$/i.test(attr.name)) continue;
-        obj[attr.name] = attr.value;
-      }
-      return obj;
-    }
-    
-    function makeBulletinElement(bulletinDef) {
-      var el = document.createElement('DIV');
-      el.classList.add('bulletin');
-      el.innerHTML = bulletinDef.html || '';
-      Object.keys(bulletinDef).forEach(function(k) {
-        switch (k) {
-          case 'classList':
-            bulletinDef.classList.forEach(function(className) {
-              el.classList.add(className);
-            });
-            return;
-          case 'html':
-          case 'item':
-            return;
-        }
-        el.setAttribute(k, bulletinDef[k]);
-      });
-      return el;
-    }
-    
-    function getBulletinDef(el) {
-      var obj = {html:el.innerHTML};
-      for (var itemRoot = el.parentNode; itemRoot; itemRoot = itemRoot.parentNode) {
-        if (itemRoot.classList.contains('item')) {
-          obj.item = itemRoot.id;
-          if (!el.id) {
-            var idBase = itemRoot.id + '$', inc = 1;
-            while (document.querySelector('#' + idBase + inc)) inc++;
-            el.setAttribute('id', idBase + inc);
-          }
-          break;
-        }
-      }
-      obj.classList = [].filter.call(el.classList, function(className) {
-        return !/^(?:bulletin)$/i.test(className);
-      });
-      for (var i = 0; i < el.attributes.length; i++) {
-        var attr = el.attributes[i];
-        if (!attr.specified || /^(?:class|contenteditable)$/.test(attr.name)) continue;
-        obj[attr.name] = attr.value;
-      }
-      return obj;
-    };
-    
     function initialize(specRoot) {
-      specRoot.style.display = 'none';
+      var specElements = specRoot.dataset.specElements; // TODO: allow editing?
+      
+      function putElement(transaction, el, isNew, idCallback) {
+        var record = {
+          nodeName: el.nodeName,
+          classList: [].slice.apply(el.classList)
+        };
+        for (var i = 0; i < el.attributes.length; i++) {
+          var attr = el.attributes[i];
+          if (!attr.specified || /^(?:class|contenteditable|data-id)$/i.test(attr.name)) continue;
+          record[attr.name] = attr.value;
+        }
+        function finalStore() {
+          if (isNew || isNaN(el.dataset.id)) {
+            transaction.objectStore('nodes').add(record).onsuccess = function(e) {
+              el.dataset.id = e.target.result;
+              if (idCallback) idCallback(e.target.result);
+            };
+          }
+          else {
+            transaction.objectStore('nodes').put(record, +el.dataset.id);
+            if (idCallback) idCallback(+el.dataset.id);
+          }
+        }
+        var nested = el.querySelectorAll(specElements);
+        if (nested.length === 0) {
+          record.innerHTML = el.innerHTML;
+          finalStore();
+          return;
+        }
+        var ids = new Array(nested.length);
+        var count = 0;
+        function gotId(i, id) {
+          ids[i] = id;
+          if (++count < ids.length) return;
+          var dup = el.cloneNode(true);
+          var nested = [].slice.apply(nested);
+          for (var j = 0; j < ids.length; j++) {
+            var replace = dup.querySelector('#'+ids[j]);
+            var placeholder = document.createElement('DIV');
+            placeholder.dataset.placeholder = ids[i];
+            replace.parentNode.insertBefore(placeholder, replace);
+            replace.parentNode.removeChild(replace);
+          }
+          record.innerHTML = dup.innerHTML;
+          finalStore();
+        }
+        for (var i = 0; i < nested.length; i++) {
+          // ignore if >1 level deep
+          var ancestor = nested[i].parentNode;
+          while (ancestor !== el && !ancestor.matches(specElements)) ancestor = ancestor.parentNode;
+          if (ancestor !== el) continue;
+          putElement(transaction, nested[i], isNew, gotId.bind(null, i));
+        }
+      }
+      
       return openedDB.then(function(db) {
-        function removeItem(items, bulletinsByItem, id) {
-          items.delete(id);
-          bulletinsByItem.openCursor(IDBKeyRange.only(id)).onsuccess = function(e) {
-            var cursor = e.target.result;
-            if (!cursor) return;
-            items.delete(cursor.value.id);
-            cursor.continue();
-          };
-        }
-        function addItem(items, bulletins, el) {
-          items.put(getItemDef(el));
-        }
-        function onmutant(mutant) {
-          var transaction = this;
-          var items = transaction.objectStore('item');
-          var bulletins = transaction.objectStore('bulletin');
-          bulletins.byItem = bulletins.index('item');
-          if (mutant.target === specRoot) {
-            if (mutant.type === 'childList') {
-              for (var i = 0; i < mutant.removedNodes.length; i++) {
-                var node = mutant.removedNodes[i];
-                if (node.classList && node.classList.contains('item') && node.id) {
-                  removeItem(items, bulletins.byItem, node.id);
-                }
-              }
-              for (var i = 0; i < mutant.addedNodes.length; i++) {
-                var node = mutant.addedNodes[i];
-                if (node.classList && node.classList.contains('item')) {
-                  addItem(items, bulletins, node);
-                }
-              }
-            }
-            return;
-          }
-          if (mutant.target.parentNode === specRoot) {
-            if (mutant.target.classList.contains('item')) {
-              if (mutant.type === 'attributes') {
-                var itemDef = getItemDef(mutant.target);
-                if (mutant.attributeName === 'id' && mutant.oldValue) {
-                  items.delete(mutant.oldValue);
-                  bulletins.byItem.openCursor(IDBKeyRange.only(mutant.oldValue)).onsuccess = function(e) {
-                    var cursor = e.target.value;
-                    if (!cursor) return;
-                    var record = cursor.value;
-                    record.item = itemDef.id;
-                    cursor.update(record);
-                    cursor.continue();
-                  };
-                }
-                transaction.objectStore('item').put(itemDef);
-              }
-              else if (mutant.type === 'childList') {
-                var bulletins = transaction.objectStore('bulletin');
-                for (var i = 0; i < mutant.removedNodes.length; i++) {
-                  var node = mutant.removedNodes[i];
-                  if (node.classList && node.classList.contains('bulletin') && node.id) {
-                    bulletins.delete(node.id);
-                  }
-                }
-                for (var i = 0; i < mutant.addedNodes.length; i++) {
-                  var node = mutant.addedNodes[i];
-                  if (node.classList && node.classList.contains('bulletin')) {
-                    bulletins.put(getBulletinDef(node));
-                  }
-                }
-              }
-            }
-            return;
-          }
-          var bulletinRoot;
-          for (bulletinRoot = mutant.target; ; bulletinRoot = bulletinRoot.parentNode) {
-            if (!bulletinRoot || bulletinRoot === specRoot) return;
-            if (bulletinRoot.classList && bulletinRoot.classList.contains('bulletin')) break;
-          }
-          var itemRoot;
-          for (itemRoot = bulletinRoot.parentNode; ; itemRoot = itemRoot.parentNode) {
-            if (!itemRoot || itemRoot === specRoot) return;
-            if (itemRoot.classList && itemRoot.classList.contains('item')) break;
-          }
-          if (itemRoot.parentNode !== specRoot) return;
-          if (mutant.target === bulletinRoot
-              && mutant.type === 'attributes'
-              && mutant.attributeName === 'id'
-              && mutant.oldValue) {
-            transaction.objectStore('bulletin').delete(mutant.oldValue);
-          }
-          transaction.objectStore('bulletin').put(getBulletinDef(bulletinRoot));
-        }
         return new Promise(function(resolve, reject) {
-          var initialRead = db.transaction(['item', 'bulletin'], 'readonly');
-          initialRead.onerror = initialRead.onabort = function() {
-            reject();
-          };
-          initialRead.oncomplete = function() {
-            resolve();
-          };
-          var bulletinsByItem = initialRead.objectStore('bulletin').index('item');
-          initialRead.objectStore('item').openCursor().onsuccess = function(e) {
+        
+          var temp = document.createElement('DIV');
+
+          db.transaction(['nodes'], 'readonly').objectStore('nodes').getCursor().onsuccess = function(e) {
             var cursor = e.target.result;
-            if (!cursor) return;
-            var itemDef = cursor.value;
-            var itemEl = makeItemElement(itemDef);
-            specRoot.appendChild(itemEl);
-            if (itemDef.id) {
-              bulletinsByItem.openCursor(IDBKeyRange.only(itemDef.id)).onsuccess = function(e) {
-                var cursor = e.target.result;
-                if (!cursor) return;
-                var bulletinDef = cursor.value;
-                var bulletinEl = makeBulletinElement(bulletinDef);
-                itemEl.appendChild(bulletinEl);
-              };
+            if (!cursor) {
+              resolve(temp);
+              return;
             }
-            cursor.continue();
+            var node = document.createElement(cursor.value.nodeName);
+            node.className = (cursor.value.classList || []).join(' ');
+            node.innerHTML = cursor.value.innerHTML || '';
+            Object.keys(cursor.value).forEach(function(k) {
+              if (/^(?:nodeName|classList|innerHTML)$/i.test(k)) return;
+              node.setAttribute(k, cursor.value[k]);
+            });
+            node.dataset.id = cursor.key;
+            temp.appendChild(node);
           };
+            
         })
-        .then(function() {
-          var peeper = new MutationObserver(function(mutations) {
-            mutations.forEach(onmutant, db.transaction(['item', 'bulletin'], 'readwrite'));
-          });
-          peeper.observe(specRoot, {
+        .then(function(temp) {
+          var root = temp.querySelector('#' + specRoot.id);
+          if (!root) {
+            return null;
+          }
+          function doPlaceholders(el) {
+            var placeholders = temp.querySelectorAll('*[data-placeholder]');
+            if (placeholders.length === 0) return;
+            [].slice.apply(placeholders).forEach(function(placeholder) {
+              var id, replacement;
+              if (!/\d+/.test(id = placeholder.dataset.placeholder)) {
+                replacement = document.createComment('INVALID:' + id);
+              }
+              else if (!(replacement = temp.querySelect('*[data-placeholder='+id+']'))) {
+                replacement = document.createComment('MISSING:' + id);
+              }
+              else if (replacement.parentNode !== temp) {
+                replacement = document.createComment('DUPLICATE:' + id);
+              }
+              else {
+                temp.removeChild(replacement);
+              }
+              placeholder.parentNode.insertBefore(replacement, placeholder);
+              placeholder.parentNode.removeChild(placeholder);
+              if (replacement.nodeType === Node.ELEMENT_NODE) {
+                doPlaceholders(replacement);
+              }
+            });
+          }
+          doPlaceholders(root);
+          return root;
+        })
+        .then(function(root) {
+          specRoot.innerHTML = '';
+          if (!root) return specRoot;
+          while (root.childNodes.length > 0) {
+            specRoot.appendChild(root.removeChild(root.childNodes[0]));
+          }
+          specRoot.dataset.id = root.dataset.id;
+        })
+        .then(function(specRoot) {
+
+          new MutationObserver(function(mutants) {
+            var nodeStore = db.transaction(['nodes'], 'readwrite').objectStore('nodes');
+            var to_update = [];
+            for (var i = 0; i < mutants.length; i++) {
+              var mutant = mutants[i];
+              var container;
+              switch (mutant.type) {
+                case 'childNodes':
+                  for (var j = 0; j < mutant.removedNodes.length; j++) {
+                    var removed = mutant.removedNodes[j];
+                    if (removed.nodeType !== Node.ELEMENT_NODE) continue;
+                    if (!isNaN(removed.dataset.id)) {
+                      nodeStore.delete(+removed.dataset.id);
+                    }
+                    var nested = removed.querySelectorAll('[data-id]');
+                    for (var i = 0; i < nested.length; i++) {
+                      nodeStore.delete(+nested[i].dataset.id);
+                    }
+                  }
+                  for (var j = 0; j < mutant.addedNodes.length; j++) {
+                    if (mutant.addedNodes[j].nodeType !== Node.ELEMENT_NODE) continue;
+                    delete mutant.addedNodes[j].dataset.id;
+                    var subIDs = mutant.addedNodes[j].querySelectorAll('*[data-id]');
+                    for (var k = 0; k < subIDs.length; k++) {
+                      delete subIDs[k].dataset.id;
+                    }
+                  }
+                  container = mutant.target;
+                  break;
+                case 'attributes':
+                  if (mutant.attributeName === 'data-id') continue;
+                  container = mutant.target;
+                  break;
+                case 'characterData':
+                  container = mutant.target.parentNode;
+                  break;
+              }
+              while (isNaN(container.dataset.id)) container = container.parentNode;
+              if (to_update.indexOf(container) === -1) to_update.push(container);
+            }
+            
+          })
+          .observe(specRoot, {
             childList: true,
             attributes: true,
             subtree: true,
             characterData: true,
             attributeOldValue: true,
           });
-          specRoot.style.display = 'block';
+
         });
-      },
-      function() {
-        console.error('Failed to open indexedDB');
       });
     }
-        
+    
   </script>
 </head>
 <body>
-  <div id='spec'>
+  <div id='spec-root' data-spec-elements='section, article'>
   </div>
-  <script>initialize(document.getElementById('spec'));</script>
+  <script>initialize(document.getElementById('spec-root'));</script>
 </body>
 </html>
