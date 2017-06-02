@@ -112,7 +112,7 @@
               if (!/\d+/.test(id = placeholder.dataset.placeholder)) {
                 replacement = document.createComment('INVALID:' + id);
               }
-              else if (!(replacement = temp.querySelect('*[data-placeholder='+id+']'))) {
+              else if (!(replacement = temp.querySelector('*[data-id="'+id+'"]'))) {
                 replacement = document.createComment('MISSING:' + id);
               }
               else if (replacement.parentNode !== temp) {
