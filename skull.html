@@ -80,7 +80,7 @@
         
           var temp = document.createElement('DIV');
 
-          db.transaction(['nodes'], 'readonly').objectStore('nodes').getCursor().onsuccess = function(e) {
+          db.transaction(['nodes'], 'readonly').objectStore('nodes').openCursor().onsuccess = function(e) {
             var cursor = e.target.result;
             if (!cursor) {
               resolve(temp);
