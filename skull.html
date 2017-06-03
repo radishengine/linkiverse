@@ -19,8 +19,28 @@
       };
     });
     
-    function initialize(specRoot) {
+    function initialize(specRoot, playRoot) {
       var specElements = specRoot.dataset.specElements; // TODO: allow editing?
+      
+      function initPlay() {
+        var all = specRoot.cloneNode(true);
+        var sections = [].slice.apply(all.querySelectorAll('section'));
+        for (var i = 0; i < sections.length; i++) {
+          sections[i].parentNode.removeChild(sections[i]);
+        }
+        for (var i = 0; i < sections.length; i++) {
+          var section = sections[i];
+          section.articles = [].slice.apply(section.querySelectorAll('article'));
+          for (var j = 0; j < section.articles.length; j++) {
+            section.articles[j].parentSection = section;
+            section.articles[j].parentNode.removeChild(section.articles[j]);
+          }
+        }
+        playRoot.innerHTML = '';
+        for (var i = 0; i < sections.length; i++) {
+          playRoot.appendChild(sections[i]);
+        }
+      }
       
       function putElement(transaction, el, isNew, idCallback) {
         var record = {
@@ -216,6 +236,9 @@
 <body>
   <div id='spec-root' data-spec-elements='section, article'>
   </div>
-  <script>initialize(document.getElementById('spec-root'));</script>
+  <hr>
+  <div id='play-root'>
+  </div>
+  <script>initialize(document.getElementById('spec-root'), document.getElementById('play-root'));</script>
 </body>
 </html>
