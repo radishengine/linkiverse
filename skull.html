@@ -134,7 +134,7 @@
           if (!('if' in section.dataset)) section.classList.add('on');
           else {
             updateSection(section);
-            playRoot.addEventListener('class-change', updateSection.bind(section));
+            playRoot.addEventListener('class-change', updateSection.bind(null, section));
           }
         }
         playRoot.appendChild(playRoot.articles = document.createElement('DIV'));
