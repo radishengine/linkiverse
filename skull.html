@@ -36,6 +36,11 @@
       });
     }
     
+    function getSelector(node) {
+      if (node.id) return '#' + node.id;
+      return '*[data-id="' + node.dataset.id + '"]';
+    }
+    
     function initialize(specRoot, playRoot) {
       var specElements = specRoot.dataset.specElements; // TODO: allow editing?
       
@@ -47,18 +52,23 @@
         for (var i = 0; i < dataIDs.length; i++) {
           var node = dataIDs[i];
           node.spec = specRoot.querySelector('*[data-id="' + node.dataset.id + '"]');
-          delete node.dataset.id;
         }
         var parts = all.querySelectorAll('section, article');
         for (var i = 0; i < parts.length; i++) {
           var node = parts[i];
           for (var ancestor = node.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
-            if (ancestor.nodeName === 'article') {
-              node.dataset.if = ((node.dataset.if||'') + '; #' + ancestor.id + '.on').replace(/^\s*;\s*/, '');
+            if (ancestor.nodeName === 'SECTION') {
+              node.dataset.if = [
+                node.dataset.if || '',
+                getSelector(ancestor) + '.on',
+              ].join('; ').replace(/^\s*;\s*/, '');
               break;
             }
-            if (ancestor.nodeName === 'section') {
-              node.dataset.if = ((node.dataset.if||'') + '; #' + ancestor.id + '.read').replace(/^\s*;\s*/, '');
+            if (ancestor.nodeName === 'ARTICLE') {
+              node.dataset.if = [
+                node.dataset.if || '',
+                getSelector(ancestor) + '.read',
+              ].join('; ').replace(/^\s*;\s*/, '');
               break;
             }
           }
