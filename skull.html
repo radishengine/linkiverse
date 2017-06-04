@@ -53,14 +53,16 @@
           var node = dataIDs[i];
           node.spec = specRoot.querySelector('*[data-id="' + node.dataset.id + '"]');
         }
-        var parts = all.querySelectorAll('section, article');
-        for (var i = 0; i < parts.length; i++) {
-          var node = parts[i];
-          for (var ancestor = node.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
+        playRoot.innerHTML = '';
+        playRoot.appendChild(playRoot.sections = document.createElement('DIV'));
+        var sections = [].slice.apply(all.querySelectorAll('section'));
+        for (var i = 0; i < sections.length; i++) {
+          var section = sections[i];
+          for (var ancestor = section.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
             if (ancestor.nodeName === 'SECTION') {
               node.dataset.if = [
                 node.dataset.if || '',
-                getSelector(ancestor) + '.on',
+                getSelector(ancestor) + ('sticky' in section.dataset ? '.ever-on' : '.on'),
               ].join('; ').replace(/^\s*;\s*/, '');
               break;
             }
@@ -73,20 +75,24 @@
             }
           }
         }
-        playRoot.innerHTML = '';
-        playRoot.appendChild(playRoot.sections = document.createElement('DIV'));
-        var sections = [].slice.apply(all.querySelectorAll('section'));
-        var articles = [].slice.apply(all.querySelectorAll('article'));
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
           section.parentNode.removeChild(section);
           playRoot.sections.appendChild(section);
         }
         playRoot.appendChild(playRoot.articles = document.createElement('DIV'));
-        for (var i = 0; i < articles.length; i++) {
-          var article = articles[i];
-          article.parentNode.removeChild(article);
-          playRoot.articles.appendChild(article);
+        for (var i = 0; i < sections.length; i++) {
+          var articles = sections[i].querySelectorAll('article');
+          var parts = [sections[i].dataset.invoke];
+          if (!parts[0]) parts.splice(0, 1);
+          for (var j = 0; j < articles.length; j++) {
+            parts.push(getSelector(articles[j]));
+            articles[j].parentNode.removeChild(articles[j]);
+            playRoot.articles.appendChild(articles[j]);
+          }
+          if (parts.length > 0) {
+            sections[i].dataset.invoke = parts.join('; ');
+          }
         }
       }
       
