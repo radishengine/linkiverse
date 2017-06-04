@@ -60,15 +60,15 @@
           var section = sections[i];
           for (var ancestor = section.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
             if (ancestor.nodeName === 'SECTION') {
-              node.dataset.if = [
-                node.dataset.if || '',
+              section.dataset.if = [
+                section.dataset.if || '',
                 getSelector(ancestor) + ('sticky' in section.dataset ? '.ever-on' : '.on'),
               ].join('; ').replace(/^\s*;\s*/, '');
               break;
             }
             if (ancestor.nodeName === 'ARTICLE') {
-              node.dataset.if = [
-                node.dataset.if || '',
+              section.dataset.if = [
+                section.dataset.if || '',
                 getSelector(ancestor) + '.read',
               ].join('; ').replace(/^\s*;\s*/, '');
               break;
