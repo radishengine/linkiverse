@@ -38,7 +38,7 @@
     
     function getSelector(node) {
       if (node.id) return '#' + node.id;
-      return '*[data-id="' + node.dataset.id + '"]';
+      return '[data-id="' + node.dataset.id + '"]';
     }
     
     function initialize(specRoot, playRoot) {
@@ -48,10 +48,10 @@
       
       function initPlay() {
         var all = specRoot.cloneNode(true);
-        var dataIDs = all.querySelectorAll('*[data-id]');
+        var dataIDs = all.querySelectorAll('[data-id]');
         for (var i = 0; i < dataIDs.length; i++) {
           var node = dataIDs[i];
-          node.spec = specRoot.querySelector('*[data-id="' + node.dataset.id + '"]');
+          node.spec = specRoot.querySelector('[data-id="' + node.dataset.id + '"]');
         }
         playRoot.innerHTML = '';
         playRoot.appendChild(playRoot.sections = document.createElement('DIV'));
@@ -135,7 +135,7 @@
         var ids = new Array(nested.length);
         var count = 0;
         function gotId(i, id) {
-          ids[i] = '*[data-id="'+id+'"]';
+          ids[i] = '[data-id="'+id+'"]';
           if (++count < ids.length) return;
           var dup = el.cloneNode(true);
           var nested = [].slice.apply(dup.querySelectorAll(ids.join(', ')));
@@ -186,14 +186,14 @@
             return null;
           }
           function doPlaceholders(el) {
-            var placeholders = el.querySelectorAll('*[data-placeholder]');
+            var placeholders = el.querySelectorAll('[data-placeholder]');
             if (placeholders.length === 0) return;
             [].slice.apply(placeholders).forEach(function(placeholder) {
               var id, replacement;
               if (!/\d+/.test(id = placeholder.dataset.placeholder)) {
                 replacement = document.createComment('INVALID:' + id);
               }
-              else if (!(replacement = temp.querySelector('*[data-id="'+id+'"]'))) {
+              else if (!(replacement = temp.querySelector('[data-id="'+id+'"]'))) {
                 replacement = document.createComment('MISSING:' + id);
               }
               else if (replacement.parentNode !== temp) {
@@ -250,7 +250,7 @@
                   for (var j = 0; j < mutant.addedNodes.length; j++) {
                     if (mutant.addedNodes[j].nodeType !== Node.ELEMENT_NODE) continue;
                     delete mutant.addedNodes[j].dataset.id;
-                    var subIDs = mutant.addedNodes[j].querySelectorAll('*[data-id]');
+                    var subIDs = mutant.addedNodes[j].querySelectorAll('[data-id]');
                     for (var k = 0; k < subIDs.length; k++) {
                       delete subIDs[k].dataset.id;
                     }
