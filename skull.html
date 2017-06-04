@@ -27,14 +27,28 @@
         var sections = [].slice.apply(all.querySelectorAll('section'));
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
-          section.parentNode.removeChild(section);
           section.classList.add('on');
+          var ancestor;
+          for (ancestor = section.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
+            if (ancestor.nodeName === 'section') {
+              section.parentSection = ancestor;
+              ancestor.childSections = ancestor.childSections || [];
+              ancestor.childSections.push(section);
+              break;
+            }
+            if (ancestor.nodeName === 'article' && !('parentArticle' in section)) {
+              section.parentArticle = ancestor;
+              ancestor.childSections = ancestor.childSections || [];
+              ancestor.childSections.push(section);
+            }
+          }
+          section.parentNode.removeChild(section);
         }
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
-          section.articles = [].slice.apply(section.querySelectorAll('article'));
-          for (var j = 0; j < section.articles.length; j++) {
-            var article = section.articles[j];
+          section.childArticles = [].slice.apply(section.querySelectorAll('article'));
+          for (var j = 0; j < section.childArticles.length; j++) {
+            var article = section.childArticles[j];
             article.parentSection = section;
             article.parentNode.removeChild(article);
           }
@@ -42,8 +56,11 @@
         playRoot.innerHTML = '';
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
+          if ('replaceParent' in section.dataset) {
+            section.classList.remove('on');
+          }
           section.onclick = function() {
-            var article = this.articles[(Math.random() * this.articles.length)|0];
+            var article = this.childArticles[(Math.random() * this.childArticles.length)|0];
             if (article) {
               console.log(article.innerText);
             }
