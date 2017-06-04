@@ -20,17 +20,40 @@
     });
     
     function initPlayEvents(playRoot) {
-      playRoot.addEventListener('switched-on', function(e) {
+      playRoot.addEventListener('class-change', function(e) {
         if (!e.target.classList.contains('ever-on')) {
           e.target.classList.add('ever-on');
         }
       });
       new MutationObserver(function(mutants) {
         for (var i = 0; i < mutants.length; i++) {
-          var isOn = mutants[i].target.classList.contains('on');
-          var wasOn = ((mutants[i].oldValue || '').split(/\s+/g).indexOf('on') !== -1);
-          if (isOn === wasOn) continue;
-          mutants[i].target.dispatchEvent(new CustomEvent(isOn ? 'switched-on' : 'switched-off', {bubbles:true}));
+          var oldList = mutants[i].oldValue.match(/\s+/g) || [];
+          var newList = mutants[i].target.classList;
+          var added = [];
+          if (oldList.length === 0) {
+            added.push.apply(added, newList);
+          }
+          else {
+            for (var i = 0; i < newList.length; i++) {
+              var old_i = oldList.indexOf(newList[i]);
+              if (old_i === -1) {
+                added.push(newList[i]);
+              }
+              else {
+                old_i.splice(old_i, 1);
+              }
+            }
+          }
+          var removed = oldList;
+          if (added.length + removed.length) {
+            mutants[i].target.dispatchEvent(new CustomEvent('class-change', {
+              bubbles: true,
+              detail: {
+                added: added,
+                removed: removed,
+              },
+            }));
+          }
         }
       })
       .observe(playRoot, {
@@ -42,8 +65,8 @@
     }
     
     function getSelector(node) {
-      if (node.id) return '#' + node.id;
-      return '[data-id="' + node.dataset.id + '"]';
+      if (node.id) return '#'+node.id;
+      return '[data-id="'+node.dataset.id+'"]';
     }
     
     function initialize(specRoot, playRoot) {
@@ -51,6 +74,17 @@
       
       initPlayEvents(playRoot);
       
+      function updateSection(section) {
+        var parts = section.dataset.if.match(/[^\s;][^;]*/g);
+        for (var i = 0; i < parts.length; i++) {
+          if (!playRoot.querySelector(parts[i])) {
+            section.classList.remove('on');
+            return;
+          }
+        }
+        section.classList.add('on');
+      }
+
       function initPlay() {
         var all = specRoot.cloneNode(true);
         var dataIDs = all.querySelectorAll('[data-id]');
@@ -97,6 +131,11 @@
           var section = sections[i];
           section.parentNode.removeChild(section);
           playRoot.sections.appendChild(section);
+          if (!('if' in section.dataset)) section.classList.add('on');
+          else {
+            updateSection(section);
+            playRoot.addEventListener('class-change', updateSection.bind(section));
+          }
         }
         playRoot.appendChild(playRoot.articles = document.createElement('DIV'));
         for (var i = 0; i < sections.length; i++) {
