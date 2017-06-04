@@ -25,7 +25,7 @@
           var isOn = mutants[i].target.classList.contains('on');
           var wasOn = ((mutants[i].oldValue || '').split(/\s+/g).indexOf('on') !== -1);
           if (isOn === wasOn) continue;
-          mutants[i].target.dispatchEvent(isOn ? 'switched-on' : 'switched-off', {bubbles:true});
+          mutants[i].target.dispatchEvent(new CustomEvent(isOn ? 'switched-on' : 'switched-off', {bubbles:true}));
         }
       })
       .observe(playRoot, {
