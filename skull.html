@@ -20,6 +20,11 @@
     });
     
     function initPlayEvents(playRoot) {
+      playRoot.addEventListener('switched-on', function(e) {
+        if (!e.target.classList.contains('ever-on')) {
+          e.target.classList.add('ever-on');
+        }
+      });
       new MutationObserver(function(mutants) {
         for (var i = 0; i < mutants.length; i++) {
           var isOn = mutants[i].target.classList.contains('on');
@@ -58,6 +63,18 @@
         var sections = [].slice.apply(all.querySelectorAll('section'));
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
+          if ('replaceParent' in section.dataset) {
+            for (var ancestor = section.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
+              if (ancestor.nodeName === 'SECTION') {
+                ancestor.dataset.if = [
+                  ancestor.dataset.if || '',
+                  getSelector(section) + ':not(.ever-on)',
+                ].join('; ').replace(/^\s*;\s*/, '');
+                break;
+              }
+            }
+            delete section.dataset.replaceParent;
+          }
           for (var ancestor = section.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
             if (ancestor.nodeName === 'SECTION') {
               section.dataset.if = [
