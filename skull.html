@@ -52,7 +52,7 @@
         var parts = all.querySelectorAll('section, article');
         for (var i = 0; i < parts.length; i++) {
           var node = parts[i];
-          for (var ancestor = node.parentNode; ancestor !== all; ancestor = node.parentNode) {
+          for (var ancestor = node.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
             if (ancestor.nodeName === 'article') {
               node.dataset.if = ((node.dataset.if||'') + '; #' + ancestor.id + '.on').replace(/^\s*;\s*/, '');
               break;
