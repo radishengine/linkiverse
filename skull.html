@@ -43,7 +43,7 @@
       
       function initPlay() {
         var all = specRoot.cloneNode(true);
-        var dataIDs = all.querySelectorAll('*[data-id]']);
+        var dataIDs = all.querySelectorAll('*[data-id]');
         for (var i = 0; i < dataIDs.length; i++) {
           var node = dataIDs[i];
           node.spec = specRoot.querySelector('*[data-id="' + node.dataset.id + '"]');
