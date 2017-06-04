@@ -43,50 +43,40 @@
       
       function initPlay() {
         var all = specRoot.cloneNode(true);
-        var sections = [].slice.apply(all.querySelectorAll('section'));
-        for (var i = 0; i < sections.length; i++) {
-          var section = sections[i];
-          var ancestor;
-          for (ancestor = section.parentNode; (ancestor || all) !== all; ancestor = ancestor.parentNode) {
-            if (ancestor.nodeName === 'section') {
-              section.parentSection = ancestor;
-              ancestor.childSections = ancestor.childSections || [];
-              ancestor.childSections.push(section);
+        var dataIDs = all.querySelectorAll('*[data-id]']);
+        for (var i = 0; i < dataIDs.length; i++) {
+          var node = dataIDs[i];
+          node.spec = specRoot.querySelector('*[data-id="' + node.dataset.id + '"]');
+          delete node.dataset.id;
+        }
+        var parts = all.querySelectorAll('section, article');
+        for (var i = 0; i < parts.length; i++) {
+          var node = parts[i];
+          for (var ancestor = node.parentNode; ancestor !== all; ancestor = node.parentNode) {
+            if (ancestor.nodeName === 'article') {
+              node.dataset.if = ((node.dataset.if||'') + '; #' + ancestor.id + '.on').replace(/^\s*;\s*/, '');
               break;
             }
-            if (ancestor.nodeName === 'article' && !('parentArticle' in section)) {
-              section.parentArticle = ancestor;
-              ancestor.childSections = ancestor.childSections || [];
-              ancestor.childSections.push(section);
+            if (ancestor.nodeName === 'section') {
+              node.dataset.if = ((node.dataset.if||'') + '; #' + ancestor.id + '.read').replace(/^\s*;\s*/, '');
+              break;
             }
-          }
-          section.parentNode.removeChild(section);
-          if (!section.parentArticle) {
-            section.classList.add('on');
-          }
-        }
-        for (var i = 0; i < sections.length; i++) {
-          var section = sections[i];
-          section.childArticles = [].slice.apply(section.querySelectorAll('article'));
-          for (var j = 0; j < section.childArticles.length; j++) {
-            var article = section.childArticles[j];
-            article.parentSection = section;
-            article.parentNode.removeChild(article);
           }
         }
         playRoot.innerHTML = '';
+        playRoot.appendChild(playRoot.sections = document.createElement('DIV'));
+        var sections = [].slice.apply(all.querySelectorAll('section'));
+        var articles = [].slice.apply(all.querySelectorAll('article'));
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
-          if ('replaceParent' in section.dataset) {
-            section.classList.remove('on');
-          }
-          section.onclick = function() {
-            var article = this.childArticles[(Math.random() * this.childArticles.length)|0];
-            if (article) {
-              console.log(article.innerText);
-            }
-          };
-          playRoot.appendChild(section);
+          section.parentNode.removeChild(section);
+          playRoot.sections.appendChild(section);
+        }
+        playRoot.appendChild(playRoot.articles = document.createElement('DIV'));
+        for (var i = 0; i < articles.length; i++) {
+          var article = articles[i];
+          article.parentNode.removeChild(article);
+          playRoot.articles.appendChild(article);
         }
       }
       
