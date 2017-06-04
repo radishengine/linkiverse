@@ -23,7 +23,7 @@
       new MutationObserver(function(mutants) {
         for (var i = 0; i < mutants.length; i++) {
           var isOn = mutants[i].target.classList.contains('on');
-          var wasOn = (mutants[i].attributeOldValue.split(/\s+/g).indexOf('on') !== -1);
+          var wasOn = ((mutants[i].oldValue || '').split(/\s+/g).indexOf('on') !== -1);
           if (isOn === wasOn) continue;
           mutant.target.dispatchEvent(isOn ? 'switched-on' : 'switched-off', {bubbles:true});
         }
