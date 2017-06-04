@@ -218,6 +218,8 @@
               putElement(transaction, to_update[j], false, null);
             }
             
+            transaction.oncomplete = initPlay;
+            
           })
           .observe(specRoot, {
             childList: true,
