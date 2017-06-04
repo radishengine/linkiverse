@@ -29,7 +29,7 @@
           var section = sections[i];
           section.classList.add('on');
           var ancestor;
-          for (ancestor = section.parentNode; ancestor !== all; ancestor = ancestor.parentNode) {
+          for (ancestor = section.parentNode; (ancestor || all) !== all; ancestor = ancestor.parentNode) {
             if (ancestor.nodeName === 'section') {
               section.parentSection = ancestor;
               ancestor.childSections = ancestor.childSections || [];
