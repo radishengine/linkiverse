@@ -26,14 +26,17 @@
         var all = specRoot.cloneNode(true);
         var sections = [].slice.apply(all.querySelectorAll('section'));
         for (var i = 0; i < sections.length; i++) {
-          sections[i].parentNode.removeChild(sections[i]);
+          var section = sections[i];
+          section.parentNode.removeChild(section);
+          section.classList.add('on');
         }
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
           section.articles = [].slice.apply(section.querySelectorAll('article'));
           for (var j = 0; j < section.articles.length; j++) {
-            section.articles[j].parentSection = section;
-            section.articles[j].parentNode.removeChild(section.articles[j]);
+            var article = section.articles[j];
+            article.parentSection = section;
+            article.parentNode.removeChild(article);
           }
         }
         playRoot.innerHTML = '';
@@ -248,6 +251,11 @@
   <div id='spec-root' data-spec-elements='section, article'>
   </div>
   <hr>
+  <style type='text/css'>
+    #play-root > section:not(.on) {
+      display: none;
+    }
+  </style>
   <div id='play-root'>
   </div>
   <script>initialize(document.getElementById('spec-root'), document.getElementById('play-root'));</script>
