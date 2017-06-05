@@ -185,6 +185,13 @@
                 article.dataset.if || [],
                 article.dataset.consume.replace(/\S+/g, '$&.on'),
               ].join('; ').replace(/^\s*;\s*/, '');
+              var consumed = playRoot.querySelectorAll(article.dataset.consume);
+              for (var k = 0; k < consumed.length; k++) {
+                consumed[k].dataset.if = [
+                  consumed[k].dataset.if || '',
+                  getSelector(article) + ':not(.read)',
+                ].join('; ').replace(/^\s*;\s*', '');
+              }
             }
           }
           if (parts.length > 0) {
