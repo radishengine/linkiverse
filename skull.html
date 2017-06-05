@@ -128,7 +128,7 @@
           }
           delete section.dataset.sticky;
           section.onclick = function() {
-            var invoke = (this.dataset.invoke || '').match(/[^\S;][^;]*/g) || [];
+            var invoke = (this.dataset.invoke || '').match(/[^\s;][^;]*/g) || [];
             var article;
             for (var i = 0; i < invoke.length; i++) {
               article = playRoot.querySelector(invoke[i]);
