@@ -95,6 +95,7 @@
         }
         playRoot.innerHTML = '';
         playRoot.appendChild(playRoot.sections = document.createElement('DIV'));
+        playRoot.sections.className = 'sections';
         var sections = [].slice.apply(all.querySelectorAll('section'));
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
@@ -139,6 +140,7 @@
           }
         }
         playRoot.appendChild(playRoot.articles = document.createElement('DIV'));
+        playRoot.articles.className = 'articles';
         for (var i = 0; i < sections.length; i++) {
           var articles = [].slice.apply(sections[i].querySelectorAll('article'));
           var parts = [sections[i].dataset.invoke];
@@ -361,7 +363,24 @@
   </div>
   <hr>
   <style type='text/css'>
-    #play-root > section:not(.on) {
+    #play-root > .sections > section:not(.on) {
+      display: none;
+    }
+    #play-root > .articles {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      z-index: 100;
+      display: flex;
+      overflow: auto;
+    }
+    #play-root > .articles:not(.reading) {
+      display: none;
+    }
+    #play-root > .articles > article:not(.reading) {
       display: none;
     }
   </style>
