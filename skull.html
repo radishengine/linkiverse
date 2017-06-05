@@ -127,7 +127,7 @@
             }
           }
           delete section.dataset.sticky;
-          section.onclick = function() {
+          section.onclick = function(e) {
             var invoke = (this.dataset.invoke || '').match(/[^\s;][^;]*/g) || [];
             var article;
             for (var i = 0; i < invoke.length; i++) {
@@ -139,6 +139,7 @@
             document.body.classList.add('reading');
             document.body.reading = article;
             article.classList.add('reading');
+            e.stopPropagation();
           };
         }
         document.body.addEventListener('click', function(e) {
