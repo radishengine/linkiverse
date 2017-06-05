@@ -179,7 +179,7 @@
             if ('consume' in article.dataset) {
               article.dataset.if = [
                 article.dataset.if || [],
-                article.dataset.consume.replace(/\S+/g, '$1.on'),
+                article.dataset.consume.replace(/\S+/g, '\\1.on'),
               ].join('; ').replace(/^\s*;\s*/, '');
             }
           }
