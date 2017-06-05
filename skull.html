@@ -76,6 +76,7 @@
       
       function updateSection(section) {
         var parts = section.dataset.if.match(/[^\s;][^;]*/g);
+        debugger;
         for (var i = 0; i < parts.length; i++) {
           if (!playRoot.querySelector(parts[i])) {
             section.classList.remove('on');
