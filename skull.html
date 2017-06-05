@@ -27,7 +27,7 @@
       });
       new MutationObserver(function(mutants) {
         for (var i = 0; i < mutants.length; i++) {
-          var oldList = mutants[i].oldValue.match(/\s+/g) || [];
+          var oldList = (mutants[i].oldValue || '').match(/\s+/g) || [];
           var newList = mutants[i].target.classList;
           var added = [];
           if (oldList.length === 0) {
