@@ -144,6 +144,7 @@
         }
         document.body.addEventListener('click', function(e) {
           if (this.reading) {
+            this.reading.classList.remove('reading');
             this.reading.classList.add('read');
             this.classList.remove('reading');
             delete this.reading;
