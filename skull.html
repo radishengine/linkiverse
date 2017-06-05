@@ -134,7 +134,11 @@
               article = playRoot.querySelector(invoke[i]);
               if (article) {
                 if ('if' in article.dataset) {
-                  article = playRoot.querySelector(article.dataset.if) && article;
+                  var parts = article.dataset.if.match(/[^\s;][^;]*/g) || [];
+                  for (var j = 0; j < parts.length; j++) {
+                    article = playRoot.querySelector(parts[j]) && article;
+                    if (!article) break;
+                  }
                 }
                 if (article) break;
               }
