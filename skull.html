@@ -132,7 +132,12 @@
             var article;
             for (var i = 0; i < invoke.length; i++) {
               article = playRoot.querySelector(invoke[i]);
-              if (article) break;
+              if (article) {
+                if ('if' in article.dataset) {
+                  article = playRoot.querySelector(article.dataset.if) && article;
+                }
+                if (article) break;
+              }
             }
             if (!article) return;
             playRoot.articles.classList.add('reading');
