@@ -127,7 +127,27 @@
             }
           }
           delete section.dataset.sticky;
+          section.onclick = function() {
+            var invoke = (this.dataset.invoke || '').match(/[^\S;][^;]*/g) || [];
+            var article;
+            for (var i = 0; i < invoke.length; i++) {
+              article = playRoot.querySelector(invoke[i]);
+              if (article) break;
+            }
+            if (!article) return;
+            playRoot.articles.classList.add('reading');
+            document.body.classList.add('reading');
+            document.body.reading = article;
+            article.classList.add('reading');
+          };
         }
+        document.body.addEventListener('click', function(e) {
+          if (this.reading) {
+            this.reading.classList.add('read');
+            this.classList.remove('reading');
+            delete this.reading;
+          }
+        });
         for (var i = 0; i < sections.length; i++) {
           var section = sections[i];
           section.parentNode.removeChild(section);
@@ -376,11 +396,14 @@
       display: flex;
       overflow: auto;
     }
-    #play-root > .articles:not(.reading) {
+    body:not(.reading) #play-root .articles {
       display: none;
     }
     #play-root > .articles > article:not(.reading) {
       display: none;
+    }
+    body.reading {
+      overflow: hidden;
     }
   </style>
   <div id='play-root'>
