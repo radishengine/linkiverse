@@ -22,15 +22,34 @@ define(function() {
     };
   });
   
-  function Doc(rootElement) {
-    this.rootElement = rootElement;
-    rootElement.doc = this;
-  }
-  Doc.prototype = {
-    
+  var nodebase = {};
+  
+  nodebase.findRoot = function(node) {
+    for (; node; node = node.parentNode) {
+      if ('nodebaseRoot' in node) return node.nodebaseRoot;
+    }
+    return Promise.resolve(null);
   };
   
-  var nodebase = {};
+  nodebase.initRoot = function(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+      throw new TypeError('not an element');
+    }
+    if ('nodebaseRoot' in element) return element.nodebaseRoot;
+    return element.nodebaseRoot = new Promise(function(resolve, reject) {
+      if ('key' in element.dataset) {
+        
+      }
+    });
+  };
+  
+  function DomVersion(rootElement) {
+    this.rootElement = rootElement;
+  }
+  DomVersion.prototype = {
+    init: function() {
+    },
+  };
   
   nodebase.Doc = Doc;
   
