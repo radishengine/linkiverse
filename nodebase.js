@@ -3,31 +3,43 @@ define(function() {
 
   'use strict';
   
+  var gotDB = new Promise(function(resolve, reject) {
+    var opening = indexedDB.open('nodebase', 1);
+    opening.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      var nodeStore = db.createObjectStore('nodes', {autoIncrement:true});
+      nodeStore.createIndex('id', 'id', {unique:false});
+      nodeStore.createIndex('root', 'root', {unique:false});
+      nodeStore.createIndex('root+id', ['root', 'id'], {unique:true});
+      nodeStore.createIndex('root+nodeName', ['root', 'nodeName'], {unique:false});
+      nodeStore.createIndex('root+classList', ['root', 'classList'], {multiEntry:true});
+    };
+    opening.onerror = function(e) {
+      reject();
+    };
+    opening.onsuccess = function(e) {
+      resolve(e.target.result);
+    };
+  });
+  
+  function Doc(rootElement) {
+    this.rootElement = rootElement;
+    rootElement.doc = this;
+  }
+  Doc.prototype = {
+    
+  };
+  
   var nodebase = {};
   
+  nodebase.Doc = Doc;
+  
   nodebase.getDB = function() {
-    return this._gotDB = this._gotDB || new Promise(function(resolve, reject) {
-      var opening = indexedDB.open('nodebase', 1);
-      opening.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        var nodeStore = db.createObjectStore('nodes', {autoIncrement:true});
-        nodeStore.createIndex('id', 'id', {unique:false});
-        nodeStore.createIndex('root', 'root', {unique:false});
-        nodeStore.createIndex('root+id', ['root', 'id'], {unique:true});
-        nodeStore.createIndex('root+nodeName', ['root', 'nodeName'], {unique:false});
-        nodeStore.createIndex('root+classList', ['root', 'classList'], {multiEntry:true});
-      };
-      opening.onerror = function(e) {
-        reject();
-      };
-      opening.onsuccess = function(e) {
-        resolve(e.target.result);
-      };
-    });
+    return gotDB;
   };
   
   nodebase.getAllRoots = function() {
-    return this.getDB().then(function(db) {
+    return gotDB.then(function(db) {
       return new Promise(function(resolve, reject) {
         var transaction = db.transaction('readonly');
         var result = [];
