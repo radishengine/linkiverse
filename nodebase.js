@@ -91,6 +91,28 @@ define(function() {
     });
   };
   
+  nodebase.createRecord = function(element) {
+    var record = {nodeName:element.nodeName};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      if (!attr.specified || /^(?:class|contenteditable|data-key)$/i.test(attr.name)) continue;
+      record[attr.name] = attr.value;
+    }
+    record.classList = [].slice.apply(element.classList);
+    return record;
+  };
+  
+  nodebase.deleteNode = function(transaction, node) {
+    var nodes = transaction.objectStore('nodes');
+    if (!isNaN(node.dataset.key)) {
+      nodes.delete(+node.dataset.key);
+    }
+    var subnodes = node.querySelector('[data-key]');
+    for (var i = 0; i < subnodes.length; i++) {
+      nodes.delete(+subnodes[i].dataset.key);
+    }
+  };
+  
   nodebase.initElement = function(el, src) {
     Object.keys(src.record).forEach(function(k) {
       if (/^(?:contenteditable|root|innerHTML|classList)$/i.test(k)) return;
