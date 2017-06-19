@@ -91,6 +91,20 @@ define(function() {
     });
   };
   
+  nodebase.initElement = function(el, src) {
+    Object.keys(src.record).forEach(function(k) {
+      if (/^(?:contenteditable|root|innerHTML|classList)$/i.test(k)) return;
+      el.setAttribute(k, src.record[k]);
+    });
+    el.innerHTML = src.record.innerHTML || '';
+    el.dataset.key = src.key;
+    return el;
+  };
+  
+  nodebase.createElement = function(src) {
+    return this.initElement(document.createElement(src.record.nodeName || 'DIV'));
+  };
+  
   return nodebase;
   
 });
