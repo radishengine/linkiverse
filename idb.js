@@ -5,7 +5,7 @@ define(function() {
   return {
     load: function(name, parentRequire, onload, config) {
       parentRequire(name + '_idb', function(lib) {
-        var req = lib.requestDBConnection();
+        var req = lib.requestConnection();
         req.addEventListener('success', function onsuccess() {
           onload(req.result);
           req.removeEventListener('success', onsuccess);
