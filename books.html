@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Books Test</title>
+  <meta charset='utf-8'>
+  <script src='seedrandom.js'></script>
+  <style>
+    .books {
+      display: flex;
+    }
+    .book {
+      background: red;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class='books'>
+    <div class='book'>The Raven Problem</div>
+    <div class='book'>What About Murder</div>
+    <div class='book'>The Long Henry</div>
+    <div class='book'>The Hawaiian Fortune</div>
+    <div class='book'>A Touch of Shoes</div>
+    <div class='book'>The Family Wex</div>
+    <div class='book'>Friends and Diamond Liquor</div>
+    <div class='book'>The Fiddler's Dog</div>
+    <div class='book'>The Ordinarian</div>
+    <div class='book'>A Hard Daze</div>
+    <div class='book'>The Winter Waters</div>
+  </div>
+  <script>
+    function initBook(book) {
+      var rng = new Math.seedrandom(book.innerText.trim());
+      book.style.backgroundColor = 'hsl(' + (rng() * 360) + 'deg, 100%, 50%)';
+    }
+    var books = document.querySelectorAll('.books > .book');
+    for (var i = 0; i < books.length; i++) {
+      initBook(books[i]);
+    }
+  </script>
+</body>
+
+</html>
