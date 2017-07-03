@@ -33,7 +33,7 @@
   <script>
     function initBook(book) {
       var rng = new Math.seedrandom(book.innerText.trim());
-      book.style.backgroundColor = 'hsl(' + (rng() * 360) + 'deg, 100%, 50%)';
+      book.style.backgroundColor = 'hsl(' + (rng() * 360) + ', 100%, 50%)';
     }
     var books = document.querySelectorAll('.books > .book');
     for (var i = 0; i < books.length; i++) {
