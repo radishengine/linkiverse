@@ -39,12 +39,12 @@
       }).map(function(line) {
         return line.split(/\s+/g).map(function(part) {
           var match = part.match(/^\[(\/)?([^\/\]]+)(\/)?\]$/);
-          if (!match || (part[1] && part[3])) {
+          if (!match || (match[1] && match[3])) {
             throw new Error('unexpected content: ' + part);
           }
-          var leftClose = !!part[1];
-          var rightClose = leftClose || !part[3];
-          return {leftClose:leftClose, rightClose:rightClose, name:part[2]};
+          var leftClose = !!match[1];
+          var rightClose = leftClose || !match[3];
+          return {leftClose:leftClose, rightClose:rightClose, name:match[2]};
         });
       }).forEach(function(line) {
         line.forEach(function(part) {
