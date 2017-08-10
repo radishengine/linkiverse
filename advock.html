@@ -37,7 +37,7 @@
       }).filter(function(line) {
         return !!line;
       }).map(function(line) {
-        return line.split(/\s+).map(function(part) {
+        return line.split(/\s+/g).map(function(part) {
           var match = part.match(/^\[(\/)?([^\/\]]+)(\/)?\]$/);
           if (!match || (part[1] && part[3])) {
             throw new Error('unexpected content: ' + part);
