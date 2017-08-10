@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>Advock Test</title>
+  </head>
+  <body>
+    <script type='text/x-advock' id='the-script'>
+    
+[become:pirate/] [free:governor-marley/] [defeat:ghost-pirate-lechuck/] [roll:credits/]
+
+[become:pirate] [master:sword/] [/become:pirate]
+[become:pirate] [master:treasure/] [/become:pirate]
+[become:pirate] [master:theft/] [/become:pirate]
+
+[master:sword] [locate:sword] [obtain:sword/] [learn-theory:sword/] [learn-practical:sword/] [defeat:sword-master/] [/master:sword]
+[master:sword] [locate:sword-master/] [defeat:sword-master/] [/master:sword]
+[master:treasure] [locate:x-marks-the-spot/] [excavate:x-marks-the-spot/] [/master:treasure]
+[master:treasure] [locate:shovel/] [obtain:shovel/] [excavate:x-marks-the-spot/] [/master:treasure]
+[master:theft] [locate:mansion/] [infiltrate:mansion/] [unlock:fabulous-idol/] [escape:attempted-drowning/] [/master:theft]
+
+[locate:sword-master] [identify-associate:shopkeep/] [request-meeting:shopkeep/] [follow:shopkeep/] [/locate:sword-master]
+
+[locate:x-marks-the-spot] [locate:treasure-map/] [obtain:treasure-map/] [decode:treasure-map/] [/locate:x-marks-the-spot]
+
+[escape:attempted-drowning] [pick-up:fabulous-idol/] [/escape:attempted-drowning]
+
+[obtain:funds/] [obtain:sword/]
+[obtain:funds/] [obtain:treasure-map/]
+[obtain:funds/] [obtain:shovel/]
+    
+    </script>
+    <script type='text/javascript'>
+      var text = document.getElementById('the-script').text;
+      text.split(/\n/g).map(function(line) {
+        return line.replace(/#.*/, '').trim();
+      }).filter(function(line) {
+        return !!line;
+      }).map(function(line) {
+        return line.split(/\s+).map(function(part) {
+          var match = part.match(/^\[(\/)?([^\/\]]+)(\/)?\]$/);
+          if (!match || (part[1] && part[3])) {
+            throw new Error('unexpected content: ' + part);
+          }
+          var leftClose = !!part[1];
+          var rightClose = leftClose || !part[3];
+          return {leftClose:leftClose, rightClose:rightClose, name:part[2]};
+        });
+      }).forEach(function(line) {
+        line.forEach(function(part) {
+          console.log('[*] [' + part.name + ']');
+          console.log('[/' + part.name + '] [/*]');
+        });
+        for (var i = 1; i < line.length; i++) {
+          console.log(
+            '[' + (line[i-1].leftClose ? '/' : '') + line[i-1].name + ']'
+            + ' '
+            + '[' + (line[i].rightClose ? '/' : '') + line[i].name + ']');
+        }
+      });
+    </script>
+  </body>
+</html>
