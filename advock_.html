@@ -48,7 +48,7 @@
           return {leftClose:leftClose, rightClose:rightClose, name:match[2]};
         });
       }).forEach(function(line) {
-        if (!(line[0].name)) {
+        if (!(line[0].name in map)) {
           map[line[0].name] = {};
           map[line[0].name]['/'+line[0].name] = true;
           map['/'+line[0].name] = {};
