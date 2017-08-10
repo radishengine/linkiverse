@@ -31,7 +31,7 @@
     
     </script>
     <script type='text/javascript'>
-      var map = {'':{}};
+      var map = {};
       var text = document.getElementById('the-script').text;
       text.split(/\n/g).map(function(line) {
         return line.replace(/#.*/, '').trim();
@@ -43,13 +43,12 @@
           if (!match || (match[1] && match[3])) {
             throw new Error('unexpected content: ' + part);
           }
-          var leftClose = !!match[1];
-          var rightClose = leftClose || !match[3];
+          var rightClose = !!match[1];
+          var leftClose = rightClose || !!match[3];
           return {leftClose:leftClose, rightClose:rightClose, name:match[2]};
         });
       }).forEach(function(line) {
-        if (!(line[0].name in map)) {
-          map[''][line[0].name] = true;
+        if (!(line[0].name)) {
           map[line[0].name] = {};
           map[line[0].name]['/'+line[0].name] = true;
           map['/'+line[0].name] = {};
