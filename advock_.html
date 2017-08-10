@@ -31,7 +31,7 @@
     
     </script>
     <script type='text/javascript'>
-      var map = {'':[]};
+      var map = {'':{}};
       var text = document.getElementById('the-script').text;
       text.split(/\n/g).map(function(line) {
         return line.replace(/#.*/, '').trim();
@@ -52,7 +52,7 @@
         for (var i = 0; i < line.length; i++) {
           if (!(line[i].name in map)) {
             map[line[i].name] = {};
-            map[line[i].name]['/' + map[line[i].name]] = true;
+            map[line[i].name]['/' + line[i].name] = true;
             map['/'+line[i].name] = {};
           }
           var name = (line[i].rightClose ? '/' : '') + line[i].name;
