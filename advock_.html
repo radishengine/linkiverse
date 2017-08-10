@@ -51,11 +51,12 @@
         var prev = '';
         for (var i = 0; i < line.length; i++) {
           if (!(line[i].name in map)) {
-            map[line[i].name] = ['/' + map[line[i].name]];
-            map['/'+line[i].name] = [];
+            map[line[i].name] = {};
+            map[line[i].name]['/' + map[line[i].name]] = true;
+            map['/'+line[i].name] = {};
           }
           var name = (line[i].rightClose ? '/' : '') + line[i].name;
-          map[prev].push(name);
+          map[prev][name] = true;
           prev = (line[i].leftClose ? '/' : '') + line[i].name;
         }
       });
