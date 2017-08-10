@@ -48,16 +48,21 @@
           return {leftClose:leftClose, rightClose:rightClose, name:match[2]};
         });
       }).forEach(function(line) {
-        var prev = '';
-        for (var i = 0; i < line.length; i++) {
+        if (!(line[0].name in map)) {
+          map[''][line[0].name] = true;
+          map[line[0].name] = {};
+          map[line[0].name]['/'+line[0].name] = true;
+          map['/'+line[0].name] = {};
+        }
+        for (var i = 1; i < line.length; i++) {
           if (!(line[i].name in map)) {
             map[line[i].name] = {};
-            map[line[i].name]['/' + line[i].name] = true;
+            map[line[i].name]['/'+line[i].name] = true;
             map['/'+line[i].name] = {};
           }
+          var prev = (line[i-1].leftClose ? '/' : '') + line[i-1].name;
           var name = (line[i].rightClose ? '/' : '') + line[i].name;
           map[prev][name] = true;
-          prev = (line[i].leftClose ? '/' : '') + line[i].name;
         }
       });
       console.log(map);
