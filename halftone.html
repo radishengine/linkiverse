@@ -12,6 +12,10 @@
           <feFuncA type='discrete' tableValues='0 1' />
         </feComponentTransfer>
       </filter>
+      <linearGradient id='bwGradient' x1='0' y1='0' x2='0' y2='100%'>
+        <stop offset="0%" stop-color="black"/>
+        <stop offset="100%" stop-color="white"/>
+      </linearGradient>
       <radialGradient id="toTransparent">
         <stop offset="0%" stop-color="black"/>
         <stop offset="100%" stop-color="transparent"/>
@@ -24,7 +28,12 @@
         <circle cx='10' cy='10' r='14.1421356237' fill='url(#toTransparent)'/>
       </pattern>
     </defs>
-    <circle cx="60" cy="60" r="50" fill="url(#halfToneBase)" style='filter:url(#threshold)'/>
+    <g style='filter:url(#threshold)'>
+      <rect width='50' height='100' fill='url(#bwGradient)'/>
+      <!--
+      <circle cx="60" cy="60" r="50" fill="url(#halfToneBase)" />
+      -->
+    </g>
   </svg>
 </body>
 </html>
