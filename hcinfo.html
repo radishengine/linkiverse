@@ -961,6 +961,8 @@ function update() {
             data: file.data.subarray(pos+16, pos+len),
           };
           pos += len;
+          chunks.push(block);
+          if (block.type === 'TAIL') break;
         }
         console.log(chunks);
       }
