@@ -982,7 +982,7 @@ function update() {
               var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
               var partCount = dv.getUint16(/* chunk.type === 'CARD' ? 40 : */ 40, false);
               var partContentCount = dv.getUint16(/* chunk.type === 'CARD' ? 48 : */ 48, false);
-              var pos = chunk.type === /* chunk.type === 'CARD' ? 54 : */ 54;
+              var pos = /* chunk.type === 'CARD' ? 54 : */ 54;
               for (var i = 0; i < partCount; i++) {
                 var size = dv.getUint16(pos, false);
                 var namePos = pos + 30, nameLen = 0;
