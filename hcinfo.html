@@ -393,7 +393,7 @@ function update() {
       return this.dv.getUint32(6, false);
     },
     get name() {
-      return macRoman(this.bytes, 7, this.bytes[6]);
+      return macRoman(this.bytes, 7, this.bytes[6]).replace(/\x7F+$/, '');
     },
     get overflowExtentDataRecord() {
       return extentDataRecord(this.dv, 1 + this.bytes[0]);
