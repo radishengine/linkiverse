@@ -641,7 +641,7 @@
       var chunkOffset = chunkSize * extents[i].offset;
       var chunk = alloc.subarray(
         chunkOffset,
-        chunkOffset + Math.min(byteLength, chunkSize * extents[i].length);
+        chunkOffset + Math.min(byteLength, chunkSize * extents[i].length));
       buf.set(chunk, offset);
       offset += chunk.length;
       byteLength -= chunk.length;
