@@ -957,14 +957,79 @@ function update() {
           var len = dv.getUint32(pos, false);
           var block = {
             type: String.fromCharCode(file.data[pos+4], file.data[pos+5], file.data[pos+6], file.data[pos+7]),
-            id: dv.getUint32(pos+8, false),
-            data: file.data.subarray(pos+16, pos+len),
+            id: dv.getInt32(pos+8, false),
+            data: file.data.subarray(pos, pos+len),
           };
           pos += len;
           chunks.push(block);
           if (block.type === 'TAIL') break;
         }
         console.log(chunks);
+        chunks.forEach(function(chunk) {
+          switch (chunk.type) {
+            case 'STAK':
+              if (chunk.data[0x600]) {
+                var len = 1;
+                while (chunk.data[0x600+len]) len++;
+                var code = document.createElement('PRE');
+                code.className = 'code';
+                code.innerText = macRoman(chunk.data, 0x600, len);
+                document.getElementById('content').appendChild(code);
+              }
+              break;
+            case 'BKGD':
+            case 'CARD':
+              var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
+              var partCount = dv.getUint16(chunk.type === 'CARD' ? 40 : 36, false);
+              var partContentCount = dv.getUint16(chunk.type === 'CARD' ? 48 : 44, false);
+              var pos = chunk.type === 'CARD' ? 54 : 50;
+              for (var i = 0; i < partCount; i++) {
+                var size = dv.getUint16(pos, false);
+                var namePos = pos + 30, nameLen = 0;
+                while (chunk.data[namePos + nameLen]) nameLen++;
+                var el = document.createElement('PRE');
+                el.innerText = macRoman(chunk.data, namePos, nameLen);
+                document.getElementById('content').appendChild(el);
+                var scriptPos = namePos + nameLen + 1;
+                if (chunk.data[scriptPos]) {
+                  var scriptLen = 1;
+                  while (chunk.data[scriptPos+scriptLen]) scriptLen++;
+                  var el = document.createElement('PRE');
+                  el.innerText = macRoman(chunk.data, pos + scriptPos, scriptLen);
+                  document.getElementById('content').appendChild(el);
+                }
+                pos += size;
+              }
+              for (var i = 0; i < partContentCount; i++) {
+                var partId = dv.getInt16(pos, true);
+                var size = dv.getInt16(pos+2, true);
+                var formatLength = chunk.data[pos+4] & 0x80 ? dv.getUint16(pos+4, false) : 1;
+                var charPos = pos + 4 + formatLength;
+                var charLen = 0;
+                while (chunk.data[charPos+charLen]) charLen++;
+                if (charLen > 0) {
+                  var el = document.createElement('PRE');
+                  el.innerText = macRoman(chunk.data, charPos, charLen);
+                  document.getElementById('content').appendChild(el);
+                }
+                pos += 4 + size;
+              }
+              var nameLen = 0;
+              while (chunk.data[pos + nameLen]) nameLen++;
+              var el = document.createElement('PRE');
+              el.innerText = macRoman(chunk.data, pos, nameLen);
+              document.getElementById('content').appendChild(el);
+              pos += nameLen + 1;
+              if (chunk.data[pos]) {
+                var scriptLen = 1;
+                while (chunk.data[pos+scriptLen]) scriptLen++;
+                var el = document.createElement('PRE');
+                el.innerText = macRoman(chunk.data, pos, scriptLen);
+                document.getElementById('content').appendChild(el);
+              }
+              break;
+          }
+        });
       }
     }
     
