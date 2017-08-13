@@ -2,8 +2,16 @@
 <html>
 <head>
   <title>HyperCard Tool</title>
+  <style>
+    pre { white-space: pre-wrap; }
+    body:not(.show-code) .code { display: none; }
+  </style>
 </head>
 <body>
+  <label>
+    <input type='checkbox' onchange='document.body.className = this.checked ? "show-code" : ""'>
+    Show code?
+  </label>
   <div id='content'></div>
   <script>
     
