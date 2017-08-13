@@ -990,7 +990,7 @@ function update() {
                 var el = document.createElement('PRE');
                 el.innerText = macRoman(chunk.data, namePos, nameLen);
                 document.getElementById('content').appendChild(el);
-                var scriptPos = namePos + nameLen + 1;
+                var scriptPos = namePos + nameLen + 2;
                 if (chunk.data[scriptPos]) {
                   var scriptLen = 1;
                   while (chunk.data[scriptPos+scriptLen]) scriptLen++;
