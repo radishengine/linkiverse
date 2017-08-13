@@ -689,13 +689,13 @@ function update() {
     var catalog = fromExtents(
       alloc,
       mdb.allocationChunkByteLength,
-      mdb.catalogFileByteLength,
-      mdb.catalogFileExtentRecord);
+      mdb.catalogByteLength,
+      mdb.catalogFirstExtents);
     var overflow = fromExtents(
       alloc,
       mdb.allocationChunkByteLength,
-      mdb.extentsOverflowFileByteLength,
-      mdb.extentsOverflowFileExtentRecord);
+      mdb.overflowByteLength,
+      mdb.overflowFirstExtents);
       
     var parentPaths = {};
     parentPaths[0] = '';
