@@ -681,17 +681,18 @@ function update() {
     if (!mdb.hasValidSignature) {
       return Promise.reject('not an HFS volume');
     }
+    var chunkSize = mdb.allocationChunkByteLength;
     var alloc = new Uint8Array(disk,
       mdb.firstAllocationBlock * 512,
-      mdb.allocationChunkCount * mdb.allocationChunkByteLength);
+      mdb.allocationChunkCount * chunkSize);
     var catalog = fromExtents(
       alloc,
-      mdb.allocationChunkByteLength,
+      chunkSize,
       mdb.catalogByteLength,
       mdb.catalogFirstExtents);
     var overflow = fromExtents(
       alloc,
-      mdb.allocationChunkByteLength,
+      chunkSize,
       mdb.overflowByteLength,
       mdb.overflowFirstExtents);
       
