@@ -631,6 +631,149 @@ function update() {
     },
   };
   
+  function ResourceHeaderView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  ResourceHeaderView.prototype = {
+    get dataOffset() {
+      return this.dv.getUint32(0, false);
+    },
+    get mapOffset() {
+      return this.dv.getUint32(4, false);
+    },
+    get dataLength() {
+      return this.dv.getUint32(8, false);
+    },
+    get mapLength() {
+      return this.dv.getUint32(12, false);
+    },
+  };
+  ResourceHeaderView.byteLength = 16;
+  
+  function ResourceMapView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+  }
+  ResourceMapView.prototype = {
+    get isReadOnly() {
+      return !!(this.dv.getUint16(22, false) & 0x0080);
+    },
+    get typeListOffset() {
+      var offset = this.dv.getUint16(24, false);
+      Object.defineProperty(this, 'typeListOffset', {value:offset});
+      return offset;
+    },
+    get nameListOffset() {
+      var offset = this.dv.getUint16(26, false);
+      Object.defineProperty(this, 'nameListOffset', {value:offset});
+      return offset;
+    },
+    get typeCount() {
+      var count = this.dv.getInt16(this.typeListOffset, false) + 1;
+      Object.defineProperty(this, 'typeCount', {value:count});
+      return count;
+    },
+    get typeList() {
+      var list = new Array(this.typeCount);
+      var buffer = this.dv.buffer;
+      var byteOffset = this.dv.byteOffset + this.typeListOffset + 2;
+      var byteLength = ResourceTypeListEntryView.byteLength;
+      for (var i = 0; i < list.length; i++) {
+        list[i] = new ResourceTypeListEntryView(buffer, byteOffset, byteLength);
+        byteOffset += byteLength;
+      }
+      Object.defineProperty(this, 'typeList', {value:list});
+      return list;
+    },
+    getReferenceList: function(offset, count) {
+      var buffer = this.dv.buffer;
+      var byteOffset = this.dv.byteOffset + this.typeListOffset + offset;
+      var byteLength = ReferenceListEntryView.byteLength;
+      var list = new Array(count);
+      for (var i = 0; i < list.length; i++) {
+        list[i] = new ReferenceListEntryView(buffer, byteOffset, byteLength);
+        byteOffset += byteLength;
+      }
+      return list;
+    },
+    getName: function(offset) {
+      if (offset === null) return null;
+      offset += this.nameListOffset;
+      return macintoshRoman(this.bytes, offset + 1, this.bytes[offset]);
+    },
+    get resourceList() {
+      var list = [];
+      for (var i = 0; i < this.typeList.length; i++) {
+        var typeName = this.typeList[i].typeName;
+        var withType = this.getReferenceList(
+          this.typeList[i].referenceListOffset,
+          this.typeList[i].resourceCount);
+        for (var j = 0; j < withType.length; j++) {
+          var resourceInfo = withType[j];
+          resourceInfo.type = typeName;
+          resourceInfo.name = this.getName(resourceInfo.nameOffset);
+          list.push(resourceInfo);
+        }
+      }
+      Object.defineProperty(this, 'resourceList', {value:list});
+      return list;
+    },
+  };
+  
+  function ResourceTypeListEntryView(buffer, byteOffset, byteLength) {
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+  }
+  ResourceTypeListEntryView.prototype = {
+    get typeName() {
+      return macintoshRoman(this.bytes, 0, 4);
+    },
+    get resourceCount() {
+      return this.dv.getInt16(4, false) + 1;
+    },
+    get referenceListOffset() {
+      return this.dv.getUint16(6, false);
+    },
+  };
+  ResourceTypeListEntryView.byteLength = 8;
+  
+  function ReferenceListEntryView(buffer, byteOffset, byteLength) {
+    this.dv = new DataView(buffer, byteOffset, byteLength);
+    this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+  }
+  ReferenceListEntryView.prototype = {
+    get id() {
+      return this.dv.getInt16(0, false);
+    },
+    get nameOffset() {
+      var offset = this.dv.getInt16(2, false);
+      if (offset === -1) offset = null;
+      return offset;
+    },
+    get isLoadedInSystemHeap() {
+      return !!(this.bytes[4] & 0x40);
+    },
+    get mayBePagedOutOfMemory() {
+      return !!(this.bytes[4] & 0x20);
+    },
+    get doNotMoveInMemory() {
+      return !!(this.bytes[4] & 0x10);
+    },
+    get isReadOnly() {
+      return !!(this.bytes[4] & 0x08);
+    },
+    get isPreloaded() {
+      return !!(this.bytes[4] & 0x04);
+    },
+    get isCompressed() {
+      return !!(this.bytes[4] & 0x01);
+    },
+    get dataOffset() {
+      return this.dv.getUint32(4, false) & 0xffffff;
+    },
+  };
+  ReferenceListEntryView.byteLength = 12;  
+  
   function fromExtents(alloc, chunkSize, byteLength, extents) {
     if (byteLength <= chunkSize * extents[0].length) {
       var byteOffset = chunkSize * extents[0].offset;
@@ -654,21 +797,6 @@ function update() {
     return buf;
   }
   
-  function eachLeaf(btree, callback) {
-    var header = new BTreeNodeView(btree.buffer, btree.byteOffset, NODE_BYTES);
-    if (header.type !== 'header') {
-      throw new Error('invalid btree');
-    }
-    var map = header.records[2];
-    header = header.records[0];
-    var leaf;
-    for (var nodeNumber = header.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
-      leaf = new BTreeNodeView(btree.buffer, btree.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
-      if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
-      callback(leaf);
-    }
-  }
-
   fetch('//cors.archive.org/cors/' + name + '/disk.img')
   .then(function(response) {
     if (!response.ok) {
@@ -730,63 +858,82 @@ function update() {
       overflowNodeNumber = overflowLeaf.nextNodeNumber;
     }
     
-    var dataForks = {};
-    var resourceForks = {};
+    var files = {};
     
-    eachLeaf(catalog, function(leaf) {
-    
-      for (var i = 0; i < leaf.records.length; i++) {
-        var record = leaf.records[i];
-        if (!/^(folder|file)$/.test(record.leafType)) continue;
+    var header = new BTreeNodeView(btree.buffer, btree.byteOffset, NODE_BYTES);
+    if (header.type !== 'header') {
+      throw new Error('invalid btree');
+    }
+    var map = header.records[2];
+    header = header.records[0];
+    var leaf;
+    for (var nodeNumber = header.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
+      leaf = new BTreeNodeView(btree.buffer, btree.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
+      if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
+      leaf.records.forEach(function(record) {
+        if (!/^(folder|file)$/.test(record.leafType)) return;
         var parentPath = parentPaths[record.parentFolderID];
         var path = parentPath + encodeURIComponent(record.name);
+        var info = files[path] = {
+          isFolder: record.leafType === 'folder',
+          path: path,
+          fileInfo: record.fileInfo,
+          type: record.fileInfo.type,
+          creator: record.fileInfo.creator,
+          createdAt: record.fileInfo.createdAt,
+          modifiedAt: record.fileInfo.modifiedAt,
+          id: record.fileInfo.id,
+        };
         if (record.leafType === 'folder') {
           parentPaths[record.folderInfo.id] = path + '/';
           continue;
         }
         var dataFork = record.fileInfo.dataForkInfo;
         var resourceFork = record.fileInfo.resourceForkInfo;
-        var type = record.fileInfo.type;
-        var creator = record.fileInfo.creator;
-        var dataForkExtents, resourceForkExtents, needDataBlocks, needResourceBlocks;
-        if (dataFork.logicalEOF === 0) {
-          needDataBlocks = 0;
-        }
-        else {
-          dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
-          needDataBlocks = Math.ceil(dataFork.logicalEOF / chunkSize);
+        if (dataFork.logicalEOF > 0) {
+          var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
+          var needDataBlocks = Math.ceil(dataFork.logicalEOF / chunkSize);
           needDataBlocks -= dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
           if (needDataBlocks > 0) {
             dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
           }
-          dataForks[path] = fromExtents(
+          info.dataFork = fromExtents(
             alloc,
             chunkSize,
             dataFork.logicalEOF,
             dataForkExtents);
         }
-        if (resourceFork.logicalEOF === 0) {
-          needResourceBlocks = 0;
-        }
-        else {
-          resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
-          needResourceBlocks = Math.ceil(resourceFork.logicalEOF / chunkSize);
+        if (resourceFork.logicalEOF > 0) {
+          var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
+          var needResourceBlocks = Math.ceil(resourceFork.logicalEOF / chunkSize);
           needResourceBlocks -= resourceForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
           if (needResourceBlocks > 0) {
-            dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
+            resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
           }
-          resourceForks[path] = fromExtents(
+          var res = fromExtents(
             alloc,
             chunkSize,
             resourceFork.logicalEOF,
             resourceForkExtents);
+          var resourceHeader = new ResourceHeaderView(res.buffer, res.byteOffset, ResourceHeaderView.byteLength);
+          var resourceData = new Uint8Array(res.buffer, res.byteOffset + header.dataOffset, header.dataLength);
+          var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + header.mapOffset, header.mapLength);
+          var dv = new DataView(resourceData.buffer, resourceData.byteOffset, resourceData.byteLength);
+          info.resources = map.resourceList.map(function(resourceInfo) {
+            return {
+              name: resourceInfo.name,
+              type: resourceInfo.type,
+              data: new Uint8Array(
+                resourceData.buffer,
+                resourceData.byteOffset + resourceInfo.dataOffset + 4,
+                dv.getUint32(resourceInfo.dataOffset, false),
+            };
+          });
         }
-      }
+      });
+    }
     
-    });
-    
-    console.log(dataForks);
-    console.log(resourceForks);
+    console.log(files);
     
   });
 
