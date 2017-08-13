@@ -8,12 +8,12 @@
   <svg width='640' height='480' viewBox='0 0 640 480'>
     <defs>
       <filter id='threshold'>
-        <feComponentTransfer>
-          <feFuncA type='discrete' tableValues='0 1' />
-          <feFuncR type='discrete' tableValues='0 1' />
-          <feFuncG type='discrete' tableValues='0 1' />
-          <feFuncB type='discrete' tableValues='0 1' />
-        </feComponentTransfer>
+        <feColorMatrix values='
+            1 0 0 0 0
+            0 1 0 0 0
+            0 0 1 0 0
+            0 0 0 1 0
+          '/>
       </filter>
       <linearGradient id='bwGradient' x1='0' y1='0' x2='0' y2='100%'>
         <stop offset="0%" stop-color="black"/>
