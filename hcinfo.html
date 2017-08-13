@@ -954,6 +954,9 @@ function update() {
     for (var k in files) {
       var file = files[k];
       if (file.type === 'TEXT') {
+        var header = document.createElement('H3');
+        header.innerText = k.split('/').map(decodeURIComponent).join(':');
+        document.getElementById('content').appendChild(header);
         var el = document.createElement('PRE');
         el.innerText = macRoman(file.data);
         document.getElementById('content').appendChild(el);
