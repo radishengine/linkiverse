@@ -1007,11 +1007,10 @@ function update() {
                 var size = dv.getInt16(pos+2, false);
                 var formatLength = chunk.data[pos+4] & 0x80 ? dv.getUint16(pos+4, false) & 0x7FFF : 1;
                 var charPos = pos + 4 + formatLength;
-                var charLen = 0;
-                while (chunk.data[charPos+charLen]) charLen++;
-                if (charLen > 0) {
+                var str = macRoman(chunk.data, charPos, size - formatLength).replace(/\0.*/, '');
+                if (str.length > 0) {
                   var el = document.createElement('PRE');
-                  el.innerText = macRoman(chunk.data, charPos, charLen);
+                  el.innerText = str;
                   document.getElementById('content').appendChild(el);
                 }
                 pos += 4 + size;
