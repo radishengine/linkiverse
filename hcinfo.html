@@ -1010,6 +1010,7 @@ function update() {
                   var scriptLen = 1;
                   while (chunk.data[scriptPos+scriptLen]) scriptLen++;
                   var el = document.createElement('PRE');
+                  el.className = 'code';
                   el.innerText = macRoman(chunk.data, scriptPos, scriptLen);
                   document.getElementById('content').appendChild(el);
                 }
@@ -1041,6 +1042,7 @@ function update() {
                 var scriptLen = 1;
                 while (chunk.data[pos+scriptLen]) scriptLen++;
                 var el = document.createElement('PRE');
+                el.className = 'code';
                 el.innerText = macRoman(chunk.data, pos, scriptLen);
                 document.getElementById('content').appendChild(el);
               }
