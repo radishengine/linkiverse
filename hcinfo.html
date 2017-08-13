@@ -1159,10 +1159,12 @@ function update() {
                     y += count;
                     continue;
                   case 0x83:
-                    var b = renderByte(repeatByteCache[y & 7] = imageData[pos++]);
+                    var b = imageData[pos++];
+                    var rb = renderByte(b);
                     while (count--) {
+                      repeatByteCache[y & 7] = b;
                       for (var x = 0; x < canvas.width; x += 8) {
-                        ctx.putImageData(b, x, y);
+                        ctx.putImageData(rb, x, y);
                       }
                       y++;
                     }
