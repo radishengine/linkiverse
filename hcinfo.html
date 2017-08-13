@@ -700,7 +700,7 @@ function update() {
     getName: function(offset) {
       if (offset === null) return null;
       offset += this.nameListOffset;
-      return macintoshRoman(this.bytes, offset + 1, this.bytes[offset]);
+      return macRoman(this.bytes, offset + 1, this.bytes[offset]);
     },
     get resourceList() {
       var list = [];
@@ -727,7 +727,7 @@ function update() {
   }
   ResourceTypeListEntryView.prototype = {
     get typeName() {
-      return macintoshRoman(this.bytes, 0, 4);
+      return macRoman(this.bytes, 0, 4);
     },
     get resourceCount() {
       return this.dv.getInt16(4, false) + 1;
