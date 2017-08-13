@@ -712,6 +712,7 @@ function update() {
     if (overflowHeader.type !== 'header') {
       return Promise.reject('invalid overflow');
     }
+    overflowHeader = overflowHeader.records[0];
     var overflowNodeNumber = overflowHeader.firstLeaf;
     while (overflowNodeNumber !== 0) {
       var overflowLeaf = new BTreeNodeView(
