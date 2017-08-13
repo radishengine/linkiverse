@@ -879,16 +879,23 @@ function update() {
           isFolder: record.leafType === 'folder',
           path: path,
           fileInfo: record.fileInfo,
+        };
+        if (record.leafType === 'folder') {
+          parentPaths[record.folderInfo.id] = path + '/';
+          Object.assign(info, {
+            id: record.folderInfo.id,
+            modifiedAt: record.folderInfo.modifiedAt,
+            createdAt: record.folderInfo.createdAt,
+          });
+          return;
+        }
+        Object.assign(info, {
           type: record.fileInfo.type,
           creator: record.fileInfo.creator,
           createdAt: record.fileInfo.createdAt,
           modifiedAt: record.fileInfo.modifiedAt,
           id: record.fileInfo.id,
-        };
-        if (record.leafType === 'folder') {
-          parentPaths[record.folderInfo.id] = path + '/';
-          return;
-        }
+        });
         var dataFork = record.fileInfo.dataForkInfo;
         var resourceFork = record.fileInfo.resourceForkInfo;
         if (dataFork.logicalEOF > 0) {
