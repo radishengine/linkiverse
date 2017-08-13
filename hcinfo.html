@@ -887,7 +887,7 @@ function update() {
         };
         if (record.leafType === 'folder') {
           parentPaths[record.folderInfo.id] = path + '/';
-          continue;
+          return;
         }
         var dataFork = record.fileInfo.dataForkInfo;
         var resourceFork = record.fileInfo.resourceForkInfo;
