@@ -11,12 +11,14 @@ function update() {
 
   'use strict';
 
-  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.])\/?$/);
+  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.]+)\/?$/);
   name = name && name[1];
   if (!name) {
     document.getElementById('content').innerHTML = 'Please set URL #hash to a hypercard item ID';
     return;
   }
+  
+  document.getElementById('content').innerHTML = '';
   
   const MAC_CHARSET_128_255
     = '\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8'
