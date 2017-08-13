@@ -987,9 +987,11 @@ function update() {
                 var size = dv.getUint16(pos, false);
                 var namePos = pos + 30, nameLen = 0;
                 while (chunk.data[namePos + nameLen]) nameLen++;
-                var el = document.createElement('PRE');
-                el.innerText = macRoman(chunk.data, namePos, nameLen);
-                document.getElementById('content').appendChild(el);
+                if (nameLen > 0) {
+                  var el = document.createElement('PRE');
+                  el.innerText = macRoman(chunk.data, namePos, nameLen);
+                  document.getElementById('content').appendChild(el);
+                }
                 var scriptPos = namePos + nameLen + 2;
                 if (chunk.data[scriptPos]) {
                   var scriptLen = 1;
