@@ -4,16 +4,17 @@
   <title>HyperCard Tool</title>
 </head>
 <body>
+  <div id='content'></div>
   <script>
 
-(function() {
+function update() {
 
   'use strict';
 
   var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.])\/?$/);
   name = name && name[1];
   if (!name) {
-    document.body.innerHTML = 'Please set URL #hash to a hypercard item ID';
+    document.getElementById('content').innerHTML = 'Please set URL #hash to a hypercard item ID';
     return;
   }
   
@@ -787,7 +788,11 @@
     
   });
 
-})();
+}
+    
+window.onhashchange = function() {
+  update();
+};
 
   </script>
 </body>
