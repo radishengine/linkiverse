@@ -10,10 +10,10 @@
 
   'use strict';
 
-  var name = window.hash.match(/^#\/?([a-zA-Z0-9_\-\.])\/?$);
+  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.])\/?$/);
   name = name && name[1];
   if (!name) {
-    document.body.innerHTML = 'Please set #hash to a hypercard item ID';
+    document.body.innerHTML = 'Please set URL #hash to a hypercard item ID';
     return;
   }
   
