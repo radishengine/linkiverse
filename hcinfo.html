@@ -631,7 +631,7 @@ function update() {
     },
   };
   
-  function fromExtents(alloc, chunkSize, type, byteLength, extents) {
+  function fromExtents(alloc, chunkSize, byteLength, extents) {
     if (byteLength <= chunkSize * extents[0].length) {
       return alloc.subarray(chunkSize * extents[0].offset, byteLength);
     }
