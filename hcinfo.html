@@ -1014,12 +1014,15 @@ function update() {
                 }
                 pos += 4 + size;
               }
-              var nameLen = 0;
-              while (chunk.data[pos + nameLen]) nameLen++;
-              var el = document.createElement('PRE');
-              el.innerText = macRoman(chunk.data, pos, nameLen);
-              document.getElementById('content').appendChild(el);
-              pos += nameLen + 1;
+              if (chunk.data[pos]) {
+                var nameLen = 1;
+                while (chunk.data[pos + nameLen]) nameLen++;
+                var el = document.createElement('PRE');
+                el.innerText = macRoman(chunk.data, pos, nameLen);
+                document.getElementById('content').appendChild(el);
+                pos += nameLen + 1;
+              }
+              else pos++;
               if (chunk.data[pos]) {
                 var scriptLen = 1;
                 while (chunk.data[pos+scriptLen]) scriptLen++;
