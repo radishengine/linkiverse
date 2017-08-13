@@ -926,7 +926,7 @@ function update() {
           var resourceData = new Uint8Array(res.buffer, res.byteOffset + resourceHeader.dataOffset, resourceHeader.dataLength);
           var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + resourceHeader.mapOffset, resourceHeader.mapLength);
           var dv = new DataView(resourceData.buffer, resourceData.byteOffset, resourceData.byteLength);
-          info.resources = map.resourceList.map(function(resourceInfo) {
+          info.resources = resourceMap.resourceList.map(function(resourceInfo) {
             return {
               name: resourceInfo.name,
               type: resourceInfo.type,
