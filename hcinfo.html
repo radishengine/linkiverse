@@ -861,7 +861,7 @@ function update() {
     
     var files = {};
     
-    var header = new BTreeNodeView(btree.buffer, btree.byteOffset, NODE_BYTES);
+    var header = new BTreeNodeView(catalog.buffer, catalog.byteOffset, NODE_BYTES);
     if (header.type !== 'header') {
       throw new Error('invalid btree');
     }
@@ -869,7 +869,7 @@ function update() {
     header = header.records[0];
     var leaf;
     for (var nodeNumber = header.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
-      leaf = new BTreeNodeView(btree.buffer, btree.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
+      leaf = new BTreeNodeView(catalog.buffer, catalog.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
       if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
       leaf.records.forEach(function(record) {
         if (!/^(folder|file)$/.test(record.leafType)) return;
