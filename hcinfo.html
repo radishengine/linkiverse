@@ -6,6 +6,7 @@
 <body>
   <div id='content'></div>
   <script>
+    
 
 function update() {
 
@@ -926,7 +927,8 @@ function update() {
               data: new Uint8Array(
                 resourceData.buffer,
                 resourceData.byteOffset + resourceInfo.dataOffset + 4,
-                dv.getUint32(resourceInfo.dataOffset, false),
+                dv.getUint32(resourceInfo.dataOffset, false)
+              ),
             };
           });
         }
