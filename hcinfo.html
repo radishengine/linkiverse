@@ -904,7 +904,7 @@ function update() {
           if (needDataBlocks > 0) {
             dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
           }
-          info.dataFork = fromExtents(
+          info.data = fromExtents(
             alloc,
             chunkSize,
             dataFork.logicalEOF,
@@ -942,6 +942,29 @@ function update() {
     }
     
     console.log(files);
+    
+    for (var k in files) {
+      var file = files[k];
+      if (file.type === 'STAK') {
+        var header = document.createElement('H3');
+        header.innerText = k.split('/').map(decodeURIComponent).join(':');
+        document.getElementById('content').appendChild(header);
+        
+        var chunks = [];
+        var dv = new DataView(file.data.buffer, file.data.byteOffset, file.data.byteLength);
+        var pos = 0;
+        for (;;) {
+          var len = dv.getUint32(pos, false);
+          var block = {
+            type: String.fromCharCode(file.data[pos+4], file.data[pos+5], file.data[pos+6], file.data[pos+7]),
+            id: dv.getUint32(pos+8, false),
+            data: file.data.subarray(pos+16, pos+len),
+          };
+          pos += len;
+        }
+        console.log(chunks);
+      }
+    }
     
   });
 
