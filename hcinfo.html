@@ -1149,14 +1149,15 @@ function update() {
                       }
                       y++;
                     }
+                    x = 0;
                     pos += canvas.width/8;
                     continue;
                   case 0x81:
-                    y++;
+                    y += count; x = 0;
                     continue;
                   case 0x82:
                     ctx.fillRect(0, y, canvas.width, count);
-                    y += count;
+                    y += count; x = 0;
                     continue;
                   case 0x83:
                     var b = imageData[pos++];
@@ -1168,6 +1169,7 @@ function update() {
                       }
                       y++;
                     }
+                    x = 0;
                     continue;
                   case 0x84:
                     while (count--) {
@@ -1177,6 +1179,7 @@ function update() {
                       }
                       y++;
                     }
+                    x = 0;
                     continue;
                   case 0x85:
                     rowCtx.globalCompositeOperation = 'copy';
@@ -1186,6 +1189,7 @@ function update() {
                       ctx.drawImage(rowCanvas, 0, y);
                       y++;
                     }
+                    x = 0;
                     continue;
                   case 0x86:
                     rowCtx.globalCompositeOperation = 'copy';
@@ -1195,6 +1199,7 @@ function update() {
                       ctx.drawImage(rowCanvas, 0, y);
                       y++;
                     }
+                    x = 0;
                     continue;
                   case 0x87:
                     rowCtx.globalCompositeOperation = 'copy';
@@ -1204,6 +1209,7 @@ function update() {
                       ctx.drawImage(rowCanvas, 0, y);
                       y++;
                     }
+                    x = 0;
                     continue;
                   case 0x88: dh = 16; dv = 0; continue;
                   case 0x89: dh = 0;  dv = 0; continue;
