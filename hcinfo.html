@@ -661,15 +661,12 @@ function update() {
     }
     var map = header.records[2];
     header = header.records[0];
-    function doLeaf(nodeNumber) {
-      var leaf = new BTreeNodeView(btree.buffer, btree.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
+    var leaf;
+    for (var nodeNumber = header.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
+      leaf = new BTreeNodeView(btree.buffer, btree.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
       if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
       callback(leaf);
-      if (leaf.nextNodeNumber !== 0) {
-        doLeaf(leaf.nextNodeNumber);
-      }
     }
-    return doLeaf(header.firstLeaf);
   }
 
   fetch('//cors.archive.org/cors/' + name + '/disk.img')
