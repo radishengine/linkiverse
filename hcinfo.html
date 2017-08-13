@@ -861,14 +861,14 @@ function update() {
     
     var files = {};
     
-    var header = new BTreeNodeView(catalog.buffer, catalog.byteOffset, NODE_BYTES);
-    if (header.type !== 'header') {
-      throw new Error('invalid btree');
+    var catalogHeader = new BTreeNodeView(catalog.buffer, catalog.byteOffset, NODE_BYTES);
+    if (catalogHeader.type !== 'header') {
+      throw new Error('invalid catalog tree');
     }
-    var map = header.records[2];
-    header = header.records[0];
+    var map = catalogHeader.records[2];
+    catalogHeader = catalogHeader.records[0];
     var leaf;
-    for (var nodeNumber = header.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
+    for (var nodeNumber = catalogHeader.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
       leaf = new BTreeNodeView(catalog.buffer, catalog.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
       if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
       leaf.records.forEach(function(record) {
@@ -923,8 +923,8 @@ function update() {
             resourceFork.logicalEOF,
             resourceForkExtents);
           var resourceHeader = new ResourceHeaderView(res.buffer, res.byteOffset, ResourceHeaderView.byteLength);
-          var resourceData = new Uint8Array(res.buffer, res.byteOffset + header.dataOffset, header.dataLength);
-          var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + header.mapOffset, header.mapLength);
+          var resourceData = new Uint8Array(res.buffer, res.byteOffset + resourceHeader.dataOffset, resourceHeader.dataLength);
+          var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + resourceHeader.mapOffset, resourceHeader.mapLength);
           var dv = new DataView(resourceData.buffer, resourceData.byteOffset, resourceData.byteLength);
           info.resources = map.resourceList.map(function(resourceInfo) {
             return {
