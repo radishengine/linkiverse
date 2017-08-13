@@ -878,7 +878,6 @@ function update() {
         var info = files[path] = {
           isFolder: record.leafType === 'folder',
           path: path,
-          fileInfo: record.fileInfo,
         };
         if (record.leafType === 'folder') {
           parentPaths[record.folderInfo.id] = path + '/';
