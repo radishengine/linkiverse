@@ -1080,7 +1080,6 @@ function update() {
               var dx = 0, dy = 0, reps = 1;
               var op_i = 0, bmap_i = 0;
               while (op_i < ops.length) {
-                if (bmap_i >= bmap.length) break;
                 var op = ops[op_i++];
                 if (op < 0x80) {
                   var zeroBytes = op & 0xF;
