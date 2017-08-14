@@ -1192,7 +1192,7 @@ function update() {
                       if (dx) {
                         var prev = bmap.subarray(bmap_i - byteStride, bmap_i);
                         var copy = new Uint8Array(prev);
-                        for (var k = Math.floor(byteStride/dx); k > 0; k--) {
+                        for (var k = Math.floor(fullWidth/dx); k > 0; k--) {
                           var x = 0;
                           for (var n = 0; n < byteStride; n++) {
                             x |= prev[n] << 16 >> dx;
