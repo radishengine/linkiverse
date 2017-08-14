@@ -1090,15 +1090,18 @@ function update() {
                 if (dh || dv) {
                   rowCtx.globalCompositeOperation = 'copy';
                   rowCtx.drawImage(canvas, 0,y, canvas.width,1, 0,0, canvas.width,1);
-                  rowCtx.globalCompositeOperation = 'xor';
                   if (dh) {
                     var off = dh;
                     while (off < canvas.width) {
-                      rowCtx.drawImage(canvas, 0,y, canvas.width,1, off,0, canvas.width,1);
+                      rowCtx.globalCompositeOperation = 'copy';
+                      rowCtx.drawImage(canvas, 0,y, canvas.width,1, dh,0, canvas.width,1);
+                      rowCtx.globalCompositeOperation = 'xor';
+                      rowCtx.drawImage(canvas, 0,y, canvas.width,1, 0,0, canvas.width,1);
                       off += dh;
                     }
                   }
                   if (dv) {
+                    rowCtx.globalCompositeOperation = 'xor';
                     rowCtx.drawImage(canvas, 0,y-dv, canvas.width,1, 0,0, canvas.width,1);
                   }
                   ctx.globalCompositeOperation = 'source-over';
