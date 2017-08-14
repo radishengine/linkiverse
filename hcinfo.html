@@ -1063,179 +1063,156 @@ function update() {
               break;
             case 'BMAP':
               var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
-              var canvas = document.createElement('CANVAS');
               var imageBounds = {
                 top: dv.getInt16(40, false),
                 left: dv.getInt16(42, false),
                 bottom: dv.getInt16(44, false),
                 right: dv.getInt16(46, false),
               };
-              canvas.width = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
-              canvas.height = imageBounds.bottom - imageBounds.top;
-              if (canvas.width * canvas.height === 0) break;
-              var rowCanvas = document.createElement('CANVAS');
-              rowCanvas.width = canvas.width;
-              rowCanvas.height = 1;
-              var rowCtx = rowCanvas.getContext('2d');
+              var height = imageBounds.bottom - imageBounds.top;
+              var fullWidth = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
+              if (fullWidth*height === 0) break;
+              var byteStride = fullWidth/8;
               var maskDataLen = dv.getUint32(56, false), imageDataLen = dv.getUint32(60, false);
-              var imageData = chunk.data.subarray(64 + maskDataLen, 64 + maskDataLen + imageDataLen);
-              var pos = 0;
-              var x = 0, y = 0;
-              var ctx = canvas.getContext('2d');
-              ctx.fillStyle = 'black';
-              var temp = ctx.createImageData(8, 1);
-              var dh = 0, dv = 0;
-              function multiPartEnd() {
-                x = 0;
-                if (dh || dv) {
-                  rowCtx.globalCompositeOperation = 'copy';
-                  rowCtx.drawImage(canvas, 0,y, canvas.width,1, 0,0, canvas.width,1);
-                  if (dh) {
-                    var off = 0
-                    while (off < canvas.width) {
-                      rowCtx.globalCompositeOperation = 'copy';
-                      rowCtx.drawImage(rowCanvas, dh,0);
-                      rowCtx.globalCompositeOperation = 'xor';
-                      rowCtx.drawImage(canvas, 0,y, canvas.width,1, 0,0, canvas.width,1);
-                      off += dh;
-                    }
-                  }
-                  if (dv) {
-                    rowCtx.globalCompositeOperation = 'xor';
-                    rowCtx.drawImage(canvas, 0,y-dv, canvas.width,1, 0,0, canvas.width,1);
-                  }
-                  ctx.globalCompositeOperation = 'source-over';
-                  ctx.drawImage(rowCanvas, 0,y);
-                }
-                y++;
-              }
-              var repeatByteCache = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
-              function renderByte(b) {
-                for (var j = 0; j < 8; j++) {
-                  temp.data[4*j + 3] = b & (0x80 >>> j) ? 0xFF : 0x00;
-                }
-                return temp;
-              }
-              document.getElementById('content').appendChild(canvas);
-              while (pos < imageData.length) {
-                var op = imageData[pos++];
-                var count;
-                if (op >= 0xA0 && op < 0xC0) {
-                  count = op - 0xA0;
-                  op = imageData[pos++];
-                }
-                else count = 1;
+              var ops = chunk.data.subarray(64 + maskDataLen, 64 + maskDataLen + imageDataLen);
+              var bmap = new Uint8Array(byteStride * height);
+              var patterns = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
+              var dx = 0, dy = 0, reps = 1;
+              var op_i = 0, bmap_i = 0;
+              while (op_i < ops.length) {
+                var op = ops[op_i++];
                 if (op < 0x80) {
-                  var zb = op & 0xF;
-                  var db = op >>> 4;
-                  while (count--) {
-                    x += zb * 8;
-                    for (var i = 0; i < db; i++) {
-                      ctx.putImageData(renderByte(imageData[pos + i]), x, y);
-                      x += 8;
-                    }
-                    if (x >= canvas.width) multiPartEnd();
+                  var zeroBytes = op & 0xF;
+                  var dataBytes = op.subarray(op_i, op_i + (op >>> 4));
+                  op_i += dataBytes.length;
+                  while (reps-- > 0) {
+                    bmap.set(dataBytes, bmap_i + zeroBytes);
+                    bmap_i += zeroBytes + dataBytes.length;
                   }
-                  pos += db;
-                  continue;
+                  reps = 1;
                 }
-                if (op >= 0xE0) {
-                  x += count * (op - 0xE0) * 16 * 8;
-                  if (x >= canvas.width) multiPartEnd();
-                  continue;
-                }
-                if (op >= 0xC0) {
-                  var db = (op - 0xC0) * 8;
-                  while (count--) {
-                    for (var i = 0; i < db; i++) {
-                      ctx.putImageData(renderByte(imageData[pos + i]), x, y);
-                      x += 8;
-                    }
+                else if ((op & 0xE0) === 0xC0) {
+                  var dataBytes = op.subarray(op_i, op_i + (op & 0x1F) * 8);
+                  op_i += dataBytes.length;
+                  while (reps-- > 0) {
+                    bmap.set(dataBytes, bmap_i);
+                    bmap_i += dataBytes.length;
                   }
-                  pos += db;
-                  if (x >= canvas.width) multiPartEnd();
-                  continue;
+                  reps = 1;
                 }
-                switch (op) {
+                else if ((op & 0xE0) === 0xE0) {
+                  var zeroBytes = (op & 0x1F) * 16;
+                  bmap_i += zeroBytes * reps;
+                  reps = 1;
+                }
+                if ((op & 0xE0) === 0xA0) {
+                  reps = op & 0x1F;
+                }
+                else switch (op) {
                   case 0x80:
-                    while (count--) {
-                      for (var x = 0; x < canvas.width; x += 8) {
-                        ctx.putImageData(renderByte(chunk.data[pos + x/8]), x, y);
-                      }
-                      y++;
+                    var dataBytes = op.subarray(op_i, op_i + byteStride);
+                    while (reps-- > 0) {
+                      bmap.set(dataBytes, bmap_i);
+                      bmap_i += dataBytes.length;
                     }
-                    x = 0;
-                    pos += canvas.width/8;
-                    continue;
+                    reps = 1;
+                    break;
                   case 0x81:
-                    y += count; x = 0;
-                    continue;
+                    bmap_i += byteStride * reps;
+                    reps = 1;
+                    break;
                   case 0x82:
-                    ctx.fillRect(0, y, canvas.width, count);
-                    y += count; x = 0;
-                    continue;
+                    var end_i = bmap_i + reps * byteStride;
+                    while (bmap_i < end_i) bmap[bmap_i++] = 0xFF;
+                    reps = 1;
+                    break;
                   case 0x83:
-                    var b = imageData[pos++];
-                    var rb = renderByte(b);
-                    while (count--) {
-                      repeatByteCache[y & 7] = b;
-                      for (var x = 0; x < canvas.width; x += 8) {
-                        ctx.putImageData(rb, x, y);
-                      }
-                      y++;
+                    var pattern = ops[op_i++];
+                    while (reps-- > 0) {
+                      patterns[(bmap_i / byteStride)&7] = pattern;
+                      var end_i = bmap_i + byteStride;
+                      while (bmap_i < end_i) bmap[bmap_i++] = pattern;
                     }
-                    x = 0;
-                    continue;
+                    reps = 1;
+                    break;
                   case 0x84:
-                    while (count--) {
-                      var b = renderByte(repeatByteCache[y & 7]);
-                      for (var x = 0; x < canvas.width; x += 8) {
-                        ctx.putImageData(b, x, y);
-                      }
-                      y++;
+                    while (reps-- > 0) {
+                      var pattern = patterns[(bmap_i / byteStride)&7];
+                      var end_i = bmap_i + byteStride;
+                      while (bmap_i < end_i) bmap[bmap_i++] = pattern;
                     }
-                    x = 0;
-                    continue;
+                    reps = 1;
+                    break;
                   case 0x85:
-                    rowCtx.globalCompositeOperation = 'copy';
-                    rowCtx.drawImage(canvas, 0,y-1, canvas.width,1, 0,0, canvas.width,1);
-                    ctx.globalCompositeOperation = 'source-over';
-                    while (count--) {
-                      ctx.drawImage(rowCanvas, 0, y);
-                      y++;
+                    var dataBytes = bmap.subarray(bmap_i - byteStride, bmap_i);
+                    while (reps-- > 0) {
+                      bmap.set(dataBytes, bmap_i);
+                      bmap_i += byteStride;
                     }
-                    x = 0;
-                    continue;
+                    reps = 1;
+                    break;
                   case 0x86:
-                    rowCtx.globalCompositeOperation = 'copy';
-                    ctx.globalCompositeOperation = 'source-over';
-                    while (count--) {
-                      rowCtx.drawImage(canvas, 0,y-2, canvas.width,1, 0,0, canvas.width,1);
-                      ctx.drawImage(rowCanvas, 0, y);
-                      y++;
+                    while (reps-- > 0) {
+                      bmap.set(bmap.subarray(bmap_i - byteStride * 2, bmap_i - byteStride), bmap_i);
+                      bmap_i += byteStride;
                     }
-                    x = 0;
-                    continue;
+                    reps = 1;
+                    break;
                   case 0x87:
-                    rowCtx.globalCompositeOperation = 'copy';
-                    ctx.globalCompositeOperation = 'source-over';
-                    while (count--) {
-                      rowCtx.drawImage(canvas, 0,y-3, canvas.width,1, 0,0, canvas.width,1);
-                      ctx.drawImage(rowCanvas, 0, y);
-                      y++;
+                    while (reps-- > 0) {
+                      bmap.set(bmap.subarray(bmap_i - byteStride * 3, bmap_i - byteStride * 2), bmap_i);
+                      bmap_i += byteStride;
                     }
-                    x = 0;
-                    continue;
-                  case 0x88: dh = 16; dv = 0; continue;
-                  case 0x89: dh = 0;  dv = 0; continue;
-                  case 0x8A: dh = 0;  dv = 1; continue;
-                  case 0x8B: dh = 0;  dv = 2; continue;
-                  case 0x8C: dh = 1;  dv = 0; continue;
-                  case 0x8D: dh = 1;  dv = 1; continue;
-                  case 0x8E: dh = 2;  dv = 2; continue;
-                  case 0x8F: dh = 8;  dv = 0; continue;
+                    reps = 1;
+                    break;
+                  case 0x88: dx = 16; dy = 0; break;
+                  case 0x89: dx =  0; dy = 0; break;
+							    case 0x8A: dx =  0; dy = 1; break;
+							    case 0x8B: dx =  0; dy = 2; break;
+                  case 0x8C: dx =  1; dy = 0; break;
+                  case 0x8D: dx =  1; dy = 1; break;
+							    case 0x8E: dx =  2; dy = 2; break;
+							    case 0x8F: dx =  8; dy = 0; break;
+                  default:
+                    if ((bmap_i % byteStride) === 0) {
+                      if (dx) {
+                        var prev = bmap.subarray(bmap_i - byteStride, bmap_i);
+                        var copy = new Uint8Array(prev);
+                        for (var k = Math.floor(byteStride/dx); k > 0; k--) {
+                          var x = 0;
+                          for (var n = 0; n < byteStride; n++) {
+                            x |= prev[n] << 16 >> dx;
+                            prev[n] = (x >> 16) ^ copy[n];
+                            x = (x << 8) & 0xFFFF00;
+                          }
+                        }
+                      }
+                      if (dy) {
+                        for (var n = 0; n < byteStride; n++) {
+                          bmap[bmap_i + n] ^= bmap[bmap_i + n - dy * byteStride];
+                        }
+                      }
+                    }
+                    break;
                 }
               }
+              
+              var canvas = document.createElement('CANVAS');
+              
+              canvas.width = fullWidth;
+              canvas.height = height;
+              var ctx = canvas.getContext('2d');
+              var raw = ctx.createImageData(fullWidth, height);
+              for (var bmap_i = 0; bmap_i < bmap.length; bmap_i++) {
+                var bi = bmap[bmap_i];
+                for (var bit_i = 0; bit_i < 8; bit_i++) {
+                  if (bi & (0x80 >> bit_i)) {
+                    raw.data[(bmap_i*8 + bit_i)*4 + 3] = 0xFF;
+                  }
+                }
+              }
+              ctx.putImageData(raw, 0, 0);
+              document.getElementById('content').appendChild(canvas);
               throw new Error('one image');
               break;
           }
