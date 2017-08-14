@@ -1094,7 +1094,7 @@ function update() {
                     var off = dh;
                     while (off < canvas.width) {
                       rowCtx.globalCompositeOperation = 'copy';
-                      rowCtx.drawImage(canvas, 0,y, canvas.width,1, dh,0, canvas.width,1);
+                      rowCtx.drawImage(rowCanvas, 0,y, canvas.width,1, dh,0, canvas.width,1);
                       rowCtx.globalCompositeOperation = 'xor';
                       rowCtx.drawImage(canvas, 0,y, canvas.width,1, 0,0, canvas.width,1);
                       off += dh;
