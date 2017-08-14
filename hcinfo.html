@@ -1061,6 +1061,7 @@ function update() {
               };
               canvas.width = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
               canvas.height = imageBounds.bottom - imageBounds.top;
+              if (canvas.width * canvas.height === 0) break;
               var rowCanvas = document.createElement('CANVAS');
               rowCanvas.width = canvas.width;
               rowCanvas.height = 1;
@@ -1221,6 +1222,7 @@ function update() {
                   case 0x8F: dh = 8;  dv = 0; continue;
                 }
               }
+              throw new Error('one image');
               break;
           }
         });
