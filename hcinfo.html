@@ -1203,7 +1203,7 @@ function update() {
                       }
                       if (dy) {
                         for (var n = 0; n < byteStride; n++) {
-                          bmap[bmap_i + n] ^= bmap[bmap_i + n - dy * byteStride];
+                          bmap[bmap_i + n - byteStride] ^= bmap[bmap_i + n - (dy + 1) * byteStride];
                         }
                       }
                     }
