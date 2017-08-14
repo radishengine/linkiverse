@@ -1125,6 +1125,7 @@ function update() {
                 else switch (op) {
                   case 0x80:
                     var dataBytes = ops.subarray(op_i, op_i + byteStride);
+                    op_i += byteStride;
                     while (reps-- > 0) {
                       bmap.set(dataBytes, bmap_i);
                       bmap_i += dataBytes.length;
