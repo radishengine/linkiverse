@@ -1087,7 +1087,8 @@ function update() {
                   if (dataBytes === 1) {
                     var dataByte = ops[op_i++];
                     while (reps-- > 0) {
-                      bmap[bmap_i++] = dataByte;
+                      bmap[bmap_i + zeroBytes] = dataByte;
+                      bmap_i += zeroBytes + 1;
                     }
                   }
                   else {
