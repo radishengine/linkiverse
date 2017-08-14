@@ -1091,7 +1091,7 @@ function update() {
                   rowCtx.globalCompositeOperation = 'copy';
                   rowCtx.drawImage(canvas, 0,y, canvas.width,1, 0,0, canvas.width,1);
                   if (dh) {
-                    var off = dh;
+                    var off = 0
                     while (off < canvas.width) {
                       rowCtx.globalCompositeOperation = 'copy';
                       rowCtx.drawImage(rowCanvas, dh,0);
