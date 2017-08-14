@@ -15,6 +15,17 @@
   <div id='content'></div>
   <script>
     
+function download(thing) {
+  if (!(thing instanceof Blob)) {
+    thing = new Blob([thing]);
+  }
+  var link = document.createElement('A');
+  link.href = URL.createObjectURL(thing);
+  link.setAttribute('download', 'file.dat');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 function update() {
 
@@ -1126,7 +1137,7 @@ function update() {
                   continue;
                 }
                 if (op >= 0xE0) {
-                  x += count * (op - 0xE0) * 16;
+                  x += count * (op - 0xE0) * 16 * 8;
                   if (x >= canvas.width) multiPartEnd();
                   continue;
                 }
