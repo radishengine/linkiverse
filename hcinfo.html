@@ -1091,6 +1091,9 @@ function update() {
                       bmap_i += zeroBytes + 1;
                     }
                   }
+                  else if (dataBytes === 0) {
+                    bmap_i += zeroBytes * reps;
+                  }
                   else {
                     dataBytes = ops.subarray(op_i, op_i + dataBytes);
                     op_i += dataBytes.length;
