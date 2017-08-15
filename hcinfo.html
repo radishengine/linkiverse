@@ -27,44 +27,68 @@ function download(thing) {
   document.body.removeChild(link);
 }
     
-function getBuffer(identifier) {
-  function downloadItem() {
-    return fetch('//cors.archive.org/cors/' + identifier)
-    .then(function(response) {
-      if (!response.ok) {
-        return Promise.reject('server returned code ' + response.code);
-      }
-      return response.arrayBuffer();
-    })
-    .then(function(buffer) {
-      var cached = localStorage.getItem('cached-blob');
-      cached = cached && JSON.parse(cached);
-      if (cached) {
-        URL.revokeObjectURL(cached.blobURL);
-      }
-      localStorage.setItem('cached-blob', JSON.stringify({
-        identifier: identifier,
-        blobURL: URL.createObjectURL(new Blob([buffer])),
-      }));
-      return buffer;
-    });
-  }
-  var cached = localStorage.getItem('cached-blob');
-  cached = cached && JSON.parse(cached);
-  if (!cached || cached.identifier !== identifier) {
-    return downloadItem();
-  }
-  return fetch(cached.blobURL).then(function(response) {
-    if (!response.ok) {
-      return downloadItem();
-    }
-    return response.arrayBuffer();
-  });
-}
-
 function update() {
 
   'use strict';
+  
+  function getDB() {
+    return new Promise(function(resolve, reject) {
+      var opening = indexedDB.open('hctemp', 1);
+      opening.onerror = function() {
+        reject('db error ' + this.errorCode);
+      };
+      opening.onsuccess = function() {
+        resolve(this.result);
+      };
+      opening.onupgradeneeded = function() {
+        var db = this.result;
+        db.createObjectStore('cache');
+      };
+    });
+  }
+  
+  function getCache() {
+    return getDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var getting = db.objectStore('cache').get(1);
+        getting.onerror = function(e) {
+          reject('db error ' + this.errorCode);
+        };
+        getting.onsuccess = function(e) {
+          resolve(this.result || {});
+        };
+      });
+    });
+  }
+  
+  function setCache(record) {
+    return getDB().then(function(db) {
+      db.objectStore('cache').put(record, 1);
+    });
+  }
+
+  function getBuffer(identifier) {
+    function downloadItem() {
+      return fetch('//cors.archive.org/cors/' + identifier)
+      .then(function(response) {
+        if (!response.ok) {
+          return Promise.reject('server returned code ' + response.code);
+        }
+        return response.arrayBuffer();
+      })
+      .then(function(buffer) {
+        setCache({identifier:identifier, buffer:buffer});
+        return buffer;
+      });
+    }
+    return getCache().then(function(cache) {
+      if (cache.identifier === identifier) {
+        return cache.buffer;
+      }
+      return downloadItem();
+    });
+  }
+
 
   var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.]+)\/?$/);
   name = name && name[1];
