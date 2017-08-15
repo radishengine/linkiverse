@@ -26,6 +26,41 @@ function download(thing) {
   link.click();
   document.body.removeChild(link);
 }
+    
+function getBuffer(identifier) {
+  function downloadItem() {
+    return fetch('//cors.archive.org/cors/' + identifier)
+    .then(function(response) {
+      if (!response.ok) {
+        return Promise.reject('server returned code ' + response.code);
+      }
+      return response.arrayBuffer();
+    })
+    .then(function(buffer) {
+      var cached = localStorage.getItem('cached-blob');
+      cached = cached && JSON.parse(cached);
+      if (cached) {
+        URL.revokeObjectURL(cached.blobURL);
+      }
+      localStorage.setItem('cached-blob', JSON.stringify({
+        identifier: identifier,
+        blobURL: URL.createObjectURL(new Blob([buffer])),
+      }));
+      return buffer;
+    });
+  }
+  var cached = localStorage.getItem('cached-blob');
+  cached = cached && JSON.parse(cached);
+  if (!cached || cached.identifier !== identifier) {
+    return downloadItem();
+  }
+  return fetch(cached.blobURL).then(function(response) {
+    if (!response.ok) {
+      return downloadItem();
+    }
+    return response.arrayBuffer();
+  });
+}
 
 function update() {
 
@@ -817,13 +852,7 @@ function update() {
     return buf;
   }
   
-  fetch('//cors.archive.org/cors/' + name + '/disk.img')
-  .then(function(response) {
-    if (!response.ok) {
-      return Promise.reject('disk.img not found!');
-    }
-    return response.arrayBuffer();
-  })
+  getBuffer(name + '/disk.img')
   .then(function(disk) {
     var mdb = new MasterDirectoryBlockView(disk, 512 * 2, 512);
     if (!mdb.hasValidSignature) {
