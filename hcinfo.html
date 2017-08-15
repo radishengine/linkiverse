@@ -32,7 +32,7 @@ function update() {
   'use strict';
   
   function getDB() {
-    return new Promise(function(resolve, reject) {
+    return getDB.result = getDB.result || new Promise(function(resolve, reject) {
       var opening = indexedDB.open('hctemp', 1);
       opening.onerror = function() {
         reject('db error ' + this.errorCode);
@@ -50,7 +50,7 @@ function update() {
   function getCache() {
     return getDB().then(function(db) {
       return new Promise(function(resolve, reject) {
-        var getting = db.objectStore('cache').get(1);
+        var getting = db.transaction(['cache'], 'readonly').objectStore('cache').get(1);
         getting.onerror = function(e) {
           reject('db error ' + this.errorCode);
         };
@@ -62,8 +62,8 @@ function update() {
   }
   
   function setCache(record) {
-    return getDB().then(function(db) {
-      db.objectStore('cache').put(record, 1);
+    getDB().then(function(db) {
+      db.transaction(['cache'], 'readwrite').objectStore('cache').put(record, 1);
     });
   }
 
@@ -77,13 +77,19 @@ function update() {
         return response.arrayBuffer();
       })
       .then(function(buffer) {
-        setCache({identifier:identifier, buffer:buffer});
+        setCache({identifier:identifier, blob:new Blob([buffer])});
         return buffer;
       });
     }
     return getCache().then(function(cache) {
       if (cache.identifier === identifier) {
-        return cache.buffer;
+        return new Promise(function(resolve, reject) {
+          var fr = new FileReader();
+          fr.onload = function() {
+            resolve(this.result);
+          };
+          fr.readAsArrayBuffer(cache.blob);
+        });
       }
       return downloadItem();
     });
