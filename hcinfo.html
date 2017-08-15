@@ -1023,7 +1023,7 @@ function update() {
     
     for (var k in files) {
       var file = files[k];
-      if (file.type === 'TEXT') {
+      if (file.type === 'TEXT' || file.type === 'ttro') {
         var header = document.createElement('H3');
         header.innerText = k.split('/').map(decodeURIComponent).join(':');
         document.getElementById('content').appendChild(header);
