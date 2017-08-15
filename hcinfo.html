@@ -1145,6 +1145,10 @@ function update() {
                 if (op < 0x80) {
                   var zeroBytes = op & 0xF;
                   var dataBytes = op >>> 4;
+                  if ((op_i + dataBytes) > ops.length || (bmap_i + (zeroBytes + dataBytes) * reps) > bmap.length) {
+                    console.error('op data out of range');
+                    break;
+                  }
                   if (dataBytes === 1) {
                     var dataByte = ops[op_i++];
                     while (reps-- > 0) {
