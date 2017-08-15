@@ -1140,7 +1140,7 @@ function update() {
               var patterns = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
               var dx = 0, dy = 0, reps = 1;
               var op_i = 0, bmap_i = 0;
-              while (op_i < ops.length) {
+              mainLoop: while (op_i < ops.length) {
                 var op = ops[op_i++];
                 if (op < 0x80) {
                   var zeroBytes = op & 0xF;
@@ -1188,6 +1188,10 @@ function update() {
                 }
                 else switch (op) {
                   case 0x80:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     var dataBytes = ops.subarray(op_i, op_i + byteStride);
                     op_i += byteStride;
                     while (reps-- > 0) {
@@ -1197,15 +1201,27 @@ function update() {
                     reps = 1;
                     break;
                   case 0x81:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     bmap_i += byteStride * reps;
                     reps = 1;
                     break;
                   case 0x82:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     var end_i = bmap_i + reps * byteStride;
                     while (bmap_i < end_i) bmap[bmap_i++] = 0xFF;
                     reps = 1;
                     break;
                   case 0x83:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     var pattern = ops[op_i++];
                     while (reps-- > 0) {
                       patterns[(bmap_i / byteStride)&7] = pattern;
@@ -1215,6 +1231,10 @@ function update() {
                     reps = 1;
                     break;
                   case 0x84:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     while (reps-- > 0) {
                       var pattern = patterns[(bmap_i / byteStride)&7];
                       var end_i = bmap_i + byteStride;
@@ -1223,6 +1243,10 @@ function update() {
                     reps = 1;
                     break;
                   case 0x85:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     var dataBytes = bmap.subarray(bmap_i - byteStride, bmap_i);
                     while (reps-- > 0) {
                       bmap.set(dataBytes, bmap_i);
@@ -1231,6 +1255,10 @@ function update() {
                     reps = 1;
                     break;
                   case 0x86:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     while (reps-- > 0) {
                       bmap.set(bmap.subarray(bmap_i - byteStride * 2, bmap_i - byteStride), bmap_i);
                       bmap_i += byteStride;
@@ -1238,6 +1266,10 @@ function update() {
                     reps = 1;
                     break;
                   case 0x87:
+                    if ((bmap_i + byteStride * reps) > bmap.length) {
+                      console.error('bmap out of range');
+                      break mainLoop;
+                    }
                     while (reps-- > 0) {
                       bmap.set(bmap.subarray(bmap_i - byteStride * 3, bmap_i - byteStride * 2), bmap_i);
                       bmap_i += byteStride;
