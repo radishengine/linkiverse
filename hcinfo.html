@@ -1092,7 +1092,7 @@ function update() {
               for (var i = 0; i < partContentCount; i++) {
                 if (pos >= chunk.data.length) break;
                 var partId = dv.getInt16(pos, false);
-                var size = dv.getInt16(pos+2, false);
+                var size = dv.getUint16(pos+2, false);
                 var formatLength = chunk.data[pos+4] & 0x80 ? dv.getUint16(pos+4, false) & 0x7FFF : 1;
                 var charPos = pos + 4 + formatLength;
                 var str = macRoman(chunk.data, charPos, size - formatLength).replace(/\0.*/, '');
