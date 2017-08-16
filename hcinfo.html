@@ -869,7 +869,6 @@ function update() {
     var i = 0;
     do {
       if (i > extents.length) throw new Error('insufficient space in extents');
-      var offset = chunkSize * extents[i].offset;
       var chunkOffset = chunkSize * extents[i].offset;
       var chunk = alloc.subarray(
         chunkOffset,
