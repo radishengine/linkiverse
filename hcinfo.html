@@ -115,12 +115,14 @@ function update() {
     + '\u2021\xB7\u201A\u201E\u2030\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4'
     + '\uF8FF\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7';
   
+  var decoder = new TextDecoder('iso-8859-1');
+  
   function macRoman(u8array, offset, length) {
     switch(arguments.length) {
       case 2: u8array = u8array.subarray(offset); break;
       case 3: u8array = u8array.subarray(offset, offset + length); break;
     }
-    return String.fromCharCode.apply(null, u8array)
+    return decoder.decode(u8array)
       .replace(/[\x80-\xFF]/g, function(c) {
         return MAC_CHARSET_128_255[c.charCodeAt(0) - 128];
       })
