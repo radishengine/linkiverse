@@ -1335,23 +1335,21 @@ function update() {
               document.getElementById('content').appendChild(canvas);
               break;
           }
-          if (file.resources) {
-            file.resources.forEach(function(resource, i) {
-              var header = document.createElement('H4');
-              header.innerText = resource.type + ' ' + i;
-              if (resource.name) header.innerText + ' "' + resource.name + '"';
-              document.getElementById('content').appendChild(header);
-              switch (resource.type) {
-                case 'TEXT':
-                  var el = document.createElement('PRE');
-                  el.innerText = macRoman(resource.data);
-                  document.getElementById('content').appendChild(el);
-                  break;
-              }
-            });
-          }
         });
       }
+      (file.resources || []).forEach(function(resource, i) {
+        var header = document.createElement('H4');
+        header.innerText = resource.type + ' ' + i;
+        if (resource.name) header.innerText + ' "' + resource.name + '"';
+        document.getElementById('content').appendChild(header);
+        switch (resource.type) {
+          case 'TEXT':
+            var el = document.createElement('PRE');
+            el.innerText = macRoman(resource.data);
+            document.getElementById('content').appendChild(el);
+            break;
+        }
+      });
     }
     
   });
