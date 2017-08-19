@@ -11,6 +11,7 @@
     .loading {
       background: repeating-linear-gradient(-45deg,#eee,#eee 20px,#fff 20px,#fff 40px);
       background-size: 56px 56px;
+      background-attachment: fixed;
       -webkit-animation: slide 20s infinite linear forwards;
       -moz-animation: slide 20s infinite linear forwards;
       animation: slide 20s infinite linear forwards;
@@ -32,6 +33,9 @@
         0% { background-position: 0% 0; }
         100% { background-position: 100% 0; }
     }    
+    .error {
+      background: #f88;
+    }
   </style>
 </head>
 <body>
@@ -1517,6 +1521,8 @@ function update() {
       
       var container = document.createElement('DIV');
       document.getElementById('content').appendChild(container);
+      container.classList.add('loading');
+      var loadChain = [];
       
       var header = document.createElement('H3');
       header.innerText = k.split('/').map(decodeURIComponent).join(':') + ' [' + file.type + '/' + file.creator + '] ' + file.modifiedAt;
@@ -1526,11 +1532,11 @@ function update() {
         case 'TEXT': case 'ttro':
           var el = document.createElement('PRE');
           el.classList.add('loading');
-          Promise.all([el, file.getData()]).then(function(values) {
+          loadChain.push(Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             el.innerText = macRoman(data);
             el.classList.remove('loading');
-          });
+          }));
           container.appendChild(el);
           break;
         case 'PDF ':
@@ -1538,28 +1544,28 @@ function update() {
           el.classList.add('loading');
           el.href = 'about:blank';
           el.innerText = 'Open PDF';
-          Promise.all([el, file.getData()]).then(function(values) {
+          loadChain.push(Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             el.href = URL.createObjectURL(new Blob([data], {type:'application/pdf'}));
             el.classList.remove('loading');
-          });
+          }));
           container.appendChild(el);
           break;
         case 'STAK':
           var el = document.createElement('DIV');
           el.classList.add('loading');
-          Promise.all([el, file.getData()]).then(function(values) {
+          loadChain.push(Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             loadStackData(data, el);
             el.classList.remove('loading');
-          });
+          }));
           container.appendChild(el);
           break;
       }
       if (file.resourcesLength) {
         var resourceContainer = document.createElement('DIV');
         resourceContainer.classList.add('loading');
-        file.getResources().then(function(resources) {
+        loadChain.push(file.getResources().then(function(resources) {
           resources.forEach(function(resource, i) {
             var header = document.createElement('H4');
             header.innerText = resource.type + ' ' + i;
@@ -1572,11 +1578,17 @@ function update() {
                 resourceContainer.appendChild(el);
                 break;
             }
-          });
+          }));
           resourceContainer.classList.remove('loading');
         });
         container.appendChild(resourceContainer);
       }
+      Promise.all(loadChain).then(function() {
+        container.classList.remove('loading');
+      }, function() {
+        container.classList.remove('loading');
+        container.classList.add('error');
+      });
     }
     
   });
