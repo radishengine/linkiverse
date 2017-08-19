@@ -38,41 +38,8 @@ MemorySource.prototype = {
     return Promise.resolve(new Blob([this.arrayBuffer]));
   },
 };
-
-function FetchStreamSource(url) {
-  var self = this;
-  this.listeners = [];
-  this.chunks = [];
-  this.totalRead = 0;
-  this.fetched = fetch(url).then(function(req) {
-    if (!req.ok) {
-      self.complete = true;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
-      return Promise.reject('download error');
-    }
-    var reader = req.body.getReader();
-    function nextChunk(chunk) {
-      if (chunk.done) {
-        self.complete = true;
-        self.listeners.forEach(function(listener) {
-          listener();
-        });
-        return;
-      }
-      chunk = chunk.value;
-      self.chunks.push(chunk);
-      self.totalRead += chunk.length;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
-      return reader.read().then(nextChunk);
-    }
-    return reader.read().then(nextChunk);
-  });
-}
-FetchStreamSource.prototype = {
+    
+var chunked_proto = {
   get: function(offset, length) {
     var self = this;
     return new Promise(function(resolve, reject) {
@@ -124,6 +91,80 @@ FetchStreamSource.prototype = {
   },
 };
     
+function FetchChunkedSource(url) {
+  var self = this;
+  this.listeners = [];
+  this.chunks = [];
+  this.totalRead = 0;
+  this.fetched = fetch(url).then(function(req) {
+    if (!req.ok) {
+      self.complete = true;
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+      return Promise.reject('download error');
+    }
+    var reader = req.body.getReader();
+    function nextChunk(chunk) {
+      if (chunk.done) {
+        self.complete = true;
+        self.listeners.forEach(function(listener) {
+          listener();
+        });
+        return;
+      }
+      chunk = chunk.value;
+      self.chunks.push(chunk);
+      self.totalRead += chunk.length;
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+      return reader.read().then(nextChunk);
+    }
+    return reader.read().then(nextChunk);
+  });
+}
+FetchChunkedSource.available = (typeof window.ReadableStream === 'function' && 'getReader' in ReadableStream.prototype);
+FetchChunkedSource.prototype = Object.create(chunked_proto);
+    
+function MozChunkedSource(url) {
+  var self = this;
+  this.listeners = [];
+  this.chunks = [];
+  this.totalRead = 0;
+  this.fetched = new Promise(function(resolve, reject) {
+    var xhr = new XMLHttpRequest;
+    xhr.responseType = 'moz-chunked-arraybuffer';
+    xhr.onprogress = function() {
+      self.chunks.push(new Uint8Array(this.response));
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+    };
+    xhr.onload = function() {
+      self.complete = true;
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+      resolve();
+    };
+    xhr.onerror = function() {
+      reject('download error');
+      self.complete = true;
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+    };
+    xhr.open('GET', url);
+  });
+}
+MozChunkedSource.available = (function() {
+  var xhr = new XMLHttpRequest;
+  xhr.responseType = 'moz-chunked-arraybuffer';
+  return (xhr.responseType === 'moz-chunked-arraybuffer');
+})();
+MozChunkedSource.prototype = Object.create(chunked_proto);
+    
 function update() {
 
   'use strict';
@@ -167,8 +208,12 @@ function update() {
   function getBuffer(identifier) {
     function downloadItem() {
       var url = '//cors.archive.org/cors/' + identifier;
-      if (typeof window.ReadableStream === 'function' && 'getReader' in ReadableStream.prototype) {
-        var source = new FetchStreamSource(url);
+      var ChunkedSource
+        = FetchChunkedSource.available ? FetchChunkedSource
+        : MozChunkedSource.available ? MozChunkedSource
+        : null;
+      if (ChunkedSource) {
+        var source = new ChunkedSource(url);
         source.fetched.then(function() {
           return source.getBlob();
         })
