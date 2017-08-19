@@ -1202,7 +1202,7 @@ function update() {
   })
   .then(function(values) {
     var disk = values[0];
-    var mdb = new MasterDirectoryBlockView(values[1], 512 * 2, 512);
+    var mdb = new MasterDirectoryBlockView(values[1].buffer, values[1].byteOffset, values[1].byteLength);
     if (!mdb.hasValidSignature) {
       return Promise.reject('not an HFS volume');
     }
