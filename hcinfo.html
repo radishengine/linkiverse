@@ -9,11 +9,16 @@
       font-family: sans-serif;
     }
     .loading {
-      background: repeating-linear-gradient(-45deg,#eee,#eee 20px,#fff 20px,#fff 40px);
+      background: repeating-linear-gradient(-45deg,#ee8,#ee8 20px,#ccc 20px,#ccc 40px);
       background-size: 56px 56px;
       background-attachment: fixed;
+      box-shadow: 15px 15px 10px rgba(0,0,0, 0.2) inset;
       cursor: progress;
       min-height: 1ex;
+    }
+    .loading .loading {
+      box-shadow: none;
+      background-image: none;
     }
     .error {
       background: #f88;
