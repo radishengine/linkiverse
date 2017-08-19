@@ -1226,6 +1226,7 @@ function update() {
                 }
                 var dataBytes = ops.subarray(op_i, op_i + byteStride);
                 op_i += byteStride;
+                row_i += reps;
                 while (reps-- > 0) {
                   bmap.set(dataBytes, bmap_i);
                   bmap_i += dataBytes.length;
@@ -1237,6 +1238,7 @@ function update() {
                   console.error('bmap out of range');
                   break mainLoop;
                 }
+                row_i += reps;
                 bmap_i += byteStride * reps;
                 reps = 1;
                 break;
@@ -1245,6 +1247,7 @@ function update() {
                   console.error('bmap out of range');
                   break mainLoop;
                 }
+                row_i += reps;
                 var end_i = bmap_i + reps * byteStride;
                 while (bmap_i < end_i) bmap[bmap_i++] = 0xFF;
                 reps = 1;
@@ -1255,6 +1258,7 @@ function update() {
                   break mainLoop;
                 }
                 var pattern = ops[op_i++];
+                row_i += reps;
                 while (reps-- > 0) {
                   patterns[(bmap_i / byteStride)&7] = pattern;
                   var end_i = bmap_i + byteStride;
@@ -1267,6 +1271,7 @@ function update() {
                   console.error('bmap out of range');
                   break mainLoop;
                 }
+                row_i += reps;
                 while (reps-- > 0) {
                   var pattern = patterns[(bmap_i / byteStride)&7];
                   var end_i = bmap_i + byteStride;
@@ -1280,6 +1285,7 @@ function update() {
                   break mainLoop;
                 }
                 var dataBytes = bmap.subarray(bmap_i - byteStride, bmap_i);
+                row_i += reps;
                 while (reps-- > 0) {
                   bmap.set(dataBytes, bmap_i);
                   bmap_i += byteStride;
@@ -1291,6 +1297,7 @@ function update() {
                   console.error('bmap out of range');
                   break mainLoop;
                 }
+                row_i += reps;
                 while (reps-- > 0) {
                   bmap.set(bmap.subarray(bmap_i - byteStride * 2, bmap_i - byteStride), bmap_i);
                   bmap_i += byteStride;
@@ -1302,6 +1309,7 @@ function update() {
                   console.error('bmap out of range');
                   break mainLoop;
                 }
+                row_i += reps;
                 while (reps-- > 0) {
                   bmap.set(bmap.subarray(bmap_i - byteStride * 3, bmap_i - byteStride * 2), bmap_i);
                   bmap_i += byteStride;
