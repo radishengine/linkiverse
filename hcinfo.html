@@ -5,6 +5,28 @@
   <style>
     pre { white-space: pre-wrap; }
     body:not(.show-code) .code { display: none; }
+    body {
+      font-family: sans-serif;
+    }
+    .loading {
+      background: repeating-linear-gradient(-45deg,#eee,#eee 20px,#fff 20px,#fff 40px);
+      background-size: 56px 56px;
+      -webkit-animation: slide 20s infinite linear forwards;
+      -moz-animation: slide 20s infinite linear forwards;
+      animation: slide 20s infinite linear forwards;
+    }
+    @-webkit-keyframes slide {
+        0% { background-position: 0% 0; }
+        100% { background-position: 100% 0; }
+    }
+    @-moz-keyframes slide {
+        0% { background-position: 0% 0; }
+        100% { background-position: 100% 0; }
+    }
+    @keyframes slide {
+        0% { background-position: 0% 0; }
+        100% { background-position: 100% 0; }
+    }    
   </style>
 </head>
 <body>
