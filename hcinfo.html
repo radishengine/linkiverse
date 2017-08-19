@@ -61,7 +61,8 @@ function FetchStreamSource(url) {
         });
         return;
       }
-      self.chunks.push(chunk.value);
+      chunk = chunk.value;
+      self.chunks.push(chunk);
       self.totalRead += chunk.length;
       self.listeners.forEach(function(listener) {
         listener();
