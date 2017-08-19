@@ -86,6 +86,7 @@ FetchStreamSource.prototype = {
         }
         if (offset+length <= self.chunks[i].length) {
           resolve(self.chunks[i].subarray(offset, offset+length));
+          return;
         }
         var buf = new Uint8Array(length);
         var chunk = self.chunks[i].subarray(offset);
