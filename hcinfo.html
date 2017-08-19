@@ -45,7 +45,14 @@ function FetchStreamSource(url) {
   this.chunks = [];
   this.totalRead = 0;
   this.fetched = fetch(url).then(function(req) {
-    var reader = req.getReader();
+    if (!req.ok) {
+      self.complete = true;
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+      return Promise.reject('download error');
+    }
+    var reader = req.body.getReader();
     function nextChunk(chunk) {
       if (chunk.done) {
         self.complete = true;
