@@ -34,7 +34,86 @@ MemorySource.prototype = {
   get: function(offset, length) {
     return Promise.resolve(new Uint8Array(this.arrayBuffer, offset, length));
   },
-};    
+  getBlob: function() {
+    return Promise.resolve(new Blob([this.arrayBuffer]));
+  },
+};
+
+function FetchStreamSource(url) {
+  var self = this;
+  this.listeners = [];
+  this.chunks = [];
+  this.totalRead = 0;
+  this.fetched = fetch(url).then(function(req) {
+    var reader = req.getReader();
+    function nextChunk(chunk) {
+      if (chunk.done) {
+        self.complete = true;
+        self.listeners.forEach(function(listener) {
+          listener();
+        });
+        return;
+      }
+      self.chunks.push(chunk.value);
+      self.totalLength += chunk.length;
+      self.listeners.forEach(function(listener) {
+        listener();
+      });
+      return reader.read().then(nextChunk);
+    }
+    return reader.read().then(nextChunk);
+  });
+}
+FetchStreamSource.prototype = {
+  get: function(offset, length) {
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      function finalRead() {
+        var i;
+        for (i = 0; i < self.chunks.length; i++) {
+          if (offset < self.chunks[i].length) {
+            break;
+          }
+          offset -= self.chunks[i].length;
+        }
+        if (offset+length <= self.chunks[i].length) {
+          resolve(self.chunks[i].subarray(offset, offset+length));
+        }
+        var buf = new Uint8Array(length);
+        var chunk = self.chunks[i].subarray(offset);
+        buf.set(chunk);
+        buf.writeOffset = chunk.length;
+        do {
+          chunk = self.chunks[++i];
+          chunk = chunk.subarray(0, Math.min(chunk.length, buf.length - buf.writeOffset));
+          buf.set(chunk, buf.writeOffset);
+          buf.writeOffset += chunk.length;
+        } while (buf.writeOffset < buf.length);
+        resolve(buf);
+      }
+      if (offset+length <= self.totalLength) {
+        finalRead();
+      }
+      else self.listeners.push(function listener() {
+        if (offset+length > self.totalLength) {
+          if (self.complete) {
+            self.listeners.splice(self.listeners.indexOf(listener), 1);
+            reject('not enough data');
+          }
+          return;
+        }
+        self.listeners.splice(self.listeners.indexOf(listener), 1);
+        finalRead();
+      });
+    });
+  },
+  getBlob: function() {
+    var self = this;
+    return this.fetched.then(function() {
+      return new Blob(self.chunks);
+    });
+  },
+};
     
 function update() {
 
@@ -78,6 +157,17 @@ function update() {
 
   function getBuffer(identifier) {
     function downloadItem() {
+      var url = '//cors.archive.org/cors/' + identifier;
+      if (typeof window.ReadableStream === 'function' && 'getReader' in ReadableStream.prototype) {
+        var source = new FetchStreamSource(url);
+        source.fetched.then(function() {
+          return source.getBlob();
+        })
+        .then(function(blob) {
+          setCache({identifier:identifier, blob:blob});
+        });
+        return Promise.resolve(source);
+      }
       return fetch('//cors.archive.org/cors/' + identifier)
       .then(function(response) {
         if (!response.ok) {
