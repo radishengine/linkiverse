@@ -1578,9 +1578,9 @@ function update() {
                 resourceContainer.appendChild(el);
                 break;
             }
-          }));
+          });
           resourceContainer.classList.remove('loading');
-        });
+        }));
         container.appendChild(resourceContainer);
       }
       Promise.all(loadChain).then(function() {
