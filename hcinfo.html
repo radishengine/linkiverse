@@ -55,7 +55,7 @@ function FetchStreamSource(url) {
         return;
       }
       self.chunks.push(chunk.value);
-      self.totalLength += chunk.length;
+      self.totalRead += chunk.length;
       self.listeners.forEach(function(listener) {
         listener();
       });
@@ -91,11 +91,11 @@ FetchStreamSource.prototype = {
         } while (buf.writeOffset < buf.length);
         resolve(buf);
       }
-      if (offset+length <= self.totalLength) {
+      if (offset+length <= self.totalRead) {
         finalRead();
       }
       else self.listeners.push(function listener() {
-        if (offset+length > self.totalLength) {
+        if (offset+length > self.totalRead) {
           if (self.complete) {
             self.listeners.splice(self.listeners.indexOf(listener), 1);
             reject('not enough data');
