@@ -1289,6 +1289,7 @@ function update() {
           createdAt: record.fileInfo.createdAt,
           modifiedAt: record.fileInfo.modifiedAt,
           id: record.fileInfo.id,
+          isInvisible: record.fileInfo.isInvisible,
         });
         var dataFork = record.fileInfo.dataForkInfo;
         var resourceFork = record.fileInfo.resourceForkInfo;
@@ -1339,13 +1340,13 @@ function update() {
     
     for (var k in files) {
       var file = files[k];
-      if (file.isFolder) continue;
+      if (file.isFolder || file.isInvisible) continue;
       
       var container = document.createElement('DIV');
       document.getElementById('content').appendChild(container);
       
       var header = document.createElement('H3');
-      header.innerText = k.split('/').map(decodeURIComponent).join(':') + ' [' + file.type + '/' + file.creator + ']';
+      header.innerText = k.split('/').map(decodeURIComponent).join(':') + ' [' + file.type + '/' + file.creator + '] ' + file.modifiedAt;
       container.appendChild(header);
       
       if (file.dataLength) switch (file.type) {
