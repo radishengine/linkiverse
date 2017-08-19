@@ -134,6 +134,7 @@ function MozChunkedSource(url) {
   this.totalRead = 0;
   this.fetched = new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest;
+    xhr.open('GET', url);
     xhr.responseType = 'moz-chunked-arraybuffer';
     xhr.onprogress = function() {
       self.chunks.push(new Uint8Array(this.response));
@@ -155,7 +156,7 @@ function MozChunkedSource(url) {
         listener();
       });
     };
-    xhr.open('GET', url);
+    xhr.send();
   });
 }
 MozChunkedSource.available = (function() {
