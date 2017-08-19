@@ -14,6 +14,11 @@
       -webkit-animation: slide 20s infinite linear forwards;
       -moz-animation: slide 20s infinite linear forwards;
       animation: slide 20s infinite linear forwards;
+      cursor: progress;
+      min-height: 1ex;
+    }
+    .loading .loading {
+      background-image: none;
     }
     @-webkit-keyframes slide {
         0% { background-position: 0% 0; }
@@ -1520,48 +1525,58 @@ function update() {
       if (file.dataLength) switch (file.type) {
         case 'TEXT': case 'ttro':
           var el = document.createElement('PRE');
-          el.innerText = 'Loading...';
+          el.classList.add('loading');
           Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             el.innerText = macRoman(data);
+            el.classList.remove('loading');
           });
           container.appendChild(el);
           break;
         case 'PDF ':
           var el = document.createElement('A');
+          el.classList.add('loading');
           el.href = 'about:blank';
-          el.innerText = 'Loading...';
+          el.innerText = 'Open PDF';
           Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             el.href = URL.createObjectURL(new Blob([data], {type:'application/pdf'}));
-            el.innerText = 'PDF';
+            el.classList.remove('loading');
           });
           container.appendChild(el);
           break;
         case 'STAK':
           var el = document.createElement('DIV');
+          el.classList.add('loading');
           Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             loadStackData(data, el);
+            el.classList.remove('loading');
           });
           container.appendChild(el);
           break;
       }
-      if (file.resourcesLength) file.getResources().then(function(resources) {
-        resources.forEach(function(resource, i) {
-          var header = document.createElement('H4');
-          header.innerText = resource.type + ' ' + i;
-          if (resource.name) header.innerText + ' "' + resource.name + '"';
-          container.appendChild(header);
-          switch (resource.type) {
-            case 'TEXT':
-              var el = document.createElement('PRE');
-              el.innerText = macRoman(resource.data);
-              container.appendChild(el);
-              break;
-          }
+      if (file.resourcesLength) {
+        var resourceContainer = document.createElement('DIV');
+        resourceContainer.classList.add('loading');
+        file.getResources().then(function(resources) {
+          resources.forEach(function(resource, i) {
+            var header = document.createElement('H4');
+            header.innerText = resource.type + ' ' + i;
+            if (resource.name) header.innerText + ' "' + resource.name + '"';
+            resourceContainer.appendChild(header);
+            switch (resource.type) {
+              case 'TEXT':
+                var el = document.createElement('PRE');
+                el.innerText = macRoman(resource.data);
+                resourceContainer.appendChild(el);
+                break;
+            }
+          });
+          resourceContainer.classList.remove('loading');
         });
-      });
+        container.appendChild(resourceContainer);
+      }
     }
     
   });
