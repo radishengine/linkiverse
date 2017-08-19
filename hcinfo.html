@@ -1294,7 +1294,7 @@ function update() {
         var resourceFork = record.fileInfo.resourceForkInfo;
         if (dataFork.logicalEOF > 0) {
           var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
-          var needDataBlocks = Math.ceil(dataFork.logicalEOF / chunkSize);
+          var needDataBlocks = Math.ceil(dataFork.logicalEOF / disk.chunkSize);
           needDataBlocks -= dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
           if (needDataBlocks > 0) {
             dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
@@ -1306,7 +1306,7 @@ function update() {
         }
         if (resourceFork.logicalEOF > 0) {
           var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
-          var needResourceBlocks = Math.ceil(resourceFork.logicalEOF / chunkSize);
+          var needResourceBlocks = Math.ceil(resourceFork.logicalEOF / disk.chunkSize);
           needResourceBlocks -= resourceForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
           if (needResourceBlocks > 0) {
             resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
