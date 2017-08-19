@@ -1162,6 +1162,7 @@ function update() {
           var patterns = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
           var dx = 0, dy = 0, reps = 1;
           var op_i = 0, bmap_i = 0;
+          var row_i = 0;
           mainLoop: while (op_i < ops.length) {
             var op = ops[op_i++];
             if (op < 0x80) {
@@ -1310,15 +1311,16 @@ function update() {
               case 0x88: dx = 16; dy = 0; break;
               case 0x89: dx =  0; dy = 0; break;
               case 0x8A: dx =  0; dy = 1; break;
-              case 0x8B: dx =  0; dy = 0; break;
+              case 0x8B: dx =  0; dy = 2; break;
               case 0x8C: dx =  1; dy = 0; break;
               case 0x8D: dx =  1; dy = 1; break;
               case 0x8E: dx =  2; dy = 2; break;
               case 0x8F: dx =  8; dy = 0; break;
               default:
-                if ((bmap_i % byteStride) === 0) {
+                var row_j = Math.floor(bmap_i / byteStride);
+                while (row_i < row_j) {
                   if (dx) {
-                    var prev = bmap.subarray(bmap_i - byteStride, bmap_i);
+                    var prev = bmap.subarray(row_i * byteStride, (row_i + 1) * byteStride);
                     var copy = new Uint8Array(prev);
                     for (var k = Math.floor(fullWidth/dx); k > 0; k--) {
                       var x = 0;
@@ -1331,9 +1333,10 @@ function update() {
                   }
                   if (dy) {
                     for (var n = 0; n < byteStride; n++) {
-                      bmap[bmap_i + n - byteStride] ^= bmap[bmap_i + n - (dy + 1) * byteStride];
+                      bmap[row_i * byteStride + n] ^= bmap[(row_i - dy) * byteStride + n];
                     }
                   }
+                  row_i++;
                 }
                 break;
             }
