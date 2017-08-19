@@ -26,6 +26,15 @@ function download(thing) {
   link.click();
   document.body.removeChild(link);
 }
+
+function MemorySource(arrayBuffer) {
+  this.arrayBuffer = arrayBuffer;
+}
+MemorySource.prototype = {
+  get: function(offset, length) {
+    return Promise.resolve(new Uint8Array(this.arrayBuffer, offset, length));
+  },
+};    
     
 function update() {
 
@@ -78,7 +87,7 @@ function update() {
       })
       .then(function(buffer) {
         setCache({identifier:identifier, blob:new Blob([buffer])});
-        return buffer;
+        return new MemorySource(buffer);
       });
     }
     return getCache().then(function(cache) {
@@ -86,7 +95,7 @@ function update() {
         return new Promise(function(resolve, reject) {
           var fr = new FileReader();
           fr.onload = function() {
-            resolve(this.result);
+            resolve(new MemorySource(this.result));
           };
           fr.readAsArrayBuffer(cache.blob);
         });
@@ -859,50 +868,357 @@ function update() {
       return this.dv.getUint32(4, false) & 0xffffff;
     },
   };
-  ReferenceListEntryView.byteLength = 12;  
+  ReferenceListEntryView.byteLength = 12;
   
-  function fromExtents(alloc, chunkSize, byteLength, extents) {
-    if (byteLength <= chunkSize * extents[0].length) {
-      var byteOffset = chunkSize * extents[0].offset;
-      return alloc.subarray(byteOffset, byteOffset + byteLength);
+  function disk_fromExtents(byteLength, extents) {
+    if (byteLength <= this.chunkSize * extents[0].length) {
+      var byteOffset = this.allocOffset + this.chunkSize * extents[0].offset;
+      return this.get(byteOffset, byteLength);
     }
+    var disk = this;
     var buf = new Uint8Array(byteLength);
-    var offset = 0;
-    var i = 0;
-    do {
-      if (i > extents.length) throw new Error('insufficient space in extents');
-      var chunkOffset = chunkSize * extents[i].offset;
-      var chunk = alloc.subarray(
-        chunkOffset,
-        chunkOffset + Math.min(byteLength, chunkSize * extents[i].length));
-      buf.set(chunk, offset);
-      offset += chunk.length;
-      byteLength -= chunk.length;
-      i++;
-    } while (byteLength > 0);
-    return buf;
+    buf.writeOffset = 0;
+    function nextExtent(i) {
+      if (i > extents.length) return Promise.reject('insufficient space in extents');
+      var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset;
+      var chunkLength = Math.min(
+        buf.length - buf.writeOffset,
+        disk.chunkSize * extents[i].length);
+      return disk.get(chunkOffset, chunkLength).then(function(chunk) {
+        buf.set(chunk, buf.writeOffset);
+        buf.writeOffset += chunk.length;
+        return nextExtent(i + 1);
+      });
+    }
+    return nextExtent(0);
+  }
+  
+  function loadStackData(data, container) {
+    var chunks = [];
+    var dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    var pos = 0;
+    for (;;) {
+      var len = dv.getUint32(pos, false);
+      var block = {
+        type: String.fromCharCode(data[pos+4], data[pos+5], data[pos+6], data[pos+7]),
+        id: dv.getInt32(pos+8, false),
+        data: data.subarray(pos, pos+len),
+      };
+      pos += len;
+      chunks.push(block);
+      if (block.type === 'TAIL') break;
+    }
+    console.log(chunks);
+    chunks.forEach(function(chunk) {
+      switch (chunk.type) {
+        case 'STAK':
+          if (chunk.data[0x600]) {
+            var len = 1;
+            while (chunk.data[0x600+len]) len++;
+            var code = document.createElement('PRE');
+            code.className = 'code';
+            code.innerText = macRoman(chunk.data, 0x600, len);
+            container.appendChild(code);
+          }
+          break;
+        case 'BKGD':
+        case 'CARD':
+          var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
+          var partCount = dv.getUint16(chunk.type === 'CARD' ? 40 : 36, false);
+          var partContentCount = dv.getUint16(chunk.type === 'CARD' ? 48 : 44, false);
+          var pos = chunk.type === 'CARD' ? 54 : 50;
+          for (var i = 0; i < partCount; i++) {
+            var size = dv.getUint16(pos, false);
+            var namePos = pos + 30, nameLen = 0;
+            while (chunk.data[namePos + nameLen]) nameLen++;
+            if (nameLen > 0) {
+              var el = document.createElement('PRE');
+              el.innerText = macRoman(chunk.data, namePos, nameLen);
+              container.appendChild(el);
+            }
+            var scriptPos = namePos + nameLen + 2;
+            if (chunk.data[scriptPos]) {
+              var scriptLen = 1;
+              while (chunk.data[scriptPos+scriptLen]) scriptLen++;
+              var el = document.createElement('PRE');
+              el.className = 'code';
+              el.innerText = macRoman(chunk.data, scriptPos, scriptLen);
+              container.appendChild(el);
+            }
+            pos += size;
+          }
+          for (var i = 0; i < partContentCount; i++) {
+            if (pos >= chunk.data.length) break;
+            var partId = dv.getInt16(pos, false);
+            var size = dv.getUint16(pos+2, false);
+            var formatLength = chunk.data[pos+4] & 0x80 ? dv.getUint16(pos+4, false) & 0x7FFF : 1;
+            var charPos = pos + 4 + formatLength;
+            var str = macRoman(chunk.data, charPos, size - formatLength).replace(/\0.*/, '');
+            if (str.length > 0) {
+              var el = document.createElement('PRE');
+              el.innerText = str;
+              container.appendChild(el);
+            }
+            pos += 4 + size;
+          }
+          if (chunk.data[pos]) {
+            var nameLen = 1;
+            while (chunk.data[pos + nameLen]) nameLen++;
+            var el = document.createElement('PRE');
+            el.innerText = macRoman(chunk.data, pos, nameLen);
+            container.appendChild(el);
+            pos += nameLen + 1;
+          }
+          else pos++;
+          if (chunk.data[pos]) {
+            var scriptLen = 1;
+            while (chunk.data[pos+scriptLen]) scriptLen++;
+            var el = document.createElement('PRE');
+            el.className = 'code';
+            el.innerText = macRoman(chunk.data, pos, scriptLen);
+            container.appendChild(el);
+          }
+          break;
+        case 'BMAP':
+          var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
+          var imageBounds = {
+            top: dv.getInt16(40, false),
+            left: dv.getInt16(42, false),
+            bottom: dv.getInt16(44, false),
+            right: dv.getInt16(46, false),
+          };
+          if (imageBounds.bottom < imageBounds.top || imageBounds.right < imageBounds.left) break;
+          var height = imageBounds.bottom - imageBounds.top;
+          var fullWidth = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
+          if (fullWidth*height === 0) break;
+          var byteStride = fullWidth/8;
+          var maskDataLen = dv.getUint32(56, false), imageDataLen = dv.getUint32(60, false);
+          var ops = chunk.data.subarray(64 + maskDataLen, 64 + maskDataLen + imageDataLen);
+          var bmap = new Uint8Array(byteStride * height);
+          var patterns = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
+          var dx = 0, dy = 0, reps = 1;
+          var op_i = 0, bmap_i = 0;
+          mainLoop: while (op_i < ops.length) {
+            var op = ops[op_i++];
+            if (op < 0x80) {
+              var zeroBytes = op & 0xF;
+              var dataBytes = op >>> 4;
+              if ((op_i + dataBytes) > ops.length || (bmap_i + (zeroBytes + dataBytes) * reps) > bmap.length) {
+                console.error('op data out of range');
+                break;
+              }
+              if (dataBytes === 1) {
+                var dataByte = ops[op_i++];
+                while (reps-- > 0) {
+                  bmap[bmap_i + zeroBytes] = dataByte;
+                  bmap_i += zeroBytes + 1;
+                }
+              }
+              else if (dataBytes === 0) {
+                bmap_i += zeroBytes * reps;
+              }
+              else {
+                dataBytes = ops.subarray(op_i, op_i + dataBytes);
+                op_i += dataBytes.length;
+                while (reps-- > 0) {
+                  bmap.set(dataBytes, bmap_i + zeroBytes);
+                  bmap_i += zeroBytes + dataBytes.length;
+                }
+              }
+              reps = 1;
+            }
+            else if ((op & 0xE0) === 0xC0) {
+              var dataBytes = (op & 0x1F) * 8;
+              if ((bmap_i + dataBytes * reps) > bmap.length || (op_i + dataBytes) > ops.length) {
+                console.error('bmap out of range');
+                break mainLoop;
+              }
+              dataBytes = ops.subarray(op_i, op_i + dataBytes);
+              op_i += dataBytes.length;
+              while (reps-- > 0) {
+                bmap.set(dataBytes, bmap_i);
+                bmap_i += dataBytes.length;
+              }
+              reps = 1;
+            }
+            else if ((op & 0xE0) === 0xE0) {
+              var zeroBytes = (op & 0x1F) * 16;
+              bmap_i += zeroBytes * reps;
+              if (bmap_i > bmap.length) {
+                console.error('bmap out of range');
+                break mainLoop;
+              }
+              reps = 1;
+            }
+            if ((op & 0xE0) === 0xA0) {
+              reps = op & 0x1F;
+            }
+            else switch (op) {
+              case 0x80:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var dataBytes = ops.subarray(op_i, op_i + byteStride);
+                op_i += byteStride;
+                while (reps-- > 0) {
+                  bmap.set(dataBytes, bmap_i);
+                  bmap_i += dataBytes.length;
+                }
+                reps = 1;
+                break;
+              case 0x81:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                bmap_i += byteStride * reps;
+                reps = 1;
+                break;
+              case 0x82:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var end_i = bmap_i + reps * byteStride;
+                while (bmap_i < end_i) bmap[bmap_i++] = 0xFF;
+                reps = 1;
+                break;
+              case 0x83:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var pattern = ops[op_i++];
+                while (reps-- > 0) {
+                  patterns[(bmap_i / byteStride)&7] = pattern;
+                  var end_i = bmap_i + byteStride;
+                  while (bmap_i < end_i) bmap[bmap_i++] = pattern;
+                }
+                reps = 1;
+                break;
+              case 0x84:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                while (reps-- > 0) {
+                  var pattern = patterns[(bmap_i / byteStride)&7];
+                  var end_i = bmap_i + byteStride;
+                  while (bmap_i < end_i) bmap[bmap_i++] = pattern;
+                }
+                reps = 1;
+                break;
+              case 0x85:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var dataBytes = bmap.subarray(bmap_i - byteStride, bmap_i);
+                while (reps-- > 0) {
+                  bmap.set(dataBytes, bmap_i);
+                  bmap_i += byteStride;
+                }
+                reps = 1;
+                break;
+              case 0x86:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                while (reps-- > 0) {
+                  bmap.set(bmap.subarray(bmap_i - byteStride * 2, bmap_i - byteStride), bmap_i);
+                  bmap_i += byteStride;
+                }
+                reps = 1;
+                break;
+              case 0x87:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                while (reps-- > 0) {
+                  bmap.set(bmap.subarray(bmap_i - byteStride * 3, bmap_i - byteStride * 2), bmap_i);
+                  bmap_i += byteStride;
+                }
+                reps = 1;
+                break;
+              case 0x88: dx = 16; dy = 0; break;
+              case 0x89: dx =  0; dy = 0; break;
+              case 0x8A: dx =  0; dy = 1; break;
+              case 0x8B: dx =  0; dy = 2; break;
+              case 0x8C: dx =  1; dy = 0; break;
+              case 0x8D: dx =  1; dy = 1; break;
+              case 0x8E: dx =  2; dy = 2; break;
+              case 0x8F: dx =  8; dy = 0; break;
+              default:
+                if ((bmap_i % byteStride) === 0) {
+                  if (dx) {
+                    var prev = bmap.subarray(bmap_i - byteStride, bmap_i);
+                    var copy = new Uint8Array(prev);
+                    for (var k = Math.floor(fullWidth/dx); k > 0; k--) {
+                      var x = 0;
+                      for (var n = 0; n < byteStride; n++) {
+                        x |= prev[n] << 16 >> dx;
+                        prev[n] = (x >> 16) ^ copy[n];
+                        x = (x << 8) & 0xFFFF00;
+                      }
+                    }
+                  }
+                  if (dy) {
+                    for (var n = 0; n < byteStride; n++) {
+                      bmap[bmap_i + n - byteStride] ^= bmap[bmap_i + n - (dy + 1) * byteStride];
+                    }
+                  }
+                }
+                break;
+            }
+          }
+
+          var canvas = document.createElement('CANVAS');
+
+          canvas.width = fullWidth;
+          canvas.height = height;
+          var ctx = canvas.getContext('2d');
+          var raw = ctx.createImageData(fullWidth, height);
+          for (var bmap_i = 0; bmap_i < bmap.length; bmap_i++) {
+            var bi = bmap[bmap_i];
+            for (var bit_i = 0; bit_i < 8; bit_i++) {
+              if (bi & (0x80 >> bit_i)) {
+                raw.data[(bmap_i*8 + bit_i)*4 + 3] = 0xFF;
+              }
+            }
+          }
+          ctx.putImageData(raw, 0, 0);
+          container.appendChild(canvas);
+          break;
+      }
+    });
   }
   
   getBuffer(name + '/disk.img')
   .then(function(disk) {
-    var mdb = new MasterDirectoryBlockView(disk, 512 * 2, 512);
+    return Promise.all([disk, disk.get(512 * 2, 512)]);
+  })
+  .then(function(values) {
+    var disk = values[0];
+    var mdb = new MasterDirectoryBlockView(values[1], 512 * 2, 512);
     if (!mdb.hasValidSignature) {
       return Promise.reject('not an HFS volume');
     }
-    var chunkSize = mdb.allocationChunkByteLength;
-    var alloc = new Uint8Array(disk,
-      mdb.firstAllocationBlock * 512,
-      mdb.allocationChunkCount * chunkSize);
-    var catalog = fromExtents(
-      alloc,
-      chunkSize,
+    disk.chunkSize = mdb.allocationChunkByteLength;
+    disk.allocOffset = mdb.firstAllocationBlock * 512;
+    disk.fromExtents = disk_fromExtents;
+    var catalog = disk.fromExtents(
       mdb.catalogByteLength,
       mdb.catalogFirstExtents);
-    var overflow = fromExtents(
-      alloc,
-      chunkSize,
+    var overflow = disk.fromExtents(
       mdb.overflowByteLength,
       mdb.overflowFirstExtents);
+    return Promise.all([disk, catalog, overflow]);
+  })
+  .then(function(values) {
+    var disk = values[0], catalog = values[1], overflow = values[2];
       
     var parentPaths = {};
     parentPaths[0] = '';
@@ -983,11 +1299,10 @@ function update() {
           if (needDataBlocks > 0) {
             dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
           }
-          info.data = fromExtents(
-            alloc,
-            chunkSize,
-            dataFork.logicalEOF,
-            dataForkExtents);
+          info.dataLength = dataFork.logicalEOF;
+          info.getData = function() {
+            return disk.fromExtents(this.dataLength, dataForkExtents);
+          };
         }
         if (resourceFork.logicalEOF > 0) {
           var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
@@ -996,25 +1311,25 @@ function update() {
           if (needResourceBlocks > 0) {
             resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
           }
-          var res = fromExtents(
-            alloc,
-            chunkSize,
-            resourceFork.logicalEOF,
-            resourceForkExtents);
-          var resourceHeader = new ResourceHeaderView(res.buffer, res.byteOffset, ResourceHeaderView.byteLength);
-          var resourceData = new Uint8Array(res.buffer, res.byteOffset + resourceHeader.dataOffset, resourceHeader.dataLength);
-          var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + resourceHeader.mapOffset, resourceHeader.mapLength);
-          var dv = new DataView(resourceData.buffer, resourceData.byteOffset, resourceData.byteLength);
-          info.resources = resourceMap.resourceList.map(function(resourceInfo) {
-            return {
-              name: resourceInfo.name,
-              type: resourceInfo.type,
-              data: new Uint8Array(
-                resourceData.buffer,
-                resourceData.byteOffset + resourceInfo.dataOffset + 4,
-                dv.getUint32(resourceInfo.dataOffset, false)
-              ),
-            };
+          info.resourcesLength = resourceFork.logicalEOF;
+          info.getResources = function() {
+            return disk.fromExtents(this.resourcesLength, resourceForkExtents).then(function(res) {
+              var resourceHeader = new ResourceHeaderView(res.buffer, res.byteOffset, ResourceHeaderView.byteLength);
+              var resourceData = new Uint8Array(res.buffer, res.byteOffset + resourceHeader.dataOffset, resourceHeader.dataLength);
+              var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + resourceHeader.mapOffset, resourceHeader.mapLength);
+              var dv = new DataView(resourceData.buffer, resourceData.byteOffset, resourceData.byteLength);
+              return resourceMap.resourceList.map(function(resourceInfo) {
+                return {
+                  name: resourceInfo.name,
+                  type: resourceInfo.type,
+                  data: new Uint8Array(
+                    resourceData.buffer,
+                    resourceData.byteOffset + resourceInfo.dataOffset + 4,
+                    dv.getUint32(resourceInfo.dataOffset, false)
+                  ),
+                };
+              });
+            });
           });
         }
       });
@@ -1026,336 +1341,55 @@ function update() {
       var file = files[k];
       if (file.isFolder) continue;
       
+      var container = document.createElement('DIV');
+      document.getElementById('content').appendChild(container);
+      
       var header = document.createElement('H3');
       header.innerText = k.split('/').map(decodeURIComponent).join(':') + ' [' + file.type + '/' + file.creator + ']';
-      document.getElementById('content').appendChild(header);
+      container.appendChild(header);
       
       if (file.type === 'TEXT' || file.type === 'ttro') {
         var el = document.createElement('PRE');
-        el.innerText = macRoman(file.data);
-        document.getElementById('content').appendChild(el);
+        el.innerText = 'Loading...';
+        file.getData().then(function(data) {
+          el.innerText = macRoman(data);
+        });
+        container.appendChild(el);
       }
       if (file.type === 'PDF ') {
         var el = document.createElement('A');
-        el.innerText = 'PDF';
-        el.href = URL.createObjectURL(new Blob([file.data], {type:'application/pdf'}));
-        document.getElementById('content').appendChild(el);
+        el.href = 'about:blank';
+        el.innerText = 'Loading...';
+        file.getData().then(function(data) {
+          el.href = URL.createObjectURL(new Blob([data], {type:'application/pdf'}));
+          el.innerText = 'PDF';
+        });
+        container.appendChild(el);
       }
       if (file.type === 'STAK') {
-        var chunks = [];
-        var dv = new DataView(file.data.buffer, file.data.byteOffset, file.data.byteLength);
-        var pos = 0;
-        for (;;) {
-          var len = dv.getUint32(pos, false);
-          var block = {
-            type: String.fromCharCode(file.data[pos+4], file.data[pos+5], file.data[pos+6], file.data[pos+7]),
-            id: dv.getInt32(pos+8, false),
-            data: file.data.subarray(pos, pos+len),
-          };
-          pos += len;
-          chunks.push(block);
-          if (block.type === 'TAIL') break;
-        }
-        console.log(chunks);
-        chunks.forEach(function(chunk) {
-          switch (chunk.type) {
-            case 'STAK':
-              if (chunk.data[0x600]) {
-                var len = 1;
-                while (chunk.data[0x600+len]) len++;
-                var code = document.createElement('PRE');
-                code.className = 'code';
-                code.innerText = macRoman(chunk.data, 0x600, len);
-                document.getElementById('content').appendChild(code);
-              }
-              break;
-            case 'BKGD':
-            case 'CARD':
-              var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
-              var partCount = dv.getUint16(chunk.type === 'CARD' ? 40 : 36, false);
-              var partContentCount = dv.getUint16(chunk.type === 'CARD' ? 48 : 44, false);
-              var pos = chunk.type === 'CARD' ? 54 : 50;
-              for (var i = 0; i < partCount; i++) {
-                var size = dv.getUint16(pos, false);
-                var namePos = pos + 30, nameLen = 0;
-                while (chunk.data[namePos + nameLen]) nameLen++;
-                if (nameLen > 0) {
-                  var el = document.createElement('PRE');
-                  el.innerText = macRoman(chunk.data, namePos, nameLen);
-                  document.getElementById('content').appendChild(el);
-                }
-                var scriptPos = namePos + nameLen + 2;
-                if (chunk.data[scriptPos]) {
-                  var scriptLen = 1;
-                  while (chunk.data[scriptPos+scriptLen]) scriptLen++;
-                  var el = document.createElement('PRE');
-                  el.className = 'code';
-                  el.innerText = macRoman(chunk.data, scriptPos, scriptLen);
-                  document.getElementById('content').appendChild(el);
-                }
-                pos += size;
-              }
-              for (var i = 0; i < partContentCount; i++) {
-                if (pos >= chunk.data.length) break;
-                var partId = dv.getInt16(pos, false);
-                var size = dv.getUint16(pos+2, false);
-                var formatLength = chunk.data[pos+4] & 0x80 ? dv.getUint16(pos+4, false) & 0x7FFF : 1;
-                var charPos = pos + 4 + formatLength;
-                var str = macRoman(chunk.data, charPos, size - formatLength).replace(/\0.*/, '');
-                if (str.length > 0) {
-                  var el = document.createElement('PRE');
-                  el.innerText = str;
-                  document.getElementById('content').appendChild(el);
-                }
-                pos += 4 + size;
-              }
-              if (chunk.data[pos]) {
-                var nameLen = 1;
-                while (chunk.data[pos + nameLen]) nameLen++;
+        var stackContainer = document.createElement('DIV');
+        file.getData().then(function(data) {
+          loadStackData(data, stackContainer);
+        });
+        container.appendChild(stackContainer);
+      }
+      if (file.resourcesLength) {
+        file.getResources().then(function(resources) {
+          resources.forEach(function(resource, i) {
+            var header = document.createElement('H4');
+            header.innerText = resource.type + ' ' + i;
+            if (resource.name) header.innerText + ' "' + resource.name + '"';
+            container.appendChild(header);
+            switch (resource.type) {
+              case 'TEXT':
                 var el = document.createElement('PRE');
-                el.innerText = macRoman(chunk.data, pos, nameLen);
-                document.getElementById('content').appendChild(el);
-                pos += nameLen + 1;
-              }
-              else pos++;
-              if (chunk.data[pos]) {
-                var scriptLen = 1;
-                while (chunk.data[pos+scriptLen]) scriptLen++;
-                var el = document.createElement('PRE');
-                el.className = 'code';
-                el.innerText = macRoman(chunk.data, pos, scriptLen);
-                document.getElementById('content').appendChild(el);
-              }
-              break;
-            case 'BMAP':
-              var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
-              var imageBounds = {
-                top: dv.getInt16(40, false),
-                left: dv.getInt16(42, false),
-                bottom: dv.getInt16(44, false),
-                right: dv.getInt16(46, false),
-              };
-              if (imageBounds.bottom < imageBounds.top || imageBounds.right < imageBounds.left) break;
-              var height = imageBounds.bottom - imageBounds.top;
-              var fullWidth = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
-              if (fullWidth*height === 0) break;
-              var byteStride = fullWidth/8;
-              var maskDataLen = dv.getUint32(56, false), imageDataLen = dv.getUint32(60, false);
-              var ops = chunk.data.subarray(64 + maskDataLen, 64 + maskDataLen + imageDataLen);
-              var bmap = new Uint8Array(byteStride * height);
-              var patterns = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
-              var dx = 0, dy = 0, reps = 1;
-              var op_i = 0, bmap_i = 0;
-              mainLoop: while (op_i < ops.length) {
-                var op = ops[op_i++];
-                if (op < 0x80) {
-                  var zeroBytes = op & 0xF;
-                  var dataBytes = op >>> 4;
-                  if ((op_i + dataBytes) > ops.length || (bmap_i + (zeroBytes + dataBytes) * reps) > bmap.length) {
-                    console.error('op data out of range');
-                    break;
-                  }
-                  if (dataBytes === 1) {
-                    var dataByte = ops[op_i++];
-                    while (reps-- > 0) {
-                      bmap[bmap_i + zeroBytes] = dataByte;
-                      bmap_i += zeroBytes + 1;
-                    }
-                  }
-                  else if (dataBytes === 0) {
-                    bmap_i += zeroBytes * reps;
-                  }
-                  else {
-                    dataBytes = ops.subarray(op_i, op_i + dataBytes);
-                    op_i += dataBytes.length;
-                    while (reps-- > 0) {
-                      bmap.set(dataBytes, bmap_i + zeroBytes);
-                      bmap_i += zeroBytes + dataBytes.length;
-                    }
-                  }
-                  reps = 1;
-                }
-                else if ((op & 0xE0) === 0xC0) {
-                  var dataBytes = (op & 0x1F) * 8;
-                  if ((bmap_i + dataBytes * reps) > bmap.length || (op_i + dataBytes) > ops.length) {
-                    console.error('bmap out of range');
-                    break mainLoop;
-                  }
-                  dataBytes = ops.subarray(op_i, op_i + dataBytes);
-                  op_i += dataBytes.length;
-                  while (reps-- > 0) {
-                    bmap.set(dataBytes, bmap_i);
-                    bmap_i += dataBytes.length;
-                  }
-                  reps = 1;
-                }
-                else if ((op & 0xE0) === 0xE0) {
-                  var zeroBytes = (op & 0x1F) * 16;
-                  bmap_i += zeroBytes * reps;
-                  if (bmap_i > bmap.length) {
-                    console.error('bmap out of range');
-                    break mainLoop;
-                  }
-                  reps = 1;
-                }
-                if ((op & 0xE0) === 0xA0) {
-                  reps = op & 0x1F;
-                }
-                else switch (op) {
-                  case 0x80:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    var dataBytes = ops.subarray(op_i, op_i + byteStride);
-                    op_i += byteStride;
-                    while (reps-- > 0) {
-                      bmap.set(dataBytes, bmap_i);
-                      bmap_i += dataBytes.length;
-                    }
-                    reps = 1;
-                    break;
-                  case 0x81:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    bmap_i += byteStride * reps;
-                    reps = 1;
-                    break;
-                  case 0x82:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    var end_i = bmap_i + reps * byteStride;
-                    while (bmap_i < end_i) bmap[bmap_i++] = 0xFF;
-                    reps = 1;
-                    break;
-                  case 0x83:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    var pattern = ops[op_i++];
-                    while (reps-- > 0) {
-                      patterns[(bmap_i / byteStride)&7] = pattern;
-                      var end_i = bmap_i + byteStride;
-                      while (bmap_i < end_i) bmap[bmap_i++] = pattern;
-                    }
-                    reps = 1;
-                    break;
-                  case 0x84:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    while (reps-- > 0) {
-                      var pattern = patterns[(bmap_i / byteStride)&7];
-                      var end_i = bmap_i + byteStride;
-                      while (bmap_i < end_i) bmap[bmap_i++] = pattern;
-                    }
-                    reps = 1;
-                    break;
-                  case 0x85:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    var dataBytes = bmap.subarray(bmap_i - byteStride, bmap_i);
-                    while (reps-- > 0) {
-                      bmap.set(dataBytes, bmap_i);
-                      bmap_i += byteStride;
-                    }
-                    reps = 1;
-                    break;
-                  case 0x86:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    while (reps-- > 0) {
-                      bmap.set(bmap.subarray(bmap_i - byteStride * 2, bmap_i - byteStride), bmap_i);
-                      bmap_i += byteStride;
-                    }
-                    reps = 1;
-                    break;
-                  case 0x87:
-                    if ((bmap_i + byteStride * reps) > bmap.length) {
-                      console.error('bmap out of range');
-                      break mainLoop;
-                    }
-                    while (reps-- > 0) {
-                      bmap.set(bmap.subarray(bmap_i - byteStride * 3, bmap_i - byteStride * 2), bmap_i);
-                      bmap_i += byteStride;
-                    }
-                    reps = 1;
-                    break;
-                  case 0x88: dx = 16; dy = 0; break;
-                  case 0x89: dx =  0; dy = 0; break;
-                  case 0x8A: dx =  0; dy = 1; break;
-                  case 0x8B: dx =  0; dy = 2; break;
-                  case 0x8C: dx =  1; dy = 0; break;
-                  case 0x8D: dx =  1; dy = 1; break;
-                  case 0x8E: dx =  2; dy = 2; break;
-                  case 0x8F: dx =  8; dy = 0; break;
-                  default:
-                    if ((bmap_i % byteStride) === 0) {
-                      if (dx) {
-                        var prev = bmap.subarray(bmap_i - byteStride, bmap_i);
-                        var copy = new Uint8Array(prev);
-                        for (var k = Math.floor(fullWidth/dx); k > 0; k--) {
-                          var x = 0;
-                          for (var n = 0; n < byteStride; n++) {
-                            x |= prev[n] << 16 >> dx;
-                            prev[n] = (x >> 16) ^ copy[n];
-                            x = (x << 8) & 0xFFFF00;
-                          }
-                        }
-                      }
-                      if (dy) {
-                        for (var n = 0; n < byteStride; n++) {
-                          bmap[bmap_i + n - byteStride] ^= bmap[bmap_i + n - (dy + 1) * byteStride];
-                        }
-                      }
-                    }
-                    break;
-                }
-              }
-              
-              var canvas = document.createElement('CANVAS');
-              
-              canvas.width = fullWidth;
-              canvas.height = height;
-              var ctx = canvas.getContext('2d');
-              var raw = ctx.createImageData(fullWidth, height);
-              for (var bmap_i = 0; bmap_i < bmap.length; bmap_i++) {
-                var bi = bmap[bmap_i];
-                for (var bit_i = 0; bit_i < 8; bit_i++) {
-                  if (bi & (0x80 >> bit_i)) {
-                    raw.data[(bmap_i*8 + bit_i)*4 + 3] = 0xFF;
-                  }
-                }
-              }
-              ctx.putImageData(raw, 0, 0);
-              document.getElementById('content').appendChild(canvas);
-              break;
-          }
+                el.innerText = macRoman(resource.data);
+                container.appendChild(el);
+                break;
+            }
+          });
         });
       }
-      (file.resources || []).forEach(function(resource, i) {
-        var header = document.createElement('H4');
-        header.innerText = resource.type + ' ' + i;
-        if (resource.name) header.innerText + ' "' + resource.name + '"';
-        document.getElementById('content').appendChild(header);
-        switch (resource.type) {
-          case 'TEXT':
-            var el = document.createElement('PRE');
-            el.innerText = macRoman(resource.data);
-            document.getElementById('content').appendChild(el);
-            break;
-        }
-      });
     }
     
   });
