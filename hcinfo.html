@@ -1502,10 +1502,7 @@ function update() {
     
     console.log(files);
     
-    for (var k in files) {
-      var file = files[k];
-      if (file.isFolder || file.isInvisible) continue;
-      
+    function doFile(file, k) {
       var container = document.createElement('DIV');
       document.getElementById('content').appendChild(container);
       container.classList.add('loading');
@@ -1576,6 +1573,13 @@ function update() {
         container.classList.remove('loading');
         container.classList.add('error');
       });
+    }
+    
+    for (var k in files) {
+      var file = files[k];
+      if (file.isFolder || file.isInvisible) continue;
+      
+      doFile(file, k);
     }
     
   });
