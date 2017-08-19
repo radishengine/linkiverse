@@ -1035,6 +1035,12 @@ function update() {
         el.innerText = macRoman(file.data);
         document.getElementById('content').appendChild(el);
       }
+      if (file.type === 'PDF ') {
+        var el = document.createElement('IFRAME');
+        el.sandbox = true;
+        el.src = URL.createObjectURL(new Blob(file.data, 'application/pdf'));
+        document.getElementById('content').appendChild(el);        
+      }
       if (file.type === 'STAK') {
         var chunks = [];
         var dv = new DataView(file.data.buffer, file.data.byteOffset, file.data.byteLength);
