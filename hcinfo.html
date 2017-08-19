@@ -1038,7 +1038,7 @@ function update() {
       if (file.type === 'PDF ') {
         var el = document.createElement('A');
         el.innerText = 'PDF';
-        el.href = URL.createObjectURL([file.data], {type:'application/pdf'});
+        el.href = URL.createObjectURL(new Blob([file.data], {type:'application/pdf'}));
         document.getElementById('content').appendChild(el);
       }
       if (file.type === 'STAK') {
