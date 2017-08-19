@@ -1372,7 +1372,7 @@ function update() {
           break;
         case 'STAK':
           var el = document.createElement('DIV');
-          Promise.all([el, file.getData()]).then(function(data) {
+          Promise.all([el, file.getData()]).then(function(values) {
             var el = values[0], data = values[1];
             loadStackData(data, el);
           });
