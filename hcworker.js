@@ -995,6 +995,28 @@ function disk_fromExtents(byteLength, extents) {
   return nextExtent(0);
 }
 
+var handlers = {
+  TEXT: function(item, path, bytes) {
+    postMessage({
+      item: item,
+      headline: 'text',
+      path: path,
+      text: macRoman(bytes),
+    });
+  },
+  'PDF ': function(item, path, bytes) {
+    postMessage({
+      item: item,
+      headline: 'pdf',
+      path: path,
+      pdf: new Blob([bytes], {type:'application/pdf'}),
+    });
+  },
+  STAK: function(item, path, bytes) {
+  },
+};
+handlers.ttro = handlers.TEXT;
+
 self.onmessage = function onmessage(e) {
   var message = e.data;
   switch (message.headline) {
@@ -1017,7 +1039,8 @@ self.onmessage = function onmessage(e) {
           return Promise.reject('not an HFS volume');
         }
         postMessage({
-          headline: 'disk',
+          headline: 'open',
+          scope: 'disk',
           item: item,
           name: disk.name,
         });
@@ -1087,7 +1110,8 @@ self.onmessage = function onmessage(e) {
               path += ':';
               postMessage({
                 item: item,
-                type: 'folder',
+                type: 'open',
+                scope: 'folder',
                 path: path,
                 id: record.folderInfo.id,
                 createdAt: record.folderInfo.createdAt,
@@ -1100,7 +1124,8 @@ self.onmessage = function onmessage(e) {
             else {
               postMessage({
                 item: item,
-                type: 'file',
+                headline: 'open',
+                scope: 'file',
                 id: record.fileInfo.id,
                 createdAt: record.fileInfo.createdAt,
                 modifiedAt: record.fileInfo.modifiedAt,
@@ -1150,44 +1175,12 @@ self.onmessage = function onmessage(e) {
         
         postMessage({
           item: item,
-          headline: 'end',
+          headline: 'close',
           scope: 'disk',
         });
 
         function doFile(file, k) {
           if (file.dataLength) switch (file.type) {
-            case 'TEXT': case 'ttro':
-              var el = document.createElement('PRE');
-              el.classList.add('loading');
-              loadChain.push(Promise.all([el, file.getData()]).then(function(values) {
-                var el = values[0], data = values[1];
-                el.innerText = macRoman(data);
-                el.classList.remove('loading');
-              }));
-              container.appendChild(el);
-              break;
-            case 'PDF ':
-              var el = document.createElement('A');
-              el.classList.add('loading');
-              el.href = 'about:blank';
-              el.innerText = 'Open PDF';
-              loadChain.push(Promise.all([el, file.getData()]).then(function(values) {
-                var el = values[0], data = values[1];
-                el.href = URL.createObjectURL(new Blob([data], {type:'application/pdf'}));
-                el.classList.remove('loading');
-              }));
-              container.appendChild(el);
-              break;
-            case 'STAK':
-              var el = document.createElement('DIV');
-              el.classList.add('loading');
-              loadChain.push(Promise.all([el, file.getData()]).then(function(values) {
-                var el = values[0], data = values[1];
-                loadStackData(data, el);
-                el.classList.remove('loading');
-              }));
-              container.appendChild(el);
-              break;
           }
           if (file.resourcesLength) {
             var resourceContainer = document.createElement('DIV');
