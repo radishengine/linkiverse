@@ -138,6 +138,7 @@ function MozChunkedSource(url) {
     xhr.responseType = 'moz-chunked-arraybuffer';
     xhr.onprogress = function() {
       self.chunks.push(new Uint8Array(this.response));
+      self.totalRead += this.response.byteLength;
       self.listeners.forEach(function(listener) {
         listener();
       });
