@@ -1353,7 +1353,8 @@ function update() {
         case 'TEXT': case 'ttro':
           var el = document.createElement('PRE');
           el.innerText = 'Loading...';
-          file.getData().then(function(data) {
+          Promise.all([el, file.getData()]).then(function(values) {
+            var el = values[0], data = values[1];
             el.innerText = macRoman(data);
           });
           container.appendChild(el);
@@ -1362,18 +1363,20 @@ function update() {
           var el = document.createElement('A');
           el.href = 'about:blank';
           el.innerText = 'Loading...';
-          file.getData().then(function(data) {
+          Promise.all([el, file.getData()]).then(function(values) {
+            var el = values[0], data = values[1];
             el.href = URL.createObjectURL(new Blob([data], {type:'application/pdf'}));
             el.innerText = 'PDF';
           });
           container.appendChild(el);
           break;
         case 'STAK':
-          var stackContainer = document.createElement('DIV');
-          file.getData().then(function(data) {
-            loadStackData(data, stackContainer);
+          var el = document.createElement('DIV');
+          Promise.all([el, file.getData()]).then(function(data) {
+            var el = values[0], data = values[1];
+            loadStackData(data, el);
           });
-          container.appendChild(stackContainer);
+          container.appendChild(el);
           break;
       }
       if (file.resourcesLength) file.getResources().then(function(resources) {
