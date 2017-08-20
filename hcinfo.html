@@ -129,6 +129,11 @@ function makeSpinner() {
     
 var hcWorker = new Worker('hcworker.js');
 
+hcWorker.addEventListener('message', function(e) {
+  var message = e.data;
+  if (message.headline === 'download') download(message.file);
+});
+    
 function update() {
 
   'use strict';
