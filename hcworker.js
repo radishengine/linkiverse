@@ -1012,6 +1012,16 @@ function makeImageBlob(bytes, width, height) {
 
 var handlers = {
   TEXT: function(item, path, bytes) {
+    // sometimes non-text files have type TEXT...
+    if (bytes.length > 4 && String.fromCharCode.apply(null, bytes.subarray(0, 4)).toUpperCase() === '%PDF') {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'pdf',
+        file: new Blob([bytes], {type:'application/pdf'}),
+      });
+      return;
+    }
     postMessage({
       item: item,
       headline: 'text',
