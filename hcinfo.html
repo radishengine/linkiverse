@@ -172,9 +172,9 @@ function update() {
           fileSpinner = null;
         }
         if (message.scope === 'file') {
-          var fileContainer = document.getElementById(encodeURIComponent(message.path));
-          if (fileContainer) {
-            var spinner = fileContainer.querySelector('.gallery > .spinner');
+          var closeFileContainer = document.getElementById(encodeURIComponent(message.path));
+          if (closeFileContainer) {
+            var spinner = closeFileContainer.querySelector('.gallery > .spinner');
             if (spinner) {
               spinner.parentNode.removeChild(spinner);
             }
