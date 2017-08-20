@@ -9,8 +9,12 @@ MemorySource.prototype = {
   getBlob: function() {
     return Promise.resolve(new Blob([this.arrayBuffer]));
   },
+  stream: function(offset, length, callback) {
+    callback(new Uint8Array(this.arrayBuffer, offset, length));
+    return Promise.resolve();
+  },
 };
-    
+
 var chunked_proto = {
   get: function(offset, length) {
     var self = this;
@@ -59,6 +63,38 @@ var chunked_proto = {
     var self = this;
     return this.fetched.then(function() {
       return new Blob(self.chunks);
+    });
+  },
+  stream: function(offset, length, callback) {
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      var i = 0;
+      function listen() {
+        if (offset > 0) for (; i < self.chunks.length; i++) {
+          if (offset < self.chunks[i].length) {
+            break;
+          }
+          offset -= self.chunks[i].length;
+        }
+        for (; i < self.chunks.length; i++) {
+          var chunk = self.chunks[i];
+          chunk = chunk.subarray(offset, Math.min(chunk.length, offset + length));
+          callback(chunk);
+          length -= chunk.length;
+          if (length === 0) {
+            self.listeners.splice(self.listeners.indexOf(listen), 1);
+            resolve();
+            return;
+          }
+          offset = 0;
+        }
+        if (self.complete) {
+          self.listeners.splice(self.listeners.indexOf(listen), 1);
+          reject('unexpected end of data');
+        }
+      }
+      this.listeners.push(listen);
+      listen();
     });
   },
 };
@@ -981,24 +1017,55 @@ ReferenceListEntryView.prototype = {
 };
 ReferenceListEntryView.byteLength = 12;
 
-function disk_fromExtents(byteLength, extents) {
-  if (byteLength <= this.chunkSize * extents[0].length) {
-    var byteOffset = this.allocOffset + this.chunkSize * extents[0].offset;
+function disk_fromExtents(byteLength, extents, offset) {
+  var i = 0;
+  if (offset) for (;;) {
+    var chunkLength = this.chunkSize * extents[i].length;
+    if (offset < chunkLength) break;
+    offset -= chunkLength;
+    i++;
+  }
+  else offset = 0;
+  if ((offset + byteLength) <= this.chunkSize * extents[i].length) {
+    var byteOffset = this.allocOffset + this.chunkSize * extents[0].offset + offset;
     return this.get(byteOffset, byteLength);
   }
   var disk = this;
   var buf = new Uint8Array(byteLength);
   buf.writeOffset = 0;
+  function nextExtent(i, offset) {
+    if (i > extents.length) return Promise.reject('insufficient space in extents');
+    var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset + offset;
+    var chunkLength = Math.min(
+      buf.length - buf.writeOffset,
+      disk.chunkSize * extents[i].length - offset);
+    return disk.get(chunkOffset, chunkLength).then(function(chunk) {
+      buf.set(chunk, buf.writeOffset);
+      buf.writeOffset += chunk.length;
+      return nextExtent(i + 1, 0);
+    });
+  }
+  return nextExtent(i, offset);
+}
+
+function disk_streamExtents(byteLength, extents, callback) {
+  if (byteLength <= this.chunkSize * extents[0].length) {
+    var byteOffset = this.allocOffset + this.chunkSize * extents[0].offset;
+    return this.stream(byteOffset, byteLength, callback);
+  }
+  var disk = this;
   function nextExtent(i) {
     if (i > extents.length) return Promise.reject('insufficient space in extents');
     var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset;
     var chunkLength = Math.min(
-      buf.length - buf.writeOffset,
+      byteLength,
       disk.chunkSize * extents[i].length);
-    return disk.get(chunkOffset, chunkLength).then(function(chunk) {
-      buf.set(chunk, buf.writeOffset);
-      buf.writeOffset += chunk.length;
-      return nextExtent(i + 1);
+    return disk.stream(chunkOffset, chunkLength, function(chunk) {
+      callback(chunk);
+      byteLength -= chunk.length;
+    })
+    .then(function() {
+      if (byteLength > 0) return nextExtent(i + 1);
     });
   }
   return nextExtent(0);
@@ -1019,63 +1086,58 @@ function makeImageBlob(bytes, width, height) {
 }
 
 var handlers = {
-  TEXT: function(item, path, bytes) {
-    // sometimes non-text files have type TEXT...
-    if (bytes.length > 4 && String.fromCharCode.apply(null, bytes.subarray(0, 4)).toUpperCase() === '%PDF') {
+  TEXT: function(item, path, disk, byteLength, extents) {
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      // sometimes non-text files have type TEXT...
+      if (bytes.length > 4 && String.fromCharCode.apply(null, bytes.subarray(0, 4)).toUpperCase() === '%PDF') {
+        postMessage({
+          item: item,
+          path: path,
+          headline: 'pdf',
+          file: new Blob([bytes], {type:'application/pdf'}),
+        });
+        return;
+      }
       postMessage({
         item: item,
+        headline: 'text',
         path: path,
+        text: macRoman(bytes),
+      });
+    });
+  },
+  GIFf: function(item, path, disk, byteLength, extents) {
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      postMessage({
+        item: item,
+        headline: 'image',
+        path: path,
+        file: new Blob([bytes], {type:'image/gif'}),
+      });
+    });
+  },
+  JPEG: function(item, path, disk, byteLength, extents) {
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      postMessage({
+        item: item,
+        headline: 'image',
+        path: path,
+        file: new Blob([bytes], {type:'image/jpeg'}),
+      });
+    });
+  },
+  'PDF ': function(item, path, disk, byteLength, extents) {
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      postMessage({
+        item: item,
         headline: 'pdf',
+        path: path,
         file: new Blob([bytes], {type:'application/pdf'}),
       });
-      return;
-    }
-    postMessage({
-      item: item,
-      headline: 'text',
-      path: path,
-      text: macRoman(bytes),
     });
   },
-  GIFf: function(item, path, bytes) {
-    postMessage({
-      item: item,
-      headline: 'image',
-      path: path,
-      file: new Blob([bytes], {type:'image/gif'}),
-    });
-  },
-  JPEG: function(item, path, bytes) {
-    postMessage({
-      item: item,
-      headline: 'image',
-      path: path,
-      file: new Blob([bytes], {type:'image/jpeg'}),
-    });
-  },
-  'PDF ': function(item, path, bytes) {
-    postMessage({
-      item: item,
-      headline: 'pdf',
-      path: path,
-      file: new Blob([bytes], {type:'application/pdf'}),
-    });
-  },
-  STAK: function(item, path, bytes) {
-    var chunks = [];
-    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    var pos = 0;
-    do {
-      var len = dv.getUint32(pos, false);
-      var block = {
-        type: String.fromCharCode(bytes[pos+4], bytes[pos+5], bytes[pos+6], bytes[pos+7]),
-        id: dv.getInt32(pos+8, false),
-        data: bytes.subarray(pos, pos+len),
-      };
-      pos += len;
-      chunks.push(block);
-    } while (block.type !== 'TAIL');
-    chunks.forEach(function(chunk) {
+  STAK: function(item, path, disk, byteLength, extents) {
+    function onChunk(chunk) {
       switch (chunk.type) {
         case 'STAK':
           if (chunk.data[0x600]) {
@@ -1376,7 +1438,27 @@ var handlers = {
           });
           break;
       }
-    });
+    }
+    
+    function nextChunk(headerOffset) {
+      return disk.getExtents(12, extents, headerOffset).then(function(bytes) {
+        var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        var len = dv.getUint32(0, false);
+        var type = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
+        var id = dv.getInt32(8, false);
+        var gotData = disk.getExtents(len, extents, headerOffset + 12).then(function(bytes) {
+          onChunk({
+            type: type,
+            id: id,
+            data: bytes,
+          });
+        });
+        if (type === 'TAIL') return gotData;
+        return Promise.all([gotData, nextChunk(headerOffset + 12 + len)]);
+      });
+    }
+    
+    return nextChunk(0);
   },
 };
 handlers.ttro = handlers.TEXT;
@@ -1384,9 +1466,6 @@ handlers.ttro = handlers.TEXT;
 self.onmessage = function onmessage(e) {
   var message = e.data;
   switch (message.headline) {
-    case 'ping':
-      postMessage({headline:'pong'});
-      break;
     case 'load':
       var item = message.item;
       
@@ -1411,6 +1490,7 @@ self.onmessage = function onmessage(e) {
         disk.chunkSize = mdb.allocationChunkByteLength;
         disk.allocOffset = mdb.firstAllocationBlock * 512;
         disk.fromExtents = disk_fromExtents;
+        disk.streamExtents = disk_stremExtents;
         var catalog = disk.fromExtents(
           mdb.catalogByteLength,
           mdb.catalogFirstExtents);
@@ -1510,9 +1590,7 @@ self.onmessage = function onmessage(e) {
                 }
                 if (record.fileInfo.type in handlers) {
                   var handler = handlers[record.fileInfo.type];
-                  fileDone.push(disk.fromExtents(dataFork.logicalEOF, dataForkExtents).then(function(bytes) {
-                    return handler(item, path, bytes);
-                  }));
+                  fileDone.push(handler(item, path, disk, dataFork.logicalEOF, dataForkExtents));
                 }
               }
               if (resourceFork.logicalEOF > 0) {
