@@ -1034,15 +1034,15 @@ var handlers = {
       item: item,
       headline: 'image',
       path: path,
-      pdf: new Blob([bytes], {type:'image/gif'}),
-    });    
+      file: new Blob([bytes], {type:'image/gif'}),
+    });
   },
   'PDF ': function(item, path, bytes) {
     postMessage({
       item: item,
       headline: 'pdf',
       path: path,
-      pdf: new Blob([bytes], {type:'application/pdf'}),
+      file: new Blob([bytes], {type:'application/pdf'}),
     });
   },
   STAK: function(item, path, bytes) {
