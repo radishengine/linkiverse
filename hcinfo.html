@@ -53,6 +53,7 @@
         opacity: 0.5;
         border-radius: 5px;
         flex-grow: 1;
+        order: 1000000;
       }
       .spinner > div {
         background-color: #aaa;
@@ -160,6 +161,7 @@ function update() {
           container.id = encodeURIComponent(message.path);
           var gallery = document.createElement('DIV');
           gallery.className = 'gallery';
+          gallery.appendChild(makeSpinner());
           container.appendChild(gallery);
           fileContainer.insertBefore(container, fileSpinner);
         }
@@ -168,6 +170,15 @@ function update() {
         if (message.scope === 'disk') {
           fileContainer.removeChild(fileSpinner);
           fileSpinner = null;
+        }
+        if (message.scope === 'file') {
+          var fileContainer = getElementById(encodeURIComponent(message.path));
+          if (fileContainer) {
+            var spinner = fileContainer.querySelector('.gallery > .spinner');
+            if (spinner) {
+              spinner.parentNode.removeChild(spinner);
+            }
+          }
         }
         break;
       case 'image':
