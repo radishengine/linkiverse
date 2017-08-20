@@ -1490,7 +1490,7 @@ self.onmessage = function onmessage(e) {
         disk.chunkSize = mdb.allocationChunkByteLength;
         disk.allocOffset = mdb.firstAllocationBlock * 512;
         disk.fromExtents = disk_fromExtents;
-        disk.streamExtents = disk_stremExtents;
+        disk.streamExtents = disk_streamExtents;
         var catalog = disk.fromExtents(
           mdb.catalogByteLength,
           mdb.catalogFirstExtents);
