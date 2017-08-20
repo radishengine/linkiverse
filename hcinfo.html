@@ -62,6 +62,7 @@ function update() {
 
   hcWorker.onmessage = function(e) {
     var message = e.data;
+    if (message.item !== name) return;
     console.log(message);
   };
   
