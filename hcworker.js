@@ -134,6 +134,7 @@ function MozChunkedSource(url) {
 }
 MozChunkedSource.available = (function() {
   var xhr = new XMLHttpRequest;
+  xhr.open('GET', '/');
   xhr.responseType = 'moz-chunked-arraybuffer';
   return (xhr.responseType === 'moz-chunked-arraybuffer');
 })();
