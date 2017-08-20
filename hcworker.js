@@ -1492,6 +1492,7 @@ self.onmessage = function onmessage(e) {
               });
               var dataFork = record.fileInfo.dataForkInfo;
               var resourceFork = record.fileInfo.resourceForkInfo;
+              var fileDone = [];
               if (dataFork.logicalEOF > 0) {
                 var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
                 var needDataBlocks = Math.ceil(dataFork.logicalEOF / disk.chunkSize);
@@ -1501,9 +1502,9 @@ self.onmessage = function onmessage(e) {
                 }
                 if (record.fileInfo.type in handlers) {
                   var handler = handlers[record.fileInfo.type];
-                  disk.fromExtents(dataFork.logicalEOF, dataForkExtents).then(function(bytes) {
-                    handler(item, path, bytes);
-                  });
+                  fileDone.push(disk.fromExtents(dataFork.logicalEOF, dataForkExtents).then(function(bytes) {
+                    return handler(item, path, bytes);
+                  }));
                 }
               }
               if (resourceFork.logicalEOF > 0) {
@@ -1513,7 +1514,7 @@ self.onmessage = function onmessage(e) {
                 if (needResourceBlocks > 0) {
                   resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
                 }
-                disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
+                fileDone.push(disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
                   var resourceHeader = new ResourceHeaderView(
                     res.buffer,
                     res.byteOffset,
@@ -1539,8 +1540,16 @@ self.onmessage = function onmessage(e) {
                       name: resourceInfo.name,
                     });
                   });
-                });
+                }));
               }
+              Promise.all(fileDone).then(function() {
+                postMessage({
+                  item: item,
+                  headline: 'close',
+                  scope: 'file',
+                  path: path,
+                });
+              });
             }
           });
         }
