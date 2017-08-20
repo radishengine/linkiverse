@@ -995,6 +995,20 @@ function disk_fromExtents(byteLength, extents) {
   return nextExtent(0);
 }
 
+function makeImageBlob(bytes, width, height) {
+  var header = new DataView(new ArrayBuffer(62));
+  header.setUint16(0, ('B'.charCodeAt(0) << 8) | 'M'.charCodeAt(0), false);
+  header.setUint32(2, header.byteLength + bytes.length, true);
+  header.setUint32(10, header.byteLength, true);
+  header.setUint32(14, 40, true); // BITMAPINFOHEADER
+  header.setUint32(18, width, true);
+  header.setInt32(22, -height, true);
+  header.setUint16(26, 1, true); // planes
+  header.setUint16(28, 1, true); // bpp
+  header.setUint32(54, 0xFFFFFF, true);
+  return new Blob([header, bytes], {type:'image/bmp'});
+}
+
 var handlers = {
   TEXT: function(item, path, bytes) {
     postMessage({
@@ -1013,6 +1027,319 @@ var handlers = {
     });
   },
   STAK: function(item, path, bytes) {
+    var chunks = [];
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var pos = 0;
+    do {
+      var len = dv.getUint32(pos, false);
+      var block = {
+        type: String.fromCharCode(data[pos+4], data[pos+5], data[pos+6], data[pos+7]),
+        id: dv.getInt32(pos+8, false),
+        data: data.subarray(pos, pos+len),
+      };
+      pos += len;
+      chunks.push(block);
+    } while (block.type !== 'TAIL');
+    chunks.forEach(function(chunk) {
+      switch (chunk.type) {
+        case 'STAK':
+          if (chunk.data[0x600]) {
+            var len = 1;
+            while (chunk.data[0x600+len]) len++;
+            postMessage({
+              item: item,
+              headline: 'code',
+              path: path,
+              code: macRoman(chunk.data, 0x600, len),
+            });
+          }
+          break;
+        case 'BKGD':
+        case 'CARD':
+          var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
+          var partCount = dv.getUint16(chunk.type === 'CARD' ? 40 : 36, false);
+          var partContentCount = dv.getUint16(chunk.type === 'CARD' ? 48 : 44, false);
+          var pos = chunk.type === 'CARD' ? 54 : 50;
+          for (var i = 0; i < partCount; i++) {
+            var size = dv.getUint16(pos, false);
+            var namePos = pos + 30, nameLen = 0;
+            while (chunk.data[namePos + nameLen]) nameLen++;
+            if (nameLen > 0) {
+              postMessage({
+                item: item,
+                headline: 'name',
+                path: path,
+                name: macRoman(chunk.data, namePos, nameLen),
+              });
+            }
+            var scriptPos = namePos + nameLen + 2;
+            if (chunk.data[scriptPos]) {
+              var scriptLen = 1;
+              while (chunk.data[scriptPos+scriptLen]) scriptLen++;
+              postMessage({
+                item: item,
+                headline: 'code',
+                path: path,
+                code: macRoman(chunk.data, scriptPos, scriptLen),
+              });
+            }
+            pos += size;
+          }
+          for (var i = 0; i < partContentCount; i++) {
+            if (pos >= chunk.data.length) break;
+            var partId = dv.getInt16(pos, false);
+            var size = dv.getUint16(pos+2, false);
+            var formatLength = chunk.data[pos+4] & 0x80 ? dv.getUint16(pos+4, false) & 0x7FFF : 1;
+            var charPos = pos + 4 + formatLength;
+            var str = macRoman(chunk.data, charPos, size - formatLength).replace(/\0.*/, '');
+            if (str.length > 0) {
+              postMessage({
+                item: item,
+                headline: 'str',
+                path: path,
+                str: str,
+              });
+            }
+            pos += 4 + size;
+          }
+          if (chunk.data[pos]) {
+            var nameLen = 1;
+            while (chunk.data[pos + nameLen]) nameLen++;
+            postMessage({
+              item: item,
+              headline: 'name',
+              path: path,
+              str: macRoman(chunk.data, pos, nameLen),
+            });
+            pos += nameLen + 1;
+          }
+          else pos++;
+          if (chunk.data[pos]) {
+            var scriptLen = 1;
+            while (chunk.data[pos+scriptLen]) scriptLen++;
+            postMessage({
+              item: item,
+              headline: 'code',
+              path: path,
+              code: macRoman(chunk.data, pos, scriptLen),
+            });
+          }
+          break;
+        case 'BMAP':
+          var dv = new DataView(chunk.data.buffer, chunk.data.byteOffset, chunk.data.byteLength);
+          var imageBounds = {
+            top: dv.getInt16(40, false),
+            left: dv.getInt16(42, false),
+            bottom: dv.getInt16(44, false),
+            right: dv.getInt16(46, false),
+          };
+          if (imageBounds.bottom < imageBounds.top || imageBounds.right < imageBounds.left) break;
+          var height = imageBounds.bottom - imageBounds.top;
+          var fullWidth = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
+          if (fullWidth*height === 0) break;
+          var byteStride = fullWidth/8;
+          var maskDataLen = dv.getUint32(56, false), imageDataLen = dv.getUint32(60, false);
+          var ops = chunk.data.subarray(64 + maskDataLen, 64 + maskDataLen + imageDataLen);
+          var bmap = new Uint8Array(byteStride * height);
+          var patterns = new Uint8Array([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]);
+          var dx = 0, dy = 0, reps = 1;
+          var op_i = 0, bmap_i = 0;
+          var row_i = 0;
+          mainLoop: while (bmap_i < bmap.length) {
+            var op = ops[op_i++];
+            if (op < 0x80) {
+              var zeroBytes = op & 0xF;
+              var dataBytes = op >>> 4;
+              if ((op_i + dataBytes) > ops.length || (bmap_i + (zeroBytes + dataBytes) * reps) > bmap.length) {
+                console.error('op data out of range');
+                break;
+              }
+              if (dataBytes === 1) {
+                var dataByte = ops[op_i++];
+                while (reps-- > 0) {
+                  bmap[bmap_i + zeroBytes] = dataByte;
+                  bmap_i += zeroBytes + 1;
+                }
+              }
+              else if (dataBytes === 0) {
+                bmap_i += zeroBytes * reps;
+              }
+              else {
+                dataBytes = ops.subarray(op_i, op_i + dataBytes);
+                op_i += dataBytes.length;
+                while (reps-- > 0) {
+                  bmap.set(dataBytes, bmap_i + zeroBytes);
+                  bmap_i += zeroBytes + dataBytes.length;
+                }
+              }
+              reps = 1;
+            }
+            else if ((op & 0xE0) === 0xC0) {
+              var dataBytes = (op & 0x1F) * 8;
+              if ((bmap_i + dataBytes * reps) > bmap.length || (op_i + dataBytes) > ops.length) {
+                console.error('bmap out of range');
+                break mainLoop;
+              }
+              dataBytes = ops.subarray(op_i, op_i + dataBytes);
+              op_i += dataBytes.length;
+              while (reps-- > 0) {
+                bmap.set(dataBytes, bmap_i);
+                bmap_i += dataBytes.length;
+              }
+              reps = 1;
+            }
+            else if ((op & 0xE0) === 0xE0) {
+              var zeroBytes = (op & 0x1F) * 16;
+              bmap_i += zeroBytes * reps;
+              if (bmap_i > bmap.length) {
+                console.error('bmap out of range');
+                break mainLoop;
+              }
+              reps = 1;
+            }
+            if ((op & 0xE0) === 0xA0) {
+              reps = op & 0x1F;
+            }
+            else switch (op) {
+              case 0x80:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var dataBytes = ops.subarray(op_i, op_i + byteStride);
+                op_i += byteStride;
+                row_i += reps;
+                while (reps-- > 0) {
+                  bmap.set(dataBytes, bmap_i);
+                  bmap_i += dataBytes.length;
+                }
+                reps = 1;
+                break;
+              case 0x81:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                row_i += reps;
+                bmap_i += byteStride * reps;
+                reps = 1;
+                break;
+              case 0x82:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                row_i += reps;
+                var end_i = bmap_i + reps * byteStride;
+                while (bmap_i < end_i) bmap[bmap_i++] = 0xFF;
+                reps = 1;
+                break;
+              case 0x83:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var pattern = ops[op_i++];
+                row_i += reps;
+                while (reps-- > 0) {
+                  patterns[(bmap_i / byteStride)&7] = pattern;
+                  var end_i = bmap_i + byteStride;
+                  while (bmap_i < end_i) bmap[bmap_i++] = pattern;
+                }
+                reps = 1;
+                break;
+              case 0x84:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                row_i += reps;
+                while (reps-- > 0) {
+                  var pattern = patterns[(bmap_i / byteStride)&7];
+                  var end_i = bmap_i + byteStride;
+                  while (bmap_i < end_i) bmap[bmap_i++] = pattern;
+                }
+                reps = 1;
+                break;
+              case 0x85:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                var dataBytes = bmap.subarray(bmap_i - byteStride, bmap_i);
+                row_i += reps;
+                while (reps-- > 0) {
+                  bmap.set(dataBytes, bmap_i);
+                  bmap_i += byteStride;
+                }
+                reps = 1;
+                break;
+              case 0x86:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                row_i += reps;
+                while (reps-- > 0) {
+                  bmap.set(bmap.subarray(bmap_i - byteStride * 2, bmap_i - byteStride), bmap_i);
+                  bmap_i += byteStride;
+                }
+                reps = 1;
+                break;
+              case 0x87:
+                if ((bmap_i + byteStride * reps) > bmap.length) {
+                  console.error('bmap out of range');
+                  break mainLoop;
+                }
+                row_i += reps;
+                while (reps-- > 0) {
+                  bmap.set(bmap.subarray(bmap_i - byteStride * 3, bmap_i - byteStride * 2), bmap_i);
+                  bmap_i += byteStride;
+                }
+                reps = 1;
+                break;
+              case 0x88: dx = 16; dy = 0; break;
+              case 0x89: dx =  0; dy = 0; break;
+              case 0x8A: dx =  0; dy = 1; break;
+              case 0x8B: dx =  0; dy = 2; break;
+              case 0x8C: dx =  1; dy = 0; break;
+              case 0x8D: dx =  1; dy = 1; break;
+              case 0x8E: dx =  2; dy = 2; break;
+              case 0x8F: dx =  8; dy = 0; break;
+              default:
+                var row_j = Math.floor(bmap_i / byteStride);
+                while (row_i < row_j) {
+                  if (dx) {
+                    var prev = bmap.subarray(row_i * byteStride, (row_i + 1) * byteStride);
+                    var copy = new Uint8Array(prev);
+                    for (var k = Math.floor(fullWidth/dx); k > 0; k--) {
+                      var x = 0;
+                      for (var n = 0; n < byteStride; n++) {
+                        x |= prev[n] << 16 >> dx;
+                        prev[n] = (x >> 16) ^ copy[n];
+                        x = (x << 8) & 0xFFFF00;
+                      }
+                    }
+                  }
+                  if (dy) {
+                    for (var n = 0; n < byteStride; n++) {
+                      bmap[row_i * byteStride + n] ^= bmap[(row_i - dy) * byteStride + n];
+                    }
+                  }
+                  row_i++;
+                }
+                break;
+            }
+          }
+          postMessage({
+            item: item,
+            headline: 'bitmap',
+            path: path,
+            file: makeImageBlob(bmap, fullWidth, height),
+          });
+          break;
+      }
+    });
   },
 };
 handlers.ttro = handlers.TEXT;
