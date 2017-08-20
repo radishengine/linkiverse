@@ -104,8 +104,10 @@ function update() {
         if (container) {
           var gallery = container.querySelector('.gallery');
           var img = document.createElement('IMG');
-          img.width = message.width;
-          img.height = message.height;
+          if (message.width && message.height) {
+            img.width = message.width;
+            img.height = message.height;
+          }
           img.style.order = Math.ceil(Math.log2(Math.max(32, message.height)));
           img.src = URL.createObjectURL(message.file);
           gallery.appendChild(img);
