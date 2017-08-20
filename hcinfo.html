@@ -139,18 +139,15 @@ function update() {
   
   document.getElementById('content').innerHTML = '';
   var fileContainer = document.getElementById('content');
-  var fileSpinner;
+  var fileSpinner = makeSpinner();
+  fileContainer.appendChild(fileSpinner);
 
   hcWorker.onmessage = function(e) {
     var message = e.data;
     if (message.item !== name) return;
     switch (message.headline) {
       case 'open':
-        if (message.scope === 'disk') {
-          fileSpinner = makeSpinner();
-          fileContainer.appendChild(fileSpinner);
-        }
-        else if (message.scope === 'file' && !message.isInvisible) {
+        if (message.scope === 'file' && !message.isInvisible) {
           var container = document.createElement('DIV');
           var header = document.createElement('H1');
           header.innerText = [
