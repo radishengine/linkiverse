@@ -1336,6 +1336,8 @@ var handlers = {
             headline: 'image',
             path: path,
             file: makeImageBlob(bmap, fullWidth, height),
+            width: fullWidth,
+            height: height,
           });
           break;
       }
@@ -1485,10 +1487,22 @@ self.onmessage = function onmessage(e) {
                   resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
                 }
                 disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
-                  var resourceHeader = new ResourceHeaderView(res.buffer, res.byteOffset, ResourceHeaderView.byteLength);
-                  var resourceData = new Uint8Array(res.buffer, res.byteOffset + resourceHeader.dataOffset, resourceHeader.dataLength);
-                  var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + resourceHeader.mapOffset, resourceHeader.mapLength);
-                  var dv = new DataView(resourceData.buffer, resourceData.byteOffset, resourceData.byteLength);
+                  var resourceHeader = new ResourceHeaderView(
+                    res.buffer,
+                    res.byteOffset,
+                    ResourceHeaderView.byteLength);
+                  var resourceData = new Uint8Array(
+                    res.buffer,
+                    res.byteOffset + resourceHeader.dataOffset,
+                    resourceHeader.dataLength);
+                  var resourceMap = new ResourceMapView(
+                    res.buffer,
+                    res.byteOffset + resourceHeader.mapOffset,
+                    resourceHeader.mapLength);
+                  var dv = new DataView(
+                    resourceData.buffer,
+                    resourceData.byteOffset,
+                    resourceData.byteLength);
                   resourceMap.resourceList.forEach(function(resourceInfo) {
                     postMessage({
                       item: item,
