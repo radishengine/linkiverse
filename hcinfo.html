@@ -2,11 +2,15 @@
 <html>
 <head>
   <title>HyperCard Tool</title>
+  <link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/chicagoflf" type="text/css">
   <style>
-    pre { white-space: pre-wrap; }
+    pre {
+      white-space: pre-wrap;
+      font-family: 'ChicagoFLFRegular', sans-serif;
+    }
     body:not(.show-code) .code { display: none; }
     body {
-      font-family: sans-serif;
+      font-family: 'ChicagoFLFRegular', sans-serif;
     }
     .loading {
       background: repeating-linear-gradient(
@@ -104,6 +108,14 @@ function update() {
           img.style.order = Math.ceil(Math.log2(Math.max(32, message.height)));
           img.src = URL.createObjectURL(message.file);
           gallery.appendChild(img);
+        }
+        break;
+      case 'text':
+        var container = document.getElementById(encodeURIComponent(message.path));
+        if (container) {
+          var text = document.createElement('PRE');
+          text.innerText = message.text;
+          container.appendChild(text);
         }
         break;
       default:
