@@ -9,11 +9,14 @@
       font-family: sans-serif;
     }
     .loading {
-      background: repeating-linear-gradient(-45deg,#ee8,#ee8 20px,#ccc 20px,#ccc 40px);
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 0, 0.1),
+        rgba(255, 255, 0, 0.1) 20px,
+        rgba(  0,   0, 0, 0.1) 20px,
+        rgba(  0,   0, 0, 0.1) 40px);
       background-size: 56px 56px;
       background-attachment: fixed;
-      box-shadow: 15px 15px 10px rgba(0,0,0, 0.2) inset;
-      cursor: progress;
       min-height: 1ex;
     }
     .loading .loading {
@@ -64,6 +67,14 @@ function update() {
     var message = e.data;
     if (message.item !== name) return;
     switch (message.headline) {
+      case 'open':
+        if (message.scope === 'file' && message.isInvisible) {
+          var container = document.createElement('DIV');
+          var header = document.createElement('H3');
+          header.innerText = message.
+          document.getElementById('content').appendChild(container);
+        }
+        break;
       case 'image':
         var img = document.createElement('IMG');
         img.src = URL.createObjectURL(message.file);
