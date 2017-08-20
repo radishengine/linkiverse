@@ -1369,7 +1369,7 @@ self.onmessage = function onmessage(e) {
           headline: 'open',
           scope: 'disk',
           item: item,
-          name: disk.name,
+          name: mdb.name,
         });
         disk.chunkSize = mdb.allocationChunkByteLength;
         disk.allocOffset = mdb.firstAllocationBlock * 512;
@@ -1470,7 +1470,12 @@ self.onmessage = function onmessage(e) {
                   dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
                 }
                 info.dataLength = dataFork.logicalEOF;
-                disk.fromExtents(this.dataLength, dataForkExtents);
+                if (record.fileInfo.type in handlers) {
+                  var handler = handlers[record.fileInfo.type];
+                  disk.fromExtents(this.dataLength, dataForkExtents).then(function(bytes) {
+                    handler(item, path, bytes);
+                  });
+                }
               }
               if (resourceFork.logicalEOF > 0) {
                 var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
@@ -1505,45 +1510,6 @@ self.onmessage = function onmessage(e) {
           headline: 'close',
           scope: 'disk',
         });
-
-        function doFile(file, k) {
-          if (file.dataLength) switch (file.type) {
-          }
-          if (file.resourcesLength) {
-            var resourceContainer = document.createElement('DIV');
-            resourceContainer.classList.add('loading');
-            loadChain.push(file.getResources().then(function(resources) {
-              resources.forEach(function(resource, i) {
-                var header = document.createElement('H4');
-                header.innerText = resource.type + ' ' + i;
-                if (resource.name) header.innerText + ' "' + resource.name + '"';
-                resourceContainer.appendChild(header);
-                switch (resource.type) {
-                  case 'TEXT':
-                    var el = document.createElement('PRE');
-                    el.innerText = macRoman(resource.data);
-                    resourceContainer.appendChild(el);
-                    break;
-                }
-              });
-              resourceContainer.classList.remove('loading');
-            }));
-            container.appendChild(resourceContainer);
-          }
-          Promise.all(loadChain).then(function() {
-            container.classList.remove('loading');
-          }, function() {
-            container.classList.remove('loading');
-            container.classList.add('error');
-          });
-        }
-
-        for (var k in files) {
-          var file = files[k];
-          if (file.isFolder || file.isInvisible) continue;
-
-          doFile(file, k);
-        }
 
       })
       .then(null, function(problem) {
