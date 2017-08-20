@@ -1037,6 +1037,14 @@ var handlers = {
       file: new Blob([bytes], {type:'image/gif'}),
     });
   },
+  JPEG: function(item, path, bytes) {
+    postMessage({
+      item: item,
+      headline: 'image',
+      path: path,
+      file: new Blob([bytes], {type:'image/jpeg'}),
+    });
+  },
   'PDF ': function(item, path, bytes) {
     postMessage({
       item: item,
