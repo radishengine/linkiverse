@@ -1133,7 +1133,7 @@ var handlers = {
             bottom: dv.getInt16(44, false),
             right: dv.getInt16(46, false),
           };
-          if (imageBounds.bottom < imageBounds.top || imageBounds.right < imageBounds.left) break;
+          if (imageBounds.bottom <= imageBounds.top || imageBounds.right <= imageBounds.left) break;
           var height = imageBounds.bottom - imageBounds.top;
           var fullWidth = (Math.ceil(imageBounds.right/32) - Math.floor(imageBounds.left/32)) * 32;
           if (fullWidth*height === 0) break;
