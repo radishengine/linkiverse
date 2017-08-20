@@ -172,7 +172,7 @@ function update() {
           fileSpinner = null;
         }
         if (message.scope === 'file') {
-          var fileContainer = getElementById(encodeURIComponent(message.path));
+          var fileContainer = document.getElementById(encodeURIComponent(message.path));
           if (fileContainer) {
             var spinner = fileContainer.querySelector('.gallery > .spinner');
             if (spinner) {
