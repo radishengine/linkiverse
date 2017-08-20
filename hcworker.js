@@ -156,7 +156,10 @@ function getDB() {
   });
 }
 
+// TODO: enable cache only in ?debug mode
 function getCache() {
+  return Promise.resolve({});
+  /*
   return getDB().then(function(db) {
     return new Promise(function(resolve, reject) {
       var getting = db.transaction(['cache'], 'readonly').objectStore('cache').get(1);
@@ -168,13 +171,18 @@ function getCache() {
       };
     });
   });
+  */
 }
 
 function setCache(record) {
+  return;
+  /*
   getDB().then(function(db) {
     db.transaction(['cache'], 'readwrite').objectStore('cache').put(record, 1);
   });
+  */
 }
+
 function getBuffer(identifier) {
   function downloadItem() {
     var url = '//cors.archive.org/cors/' + identifier;
