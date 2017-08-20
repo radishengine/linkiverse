@@ -47,23 +47,23 @@
   <div id='templating' style='display:none'>
     <style>
       .spinner {
-        text-align: center;
-        font-size: 10px;
         background: black;
         opacity: 0.5;
         border-radius: 5px;
         flex-grow: 1;
         order: 1000000;
         align-self: stretch;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
       .spinner > div {
         background-color: #aaa;
         height: 30px;
         width: 6px;
-        display: inline-block;
         -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
         animation: sk-stretchdelay 1.2s infinite ease-in-out;
-        margin: 3px 0;
+        margin: 2px;
       }
       .spinner > .rect2 {
         -webkit-animation-delay: -1.1s;
