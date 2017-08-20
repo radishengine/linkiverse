@@ -280,7 +280,11 @@ const MAC_CHARSET_128_255
   + '\u2021\xB7\u201A\u201E\u2030\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4'
   + '\uF8FF\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7';
 
-var decoder = new TextDecoder('iso-8859-1');
+var decoder = ('TextDecoder' in self) ? new TextDecoder('iso-8859-1') : {
+  decode: function(bytes) {
+    return String.fromCharCode.apply(null, bytes);
+  },
+};
 
 function macRoman(u8array, offset, length) {
   switch(arguments.length) {
