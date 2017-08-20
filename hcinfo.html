@@ -7,6 +7,7 @@
     pre {
       white-space: pre-wrap;
       font-family: 'ChicagoFLFRegular', sans-serif;
+      font-size: 9pt;
     }
     body:not(.show-code) .code { display: none; }
     body {
@@ -84,7 +85,7 @@ function update() {
       case 'open':
         if (message.scope === 'file' && !message.isInvisible) {
           var container = document.createElement('DIV');
-          var header = document.createElement('H3');
+          var header = document.createElement('H1');
           header.innerText = [
             '[' + message.modifiedAt.toISOString().replace(/\..*/, '') + ']',
             '[' + message.type + ']',
