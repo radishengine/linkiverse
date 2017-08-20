@@ -1333,7 +1333,7 @@ var handlers = {
           }
           postMessage({
             item: item,
-            headline: 'bitmap',
+            headline: 'image',
             path: path,
             file: makeImageBlob(bmap, fullWidth, height),
           });
