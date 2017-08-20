@@ -1442,13 +1442,13 @@ var handlers = {
       }
     }
     
-    function nextChunk(headerOffset) {
-      return disk.fromExtents(12, extents, headerOffset).then(function(bytes) {
+    function nextChunk(nextOffset) {
+      return disk.fromExtents(12, extents, nextOffset).then(function(bytes) {
         var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         var len = dv.getUint32(0, false);
         var type = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
         var id = dv.getInt32(8, false);
-        var gotData = disk.fromExtents(len, extents, headerOffset + 12).then(function(bytes) {
+        var gotData = disk.fromExtents(len, extents, nextOffset).then(function(bytes) {
           onChunk({
             type: type,
             id: id,
@@ -1456,7 +1456,7 @@ var handlers = {
           });
         });
         if (type === 'TAIL') return gotData;
-        return Promise.all([gotData, nextChunk(headerOffset + 12 + len)]);
+        return Promise.all([gotData, nextChunk(nextOffset + len)]);
       });
     }
     
