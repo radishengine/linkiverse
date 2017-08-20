@@ -1546,7 +1546,7 @@ self.onmessage = function onmessage(e) {
         }
 
       })
-      .else(function(problem) {
+      .then(null, function(problem) {
         postMessage({
           headline: 'problem',
           item: item,
