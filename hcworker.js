@@ -1453,6 +1453,7 @@ self.onmessage = function onmessage(e) {
                 item: item,
                 headline: 'open',
                 scope: 'file',
+                path: path,
                 id: record.fileInfo.id,
                 createdAt: record.fileInfo.createdAt,
                 modifiedAt: record.fileInfo.modifiedAt,
