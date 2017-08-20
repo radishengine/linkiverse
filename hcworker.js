@@ -1441,12 +1441,12 @@ var handlers = {
     }
     
     function nextChunk(headerOffset) {
-      return disk.getExtents(12, extents, headerOffset).then(function(bytes) {
+      return disk.fromExtents(12, extents, headerOffset).then(function(bytes) {
         var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         var len = dv.getUint32(0, false);
         var type = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
         var id = dv.getInt32(8, false);
-        var gotData = disk.getExtents(len, extents, headerOffset + 12).then(function(bytes) {
+        var gotData = disk.fromExtents(len, extents, headerOffset + 12).then(function(bytes) {
           onChunk({
             type: type,
             id: id,
