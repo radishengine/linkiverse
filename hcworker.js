@@ -1033,9 +1033,9 @@ var handlers = {
     do {
       var len = dv.getUint32(pos, false);
       var block = {
-        type: String.fromCharCode(data[pos+4], data[pos+5], data[pos+6], data[pos+7]),
+        type: String.fromCharCode(bytes[pos+4], bytes[pos+5], bytes[pos+6], bytes[pos+7]),
         id: dv.getInt32(pos+8, false),
-        data: data.subarray(pos, pos+len),
+        data: bytes.subarray(pos, pos+len),
       };
       pos += len;
       chunks.push(block);
