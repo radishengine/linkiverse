@@ -1,4 +1,12 @@
 
+function download(v) {
+  if (!(v instanceof Blob)) v = new Blob([v]);
+  postMessage({
+    headline: 'download',
+    file: v,
+  });
+}
+
 function MemorySource(arrayBuffer) {
   this.arrayBuffer = arrayBuffer;
 }
