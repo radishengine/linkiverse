@@ -63,12 +63,14 @@ function update() {
   hcWorker.onmessage = function(e) {
     var message = e.data;
     if (message.item !== name) return;
-    console.log(message);
     switch (message.headline) {
       case 'image':
         var img = document.createElement('IMG');
         img.src = URL.createObjectURL(message.file);
         document.getElementById('content').appendChild(img);
+        break;
+      default:
+        console.log(message);
         break;
     }
   };
