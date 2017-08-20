@@ -68,17 +68,26 @@ function update() {
     if (message.item !== name) return;
     switch (message.headline) {
       case 'open':
-        if (message.scope === 'file' && message.isInvisible) {
+        if (message.scope === 'file' && !message.isInvisible) {
           var container = document.createElement('DIV');
           var header = document.createElement('H3');
-          header.innerText = message.
+          header.innerText = [
+            '[' + message.modifiedAt.toISOString().replace(/\..*/, '') + ']',
+            '[' + message.type + ']',
+            message.path,
+          ].join(' ');
+          container.appendChild(header);
+          container.id = encodeURIComponent(message.path);
           document.getElementById('content').appendChild(container);
         }
         break;
       case 'image':
-        var img = document.createElement('IMG');
-        img.src = URL.createObjectURL(message.file);
-        document.getElementById('content').appendChild(img);
+        var container = document.getElementById(encodeURIComponent(message.path));
+        if (container) {
+          var img = document.createElement('IMG');
+          img.src = URL.createObjectURL(message.file);
+          container.appendChild(img);
+        }
         break;
       default:
         console.log(message);
