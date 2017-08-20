@@ -1029,6 +1029,14 @@ var handlers = {
       text: macRoman(bytes),
     });
   },
+  GIFf: function(item, path, bytes) {
+    postMessage({
+      item: item,
+      headline: 'image',
+      path: path,
+      pdf: new Blob([bytes], {type:'image/gif'}),
+    });    
+  },
   'PDF ': function(item, path, bytes) {
     postMessage({
       item: item,
