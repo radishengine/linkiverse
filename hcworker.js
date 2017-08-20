@@ -1472,7 +1472,7 @@ self.onmessage = function onmessage(e) {
                 }
                 if (record.fileInfo.type in handlers) {
                   var handler = handlers[record.fileInfo.type];
-                  disk.fromExtents(this.dataLength, dataForkExtents).then(function(bytes) {
+                  disk.fromExtents(dataFork.logicalEOF, dataForkExtents).then(function(bytes) {
                     handler(item, path, bytes);
                   });
                 }
@@ -1484,7 +1484,7 @@ self.onmessage = function onmessage(e) {
                 if (needResourceBlocks > 0) {
                   resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
                 }
-                disk.fromExtents(this.resourcesLength, resourceForkExtents).then(function(res) {
+                disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
                   var resourceHeader = new ResourceHeaderView(res.buffer, res.byteOffset, ResourceHeaderView.byteLength);
                   var resourceData = new Uint8Array(res.buffer, res.byteOffset + resourceHeader.dataOffset, resourceHeader.dataLength);
                   var resourceMap = new ResourceMapView(res.buffer, res.byteOffset + resourceHeader.mapOffset, resourceHeader.mapLength);
