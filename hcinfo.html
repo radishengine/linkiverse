@@ -121,7 +121,7 @@ function download(thing) {
 }
     
 function makeSpinner() {
-  return document.querySelector('#templating > .spinner').clone(true);
+  return document.querySelector('#templating > .spinner').cloneNode(true);
 }
     
 var hcWorker = new Worker('hcworker.js');
