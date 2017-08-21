@@ -1123,6 +1123,17 @@ function makeImageBlob(bytes, width, height) {
   return new Blob([header, bytes], {type:'image/bmp'});
 }
 
+var resourceHandlers = {
+  TEXT: function(item, path, data) {
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'text',
+      text: macRoman(data),
+    });
+  },
+};
+
 var handlers = {
   TEXT: function(item, path, disk, byteLength, extents) {
     postMessage({
@@ -1685,13 +1696,23 @@ self.onmessage = function onmessage(e) {
                     resourceData.byteOffset,
                     resourceData.byteLength);
                   resourceMap.resourceList.forEach(function(resourceInfo) {
-                    postMessage({
-                      item: item,
-                      headline: 'resource',
-                      path: path,
-                      type: resourceInfo.type,
-                      name: resourceInfo.name,
-                    });
+                    var len = dv.getUint32(resourceInfo.dataOffset, false);
+                    var data = resourceData.subarray(
+                      resourceInfo.dataOffset + 4,
+                      resourceInfo.dataOffset + 4 + len);
+                    if (resourceInfo.type in resourceHandlers) {
+                      var handler = resourceHandlers[resourceInfo.type];
+                      handler(item, path, data);
+                    }
+                    else {
+                      postMessage({
+                        item: item,
+                        headline: 'resource',
+                        path: path,
+                        type: resourceInfo.type,
+                        name: resourceInfo.name,
+                      });
+                    }
                   });
                 }));
               }
