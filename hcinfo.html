@@ -238,25 +238,25 @@ function update() {
             button.style.order = 200;
             var audio = document.createElement('AUDIO');
             audio.addEventListener('canplay', function() {
-              button.classList.add('playable');
+              this.parentNode.classList.add('playable');
             });
             audio.addEventListener('playing', function() {
-              button.classList.add('playing');
+              this.parentNode.classList.add('playing');
             });
             audio.addEventListener('ended', function() {
-              button.classList.remove('playing');
+              this.parentNode.classList.remove('playing');
             });
             audio.addEventListener('pause', function() {
-              button.classList.remove('playing');
+              this.parentNode.classList.remove('playing');
             });
             audio.src = URL.createObjectURL(message.file);
             button.appendChild(audio);
             button.onclick = function() {
               if (this.classList.contains('playing')) {
-                audio.pause();
+                this.querySelector('audio').pause();
               }
               else {
-                audio.play();
+                this.querySelector('audio').play();
               }
             };
             gallery.appendChild(button);
