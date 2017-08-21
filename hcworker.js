@@ -1254,9 +1254,9 @@ var resourceHandlers = {
       headline: 'file',
       file: makeWav(
         bytes.subarray(sampleDataOffset, sampleDataOffset + totalBytes),
-        samplingRate: samplingRate,
-        channels: channels,
-        bytesPerSample: bytesPerSample,
+        samplingRate,
+        channels,
+        bytesPerSample,
       ),
     });
   },
