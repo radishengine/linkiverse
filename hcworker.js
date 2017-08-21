@@ -1125,6 +1125,29 @@ function makeImageBlob(bytes, width, height) {
 
 var handlers = {
   TEXT: function(item, path, disk, byteLength, extents) {
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'open',
+      scope: 'text',
+    });
+    return disk.streamExtents(byteLength, extents, function(bytes) {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'write',
+        text: macRoman(bytes),
+      });
+    })
+    .then(function() {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'close',
+        scope: 'text',
+      });
+    });
+    /*
     return disk.fromExtents(byteLength, extents).then(function(bytes) {
       // sometimes non-text files have type TEXT...
       if (bytes.length > 4 && String.fromCharCode.apply(null, bytes.subarray(0, 4)).toUpperCase() === '%PDF') {
@@ -1143,6 +1166,7 @@ var handlers = {
         text: macRoman(bytes),
       });
     });
+    */
   },
   GIFf: function(item, path, disk, byteLength, extents) {
     return disk.fromExtents(byteLength, extents).then(function(bytes) {
