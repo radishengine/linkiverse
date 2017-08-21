@@ -1164,11 +1164,11 @@ function makeWav(samples, samplingRate, channels, bytesPerSample) {
   dv.setUint16(22, channels, true);
   dv.setUint32(24, samplingRate, true);
   dv.setUint32(28, samplingRate * channels * bytesPerSample, true);
-  dv.setUint32(32, channels * bytesPerSample, true);
-  dv.setUint32(34, bytesPerSample * 8, true);
+  dv.setUint16(32, channels * bytesPerSample, true);
+  dv.setUint16(34, bytesPerSample * 8, true);
   dv.setUint32(36, 0x61746164, true); // data
   dv.setUint32(40, samples.length, true);
-  return new Blob([dv.buffer, samples], {type:'audio/wav'});
+  return new Blob([dv, samples], {type:'audio/wav'});
 }
 
 var resourceHandlers = {
