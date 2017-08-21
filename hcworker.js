@@ -1207,9 +1207,10 @@ var handlers = {
             while (chunk.data[0x600+len]) len++;
             postMessage({
               item: item,
-              headline: 'code',
+              headline: 'text',
               path: path,
-              code: macRoman(chunk.data, 0x600, len),
+              text: macRoman(chunk.data, 0x600, len),
+              type: 'code',
             });
           }
           break;
@@ -1240,7 +1241,7 @@ var handlers = {
                 item: item,
                 headline: 'text',
                 path: path,
-                code: macRoman(chunk.data, scriptPos, scriptLen),
+                text: macRoman(chunk.data, scriptPos, scriptLen),
                 type: 'code',
               });
             }
