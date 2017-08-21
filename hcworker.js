@@ -176,12 +176,22 @@ function MozChunkedSource(url) {
     xhr.send();
   });
 }
-MozChunkedSource.available = (function() {
-  var xhr = new XMLHttpRequest;
-  xhr.open('GET', '/');
-  xhr.responseType = 'moz-chunked-arraybuffer';
-  return (xhr.responseType === 'moz-chunked-arraybuffer');
-})();
+Object.defineProperty(MozChunkedSource, 'available', {
+  enumerable: true,
+  configurable: true,
+  get: function() {
+    var xhr = new XMLHttpRequest;
+    xhr.open('GET', '/');
+    xhr.responseType = 'moz-chunked-arraybuffer';
+    var result = (xhr.responseType === 'moz-chunked-arraybuffer');
+    Object.defineProperty(this, 'available', {
+      enumerable: true,
+      configurable: false,
+      value: result,
+    });
+    return result;
+  },
+});
 MozChunkedSource.prototype = Object.create(chunked_proto);
 
 function getDB() {
