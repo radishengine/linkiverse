@@ -1226,9 +1226,10 @@ var handlers = {
             if (nameLen > 0) {
               postMessage({
                 item: item,
-                headline: 'name',
+                headline: 'text',
                 path: path,
-                name: macRoman(chunk.data, namePos, nameLen),
+                text: macRoman(chunk.data, namePos, nameLen),
+                type: 'name',
               });
             }
             var scriptPos = namePos + nameLen + 2;
@@ -1237,9 +1238,10 @@ var handlers = {
               while (chunk.data[scriptPos+scriptLen]) scriptLen++;
               postMessage({
                 item: item,
-                headline: 'code',
+                headline: 'text',
                 path: path,
                 code: macRoman(chunk.data, scriptPos, scriptLen),
+                type: 'code',
               });
             }
             pos += size;
@@ -1254,9 +1256,9 @@ var handlers = {
             if (str.length > 0) {
               postMessage({
                 item: item,
-                headline: 'str',
+                headline: 'text',
                 path: path,
-                str: str,
+                text: str,
               });
             }
             pos += 4 + size;
@@ -1266,9 +1268,10 @@ var handlers = {
             while (chunk.data[pos + nameLen]) nameLen++;
             postMessage({
               item: item,
-              headline: 'name',
+              headline: 'text',
               path: path,
-              str: macRoman(chunk.data, pos, nameLen),
+              text: macRoman(chunk.data, pos, nameLen),
+              type: 'name',
             });
             pos += nameLen + 1;
           }
@@ -1278,9 +1281,10 @@ var handlers = {
             while (chunk.data[pos+scriptLen]) scriptLen++;
             postMessage({
               item: item,
-              headline: 'code',
+              headline: 'text',
               path: path,
-              code: macRoman(chunk.data, pos, scriptLen),
+              text: macRoman(chunk.data, pos, scriptLen),
+              type: 'code',
             });
           }
           break;
