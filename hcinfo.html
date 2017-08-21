@@ -165,6 +165,7 @@ function update() {
           ].join(' ');
           container.appendChild(header);
           container.id = encodeURIComponent(message.path);
+          
           var gallery = document.createElement('DIV');
           gallery.className = 'gallery';
           gallery.appendChild(makeSpinner());
@@ -214,7 +215,8 @@ function update() {
         if (container) {
           var text = document.createElement('PRE');
           text.innerText = message.text;
-          container.appendChild(text);
+          text.style.order = 100 + Math.ceil(Math.log2(Math.max(4, message.replace(/[^\n]+/g, '').length)));
+          container.querySelector('.gallery').appendChild(text);
         }
         break;
       case 'write':
