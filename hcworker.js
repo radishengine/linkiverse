@@ -302,16 +302,20 @@ function macRoman(u8array, offset, length) {
     case 3: u8array = u8array.subarray(offset, offset + length); break;
   }
   return decoder.decode(u8array)
-    .replace(/[\x80-\xFF]/g, function(c) {
-      return MAC_CHARSET_128_255[c.charCodeAt(0) - 128];
-    })
-    .replace(/[\r\n]/g, function(c) {
-      return (c === '\r') ? '\n' : '\r';
-    })
-    .replace('\x11', '\u2318') // command
-    .replace('\x12', '\u21E7') // shift
-    .replace('\x13', '\u2325') // option
-    .replace('\x14', '\u2303'); // control
+  .replace(/[\x80-\xFF]/g, function(c) {
+    return MAC_CHARSET_128_255[c.charCodeAt(0) - 128];
+  })
+  .replace(/[\r\n\x11-\x14\uF8FF]/g, function(c) {
+    switch (c) {
+      case '\r': return '\n';
+      case '\n': return '\r';
+      case '\x11': return '\u2318'; // command
+      case '\x12': return '\u21E7'; // shift
+      case '\x13': return '\u2325'; // option
+      case '\x14': return '\u2303'; // control
+      case '\uF8FF': return String.fromCodePoint(0x1F34F); // green apple emoji
+    }
+  });
 }
 
 function macDate(dv, offset) {
