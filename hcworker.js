@@ -1132,6 +1132,24 @@ var resourceHandlers = {
       text: macRoman(data),
     });
   },
+  ICON: function(item, path, data) {
+    if (data.length < 128) {
+      console.warn('ICON: insufficient data');
+      return;
+    }
+    var color = data.length > 128 ? data.subarray(0, 128) : data;
+    if (color !== data) {
+      console.warn('ICON: mask ignored');
+    }
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: makeImageBlob(color, 32, 32),
+      width: 32,
+      height: 32,
+    });
+  },
 };
 
 var handlers = {
