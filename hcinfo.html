@@ -46,7 +46,18 @@
       align-self: stretch;
       padding: 1px;
       flex-grow: 1;
-    }    
+    }
+    .play-button {
+      width: 50px;
+      height: 50px;
+      font-size: 30px;
+    }
+    .play-button.playable:not(.playing)::before {
+      content: '\25B6';
+    }
+    .play-button.playable.playing::before {
+      content: '\23f8';
+    }
   </style>
 </head>
 <body>
@@ -221,11 +232,33 @@ function update() {
         if (container) {
           var gallery = container.querySelector('.gallery');
           if (message.file.type === 'audio/wav') {
+            var button = document.createElement('BUTTON');
+            button.className = 'play-button';
+            button.style.order = 200;
             var audio = document.createElement('AUDIO');
-            audio.controls = true;
+            audio.addEventListener('canplay', function() {
+              button.classList.add('playable');
+            });
+            audio.addEventListener('playing', function() {
+              button.classList.add('playing');
+            });
+            audio.addEventListener('ended', function() {
+              button.classList.remove('playing');
+            });
+            audio.addEventListener('pause', function() {
+              button.classList.remove('playing');
+            });
             audio.src = URL.createObjectURL(message.file);
-            audio.style.order = 200;
-            gallery.appendChild(audio);
+            button.appendChild(audio);
+            button.onclick = function() {
+              if (this.classList.contains('playing')) {
+                audio.pause();
+              }
+              else {
+                audio.play();
+              }
+            };
+            gallery.appendChild(button);
           }
         }
         break;
