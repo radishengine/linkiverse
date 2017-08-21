@@ -101,7 +101,7 @@ var chunked_proto = {
           reject('unexpected end of data');
         }
       }
-      this.listeners.push(listen);
+      self.listeners.push(listen);
       listen();
     });
   },
