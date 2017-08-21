@@ -216,6 +216,19 @@ function update() {
           gallery.appendChild(img);
         }
         break;
+      case 'file':
+        var container = document.getElementById(encodeURIComponent(message.path));
+        if (container) {
+          var gallery = container.querySelector('.gallery');
+          if (message.file.type === 'audio/wav') {
+            var audio = document.createElement('AUDIO');
+            audio.controls = true;
+            audio.src = URL.createObjectURL(message.file);
+            audio.style.order = 200;
+            gallery.appendChild(audio);
+          }
+        }
+        break;
       case 'text':
         var container = document.getElementById(encodeURIComponent(message.path));
         if (container) {
