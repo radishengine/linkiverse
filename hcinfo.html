@@ -9,7 +9,7 @@
       font-family: 'ChicagoFLFRegular', sans-serif;
       font-size: 9pt;
     }
-    body:not(.show-code) .code { display: none; }
+    body:not(.show-text) .gallery > pre { display: none; }
     body {
       font-family: 'ChicagoFLFRegular', sans-serif;
     }
@@ -110,9 +110,9 @@
       <div class="rect5"></div>
     </div>
   </div>
-  <label style='display:none'>
+  <label>
     <input type='checkbox' onchange='document.body.className = this.checked ? "show-code" : ""'>
-    Show code?
+    Show text?
   </label>
   <div id='content'></div>
   <script>
