@@ -215,7 +215,7 @@ function update() {
         if (container) {
           var text = document.createElement('PRE');
           text.innerText = message.text;
-          text.style.order = 100 + Math.ceil(Math.log2(Math.max(4, message.replace(/[^\n]+/g, '').length)));
+          text.style.order = 100 + Math.ceil(Math.log2(Math.max(4, message.text.replace(/[^\n]+/g, '').length)));
           container.querySelector('.gallery').appendChild(text);
         }
         break;
