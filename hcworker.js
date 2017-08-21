@@ -1123,6 +1123,24 @@ function makeImageBlob(bytes, width, height) {
   return new Blob([header, bytes], {type:'image/bmp'});
 }
 
+function makeWav(samples, samplingRate, channels, bytesPerSample) {
+  var dv = new DataView(new ArrayBuffer(44));
+  dv.setUint32(0, 0x46464952, true); // RIFF
+  dv.setUint32(4, dv.byteLength + samples.length, true);
+  dv.setUint32(8, 0x45564157, true); // WAVE
+  dv.setUint32(12, 0x20746d66, true); // fmt
+  dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true); // PCM
+  dv.setUint16(22, channels, true);
+  dv.setUint32(24, samplingRate, true);
+  dv.setUint32(28, samplingRate * channels * bytesPerSample, true);
+  dv.setUint32(32, channels * bytesPerSample, true);
+  dv.setUint32(34, bytesPerSample * 8, true);
+  dv.setUint32(36, 0x61746164, true); // data
+  dv.setUint32(40, samples.length, true);
+  return new Blob([dv.buffer, samples], {type:'audio/wav'});
+}
+
 var resourceHandlers = {
   TEXT: function(item, path, data) {
     postMessage({
@@ -1148,6 +1166,98 @@ var resourceHandlers = {
       file: makeImageBlob(color, 32, 32),
       width: 32,
       height: 32,
+    });
+  },
+  'snd ': function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var formatNumber = dv.getUint16(0, false);
+    var offset;
+    switch (formatNumber) {
+      case 1:
+        var numOfDataFormats = dv.getUint16(2, false);
+        if (numOfDataFormats !== 1) {
+          console.warn('expecting 1 snd data format, got ' + numOfDataFormats);
+          return;
+        }
+        var firstDataFormatID = dv.getUint16(4, false);
+        if (firstDataFormatID !== 5) {
+          console.warn('expected snd data format 5, got ' + firstDataFormatID);
+          return;
+        }
+        var initOption = dv.getUint32(6, false);
+        offset = 10;
+        break;
+      case 2:
+        offset = 4;
+        break;
+      default:
+        console.warn('unknown "snd " format version: ' + formatNumber);
+        return;
+    }
+    if (dv.getUint16(offset, false) !== 1) {
+      console.warn('audio data must have 1 sound command');
+      return;
+    }
+    var command = dv.getUint16(offset + 2, false);
+    if (command !== 0x8051 && command !== 0x8050) {
+      console.warn('audio command must be bufferCmd or soundCmd');
+      return;
+    }
+    if (dv.getUint16(offset + 4, false) !== 0) {
+      console.warn('bufferCmd parameter must be 0');
+      return;
+    }
+    var soundHeaderOffset = dv.getUint32(offset + 6, false);
+    var headerType;
+    var encoding = dv.getUint8(soundHeaderOffset + 20);
+    if (encoding === 0) {
+      headerType = 'standard';
+    }
+    else if (encoding === 0xff) {
+      headerType = 'extended';
+    }
+    else if (encoding === 0xfe) {
+      headerType = 'compressed';
+    }
+    else {
+      console.warn('unknown encoding: 0x' + encoding.toString(16));
+      return;
+    }
+    var dataOffset = dv.getUint32(soundHeaderOffset, false);
+    var samplingRate = fixedPoint.fromInt32(dv.getInt32(soundHeaderOffset + 8, false));
+    var loopStartPoint = dv.getUint32(soundHeaderOffset + 12, false);
+    var loopEndPoint = dv.getUint32(soundHeaderOffset + 16, false);
+    var baseFrequency = dv.getUint8(soundHeaderOffset + 21);
+    var totalBytes, channels, sampleAreaOffset, bytesPerSample;
+    if (headerType === 'standard') {
+      totalBytes = dv.getUint32(soundHeaderOffset + 4, false);
+      channels = 1;
+      sampleAreaOffset = 22;
+      bytesPerSample = 1;
+    }
+    else {
+      channels = dv.getUint32(soundHeaderOffset + 4, false);
+      var bitsPerSample = dv.getUint16(soundHeaderOffset + 48, false);
+      if (bitsPerSample % 8 !== 0) {
+        console.warn('unsupported bits per sample: ' + bitsPerSample);
+        return;
+      }
+      bytesPerSample = bitsPerSample / 8;
+      var totalFrames = dv.getUint32(soundHeaderOffset + 22, false);
+      totalBytes = channels * totalFrames * bytesPerSample;
+      sampleAreaOffset = 64;
+    }
+    var sampleDataOffset = soundHeaderOffset + sampleAreaOffset + dataOffset;
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'file',
+      file: makeWav(
+        bytes.subarray(sampleDataOffset, sampleDataOffset + totalBytes),
+        samplingRate: samplingRate,
+        channels: channels,
+        bytesPerSample: bytesPerSample,
+      ),
     });
   },
 };
