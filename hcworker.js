@@ -281,8 +281,18 @@ const MAC_CHARSET_128_255
   + '\uF8FF\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7';
 
 var decoder = ('TextDecoder' in self) ? new TextDecoder('iso-8859-1') : {
+  max: 512 * 1024,
   decode: function(bytes) {
-    return String.fromCharCode.apply(null, bytes);
+    while (bytes.length <= this.max) {
+      try {
+        return String.fromCharCode.apply(null, bytes);
+      }
+      catch (e) {
+        this.max /= 2;
+      }
+    }
+    return this.decode(bytes.subarray(0, this.max)) +
+      this.decode(bytes.subarray(this.max));
   },
 };
 
