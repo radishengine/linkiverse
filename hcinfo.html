@@ -171,6 +171,14 @@ function update() {
           container.appendChild(gallery);
           fileContainer.insertBefore(container, fileSpinner);
         }
+        if (message.scope === 'text') {
+          var container = document.getElementById(encodeURIComponent(message.path));
+          if (container) {
+            var pre = document.createElement('PRE');
+            pre.className = 'text';
+            container.appendChild(pre);
+          }
+        }
         break;
       case 'close':
         if (message.scope === 'disk') {
@@ -207,6 +215,12 @@ function update() {
           var text = document.createElement('PRE');
           text.innerText = message.text;
           container.appendChild(text);
+        }
+        break;
+      case 'write':
+        var container = document.getElementById(encodeURIComponent(message.path));
+        if (container) {
+          container.querySelector('.text').appendChild(document.createTextNode(message.text));
         }
         break;
       default:
