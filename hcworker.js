@@ -1626,6 +1626,8 @@ var resourceHandlers = {
         path: path,
         headline: 'image',
         file: blob,
+        width: renderer.frame.right - renderer.frame.left,
+        height: renderer.frame.bottom - renderer.frame.top,
       });
     });
   },
