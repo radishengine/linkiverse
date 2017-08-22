@@ -1355,6 +1355,20 @@ var resourceHandlers = {
       height: 32,
     });
   },
+  'ICN#': function(item, data, path) {
+    if (data.length !== 256) {
+      console.warn('ICN#: bad length');
+    }
+    console.warn('ICN#: mask ignored');
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: makeImageBlob(data.subarray(0, 128), 32, 32),
+      width: 32,
+      height: 32,
+    });
+  },
   PICT: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var size = dv.getUint16(0, false);
