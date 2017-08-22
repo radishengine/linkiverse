@@ -1361,7 +1361,7 @@ var resourceHandlers = {
       item: item,
       path: path,
       headline: 'text',
-      text: macRoman(bytes, 1, bytes[0])),
+      text: macRoman(bytes, 1, bytes[0]),
     });
   },
   'STR#': function(item, path, bytes) {
