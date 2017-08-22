@@ -2692,11 +2692,11 @@ MFSVolumeInfoView.prototype = {
   },
 };
 
-function MFSVolumeInfoView(buffer, byteOffset, byteLength) {
+function MFSFileInfoView(buffer, byteOffset, byteLength) {
   this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   this.dv = new Uint8Array(buffer, byteOffset, byteLength);
 }
-MFSVolumeInfoView.prototype = {
+MFSFileInfoView.prototype = {
   get attributes() {
     return this.bytes[0];
   },
@@ -2762,7 +2762,7 @@ function mfs(disk, vinfo, item) {
     });
     var nextPos = dirData.byteOffset;
     for (var i = 0; i < vinfo.fileCount; i++) {
-      var fileInfo = new MFSVolumeInfoView(dirData.buffer, nextPos);
+      var fileInfo = new MFSFileInfoView(dirData.buffer, nextPos);
       var path = vinfo.name + ':' + fileInfo.name;
       postMessage({
         item: item,
