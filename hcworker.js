@@ -1244,6 +1244,28 @@ var resourceHandlers = {
       height: 32,
     });
   },
+  CURS: function(item, path, bytes) {
+    var hasMask;
+    switch(bytes.length) {
+      case 68: hasMask = true; break;
+      case 37: hasMask = false; break;
+      default:
+        console.warn('unexpected length for CURS resource: ' + bytes.length);
+        return;
+    }
+    var hotspot = new DataView(bytes.buffer, bytes.byteOffset + (hasMask ? 64 : 32), 4);
+    hotspot = {x:hotspot.getInt16(2), y:hotspot.getInt16(0)};
+    // TODO: mask
+    var pixels = bytes.subarray(0, 32);
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: makeImageBlob(pixels, 16, 16),
+      width: 16,
+      height: 16,
+    });
+  },
   'snd ': function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var formatNumber = dv.getUint16(0, false);
