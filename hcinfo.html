@@ -306,6 +306,10 @@ document.documentElement.ondragenter = function(e) {
   document.body.classList.add('dropping');
 };
 
+document.documentElement.ondragover = function(e) {
+  e.preventDefault();
+}
+
 document.documentElement.ondragleave = function(e) {
   if (e.target !== this) return;
   document.body.classList.remove('dropping');
