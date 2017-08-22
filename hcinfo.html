@@ -275,6 +275,7 @@ function init(def) {
         }
         break;
       case 'text':
+        if (!/\S/.test(message)) break;
         var container = document.getElementById(encodeURIComponent(message.path));
         if (container) {
           var text = document.createElement('PRE');
