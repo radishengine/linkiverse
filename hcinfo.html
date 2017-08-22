@@ -297,18 +297,18 @@ function init(def) {
   hcWorker.postMessage(def);
 }
 
-document.ondragenter = function(e) {
+document.documentElement.ondragenter = function(e) {
   if (e.target !== this || !e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
   e.dataTransfer.dropEffect = 'copy';
   this.classList.add('dropping');
 };
 
-document.ondragleave = function(e) {
+document.documentElement.ondragleave = function(e) {
   if (e.target !== this) return;
   this.classList.remove('dropping');
 };
 
-document.ondrop = function(e) {
+document.documentElement.ondrop = function(e) {
   var file = e.dataTransfer.files && e.dataTransfer.files[0];
   if (file) {
     init({
@@ -319,7 +319,7 @@ document.ondrop = function(e) {
   }
 };
 
-document.ondragend = function(e) {
+document.documentElement.ondragend = function(e) {
   this.classList.remove('dropping');
 };
 
