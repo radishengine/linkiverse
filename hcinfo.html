@@ -298,21 +298,30 @@ function init(def) {
   hcWorker.postMessage(def);
 }
 
-document.documentElement.ondragenter = function(e) {
+var dragEnterCount = 0;
+document.body.ondragenter = function(e) {
   e.preventDefault();
-  if (e.target !== this) return;
-  e.dataTransfer.dropEffect = 'copy';
-  document.body.classList.add('dropping');
+  if (++dragEnterCount === 1) {
+    e.dataTransfer.dropEffect = 'copy';
+    document.body.classList.add('dropping');
+  }
 };
 
-document.documentElement.ondragleave = function(e) {
-  if (e.target !== this) return;
-  document.body.classList.remove('dropping');
+document.body.ondragleave = function(e) {
+  e.preventDefault();
+  if (--dragEnterCount === 0) {
+    document.body.classList.remove('dropping');
+  }
 };
 
 document.body.ondragover = function(e) {
   e.preventDefault();
 }
+
+document.body.ondragend = function(e) {
+  e.preventDefault();
+  document.body.classList.remove('dropping');
+};
 
 document.body.ondrop = function(e) {
   e.preventDefault();
@@ -325,10 +334,6 @@ document.body.ondrop = function(e) {
       blob: file,
     });
   }
-};
-
-document.body.ondragend = function(e) {
-  document.body.classList.remove('dropping');
 };
 
 function update() {
