@@ -7,6 +7,53 @@ function download(v) {
   });
 }
 
+const BUFFER_LENGTH = 1024 * 1024 * 2;
+
+function BlobSource(blob) {
+  this.blob = blob;
+}
+BlobSource.prototype = {
+  get: function(offset, length) {
+    var gotBuffer = this.gotBuffer;
+    if (!gotBuffer || offset > gotBuffer.start || (offset + length) > gotBuffer.end) {
+      var readStart = offset;
+      var readEnd = offset + length;
+      var createBuffer = length <= BUFFER_LENGTH/2;
+      if (createBuffer) {
+        readStart = BUFFER_LENGTH * Math.floor(readStart / BUFFER_LENGTH);
+        readEnd = Math.min(this.blob.size, BUFFER_LENGTH * Math.ceil(readEnd / BUFFER_LENGTH));
+      }
+      var self = this;
+      gotBuffer = new Promise(function(resolve, reject) {
+        var fr = new FileReader;
+        fr.onerror = function() {
+          reject('unable to read blob');
+        };
+        fr.onload = function() {
+          var buffer = this.result;
+          buffer.fileoffset = readStart;
+          resolve(buffer);
+        };
+        fr.readAsArrayBuffer(self.blob.slice(readStart, readEnd));
+      });
+      if (createBuffer) {
+        gotBuffer.start = readStart;
+        gotBuffer.end = readEnd;
+        this.gotBuffer = gotBuffer;
+      }
+    }
+    return gotBuffer.then(function(buffer) {
+      Promise.resolve(new Uint8Array(buffer, offset - buffer.offset, length));
+    });
+  },
+  getBlob: function() {
+    return Promise.resolve(this.blob);
+  },
+  stream: function(offset, length, callback) {
+    return this.get(offset, length).then(callback);
+  },
+};
+
 function MemorySource(arrayBuffer) {
   this.arrayBuffer = arrayBuffer;
 }
@@ -18,8 +65,7 @@ MemorySource.prototype = {
     return Promise.resolve(new Blob([this.arrayBuffer]));
   },
   stream: function(offset, length, callback) {
-    callback(new Uint8Array(this.arrayBuffer, offset, length));
-    return Promise.resolve();
+    return this.get(offset, length).then(callback);
   },
 };
 
@@ -1699,207 +1745,210 @@ var handlers = {
 };
 handlers.ttro = handlers.TEXT;
 
+function ondisk(disk, item) {
+  return disk.get(512 * 2, 512).then(function(mdb) {
+    mdb = new MasterDirectoryBlockView(
+      mdb.buffer,
+      mdb.byteOffset,
+      mdb.byteLength);
+    if (!mdb.hasValidSignature) {
+      return Promise.reject('not an HFS volume');
+    }
+    postMessage({
+      headline: 'open',
+      scope: 'disk',
+      item: item,
+      name: mdb.name,
+    });
+    disk.chunkSize = mdb.allocationChunkByteLength;
+    disk.allocOffset = mdb.firstAllocationBlock * 512;
+    disk.fromExtents = disk_fromExtents;
+    disk.streamExtents = disk_streamExtents;
+    var catalog = disk.fromExtents(
+      mdb.catalogByteLength,
+      mdb.catalogFirstExtents);
+    var overflow = disk.fromExtents(
+      mdb.overflowByteLength,
+      mdb.overflowFirstExtents);
+    return Promise.all([disk, catalog, overflow]);
+  })
+  .then(function(values) {
+    var disk = values[0], catalog = values[1], overflow = values[2];
+
+    var parentPaths = {};
+    parentPaths[0] = '';
+    parentPaths[1] = '';
+    parentPaths[2] = '$EXTENTS::';
+    parentPaths[3] = '$CATALOG::';
+    parentPaths[4] = '$BADALLOC::';
+
+    var dataForkOverflowExtents = {};
+    var resourceForkOverflowExtents = {};
+
+    var overflowHeader = new BTreeNodeView(overflow.buffer, overflow.byteOffset, 512);
+    if (overflowHeader.type !== 'header') {
+      return Promise.reject('invalid overflow');
+    }
+    overflowHeader = overflowHeader.records[0];
+    var overflowNodeNumber = overflowHeader.firstLeaf;
+    while (overflowNodeNumber !== 0) {
+      var overflowLeaf = new BTreeNodeView(
+        overflow.buffer,
+        overflow.byteOffset + overflowNodeNumber * 512,
+        512);
+      overflowLeaf.records.forEach(function(record) {
+        switch (record.overflowForkType) {
+          case 'data':
+            dataForkOverflowExtents[record.overflowFileID] = record.overflowExtentDataRecord;
+            break;
+          case 'resource':
+            resourceForkOverflowExtents[record.overflowFileID] = record.overflowExtentDataRecord;
+            break;
+        }
+      });
+      overflowNodeNumber = overflowLeaf.nextNodeNumber;
+    }
+
+    var catalogHeader = new BTreeNodeView(catalog.buffer, catalog.byteOffset, NODE_BYTES);
+    if (catalogHeader.type !== 'header') {
+      throw new Error('invalid catalog tree');
+    }
+    var map = catalogHeader.records[2];
+    catalogHeader = catalogHeader.records[0];
+    var leaf;
+    for (var nodeNumber = catalogHeader.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
+      leaf = new BTreeNodeView(catalog.buffer, catalog.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
+      if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
+      leaf.records.forEach(function(record) {
+        if (!/^(folder|file)$/.test(record.leafType)) return;
+        var parentPath = parentPaths[record.parentFolderID];
+        var path = parentPath + record.name;
+        if (record.leafType === 'folder') {
+          path += ':';
+          postMessage({
+            item: item,
+            type: 'open',
+            scope: 'folder',
+            path: path,
+            id: record.folderInfo.id,
+            createdAt: record.folderInfo.createdAt,
+            modifiedAt: record.folderInfo.modifiedAt,
+            isInvisible: record.folderInfo.isInvisible,
+          });
+          parentPaths[record.folderInfo.id] = path;
+          return;
+        }
+        else {
+          postMessage({
+            item: item,
+            headline: 'open',
+            scope: 'file',
+            path: path,
+            id: record.fileInfo.id,
+            createdAt: record.fileInfo.createdAt,
+            modifiedAt: record.fileInfo.modifiedAt,
+            type: record.fileInfo.type,
+            creator: record.fileInfo.creator,
+            isInvisible: record.fileInfo.isInvisible,
+          });
+          var dataFork = record.fileInfo.dataForkInfo;
+          var resourceFork = record.fileInfo.resourceForkInfo;
+          var fileDone = [];
+          if (dataFork.logicalEOF > 0) {
+            var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
+            var needDataBlocks = Math.ceil(dataFork.logicalEOF / disk.chunkSize);
+            needDataBlocks -= dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
+            if (needDataBlocks > 0) {
+              dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
+            }
+            if (record.fileInfo.type in handlers) {
+              var handler = handlers[record.fileInfo.type];
+              fileDone.push(handler(item, path, disk, dataFork.logicalEOF, dataForkExtents));
+            }
+          }
+          if (resourceFork.logicalEOF > 0) {
+            var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
+            var needResourceBlocks = Math.ceil(resourceFork.logicalEOF / disk.chunkSize);
+            needResourceBlocks -= resourceForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
+            if (needResourceBlocks > 0) {
+              resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
+            }
+            fileDone.push(disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
+              var resourceHeader = new ResourceHeaderView(
+                res.buffer,
+                res.byteOffset,
+                ResourceHeaderView.byteLength);
+              var resourceData = new Uint8Array(
+                res.buffer,
+                res.byteOffset + resourceHeader.dataOffset,
+                resourceHeader.dataLength);
+              var resourceMap = new ResourceMapView(
+                res.buffer,
+                res.byteOffset + resourceHeader.mapOffset,
+                resourceHeader.mapLength);
+              var dv = new DataView(
+                resourceData.buffer,
+                resourceData.byteOffset,
+                resourceData.byteLength);
+              resourceMap.resourceList.forEach(function(resourceInfo) {
+                var len = dv.getUint32(resourceInfo.dataOffset, false);
+                var data = resourceData.subarray(
+                  resourceInfo.dataOffset + 4,
+                  resourceInfo.dataOffset + 4 + len);
+                if (resourceInfo.type in resourceHandlers) {
+                  var handler = resourceHandlers[resourceInfo.type];
+                  handler(item, path, data);
+                }
+                else {
+                  postMessage({
+                    item: item,
+                    headline: 'resource',
+                    path: path,
+                    type: resourceInfo.type,
+                    name: resourceInfo.name,
+                  });
+                }
+              });
+            }));
+          }
+          Promise.all(fileDone).then(function() {
+            postMessage({
+              item: item,
+              headline: 'close',
+              scope: 'file',
+              path: path,
+            });
+          });
+        }
+      });
+    }
+
+    postMessage({
+      item: item,
+      headline: 'close',
+      scope: 'disk',
+    });
+
+  })
+  .then(null, function(problem) {
+    postMessage({
+      headline: 'problem',
+      item: item,
+      problem: problem+'',
+    });
+  });
+}
+
 self.onmessage = function onmessage(e) {
   var message = e.data;
   switch (message.headline) {
     case 'load':
       var item = message.item;
-      
-      getBuffer(item + '/disk.img').then(function(disk) {
-        return Promise.all([disk, disk.get(512 * 2, 512)]);
-      })
-      .then(function(values) {
-        var disk = values[0], mdb = values[1];
-        mdb = new MasterDirectoryBlockView(
-          mdb.buffer,
-          mdb.byteOffset,
-          mdb.byteLength);
-        if (!mdb.hasValidSignature) {
-          return Promise.reject('not an HFS volume');
-        }
-        postMessage({
-          headline: 'open',
-          scope: 'disk',
-          item: item,
-          name: mdb.name,
-        });
-        disk.chunkSize = mdb.allocationChunkByteLength;
-        disk.allocOffset = mdb.firstAllocationBlock * 512;
-        disk.fromExtents = disk_fromExtents;
-        disk.streamExtents = disk_streamExtents;
-        var catalog = disk.fromExtents(
-          mdb.catalogByteLength,
-          mdb.catalogFirstExtents);
-        var overflow = disk.fromExtents(
-          mdb.overflowByteLength,
-          mdb.overflowFirstExtents);
-        return Promise.all([disk, catalog, overflow]);
-      })
-      .then(function(values) {
-        var disk = values[0], catalog = values[1], overflow = values[2];
-
-        var parentPaths = {};
-        parentPaths[0] = '';
-        parentPaths[1] = '';
-        parentPaths[2] = '$EXTENTS::';
-        parentPaths[3] = '$CATALOG::';
-        parentPaths[4] = '$BADALLOC::';
-
-        var dataForkOverflowExtents = {};
-        var resourceForkOverflowExtents = {};
-
-        var overflowHeader = new BTreeNodeView(overflow.buffer, overflow.byteOffset, 512);
-        if (overflowHeader.type !== 'header') {
-          return Promise.reject('invalid overflow');
-        }
-        overflowHeader = overflowHeader.records[0];
-        var overflowNodeNumber = overflowHeader.firstLeaf;
-        while (overflowNodeNumber !== 0) {
-          var overflowLeaf = new BTreeNodeView(
-            overflow.buffer,
-            overflow.byteOffset + overflowNodeNumber * 512,
-            512);
-          overflowLeaf.records.forEach(function(record) {
-            switch (record.overflowForkType) {
-              case 'data':
-                dataForkOverflowExtents[record.overflowFileID] = record.overflowExtentDataRecord;
-                break;
-              case 'resource':
-                resourceForkOverflowExtents[record.overflowFileID] = record.overflowExtentDataRecord;
-                break;
-            }
-          });
-          overflowNodeNumber = overflowLeaf.nextNodeNumber;
-        }
-
-        var catalogHeader = new BTreeNodeView(catalog.buffer, catalog.byteOffset, NODE_BYTES);
-        if (catalogHeader.type !== 'header') {
-          throw new Error('invalid catalog tree');
-        }
-        var map = catalogHeader.records[2];
-        catalogHeader = catalogHeader.records[0];
-        var leaf;
-        for (var nodeNumber = catalogHeader.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
-          leaf = new BTreeNodeView(catalog.buffer, catalog.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
-          if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
-          leaf.records.forEach(function(record) {
-            if (!/^(folder|file)$/.test(record.leafType)) return;
-            var parentPath = parentPaths[record.parentFolderID];
-            var path = parentPath + record.name;
-            if (record.leafType === 'folder') {
-              path += ':';
-              postMessage({
-                item: item,
-                type: 'open',
-                scope: 'folder',
-                path: path,
-                id: record.folderInfo.id,
-                createdAt: record.folderInfo.createdAt,
-                modifiedAt: record.folderInfo.modifiedAt,
-                isInvisible: record.folderInfo.isInvisible,
-              });
-              parentPaths[record.folderInfo.id] = path;
-              return;
-            }
-            else {
-              postMessage({
-                item: item,
-                headline: 'open',
-                scope: 'file',
-                path: path,
-                id: record.fileInfo.id,
-                createdAt: record.fileInfo.createdAt,
-                modifiedAt: record.fileInfo.modifiedAt,
-                type: record.fileInfo.type,
-                creator: record.fileInfo.creator,
-                isInvisible: record.fileInfo.isInvisible,
-              });
-              var dataFork = record.fileInfo.dataForkInfo;
-              var resourceFork = record.fileInfo.resourceForkInfo;
-              var fileDone = [];
-              if (dataFork.logicalEOF > 0) {
-                var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
-                var needDataBlocks = Math.ceil(dataFork.logicalEOF / disk.chunkSize);
-                needDataBlocks -= dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
-                if (needDataBlocks > 0) {
-                  dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
-                }
-                if (record.fileInfo.type in handlers) {
-                  var handler = handlers[record.fileInfo.type];
-                  fileDone.push(handler(item, path, disk, dataFork.logicalEOF, dataForkExtents));
-                }
-              }
-              if (resourceFork.logicalEOF > 0) {
-                var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
-                var needResourceBlocks = Math.ceil(resourceFork.logicalEOF / disk.chunkSize);
-                needResourceBlocks -= resourceForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
-                if (needResourceBlocks > 0) {
-                  resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
-                }
-                fileDone.push(disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
-                  var resourceHeader = new ResourceHeaderView(
-                    res.buffer,
-                    res.byteOffset,
-                    ResourceHeaderView.byteLength);
-                  var resourceData = new Uint8Array(
-                    res.buffer,
-                    res.byteOffset + resourceHeader.dataOffset,
-                    resourceHeader.dataLength);
-                  var resourceMap = new ResourceMapView(
-                    res.buffer,
-                    res.byteOffset + resourceHeader.mapOffset,
-                    resourceHeader.mapLength);
-                  var dv = new DataView(
-                    resourceData.buffer,
-                    resourceData.byteOffset,
-                    resourceData.byteLength);
-                  resourceMap.resourceList.forEach(function(resourceInfo) {
-                    var len = dv.getUint32(resourceInfo.dataOffset, false);
-                    var data = resourceData.subarray(
-                      resourceInfo.dataOffset + 4,
-                      resourceInfo.dataOffset + 4 + len);
-                    if (resourceInfo.type in resourceHandlers) {
-                      var handler = resourceHandlers[resourceInfo.type];
-                      handler(item, path, data);
-                    }
-                    else {
-                      postMessage({
-                        item: item,
-                        headline: 'resource',
-                        path: path,
-                        type: resourceInfo.type,
-                        name: resourceInfo.name,
-                      });
-                    }
-                  });
-                }));
-              }
-              Promise.all(fileDone).then(function() {
-                postMessage({
-                  item: item,
-                  headline: 'close',
-                  scope: 'file',
-                  path: path,
-                });
-              });
-            }
-          });
-        }
-        
-        postMessage({
-          item: item,
-          headline: 'close',
-          scope: 'disk',
-        });
-
-      })
-      .then(null, function(problem) {
-        postMessage({
-          headline: 'problem',
-          item: item,
-          problem: problem+'',
-        });
-      });
+      ondisk(getBuffer(item + '/disk.img'), item);
+      break;
+    case 'load-blob':
+      var item = message.item;
+      ondisk(new BlobSource(message.blob), item);
       break;
   }
 };
