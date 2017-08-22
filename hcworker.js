@@ -1594,8 +1594,20 @@ var resourceHandlers = {
         var mode = dv.getUint16(op_i, false);
         op_i += 2;
         var packed = bytes.subarray(op_i);
-        var unpacked = new Uint8Array((bounds.bottom - bounds.top) * rowBytes);
-        op_i += unpackBits(packed, unpacked);
+        var height = (bounds.bottom - bounds.top);
+        var unpacked = new Uint8Array(height * rowBytes);
+        if (rowBytes > 250) for (var y = 0; y < height; y++) {
+          unpackBits(
+            packed.subarray(op_i + 2, dv.getUint16(op_i, false)),
+            unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+          op_i += 2 + packed.length;
+        }
+        else for (var y = 0; y < height; y++) {
+          unpackBits(
+            packed.subarray(op_i + 1, bytes[op_i]),
+            unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+          op_i += 1 + packed.length;
+        }
         renderer.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         continue;
       case 0x99: console.error('PICT: copy packed bits to clipped region'); return;
