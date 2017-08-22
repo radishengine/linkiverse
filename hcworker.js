@@ -2694,7 +2694,7 @@ MFSVolumeInfoView.prototype = {
 
 function MFSFileInfoView(buffer, byteOffset, byteLength) {
   this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
-  this.dv = new Uint8Array(buffer, byteOffset, byteLength);
+  this.dv = new DataView(buffer, byteOffset, byteLength);
 }
 MFSFileInfoView.prototype = {
   get attributes() {
