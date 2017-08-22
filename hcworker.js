@@ -31,7 +31,7 @@ BlobSource.prototype = {
         };
         fr.onload = function() {
           var buffer = this.result;
-          buffer.fileoffset = readStart;
+          buffer.fileOffset = readStart;
           resolve(buffer);
         };
         fr.readAsArrayBuffer(self.blob.slice(readStart, readEnd));
@@ -43,7 +43,7 @@ BlobSource.prototype = {
       }
     }
     return gotBuffer.then(function(buffer) {
-      Promise.resolve(new Uint8Array(buffer, offset - buffer.offset, length));
+      Promise.resolve(new Uint8Array(buffer, offset - buffer.fileOffset, length));
     });
   },
   getBlob: function() {
