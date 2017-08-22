@@ -182,7 +182,7 @@ function init(def) {
 
   hcWorker.onmessage = function(e) {
     var message = e.data;
-    if (message.item !== name) return;
+    if (message.item !== def.item) return;
     switch (message.headline) {
       case 'open':
         if (message.scope === 'file' && !message.isInvisible) {
