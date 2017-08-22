@@ -2747,7 +2747,9 @@ MFSFileInfoView.prototype = {
     return macRoman(this.bytes, 51, this.bytes[50]);
   },
   get byteLength() {
-    return 51 + this.bytes[50];
+    var len = 51 + this.bytes[50];
+    if (len & 1) len++;
+    return len;
   },
 };
 
