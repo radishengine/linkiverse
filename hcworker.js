@@ -1370,6 +1370,197 @@ var resourceHandlers = {
       height: 32,
     });
   },
+  DLOG: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var dataObject = {
+      rectangle: {
+        top: dv.getInt16(0, false),
+        left: dv.getInt16(2, false),
+        bottom: dv.getInt16(4, false),
+        right: dv.getInt16(6, false),
+      },
+      type: dv.getUint16(8, false),
+      visible: !!bytes[10],
+      closeBox: !!bytes[12],
+      referenceConstant: dv.getInt32(14, false),
+      itemListResourceID: dv.getInt16(18, false),
+    };
+    switch(dataObject.type) {
+      case 0: dataObject.type = 'modal'; break;
+      case 4: dataObject.type = 'modeless'; break;
+      case 5: dataObject.type = 'movableModal'; break;
+    }
+    dataObject.text = macRoman(bytes, 21, bytes[20]);
+    var pos = 20 + 1 + dataObject.text.length + (1 + dataObject.text.length) % 2;
+    if (pos + 2 <= bytes.length) {
+      dataObject.positionCode = dv.getUint16(pos, false);
+    }
+    if (dataObject.text) {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'text',
+        type: 'dialog',
+        text: dataObject.text;
+      });
+    }
+  },
+  DITL: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var len = dv.getInt16(0, false) + 1;
+    if (len < 0) {
+      console.warn('DITL resource has invalid length');
+      return;
+    }
+    var dataObject = new Array(len);
+    var pos = 2;
+    for (var i = 0; i < dataObject.length; i++) {
+      var itemType = bytes[pos + 12];
+      var itemEnabled = !!(itemType & 0x80);
+      itemType = {
+        0: 'user',
+        1: 'help',
+        4: 'button',
+        5: 'checkbox',
+        6: 'radiobutton',
+        7: 'control',
+        8: 'statictext',
+        16: 'editabletext',
+        32: 'icon',
+        64: 'picture',        
+      }[itemType & 0x7f];
+      if (!itemType) {
+        console.warn('unknown item type: ' + (bytes[pos + 12] & 0x7f));
+        return;
+      }
+      if (itemType === 'help') {
+        var helpItemType;
+        switch(helpItemType = dv.getUint16(pos + 14, false)) {
+          case 1: helpItemType = 'HMScanhdlg'; break;
+          case 2: helpItemType = 'HMScanhrct'; break;
+          case 8: helpItemType = 'HMScanAppendhdlg'; break;
+          default:
+            console.warn('unknown help item type: ' + helpItemType);
+            return;
+        }
+        dataObject[i] = {
+          type: helpItemType,
+          resourceID: dv.getUint16(pos + 16, false),
+        };
+        if (helpItemType === 'HMScanAppendhdlg') {
+          dataObject[i].itemNumber = dv.getUint16(pos + 18, false);
+        }
+        pos += 13 + bytes[13];
+        continue;
+      }
+      dataObject[i] = {
+        type: itemType,
+        rectangle: {
+          top: dv.getInt16(pos + 4, false),
+          left: dv.getInt16(pos + 6, false),
+          bottom: dv.getInt16(pos + 8, false),
+          right: dv.getInt16(pos + 10, false),
+        },
+      };
+      switch(itemType) {
+        case 'user': pos += 14; break;
+        case 'control': case 'icon': case 'picture':
+          dataObject[i].resourceID = dv.getUint16(pos + 14, false);
+          pos += 16;
+          break;
+        case 'button': case 'checkbox': case 'radiobutton': case 'statictext': case 'editabletext':
+          var text = macRoman(bytes, pos + 14, bytes[pos + 13]);
+          dataObject[i].text = text;
+          pos += 13 + 1 + text.length + (text.length % 2);
+          if (dataObject[i].text) {
+            postMessage({
+              item: item,
+              path: path,
+              headline: 'text',
+              text: dataObject[i].text,
+            });
+          }
+          break;
+        default:
+          console.warn('unsupported item type: ' + itemType);
+          return;
+      }
+    }    
+  },
+  WIND: function(item, path, bytes) {
+    var dataDV = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var dataObject = {
+      initialRectangle: {
+        top: dataDV.getInt16(0, false),
+        left: dataDV.getInt16(2, false),
+        bottom: dataDV.getInt16(4, false),
+        right: dataDV.getInt16(6, false),
+      },
+      definitionID: dataDV.getInt16(8, false),
+      visible: dataDV.getInt16(10, false),
+      closeBox: dataDV.getInt16(12, false),
+      referenceConstant: dataDV.getInt32(14, false),
+    };
+    dataObject.title = macRoman(bytes, 19, bytes[18]);
+    var pos = 19 + bytes[18];
+    if (pos+2 <= bytes.length) {
+      dataObject.positioning = dataDV.getInt16(pos);
+    }
+    if (dataObject.title) {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'text',
+        text: dataObject.title,
+      });
+    }
+  },
+  MENU: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var dataObject = {
+      id: dv.getUint16(0, false),
+      definitionProcedureResourceID: dv.getUint16(6, false),
+      enabledState: dv.getUint32(10, false),
+      title: macRoman(bytes, 15, bytes[14]),
+    };
+    if (dataObject.title) {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'text',
+        text: dataObject.title,
+      });
+    }
+    var pos = 15 + bytes[14];
+    if (dataObject.definitionProcedureResourceID === 0) {
+      delete dataObject.definitionProcedureResourceID;
+      dataObject.items = [];
+      while (pos < bytes.length && bytes[pos] !== 0) {
+        var text = macRoman(bytes, pos + 1, bytes[pos]);
+        pos += 1 + text.length;
+        var menuItem = {
+          text: text,
+          iconNumberOrScriptCode: bytes[pos],
+          keyboardEquivalent: bytes[pos + 1],
+          markingCharacterOrSubmenuID: bytes[pos + 2],
+          style: bytes[pos + 3],
+        };
+        if (menuItem.text) {
+          postMessage({
+            item: item,
+            path: path,
+            headline: 'text',
+            text: menuItem.text,
+          });
+        }
+        dataObject.items.push(menuItem);
+        pos += 4;
+      }
+    }
+    else {
+      dataObject.itemData = bytes.subarray(pos);
+    }
+  },
   PICT: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var size = dv.getUint16(0, false);
