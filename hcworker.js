@@ -1246,7 +1246,7 @@ var resourceHandlers = {
   },
   CURS: function(item, path, bytes) {
     var hasMask;
-    switch(bytes.length) {
+    switch (bytes.length) {
       case 68: hasMask = true; break;
       case 37: hasMask = false; break;
       default:
@@ -1255,7 +1255,9 @@ var resourceHandlers = {
     }
     var hotspot = new DataView(bytes.buffer, bytes.byteOffset + (hasMask ? 64 : 32), 4);
     hotspot = {x:hotspot.getInt16(2), y:hotspot.getInt16(0)};
-    // TODO: mask
+    if (hasMask) {
+      console.warn('TODO: CURS mask');
+    }
     var pixels = bytes.subarray(0, 32);
     postMessage({
       item: item,
