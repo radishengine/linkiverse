@@ -1227,14 +1227,15 @@ function unpackBits(packed, unpacked) {
       pos += length;
       outpos += length;
     }
-    if (op === 128) continue;
-    var count = 257 - op;
-    var rep = packed[pos++];
-    if (rep === 0) {
-      outpos += count;
-    }
-    else for (var i = 0; i < count; i++) {
-      unpacked[outpos++] = rep;
+    else if (op > 128) {
+      var count = 257 - op;
+      var rep = packed[pos++];
+      if (rep === 0) {
+        outpos += count;
+      }
+      else for (var i = 0; i < count; i++) {
+        unpacked[outpos++] = rep;
+      }
     }
   }
   return pos;
