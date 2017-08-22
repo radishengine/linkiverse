@@ -1598,13 +1598,13 @@ var resourceHandlers = {
         var unpacked = new Uint8Array(height * rowBytes);
         if (rowBytes > 250) for (var y = 0; y < height; y++) {
           unpackBits(
-            packed.subarray(op_i + 2, dv.getUint16(op_i, false)),
+            packed.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false)),
             unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
           op_i += 2 + packed.length;
         }
         else for (var y = 0; y < height; y++) {
           unpackBits(
-            packed.subarray(op_i + 1, bytes[op_i]),
+            packed.subarray(op_i + 1, op_i + 1 + bytes[op_i]),
             unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
           op_i += 1 + packed.length;
         }
