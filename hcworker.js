@@ -1315,10 +1315,10 @@ PictRenderer.prototype = {
     }).then(function(dataURL) {
       return '<image '
         + ' xlink:href="' + dataURL + '"'
-        + ' x="' + destRect.left + '"'
-        + ' y="' + destRect.top + '"'
-        + ' width="' + (destRect.right - destRect.left) + '"'
-        + ' height="' + (destRect.bottom - destRect.top) + '"'
+        + ' x="' + bounds.left + '"'
+        + ' y="' + bounds.top + '"'
+        + ' width="' + (rowBytes * 8) + '"'
+        + ' height="' + (bounds.bottom - bounds.top) + '"'
         + '/>';
     }));
   },
