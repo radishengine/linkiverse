@@ -2752,7 +2752,7 @@ MFSFileInfoView.prototype = {
 };
 
 function mfs(disk, vinfo, item) {
-  return disk.get(vinfo.firstDirBlock, vinfo.dirBlockCount * 512)
+  return disk.get(vinfo.firstDirBlock * 512, vinfo.dirBlockCount * 512)
   .then(function(dirData) {
     postMessage({
       headline: 'open',
