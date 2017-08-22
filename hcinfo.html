@@ -272,6 +272,13 @@ function init(def) {
             };
             gallery.appendChild(button);
           }
+          else {
+            var dl = document.createElement('A');
+            dl.href = URL.createObjectURL(message.file);
+            dl.innerText = 'Download';
+            dl.setAttribute('download', 'file.dat');
+            gallery.appendChild(dl);
+          }
         }
         break;
       case 'text':
