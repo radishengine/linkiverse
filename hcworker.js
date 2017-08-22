@@ -1304,6 +1304,8 @@ PictRenderer.prototype = {
   copyBits: function(rowBytes, bounds, srcRect, destRect, mode, data) {
     this.image = makeImage(data, rowBytes * 8, bounds.bottom - bounds.top);
   },
+  comment: function(commentCode, extraData) {
+  },
 };
 
 var resourceHandlers = {
