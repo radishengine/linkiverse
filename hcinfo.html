@@ -298,14 +298,14 @@ function init(def) {
 }
 
 document.documentElement.ondragenter = function(e) {
-  if (e.target !== this || !e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+  if (e.target !== this) return;
   e.dataTransfer.dropEffect = 'copy';
-  this.classList.add('dropping');
+  document.body.classList.add('dropping');
 };
 
 document.documentElement.ondragleave = function(e) {
   if (e.target !== this) return;
-  this.classList.remove('dropping');
+  document.body.classList.remove('dropping');
 };
 
 document.documentElement.ondrop = function(e) {
@@ -320,7 +320,7 @@ document.documentElement.ondrop = function(e) {
 };
 
 document.documentElement.ondragend = function(e) {
-  this.classList.remove('dropping');
+  document.body.classList.remove('dropping');
 };
 
 function update() {
