@@ -1356,20 +1356,20 @@ var resourceHandlers = {
     var op_i = 12;
     function rect() {
       var rect = {
-        left: dv.getInt16(op_i),
-        top: dv.getInt16(op_i + 2),
-        right: dv.getInt16(op_i + 4),
-        bottom: dv.getInt16(op_i + 6),
+        top: dv.getInt16(op_i),
+        left: dv.getInt16(op_i + 2),
+        bottom: dv.getInt16(op_i + 4),
+        right: dv.getInt16(op_i + 6),
       };
       op_i += 8;
       return rect;
     }
     function arc() {
       var arc = {
-        left: dv.getInt16(op_i),
-        top: dv.getInt16(op_i + 2),
-        right: dv.getInt16(op_i + 4),
-        bottom: dv.getInt16(op_i + 6),
+        top: dv.getInt16(op_i),
+        left: dv.getInt16(op_i + 2),
+        bottom: dv.getInt16(op_i + 4),
+        right: dv.getInt16(op_i + 6),
         angle1: dv.getInt16(op_i + 8),
         angle2: dv.getInt16(op_i + 10),
       };
@@ -1384,11 +1384,12 @@ var resourceHandlers = {
     }
     function region() {
       var len = dv.getUint16(op_i);
+      op_i += 2;
       var region = {
+        top: dv.getInt16(op_i),
         left: dv.getInt16(op_i + 2),
-        top: dv.getInt16(op_i + 4),
+        bottom: dv.getInt16(op_i + 4),
         right: dv.getInt16(op_i + 6),
-        bottom: dv.getInt16(op_i + 8),
       };
       if (len > 10) {
         region.extra = bytes.subarray(op_i + 10, op_i + len);
