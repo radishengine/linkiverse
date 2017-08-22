@@ -1376,7 +1376,7 @@ var resourceHandlers = {
         item: item,
         path: path,
         headline: 'text',
-        text: macRoman(bytes, pos, len)),
+        text: macRoman(bytes, pos, len),
       });
       pos += len;
     }
