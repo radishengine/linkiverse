@@ -69,6 +69,7 @@
       top: 0;
       bottom: 0;
       padding: 30px;
+      pointer-events: none;
     }
     .drop-border {
       border: 10px dashed silver;
@@ -302,6 +303,7 @@ document.documentElement.ondragenter = function(e) {
   if (e.target !== this) return;
   e.dataTransfer.dropEffect = 'copy';
   document.body.classList.add('dropping');
+  e.preventDefault();
 };
 
 document.documentElement.ondragleave = function(e) {
