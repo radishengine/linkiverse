@@ -2101,6 +2101,11 @@ var handlers = {
       });
     });
   },
+  PICT: function(item, path, disk, byteLength, extents) {
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      resourceHandlers.PICT(item, path, bytes.subarray(512));
+    });
+  },
   JPEG: function(item, path, disk, byteLength, extents) {
     return disk.fromExtents(byteLength, extents).then(function(bytes) {
       postMessage({
