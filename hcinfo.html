@@ -300,10 +300,10 @@ function init(def) {
 }
 
 document.documentElement.ondragenter = function(e) {
+  e.preventDefault();
   if (e.target !== this) return;
   e.dataTransfer.dropEffect = 'copy';
   document.body.classList.add('dropping');
-  e.preventDefault();
 };
 
 document.documentElement.ondragleave = function(e) {
@@ -312,6 +312,7 @@ document.documentElement.ondragleave = function(e) {
 };
 
 document.documentElement.ondrop = function(e) {
+  e.preventDefault();
   var file = e.dataTransfer.files && e.dataTransfer.files[0];
   if (file) {
     init({
