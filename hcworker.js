@@ -1243,6 +1243,7 @@ function unpackBits(packed, unpacked) {
 
 function PictRenderer(frame) {
   this.frame = frame;
+  this.parts = [];
 }
 PictRenderer.prototype = {
   clipRegion: function(region) {
@@ -1289,20 +1290,37 @@ PictRenderer.prototype = {
   lineTo: function(x, y) {
   },
   getImageFile: function() {
-    var buf = [];
-    var f = this.frame;
-    buf.push(
-      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
-      + ' width="' + (f.right - f.left) + '"'
-      + ' height="' + (f.bottom - f.top) + '"'
-      + ' viewBox="' + [f.left, f.top, f.right - f.left, f.bottom - f.top].join(' ') + '"'
-      + '>');
-    buf.push('</svg>');
-    var blob = new Blob(buf, {type:'image/svg+xml'});
-    return Promise.resolve(blob);
+    return Promise.all(this.parts).then(function(buf) {
+      var f = this.frame;
+      buf.splice(0, 0,
+        '<svg ',
+        ' xmlns="http://www.w3.org/2000/svg" ',
+        ' xmlns:xlink="http://www.w3.org/1999/xlink"',
+        ' width="' + (f.right - f.left) + '"',
+        ' height="' + (f.bottom - f.top) + '"',
+        ' viewBox="' + [f.left, f.top, f.right - f.left, f.bottom - f.top].join(' ') + '"',
+        '>');
+      buf.push('</svg>');
+      var blob = new Blob(buf, {type:'image/svg+xml'});
+      return blob;
+    });
   },
   copyBits: function(rowBytes, bounds, srcRect, destRect, mode, data) {
-    this.image = makeImageBlob(data, rowBytes * 8, bounds.bottom - bounds.top);
+    this.parts.push(new Promise(function(resolve, reject) {
+      var fr = new FileReader;
+      fr.onload = function() {
+        resolve(this.result);
+      };
+      fr.readAsDataURL(makeImageBlob(data, rowBytes * 8, bounds.bottom - bounds.top));
+    }).then(function(dataURL) {
+      return '<image '
+        + ' xlink:href="' + dataURL + '"'
+        + ' x="' + destRect.left + '"'
+        + ' y=" + destRect.top + '"'
+        + ' width="' + (destRect.right - destRect.left) + '"'
+        + ' height="' + (destRect.bottom - destRect.top) + '"'
+        + '/>';
+    }));
   },
   comment: function(commentCode, extraData) {
   },
