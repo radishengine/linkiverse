@@ -1358,6 +1358,7 @@ var resourceHandlers = {
   'ICN#': function(item, path, data) {
     if (data.length !== 256) {
       console.warn('ICN#: bad length');
+      return;
     }
     console.warn('ICN#: mask ignored');
     postMessage({
