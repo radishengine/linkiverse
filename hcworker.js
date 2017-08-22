@@ -1356,6 +1356,31 @@ var resourceHandlers = {
       file: makeWav(samples, 11000, 1, 1),
     });
   },
+  'STR ': function(item, path, bytes) {
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'text',
+      text: macRoman(bytes, 1, bytes[0])),
+    });
+  },
+  'STR#': function(item, path, bytes) {
+    var strcount = new DataView(bytes.buffer, bytes.byteOffset, 2).getInt16(0, false);
+    if (strcount < 0) {
+      return Promise.reject('invalid string count for STR#');
+    }
+    var pos = 2;
+    for (var istr = 0; istr < strcount; istr++) {
+      var len = bytes[pos++];
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'text',
+        text: macRoman(bytes, pos, len)),
+      });
+      pos += len;
+    }
+  },
 };
 
 var handlers = {
