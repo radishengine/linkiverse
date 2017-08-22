@@ -43,7 +43,7 @@ BlobSource.prototype = {
       }
     }
     return gotBuffer.then(function(buffer) {
-      Promise.resolve(new Uint8Array(buffer, offset - buffer.fileOffset, length));
+      return new Uint8Array(buffer, offset - buffer.fileOffset, length);
     });
   },
   getBlob: function() {
