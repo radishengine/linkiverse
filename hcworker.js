@@ -1244,6 +1244,14 @@ var resourceHandlers = {
       height: 32,
     });
   },
+  PICT: function(item, path, bytes) {
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'file',
+      file: new Blob([bytes]),
+    });
+  },
   CURS: function(item, path, bytes) {
     var hasMask;
     switch (bytes.length) {
