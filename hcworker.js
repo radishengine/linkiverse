@@ -1384,12 +1384,11 @@ var resourceHandlers = {
     }
     function region() {
       var len = dv.getUint16(op_i);
-      op_i += 2;
       var region = {
-        top: dv.getInt16(op_i),
-        left: dv.getInt16(op_i + 2),
-        bottom: dv.getInt16(op_i + 4),
-        right: dv.getInt16(op_i + 6),
+        top: dv.getInt16(op_i+2),
+        left: dv.getInt16(op_i+2 + 2),
+        bottom: dv.getInt16(op_i+2 + 4),
+        right: dv.getInt16(op_i+2 + 6),
       };
       if (len > 10) {
         region.extra = bytes.subarray(op_i + 10, op_i + len);
