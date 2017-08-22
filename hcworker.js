@@ -1307,6 +1307,8 @@ PictRenderer.prototype = {
   },
   comment: function(commentCode, extraData) {
   },
+  op: function(shapeType, drawMode, shapeDef) {
+  },
 };
 
 var resourceHandlers = {
