@@ -306,6 +306,11 @@ document.body.ondragenter = function(e) {
     document.body.classList.add('dropping');
   }
 };
+    
+document.documentElement.ondragenter = function(e) {
+  e.preventDefault();
+  document.body.classList.add('dropping');
+};
 
 document.body.ondragleave = function(e) {
   e.preventDefault();
