@@ -69,7 +69,6 @@
       top: 0;
       bottom: 0;
       padding: 30px;
-      pointer-events: none;
     }
     .drop-border {
       border: 10px dashed silver;
@@ -306,17 +305,18 @@ document.documentElement.ondragenter = function(e) {
   document.body.classList.add('dropping');
 };
 
-document.documentElement.ondragover = function(e) {
-  e.preventDefault();
-}
-
 document.documentElement.ondragleave = function(e) {
   if (e.target !== this) return;
   document.body.classList.remove('dropping');
 };
 
+document.body.ondragover = function(e) {
+  e.preventDefault();
+}
+
 document.body.ondrop = function(e) {
   e.preventDefault();
+  document.body.classList.remove('dropping');
   var file = e.dataTransfer.files && e.dataTransfer.files[0];
   if (file) {
     init({
@@ -327,7 +327,7 @@ document.body.ondrop = function(e) {
   }
 };
 
-document.documentElement.ondragend = function(e) {
+document.body.ondragend = function(e) {
   document.body.classList.remove('dropping');
 };
 
