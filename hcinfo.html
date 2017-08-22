@@ -311,7 +311,7 @@ document.documentElement.ondragleave = function(e) {
   document.body.classList.remove('dropping');
 };
 
-document.documentElement.ondrop = function(e) {
+document.body.ondrop = function(e) {
   e.preventDefault();
   var file = e.dataTransfer.files && e.dataTransfer.files[0];
   if (file) {
