@@ -1217,6 +1217,95 @@ function makeWav(samples, samplingRate, channels, bytesPerSample) {
   return new Blob([dv, samples], {type:'audio/wav'});
 }
 
+function unpackBits(packed, unpacked) {
+  var pos = 0, outpos = 0;
+  while (pos < packed.length && outpos < unpacked.length) {
+    var op = packed[pos++];
+    if (op < 128) {
+      var length = op + 1;
+      unpacked.set(packed.subarray(pos, pos + length), outpos);
+      pos += length;
+      outpos += length;
+    }
+    if (op === 128) continue;
+    var count = 257 - op;
+    var rep = packed[pos++];
+    if (rep === 0) {
+      outpos += count;
+    }
+    else for (var i = 0; i < count; i++) {
+      unpacked[outpos++] = rep;
+    }
+  }
+  return pos;
+};
+
+function PictRenderer(frame) {
+  this.frame = frame;
+}
+PictRenderer.prototype = {
+  clipRegion: function(region) {
+  },
+  backgroundPattern: function(patternBytes) {
+  },
+  fontNumber: function(fontNumber) {
+  },
+  fontFace: function(faceNumber) {
+  },
+  textMode: function(modeNumber) {
+  },
+  extraSpace: function(v) {
+  },
+  penSize: function(x, y) {
+  },
+  penMode: function(modeNumber) {
+  },
+  penPattern: function(patternBytes) {
+  },
+  fillPattern: function(patternBytes) {
+  },
+  ovalSize: function(x, y) {
+    // used for RRect corners
+  },
+  origin: function(x, y) {
+  },
+  originOffset: function(dx, dy) {
+  },
+  text: function(text) {
+  },
+  fontSize: function(px) {
+  },
+  foregroundColor: function(rgb) {
+  },
+  backgroundColor: function(rgb) {
+  },
+  txRatio: function(numerator, denominator) {
+  },
+  picVersion: function(versionNumber) {
+  },
+  startLine: function(x, y) {
+  },
+  lineTo: function(x, y) {
+  },
+  toImageFile: function() {
+    if (this.image) return this.image;
+    var buf = [];
+    buf.push(
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+      + ' width="' + (this.frame.right - this.frame.left) + '"'
+      + ' height="' + (this.frame.bottom - this.frame.top) + '"'
+      + '">');
+    buf.push('</svg>');
+    var blob = new Blob(buf, {type:'image/svg+xml'});
+    blob.width = this.frame.right - this.frame.left;
+    blob.height = this.frame.bottom - this.frame.top;
+    return blob;
+  },
+  copyBits: function(rowBytes, bounds, srcRect, destRect, mode, data) {
+    this.image = makeImage(data, rowBytes * 8, bounds.bottom - bounds.top);
+  },
+};
+
 var resourceHandlers = {
   TEXT: function(item, path, data) {
     postMessage({
@@ -1245,11 +1334,282 @@ var resourceHandlers = {
     });
   },
   PICT: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var size = dv.getUint16(0, false);
+    if (size < 24 || size > bytes.length) {
+      console.error('PICT: bad length');
+      return;
+    }
+    var renderer = new PictRenderer({
+      top: dv.getInt16(2, false),
+      left: dv.getInt16(4, false),
+      bottom: dv.getInt16(6, false),
+      right: dv.getInt16(8, false),
+    });
+    if (bytes[10] !== 0x11 && bytes[11] !== 0x01) {
+      console.warn('PICT: unsupported version');
+      return;
+    }
+    var op_i = 12;
+    function rect() {
+      var rect = {
+        left: dv.getInt16(op_i),
+        top: dv.getInt16(op_i + 2),
+        right: dv.getInt16(op_i + 4),
+        bottom: dv.getInt16(op_i + 6),
+      };
+      op_i += 8;
+      return rect;
+    }
+    function arc() {
+      var arc = {
+        left: dv.getInt16(op_i),
+        top: dv.getInt16(op_i + 2),
+        right: dv.getInt16(op_i + 4),
+        bottom: dv.getInt16(op_i + 6),
+        angle1: dv.getInt16(op_i + 8),
+        angle2: dv.getInt16(op_i + 10),
+      };
+      op_i += 12;
+      return rect;
+    }
+    function poly() {
+      var len = dv.getUint16(op_i);
+      var poly = null; // TODO
+      op_i += len;
+      return poly;
+    }
+    function region() {
+      var len = dv.getUint16(op_i);
+      var region = {
+        left: dv.getInt16(op_i + 2),
+        top: dv.getInt16(op_i + 4),
+        right: dv.getInt16(op_i + 6),
+        bottom: dv.getInt16(op_i + 8),
+      };
+      if (len > 10) {
+        region.extra = bytes.subarray(op_i + 10, op_i + len);
+      }
+      op_i += len;
+      return region;
+    }
+    var clipRegion;
+    pictV1Loop: for (;;) switch (bytes[op_i++]) {
+      case 0xFF: break pictV1Loop;
+      case 0x00: continue; // no-op
+      case 0x01:
+        renderer.clipRegion(region());
+        continue;
+      case 0x02:
+        renderer.backgroundPattern(bytes.subarray(op_i, op_i + 8));
+        op_i += 8;
+        continue;
+      case 0x03:
+        renderer.fontNumber(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x04:
+        renderer.fontFace(bytes[op_i++]);
+        continue;
+      case 0x05:
+        renderer.textMode(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x06:
+        renderer.extraSpace(fixedPoint.fromInt32(dv.getInt32(op_i, false)));
+        op_i += 4;
+        continue;
+      case 0x07:
+        renderer.penSize(dv.getUint16(op_i + 2, false), dv.getUint16(op_i, false));
+        op_i += 4;
+        continue;
+      case 0x08:
+        renderer.penMode(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x09:
+        renderer.penPattern(bytes.subarray(op_i, op_i + 8));
+        op_i += 8;
+        continue;
+      case 0x0A:
+        renderer.fillPattern(bytes.subarray(op_i, op_i + 8));
+        op_i += 8;
+        continue;
+      case 0x0B:
+        renderer.ovalSize(dv.getUint16(op_i + 2, false), dv.getUint16(op_i, false));
+        op_i += 4;
+        continue;
+      case 0x0C:
+        renderer.origin(dv.getUint16(op_i + 2, false), dv.getUint16(op_i, false));
+        op_i += 4;
+        continue;
+      case 0x0D:
+        renderer.fontSize(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x0E:
+        renderer.foregroundColor(dv.getUint32(op_i, false));
+        op_i += 4;
+        continue;
+      case 0x0F:
+        renderer.backgroundColor(dv.getUint32(op_i, false));
+        op_i += 4;
+        continue;
+      case 0x10:
+        renderer.txRatio(
+          fixedPoint.fromInt32(dv.getInt32(op_i, false)),
+          fixedPoint.fromInt32(dv.getInt32(op_i + 4, false)));
+        op_i += 8;
+        continue;
+      case 0x11:
+        renderer.picVersion(bytes[op_i++]);
+        continue;
+      case 0x20:
+        renderer.startLine(dv.getInt16(op_i + 2, false), dv.getInt16(op_i, false));
+        renderer.lineTo(dv.getInt16(op_i + 6, false), dv.getInt16(op_i + 4, false));
+        op_i += 8;
+        continue;
+      case 0x21:
+        renderer.lineTo(dv.getInt16(op_i + 2, false), dv.getInt16(op_i, false));
+        op_i += 4;
+        continue;
+      case 0x22:
+        renderer.startLine(dv.getInt16(op_i + 2, false), dv.getInt16(op_i, false));
+        renderer.lineTo(dv.getInt8(op_i + 5, false), dv.getInt8(op_i + 4, false));
+        op_i += 6;
+        continue;
+      case 0x23:
+        renderer.lineTo(dv.getInt8(op_i + 1, false), dv.getInt8(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x28: // long text
+        renderer.origin(dv.getUint16(op_i + 2, false), dv.getUint16(op_i, false));
+        op_i += 4;
+        renderer.text(macRoman(bytes, op_i+1, bytes[op_i]));
+        op_i += 1 + bytes[op_i];
+        continue;
+      case 0x29:
+        renderer.originOffset(dv.getInt8(op_i++), 0);
+        renderer.text(macRoman(bytes, op_i+1, bytes[op_i]));
+        op_i += 1 + bytes[op_i];
+        continue;
+      case 0x2A:
+        renderer.originOffset(0, dv.getInt8(op_i++));
+        renderer.text(macRoman(bytes, op_i+1, bytes[op_i]));
+        op_i += 1 + bytes[op_i];
+        continue;
+      case 0x2B:
+        renderer.originOffset(dv.getInt8(op_i), dv.getInt8(op_i + 1));
+        op_i += 2;
+        renderer.text(macRoman(bytes, op_i+1, bytes[op_i]));
+        op_i += 1 + bytes[op_i];
+        continue;
+        
+      case 0x30: renderer.frameRect(rect()); continue;
+      case 0x31: renderer.paintRect(rect()); continue;
+      case 0x32: renderer.eraseRect(rect()); continue;
+      case 0x33: renderer.invertRect(rect()); continue;
+      case 0x34: renderer.fillRect(rect()); continue;
+        
+      case 0x38: renderer.frameRect('same'); continue;
+      case 0x39: renderer.paintRect('same'); continue;
+      case 0x3A: renderer.eraseRect('same'); continue;
+      case 0x3B: renderer.invertRect('same'); continue;
+      case 0x3C: renderer.fillRect('same'); continue;
+        
+      case 0x40: renderer.frameRRect(rect()); continue;
+      case 0x41: renderer.paintRRect(rect()); continue;
+      case 0x42: renderer.eraseRRect(rect()); continue;
+      case 0x43: renderer.invertRRect(rect()); continue;
+      case 0x44: renderer.fillRRect(rect()); continue;
+        
+      case 0x48: renderer.frameRRect('same'); continue;
+      case 0x49: renderer.paintRRect('same'); continue;
+      case 0x4A: renderer.eraseRRect('same'); continue;
+      case 0x4B: renderer.invertRRect('same'); continue;
+      case 0x4C: renderer.fillRRect('same'); continue;
+
+      case 0x50: renderer.frameOval(rect()); continue;
+      case 0x51: renderer.paintOval(rect()); continue;
+      case 0x52: renderer.eraseOval(rect()); continue;
+      case 0x53: renderer.invertOval(rect()); continue;
+      case 0x54: renderer.fillOval(rect()); continue;
+        
+      case 0x58: renderer.frameOval('same'); continue;
+      case 0x59: renderer.paintOval('same'); continue;
+      case 0x5A: renderer.eraseOval('same'); continue;
+      case 0x5B: renderer.invertOval('same'); continue;
+      case 0x5C: renderer.fillOval('same'); continue;
+
+      case 0x60: renderer.frameArc(arc()); continue;
+      case 0x61: renderer.paintArc(arc()); continue;
+      case 0x62: renderer.eraseArc(arc()); continue;
+      case 0x63: renderer.invertArc(arc()); continue;
+      case 0x64: renderer.fillArc(arc()); continue;
+        
+      case 0x68: renderer.frameArc('same'); continue;
+      case 0x69: renderer.paintArc('same'); continue;
+      case 0x6A: renderer.eraseArc('same'); continue;
+      case 0x6B: renderer.invertArc('same'); continue;
+      case 0x6C: renderer.fillArc('same'); continue;
+
+      case 0x70: renderer.framePoly(poly()); continue;
+      case 0x71: renderer.paintPoly(poly()); continue;
+      case 0x72: renderer.erasePoly(poly()); continue;
+      case 0x73: renderer.invertPoly(poly()); continue;
+      case 0x74: renderer.fillPoly(poly()); continue;
+      case 0x78: renderer.framePoly('same'); continue;
+      case 0x79: renderer.framePoly('same'); continue;
+      case 0x7A: renderer.erasePoly('same'); continue;
+      case 0x7B: renderer.invertPoly('same'); continue;
+      case 0x7C: renderer.fillPoly('same'); continue;
+
+      case 0x80: renderer.frameRegion(region()); continue;
+      case 0x81: renderer.paintRegion(region()); continue;
+      case 0x82: renderer.eraseRegion(region()); continue;
+      case 0x83: renderer.invertRegion(region()); continue;
+      case 0x84: renderer.fillRegion(region()); continue;
+      case 0x88: renderer.frameRegion('same'); continue;
+      case 0x89: renderer.paintRegion('same'); continue;
+      case 0x8A: renderer.eraseRegion('same'); continue;
+      case 0x8B: renderer.invertRegion('same'); continue;
+      case 0x8C: renderer.fillRegion('same'); continue;
+
+      case 0x90: console.error('copy bits to clipped rect not supported'); return;
+      case 0x91: console.error('copy bits to clipped region not supported'); return;
+        
+      case 0x98: // copy packed bits to clipped rect
+        var rowBytes = dv.getUint16(op_i, false);
+        op_i += 2;
+        var bounds = rect();
+        var srcRect = rect();
+        var destRect = rect();
+        var mode = dv.getUint16(op_i, false);
+        op_i += 2;
+        var packed = bytes.subarray(op_i);
+        var unpacked = new Uint8Array((bounds.bottom - bounds.top) * rowBytes);
+        op_i += unpackBits(packed, unpacked);
+        renderer.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
+        continue;
+      case 0x99: console.error('PICT: copy packed bits to clipped region'); return;
+      case 0xA0:
+        renderer.comment(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0xA1: 
+        var kind = dv.getUint16(op_i, false);
+        var len = dv.getUint16(op_i + 2, false);
+        var commentData = bytes.subarray(op_i + 4, op_i + 4 + len);
+        renderer.comment(kind, len);
+        op_i += 4 + len;
+        continue;
+      default: console.error('PICT: unknown opcode 0x' + bytes[op_i-1].toString(16)); return;
+    }
     postMessage({
       item: item,
       path: path,
-      headline: 'file',
-      file: new Blob([bytes]),
+      headline: 'image',
+      file: renderer.toImageFile(),
     });
   },
   CURS: function(item, path, bytes) {
