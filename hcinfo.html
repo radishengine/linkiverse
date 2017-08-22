@@ -59,9 +59,29 @@
     .play-button.playable.playing::before {
       content: '\23f8';
     }
+    #dropzone {
+      display: none;
+      position: fixed;
+      z-order: 1000;
+      background: rgba(255, 255, 255, 0.5);
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+    .drop-border {
+      margin: 30px;
+      border: 10px dashed silver;
+    }
+    body.dropping > #dropzone {
+      display: block;
+    }
   </style>
 </head>
 <body>
+  <div id='dropzone'>
+    <div class='drop-border'></div>
+  </div>
   <div id='templating' style='display:none'>
     <style>
       .spinner {
@@ -123,7 +143,7 @@
     </div>
   </div>
   <label>
-    <input type='checkbox' onchange='document.body.className = this.checked ? "show-text" : ""'>
+    <input type='checkbox' onchange='document.body.classList.toggle("show-text", this.checked)'>
     Show text?
   </label>
   <div id='content'></div>
@@ -152,17 +172,7 @@ hcWorker.addEventListener('message', function(e) {
   if (message.headline === 'download') download(message.file);
 });
     
-function update() {
-
-  'use strict';
-  
-  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.]+)\/?$/);
-  name = name && name[1];
-  if (!name) {
-    document.getElementById('content').innerHTML = 'Please set URL #hash to a hypercard item ID';
-    return;
-  }
-  
+function init(def) {
   document.getElementById('content').innerHTML = '';
   var fileContainer = document.getElementById('content');
   var fileSpinner = makeSpinner();
@@ -284,11 +294,50 @@ function update() {
     }
   };
   
-  hcWorker.postMessage({
+  hcWorker.postMessage(def);
+}
+
+body.ondragenter = function(e) {
+  if (e.target !== this || !e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+  e.dataTransfer.dropEffect = 'copy';
+  this.classList.add('dropping');
+};
+
+body.ondragleave = function(e) {
+  if (e.target !== this) return;
+  this.classList.remove('dropping');
+};
+
+body.ondrop = function(e) {
+  var file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) {
+    init({
+      headline: 'load-blob',
+      item: '[upload]',
+      blob: file,
+    });
+  }
+};
+    
+body.ondragend = function(e) {
+  this.classList.remove('dropping');
+};
+
+function update() {
+
+  'use strict';
+  
+  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.]+)\/?$/);
+  name = name && name[1];
+  if (!name) {
+    document.getElementById('content').innerHTML = 'Please set URL #hash to a hypercard item ID';
+    return;
+  }
+  
+  init({
     headline: 'load',
     item: name,
   });
-  
 }
     
 window.onhashchange = function() {
