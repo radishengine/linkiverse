@@ -2747,7 +2747,7 @@ MFSFileInfoView.prototype = {
     return macRoman(this.bytes, 51, this.bytes[50]);
   },
   get byteLength() {
-    return 50 + this.bytes[50];
+    return 51 + this.bytes[50];
   },
 };
 
@@ -2766,7 +2766,7 @@ function mfs(disk, vinfo, item) {
       var path = vinfo.name + ':' + fileInfo.name;
       postMessage({
         item: item,
-        type: 'open',
+        headline: 'open',
         scope: 'file',
         path: path,
         modifiedAt: fileInfo.modifiedAt,
@@ -2776,7 +2776,7 @@ function mfs(disk, vinfo, item) {
       });
       postMessage({
         item: item,
-        type: 'close',
+        headline: 'close',
         scope: 'file',
         path: path,
       });
