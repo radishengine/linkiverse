@@ -1599,7 +1599,19 @@ var resourceHandlers = {
       case 0x8B: renderer.op('region', 'invert', renderer.region); continue;
       case 0x8C: renderer.op('region', 'fill', renderer.region); continue;
 
-      case 0x90: console.error('copy bits to clipped rect not supported'); return;
+      case 0x90:
+        var rowBytes = dv.getUint16(op_i, false);
+        op_i += 2;
+        var bounds = rect();
+        var srcRect = rect();
+        var destRect = rect();
+        var mode = dv.getUint16(op_i, false);
+        op_i += 2;
+        var height = (bounds.bottom - bounds.top);
+        var rows = bytes.subarray(op_i, op_i + rowBytes * height);
+        op_i += rows.length;
+        renderer.copyBits(rowBytes, bounds, srcRect, destRect, mode, rows);
+        continue;
       case 0x91: console.error('copy bits to clipped region not supported'); return;
         
       case 0x98: // copy packed bits to clipped rect
