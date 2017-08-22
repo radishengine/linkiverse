@@ -1508,75 +1508,77 @@ var resourceHandlers = {
         op_i += 1 + bytes[op_i];
         continue;
         
-      case 0x30: renderer.frameRect(rect()); continue;
-      case 0x31: renderer.paintRect(rect()); continue;
-      case 0x32: renderer.eraseRect(rect()); continue;
-      case 0x33: renderer.invertRect(rect()); continue;
-      case 0x34: renderer.fillRect(rect()); continue;
+      case 0x30: renderer.op('rect', 'frame', renderer.rect = rect()); continue;
+      case 0x31: renderer.op('rect', 'paint', renderer.rect = rect()); continue;
+      case 0x32: renderer.op('rect', 'erase', renderer.rect = rect()); continue;
+      case 0x33: renderer.op('rect', 'invert', renderer.rect = rect()); continue;
+      case 0x34: renderer.op('rect', 'fill', renderer.rect = rect()); continue;
         
-      case 0x38: renderer.frameRect('same'); continue;
-      case 0x39: renderer.paintRect('same'); continue;
-      case 0x3A: renderer.eraseRect('same'); continue;
-      case 0x3B: renderer.invertRect('same'); continue;
-      case 0x3C: renderer.fillRect('same'); continue;
+      case 0x38: renderer.op('rect', 'frame', renderer.rect); continue;
+      case 0x39: renderer.op('rect', 'paint', renderer.rect); continue;
+      case 0x3A: renderer.op('rect', 'erase', renderer.rect); continue;
+      case 0x3B: renderer.op('rect', 'invert', renderer.rect); continue;
+      case 0x3C: renderer.op('rect', 'fill', renderer.rect); continue;
         
-      case 0x40: renderer.frameRRect(rect()); continue;
-      case 0x41: renderer.paintRRect(rect()); continue;
-      case 0x42: renderer.eraseRRect(rect()); continue;
-      case 0x43: renderer.invertRRect(rect()); continue;
-      case 0x44: renderer.fillRRect(rect()); continue;
+      case 0x40: renderer.op('rrect', 'frame', renderer.rrect = rect()); continue;
+      case 0x41: renderer.op('rrect', 'paint', renderer.rrect = rect()); continue;
+      case 0x42: renderer.op('rrect', 'erase', renderer.rrect = rect()); continue;
+      case 0x43: renderer.op('rrect', 'invert', renderer.rrect = rect()); continue;
+      case 0x44: renderer.op('rrect', 'fill', renderer.rrect = rect()); continue;
         
-      case 0x48: renderer.frameRRect('same'); continue;
-      case 0x49: renderer.paintRRect('same'); continue;
-      case 0x4A: renderer.eraseRRect('same'); continue;
-      case 0x4B: renderer.invertRRect('same'); continue;
-      case 0x4C: renderer.fillRRect('same'); continue;
+      case 0x48: renderer.op('rrect', 'frame', renderer.rrect); continue;
+      case 0x49: renderer.op('rrect', 'paint', renderer.rrect); continue;
+      case 0x4A: renderer.op('rrect', 'erase', renderer.rrect); continue;
+      case 0x4B: renderer.op('rrect', 'invert', renderer.rrect); continue;
+      case 0x4C: renderer.op('rrect', 'fill', renderer.rrect); continue;
 
-      case 0x50: renderer.frameOval(rect()); continue;
-      case 0x51: renderer.paintOval(rect()); continue;
-      case 0x52: renderer.eraseOval(rect()); continue;
-      case 0x53: renderer.invertOval(rect()); continue;
-      case 0x54: renderer.fillOval(rect()); continue;
+      case 0x50: renderer.op('oval', 'frame', renderer.oval = rect()); continue;
+      case 0x51: renderer.op('oval', 'paint', renderer.oval = rect()); continue;
+      case 0x52: renderer.op('oval', 'erase', renderer.oval = rect()); continue;
+      case 0x53: renderer.op('oval', 'invert', renderer.oval = rect()); continue;
+      case 0x54: renderer.op('oval', 'fill', renderer.oval = rect()); continue;
         
-      case 0x58: renderer.frameOval('same'); continue;
-      case 0x59: renderer.paintOval('same'); continue;
-      case 0x5A: renderer.eraseOval('same'); continue;
-      case 0x5B: renderer.invertOval('same'); continue;
-      case 0x5C: renderer.fillOval('same'); continue;
+      case 0x58: renderer.op('oval', 'frame', renderer.oval); continue;
+      case 0x59: renderer.op('oval', 'paint', renderer.oval); continue;
+      case 0x5A: renderer.op('oval', 'erase', renderer.oval); continue;
+      case 0x5B: renderer.op('oval', 'invert', renderer.oval); continue;
+      case 0x5C: renderer.op('oval', 'fill', renderer.oval); continue;
 
-      case 0x60: renderer.frameArc(arc()); continue;
-      case 0x61: renderer.paintArc(arc()); continue;
-      case 0x62: renderer.eraseArc(arc()); continue;
-      case 0x63: renderer.invertArc(arc()); continue;
-      case 0x64: renderer.fillArc(arc()); continue;
+      case 0x60: renderer.op('arc', 'frame', renderer.arc = arc()); continue;
+      case 0x61: renderer.op('arc', 'paint', renderer.arc = arc()); continue;
+      case 0x62: renderer.op('arc', 'erase', renderer.arc = arc()); continue;
+      case 0x63: renderer.op('arc', 'invert', renderer.arc = arc()); continue;
+      case 0x64: renderer.op('arc', 'fill', renderer.arc = arc()); continue;
         
-      case 0x68: renderer.frameArc('same'); continue;
-      case 0x69: renderer.paintArc('same'); continue;
-      case 0x6A: renderer.eraseArc('same'); continue;
-      case 0x6B: renderer.invertArc('same'); continue;
-      case 0x6C: renderer.fillArc('same'); continue;
+      case 0x68: renderer.op('arc', 'frame', renderer.arc); continue;
+      case 0x69: renderer.op('arc', 'paint', renderer.arc); continue;
+      case 0x6A: renderer.op('arc', 'erase', renderer.arc); continue;
+      case 0x6B: renderer.op('arc', 'invert', renderer.arc); continue;
+      case 0x6C: renderer.op('arc', 'fill', renderer.arc); continue;
 
-      case 0x70: renderer.framePoly(poly()); continue;
-      case 0x71: renderer.paintPoly(poly()); continue;
-      case 0x72: renderer.erasePoly(poly()); continue;
-      case 0x73: renderer.invertPoly(poly()); continue;
-      case 0x74: renderer.fillPoly(poly()); continue;
-      case 0x78: renderer.framePoly('same'); continue;
-      case 0x79: renderer.framePoly('same'); continue;
-      case 0x7A: renderer.erasePoly('same'); continue;
-      case 0x7B: renderer.invertPoly('same'); continue;
-      case 0x7C: renderer.fillPoly('same'); continue;
+      case 0x70: renderer.op('arc', 'frame', renderer.poly = poly()); continue;
+      case 0x71: renderer.op('arc', 'paint', renderer.poly = poly()); continue;
+      case 0x72: renderer.op('arc', 'erase', renderer.poly = poly()); continue;
+      case 0x73: renderer.op('arc', 'invert', renderer.poly = poly()); continue;
+      case 0x74: renderer.op('arc', 'fill', renderer.poly = poly()); continue;
+        
+      case 0x78: renderer.op('arc', 'frame', renderer.poly); continue;
+      case 0x79: renderer.op('arc', 'paint', renderer.poly); continue;
+      case 0x7A: renderer.op('arc', 'erase', renderer.poly); continue;
+      case 0x7B: renderer.op('arc', 'invert', renderer.poly); continue;
+      case 0x7C: renderer.op('arc', 'fill', renderer.poly); continue;
 
-      case 0x80: renderer.frameRegion(region()); continue;
-      case 0x81: renderer.paintRegion(region()); continue;
-      case 0x82: renderer.eraseRegion(region()); continue;
-      case 0x83: renderer.invertRegion(region()); continue;
-      case 0x84: renderer.fillRegion(region()); continue;
-      case 0x88: renderer.frameRegion('same'); continue;
-      case 0x89: renderer.paintRegion('same'); continue;
-      case 0x8A: renderer.eraseRegion('same'); continue;
-      case 0x8B: renderer.invertRegion('same'); continue;
-      case 0x8C: renderer.fillRegion('same'); continue;
+      case 0x80: renderer.op('region', 'frame', renderer.region = region()); continue;
+      case 0x81: renderer.op('region', 'paint', renderer.region = region()); continue;
+      case 0x82: renderer.op('region', 'erase', renderer.region = region()); continue;
+      case 0x83: renderer.op('region', 'invert', renderer.region = region()); continue;
+      case 0x84: renderer.op('region', 'fill', renderer.region = region()); continue;
+        
+      case 0x88: renderer.op('region', 'frame', renderer.region); continue;
+      case 0x89: renderer.op('region', 'paint', renderer.region); continue;
+      case 0x8A: renderer.op('region', 'erase', renderer.region); continue;
+      case 0x8B: renderer.op('region', 'invert', renderer.region); continue;
+      case 0x8C: renderer.op('region', 'fill', renderer.region); continue;
 
       case 0x90: console.error('copy bits to clipped rect not supported'); return;
       case 0x91: console.error('copy bits to clipped region not supported'); return;
