@@ -2458,35 +2458,25 @@ var handlers = {
 };
 handlers.ttro = handlers.TEXT;
 
-function ondisk(disk, item) {
-  return disk.get(512 * 2, 512).then(function(mdb) {
-    mdb = new MasterDirectoryBlockView(
-      mdb.buffer,
-      mdb.byteOffset,
-      mdb.byteLength);
-    if (!mdb.hasValidSignature) {
-      return Promise.reject('not an HFS volume');
-    }
-    postMessage({
-      headline: 'open',
-      scope: 'disk',
-      item: item,
-      name: mdb.name,
-    });
-    disk.chunkSize = mdb.allocationChunkByteLength;
-    disk.allocOffset = mdb.firstAllocationBlock * 512;
-    disk.fromExtents = disk_fromExtents;
-    disk.streamExtents = disk_streamExtents;
-    var catalog = disk.fromExtents(
-      mdb.catalogByteLength,
-      mdb.catalogFirstExtents);
-    var overflow = disk.fromExtents(
-      mdb.overflowByteLength,
-      mdb.overflowFirstExtents);
-    return Promise.all([disk, catalog, overflow]);
-  })
-  .then(function(values) {
-    var disk = values[0], catalog = values[1], overflow = values[2];
+function hfs(disk, mdb, item) {
+  postMessage({
+    headline: 'open',
+    scope: 'disk',
+    item: item,
+    name: mdb.name,
+  });
+  disk.chunkSize = mdb.allocationChunkByteLength;
+  disk.allocOffset = mdb.firstAllocationBlock * 512;
+  disk.fromExtents = disk_fromExtents;
+  disk.streamExtents = disk_streamExtents;
+  var catalog = disk.fromExtents(
+    mdb.catalogByteLength,
+    mdb.catalogFirstExtents);
+  var overflow = disk.fromExtents(
+    mdb.overflowByteLength,
+    mdb.overflowFirstExtents);
+  return Promise.all([catalog, overflow]).then(function(values) {
+    var catalog = values[0], overflow = values[1];
 
     var parentPaths = {};
     parentPaths[0] = '';
@@ -2641,7 +2631,182 @@ function ondisk(disk, item) {
       headline: 'close',
       scope: 'disk',
     });
+  });
+}
 
+function MFSVolumeInfoView(buffer, byteOffset, byteLength) {
+  this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+  this.dv = new DataView(buffer, byteOffset, byteLength);
+}
+MFSVolumeInfoView.prototype = {
+  get hasValidSignature() {
+    return this.bytes[0] === 0xD2 && this.bytes[1] === 0xD7;
+  },
+  get initializedAt() {
+    return macDate(this.dv, 2);
+  },
+  get lastBackupAt() {
+    return macDate(this.dv, 6);
+  },
+  get volumeAttributes() {
+    return this.dv.getUint16(10, false);
+  },
+  get isWriteProtected() {
+    return !!(this.volumeAttributes & (1 << 7));
+  },
+  get isLockedBySoftware() {
+    return !!(this.volumeAttributes & (1 << 15));
+  },
+  get isCopyProtected() {
+    return !!(this.volumeAttributes & (1 << 14));
+  },
+  get fileCount() {
+    return this.dv.getUint16(12, false);
+  },
+  get firstDirBlock() {
+    return this.dv.getUint16(14, false);
+  },
+  get dirBlockCount() {
+    return this.dv.getUint16(16, false);
+  },
+  get allocChunkCount() {
+    return this.dv.getUint16(18, false);
+  },
+  get allocChunkSize() {
+    return this.dv.getUint32(20, false);
+  },
+  get bytesToAllocate() {
+    return this.dv.getUint32(24, false);
+  },
+  get firstAllocBlock() {
+    return this.dv.getUint16(28, false);
+  },
+  get nextUnusedFile() {
+    return this.dv.getUint32(30, false);
+  },
+  get unusedAllocChunkCount() {
+    return this.dv.getUint16(34, false);
+  },
+  get name() {
+    return macRoman(this.bytes, 37, this.bytes[36]);
+  },
+};
+
+function MFSVolumeInfoView(buffer, byteOffset, byteLength) {
+  this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+  this.dv = new Uint8Array(buffer, byteOffset, byteLength);
+}
+MFSVolumeInfoView.prototype = {
+  get attributes() {
+    return this.bytes[0];
+  },
+  get isSoftwareLocked() {
+    return !(this.attributes & (1 << 7));
+  },
+  get isCopyProtected() {
+    return !!(this.attributes & (1 << 6));
+  },
+  get versionNumber() {
+    return this.bytes[1];
+  },
+  get type() {
+    return macRoman(this.bytes, 2, 4);
+  },
+  get creator() {
+    return macRoman(this.bytes, 6, 4);
+  },
+  // 8 bytes used by Finder
+  get fileNumber() {
+    return this.dv.getUint32(18, false);
+  },
+  get firstDataChunk() {
+    return this.dv.getUint16(22, false);
+  },
+  get dataLogicalLength() {
+    return this.dv.getUint32(24, false);
+  },
+  get dataPhysicalLength() {
+    return this.dv.getUint32(28, false);
+  },
+  get firstResourceChunk() {
+    return this.dv.getUint16(32, false);
+  },
+  get resourceLogicalLength() {
+    return this.dv.getUint32(34, false);
+  },
+  get resourcePhysicalLength() {
+    return this.dv.getUint32(38, false);
+  },
+  get createdAt() {
+    return macDate(this.dv, 42);
+  },
+  get modifiedAt() {
+    return macDate(this.dv, 46);
+  },
+  get name() {
+    return macRoman(this.bytes, 51, this.bytes[50]);
+  },
+  get byteLength() {
+    return 50 + this.bytes[50];
+  },
+};
+
+function mfs(disk, vinfo, item) {
+  return disk.get(vinfo.firstDirBlock, vinfo.dirBlockCount * 512)
+  .then(function(dirData) {
+    postMessage({
+      headline: 'open',
+      scope: 'disk',
+      item: item,
+      name: vinfo.name,
+    });
+    var nextPos = dirData.byteOffset;
+    for (var i = 0; i < vinfo.fileCount; i++) {
+      var fileInfo = new MFSVolumeInfoView(dirData.buffer, nextPos);
+      var path = vinfo.name + ':' + fileInfo.name;
+      postMessage({
+        item: item,
+        type: 'open',
+        scope: 'file',
+        path: path,
+        modifiedAt: fileInfo.modifiedAt,
+        createdAt: fileInfo.createdAt,
+        type: fileInfo.type,
+        creator: fileInfo.creator,
+      });
+      postMessage({
+        item: item,
+        type: 'close',
+        scope: 'file',
+        path: path,
+      });
+      nextPos += fileInfo.byteLength;
+    }
+    postMessage({
+      headline: 'close',
+      scope: 'disk',
+      item: item,
+    });
+  });
+}
+
+function ondisk(disk, item) {
+  return disk.get(512 * 2, 512).then(function(bytes) {
+    var mdb = new MasterDirectoryBlockView(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength);
+    if (mdb.hasValidSignature) {
+      return hfs(disk, mdb, item);
+    }
+    var vinfo = new MFSVolumeInfoView(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength);
+    if (vinfo.hasValidSignature) {
+      return mfs(disk, vinfo, item);
+    }
+    return Promise.reject('not a recognised format');
   })
   .then(null, function(problem) {
     postMessage({
