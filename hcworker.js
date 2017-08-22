@@ -1290,8 +1290,8 @@ PictRenderer.prototype = {
   lineTo: function(x, y) {
   },
   getImageFile: function() {
+    var f = this.frame;
     return Promise.all(this.parts).then(function(buf) {
-      var f = this.frame;
       buf.splice(0, 0,
         '<svg ',
         ' xmlns="http://www.w3.org/2000/svg" ',
