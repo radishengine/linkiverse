@@ -1593,19 +1593,16 @@ var resourceHandlers = {
         var destRect = rect();
         var mode = dv.getUint16(op_i, false);
         op_i += 2;
-        var packed = bytes.subarray(op_i);
         var height = (bounds.bottom - bounds.top);
-        var unpacked = new Uint8Array(height * rowBytes);
+        var unpacked = new Uint8Array(rowBytes * height);
         if (rowBytes > 250) for (var y = 0; y < height; y++) {
-          unpackBits(
-            packed.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false)),
-            unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+          var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
+          unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
           op_i += 2 + packed.length;
         }
         else for (var y = 0; y < height; y++) {
-          unpackBits(
-            packed.subarray(op_i + 1, op_i + 1 + bytes[op_i]),
-            unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+          var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
+          unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
           op_i += 1 + packed.length;
         }
         renderer.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
