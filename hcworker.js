@@ -1381,6 +1381,22 @@ var resourceHandlers = {
       pos += len;
     }
   },
+  ATXT: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var top = dv.getInt16(0, false);
+    var left = dv.getInt16(2, false);
+    var bottom = dv.getInt16(4, false);
+    var right = dv.getInt16(6, false);
+    var fontType = dv.getUint16(8, false);
+    var fontSize = dv.getUint16(10, false);
+    var text = macRoman(bytes, 12);
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'text',
+      text: text,
+    });
+  },
 };
 
 var handlers = {
