@@ -1355,7 +1355,7 @@ var resourceHandlers = {
       height: 32,
     });
   },
-  'ICN#': function(item, data, path) {
+  'ICN#': function(item, path, data) {
     if (data.length !== 256) {
       console.warn('ICN#: bad length');
     }
