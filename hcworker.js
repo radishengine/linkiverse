@@ -1288,19 +1288,18 @@ PictRenderer.prototype = {
   },
   lineTo: function(x, y) {
   },
-  toImageFile: function() {
-    if (this.image) return this.image;
+  getImageFile: function() {
     var buf = [];
+    var f = this.frame;
     buf.push(
       '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
-      + ' width="' + (this.frame.right - this.frame.left) + '"'
-      + ' height="' + (this.frame.bottom - this.frame.top) + '"'
-      + '">');
+      + ' width="' + (f.right - f.left) + '"'
+      + ' height="' + (f.bottom - f.top) + '"'
+      + ' viewBox="' + [f.left, f.top, f.right - f.left, f.bottom - f.top].join(' ') + '"'
+      + '>');
     buf.push('</svg>');
     var blob = new Blob(buf, {type:'image/svg+xml'});
-    blob.width = this.frame.right - this.frame.left;
-    blob.height = this.frame.bottom - this.frame.top;
-    return blob;
+    return Promise.resolve(blob);
   },
   copyBits: function(rowBytes, bounds, srcRect, destRect, mode, data) {
     this.image = makeImageBlob(data, rowBytes * 8, bounds.bottom - bounds.top);
@@ -1621,11 +1620,13 @@ var resourceHandlers = {
         continue;
       default: console.error('PICT: unknown opcode 0x' + bytes[op_i-1].toString(16)); return;
     }
-    postMessage({
-      item: item,
-      path: path,
-      headline: 'image',
-      file: renderer.toImageFile(),
+    renderer.getImageFile().then(function(blob) {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'image',
+        file: blob,
+      });
     });
   },
   CURS: function(item, path, bytes) {
