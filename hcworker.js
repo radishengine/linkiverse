@@ -1401,7 +1401,7 @@ var resourceHandlers = {
         path: path,
         headline: 'text',
         type: 'dialog',
-        text: dataObject.text;
+        text: dataObject.text,
       });
     }
   },
