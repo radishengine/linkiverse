@@ -1316,7 +1316,7 @@ PictRenderer.prototype = {
       return '<image '
         + ' xlink:href="' + dataURL + '"'
         + ' x="' + destRect.left + '"'
-        + ' y=" + destRect.top + '"'
+        + ' y="' + destRect.top + '"'
         + ' width="' + (destRect.right - destRect.left) + '"'
         + ' height="' + (destRect.bottom - destRect.top) + '"'
         + '/>';
