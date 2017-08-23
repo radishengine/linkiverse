@@ -2167,9 +2167,9 @@ var handlers = {
       }
       var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       var paraPos = dv.getUint16(2, false);
-      var mainParaCount = dv.getUint16(2, false);
-      var headerParaCount = dv.getUint16(4, false);
-      var footerParaCount = dv.getUint16(6, false);
+      var mainParaCount = dv.getUint16(4, false);
+      var headerParaCount = dv.getUint16(6, false);
+      var footerParaCount = dv.getUint16(8, false);
       var paraCount = mainParaCount + headerParaCount + footerParaCount;
       postMessage({
         item: item,
