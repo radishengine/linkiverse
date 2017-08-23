@@ -2700,6 +2700,9 @@ MFSFileInfoView.prototype = {
   get attributes() {
     return this.bytes[0];
   },
+  get exists() {
+    return !!this.attributes;
+  },
   get isSoftwareLocked() {
     return !(this.attributes & (1 << 7));
   },
@@ -2762,27 +2765,32 @@ function mfs(disk, vinfo, item) {
       item: item,
       name: vinfo.name,
     });
-    var nextPos = dirData.byteOffset;
-    for (var i = 0; i < vinfo.fileCount; i++) {
-      var fileInfo = new MFSFileInfoView(dirData.buffer, nextPos);
-      var path = vinfo.name + ':' + fileInfo.name;
-      postMessage({
-        item: item,
-        headline: 'open',
-        scope: 'file',
-        path: path,
-        modifiedAt: fileInfo.modifiedAt,
-        createdAt: fileInfo.createdAt,
-        type: fileInfo.type,
-        creator: fileInfo.creator,
-      });
-      postMessage({
-        item: item,
-        headline: 'close',
-        scope: 'file',
-        path: path,
-      });
-      nextPos += fileInfo.byteLength;
+    for (var block_i = 0; block_i < vinfo.dirBlockCount; block_i++) {
+      var block = dirData.subarray(block_i * 512, (block_i+1) * 512);
+      var nextPos = block.byteOffset;
+      var endPos = nextPos + 512;
+      repeat {
+        var fileInfo = new MFSFileInfoView(block.buffer, nextPos);
+        if (!fileInfo.exists) break;
+        var path = vinfo.name + ':' + fileInfo.name;
+        postMessage({
+          item: item,
+          headline: 'open',
+          scope: 'file',
+          path: path,
+          modifiedAt: fileInfo.modifiedAt,
+          createdAt: fileInfo.createdAt,
+          type: fileInfo.type,
+          creator: fileInfo.creator,
+        });
+        postMessage({
+          item: item,
+          headline: 'close',
+          scope: 'file',
+          path: path,
+        });
+        nextPos += fileInfo.byteLength;
+      } while (nextPos < endPos);
     }
     postMessage({
       headline: 'close',
