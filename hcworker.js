@@ -2857,6 +2857,22 @@ function mfs(disk, vinfo, item) {
                 getExtents(fileInfo.firstDataChunk)
               ));
             }
+            else {
+              var handler = (function(path, bytes) {
+                postMessage({
+                  item: item,
+                  path: path,
+                  headline: 'file',
+                  file: new Blob([bytes]),
+                });
+              }).bind(null, path);
+              fileDone.push(
+                disk.fromExtents(
+                  fileInfo.dataLogicalLength,
+                  getExtents(fileInfo.firstDataChunk))
+                .then(handler)
+              );
+            }
           }
           if (fileInfo.resourceLogicalLength > 0) {
             var handler = (function(path, res) {
