@@ -2992,7 +2992,9 @@ self.onmessage = function onmessage(e) {
   switch (message.headline) {
     case 'load':
       var item = message.item;
-      ondisk(getBuffer(item + '/disk.img'), item);
+      getBuffer(item + '/disk.img').then(function(disk) {
+        ondisk(disk, item);
+      });
       break;
     case 'load-blob':
       var item = message.item;
