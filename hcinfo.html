@@ -341,6 +341,7 @@ document.body.ondrop = function(e) {
   document.body.classList.remove('dropping');
   var file = e.dataTransfer.files && e.dataTransfer.files[0];
   if (file) {
+    history.replaceState(undefined, undefined, '#');
     init({
       headline: 'load-blob',
       item: '[upload]',
