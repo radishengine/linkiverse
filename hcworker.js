@@ -2144,7 +2144,7 @@ var handlers = {
       return resourceHandlers.PICT(item, path, bytes.subarray(512));
     });
   },
-  PTNG: function(item, path, disk, byteLength, extents) {
+  PNTG: function(item, path, disk, byteLength, extents) {
     return disk.fromExtents(byteLength, extents).then(function(bytes) {
       var packed = bytes.subarray(512);
       var bitmap = new Uint8Array(576/8 * 720);
