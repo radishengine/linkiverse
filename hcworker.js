@@ -2769,7 +2769,7 @@ function mfs(disk, vinfo, item) {
       var block = dirData.subarray(block_i * 512, (block_i+1) * 512);
       var nextPos = block.byteOffset;
       var endPos = nextPos + 512;
-      repeat {
+      do {
         var fileInfo = new MFSFileInfoView(block.buffer, nextPos);
         if (!fileInfo.exists) break;
         var path = vinfo.name + ':' + fileInfo.name;
