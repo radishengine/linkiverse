@@ -2159,6 +2159,22 @@ var handlers = {
       });
     });
   },
+  SCRN: function(item, path, disk, byteLength, extents) {
+    if (byteLength !== 512/8 * 342) {
+      console.warn('SCRN: unrecognized data fork length');
+      return;
+    }
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      postMessage({
+        item: item,
+        headline: 'image',
+        path: path,
+        file: makeImageBlob(bytes, 512, 342),
+        width: 512,
+        height: 342,
+      });
+    });
+  },
   WORD: function(item, path, disk, byteLength, extents) {
     return disk.fromExtents(byteLength, extents).then(function(bytes) {
       if (bytes.length < 2 || bytes[0] !== 0x00 || bytes[1] !== 0x03) {
