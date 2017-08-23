@@ -2695,6 +2695,7 @@ MFSVolumeInfoView.prototype = {
     return macRoman(this.bytes, 37, this.bytes[36]);
   },
 };
+MFSVolumeInfoView.byteLength = 64;
 
 function MFSFileInfoView(buffer, byteOffset, byteLength) {
   this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
@@ -2762,7 +2763,7 @@ MFSFileInfoView.prototype = {
 
 function mfs(disk, vinfo, item) {
   var mapBytes = Math.ceil((vinfo.allocChunkCount * 12) / 8);
-  return disk.get(512 * 3, mapBytes).then(function(bytes) {
+  return disk.get(512 * 2 + MFSVolumeInfoView.byteLength, mapBytes).then(function(bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var map = new Array(vinfo.allocChunkCount);
     for (var i = 0; i < map.length; i++) {
