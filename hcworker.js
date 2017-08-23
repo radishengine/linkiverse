@@ -2762,8 +2762,19 @@ MFSFileInfoView.prototype = {
 };
 
 function mfs(disk, vinfo, item) {
-  var mapBytes = Math.ceil((vinfo.allocChunkCount * 12) / 8);
-  return disk.get(512 * 2 + MFSVolumeInfoView.byteLength, mapBytes).then(function(bytes) {
+  disk.chunkSize = vinfo.allocChunkSize;
+  disk.allocOffset = vinfo.firstAllocBlock * 512;
+  disk.fromExtents = disk_fromExtents;
+  disk.streamExtents = disk_streamExtents;
+  postMessage({
+    headline: 'open',
+    scope: 'disk',
+    item: item,
+    name: vinfo.name,
+  });
+  var mapOffset = 512 * 2 + MFSVolumeInfoView.byteLength;
+  var mapLength = Math.ceil((vinfo.allocChunkCount * 12) / 8);
+  return disk.get(mapOffset, mapLength).then(function(bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var map = new Array(vinfo.allocChunkCount);
     for (var i = 0; i < map.length; i++) {
@@ -2777,87 +2788,81 @@ function mfs(disk, vinfo, item) {
         map[i] = dv.getUint16(Math.floor(i/2)*3, false) >>> 4;
       }
     }
-    console.log(map);
-  });
-  disk.fromExtents = function(byteLength, offset1, offset2) {
-    return this.get(offset1 + (offset2 || 0), byteLength);
-  };
-  disk.streamExtents = function(byteLength, offset, callback) {
-    return this.stream(offset, byteLength, callback);
-  };
-  postMessage({
-    headline: 'open',
-    scope: 'disk',
-    item: item,
-    name: vinfo.name,
-  });
-  function nextDirBlock(block_i) {
-    if (block_i >= vinfo.dirBlockCount) {
-      postMessage({
-        headline: 'close',
-        scope: 'disk',
-        item: item,
-      });
-      return;
+    function getExtents(allocNumber) {
+      var chain = [allocNumber];
+      for (var next = map[allocNumber]; next > allocNumber; next = map[next]) {
+        chain.push({offset:next, length:1});
+      }
+      return chain;
     }
-    return disk.get(
-      (vinfo.firstDirBlock + block_i) * 512,
-      512
-    ).then(function(block) {
-      var nextPos = block.byteOffset;
-      var endPos = nextPos + block.byteLength;
-      do {
-        var fileInfo = new MFSFileInfoView(block.buffer, nextPos);
-        if (!fileInfo.exists) break;
-        var path = vinfo.name + ':' + fileInfo.name;
+    function nextDirBlock(block_i) {
+      if (block_i >= vinfo.dirBlockCount) {
         postMessage({
+          headline: 'close',
+          scope: 'disk',
           item: item,
-          headline: 'open',
-          scope: 'file',
-          path: path,
-          modifiedAt: fileInfo.modifiedAt,
-          createdAt: fileInfo.createdAt,
-          type: fileInfo.type,
-          creator: fileInfo.creator,
         });
-        var fileDone = [];
-        if (fileInfo.dataLogicalLength > 0) {
-          if (fileInfo.type in handlers) {
-            var handler = handlers[fileInfo.type];
-            fileDone.push(handler(
-              item,
-              path,
-              disk,
-              fileInfo.dataLogicalLength,
-              vinfo.firstAllocBlock * 512 + fileInfo.firstDataChunk * vinfo.allocChunkSize
-            ));
-          }
-        }
-        if (fileInfo.resourceLogicalLength > 0) {
-          var handler = (function(path, res) {
-            return handleResource(res, item, path);
-          }).bind(null, path);
-          fileDone.push(
-            disk.get(
-              vinfo.firstAllocBlock * 512 + fileInfo.firstResourceChunk * vinfo.allocChunkSize,
-              fileInfo.resourceLogicalLength)
-            .then(handler)
-          );
-        }
-        Promise.all(fileDone).then(function() {
+        return;
+      }
+      return disk.get(
+        (vinfo.firstDirBlock + block_i) * 512,
+        512
+      ).then(function(block) {
+        var nextPos = block.byteOffset;
+        var endPos = nextPos + block.byteLength;
+        do {
+          var fileInfo = new MFSFileInfoView(block.buffer, nextPos);
+          if (!fileInfo.exists) break;
+          var path = vinfo.name + ':' + fileInfo.name;
           postMessage({
             item: item,
-            headline: 'close',
+            headline: 'open',
             scope: 'file',
             path: path,
+            modifiedAt: fileInfo.modifiedAt,
+            createdAt: fileInfo.createdAt,
+            type: fileInfo.type,
+            creator: fileInfo.creator,
           });
-        });
-        nextPos += fileInfo.byteLength;
-      } while (nextPos < endPos);
-      return nextDirBlock(block_i + 1);
-    });
-  }
-  return nextDirBlock(0);
+          var fileDone = [];
+          if (fileInfo.dataLogicalLength > 0) {
+            if (fileInfo.type in handlers) {
+              var handler = handlers[fileInfo.type];
+              fileDone.push(handler(
+                item,
+                path,
+                disk,
+                fileInfo.dataLogicalLength,
+                getExtents(fileInfo.firstDataChunk)
+              ));
+            }
+          }
+          if (fileInfo.resourceLogicalLength > 0) {
+            var handler = (function(path, res) {
+              return handleResource(res, item, path);
+            }).bind(null, path);
+            fileDone.push(
+              disk.fromExtents(
+                fileInfo.resourceLogicalLength,
+                getExtents(vinfo.firstAllocBlock))
+              .then(handler)
+            );
+          }
+          Promise.all(fileDone).then(function() {
+            postMessage({
+              item: item,
+              headline: 'close',
+              scope: 'file',
+              path: path,
+            });
+          });
+          nextPos += fileInfo.byteLength;
+        } while (nextPos < endPos);
+        return nextDirBlock(block_i + 1);
+      });
+    }
+    return nextDirBlock(0);
+  });
 }
 
 function ondisk(disk, item) {
