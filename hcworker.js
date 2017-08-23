@@ -2844,7 +2844,7 @@ function mfs(disk, vinfo, item) {
             fileDone.push(
               disk.fromExtents(
                 fileInfo.resourceLogicalLength,
-                getExtents(vinfo.firstAllocBlock))
+                getExtents(fileInfo.firstResourceChunk))
               .then(handler)
             );
           }
