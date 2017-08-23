@@ -2790,7 +2790,7 @@ function mfs(disk, vinfo, item) {
     }
     function getExtents(allocNumber) {
       var chain = [{offset:allocNumber, length:1}];
-      for (var next = map[allocNumber]; next > allocNumber; next = map[next]) {
+      for (var next = map[allocNumber-2]; next > allocNumber; next = map[next-2]) {
         chain.push({offset:next, length:1});
       }
       return chain;
