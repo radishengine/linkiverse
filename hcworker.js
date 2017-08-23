@@ -2046,6 +2046,44 @@ var resourceHandlers = {
   },
 };
 
+function handleResource(res, item, path) {
+  var resourceHeader = new ResourceHeaderView(
+    res.buffer,
+    res.byteOffset,
+    ResourceHeaderView.byteLength);
+  var resourceData = new Uint8Array(
+    res.buffer,
+    res.byteOffset + resourceHeader.dataOffset,
+    resourceHeader.dataLength);
+  var resourceMap = new ResourceMapView(
+    res.buffer,
+    res.byteOffset + resourceHeader.mapOffset,
+    resourceHeader.mapLength);
+  var dv = new DataView(
+    resourceData.buffer,
+    resourceData.byteOffset,
+    resourceData.byteLength);
+  resourceMap.resourceList.forEach(function(resourceInfo) {
+    var len = dv.getUint32(resourceInfo.dataOffset, false);
+    var data = resourceData.subarray(
+      resourceInfo.dataOffset + 4,
+      resourceInfo.dataOffset + 4 + len);
+    if (resourceInfo.type in resourceHandlers) {
+      var handler = resourceHandlers[resourceInfo.type];
+      handler(item, path, data);
+    }
+    else {
+      postMessage({
+        item: item,
+        headline: 'resource',
+        path: path,
+        type: resourceInfo.type,
+        name: resourceInfo.name,
+      });
+    }
+  });
+}
+
 var handlers = {
   TEXT: function(item, path, disk, byteLength, extents) {
     postMessage({
@@ -2577,41 +2615,7 @@ function hfs(disk, mdb, item) {
               resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
             }
             fileDone.push(disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
-              var resourceHeader = new ResourceHeaderView(
-                res.buffer,
-                res.byteOffset,
-                ResourceHeaderView.byteLength);
-              var resourceData = new Uint8Array(
-                res.buffer,
-                res.byteOffset + resourceHeader.dataOffset,
-                resourceHeader.dataLength);
-              var resourceMap = new ResourceMapView(
-                res.buffer,
-                res.byteOffset + resourceHeader.mapOffset,
-                resourceHeader.mapLength);
-              var dv = new DataView(
-                resourceData.buffer,
-                resourceData.byteOffset,
-                resourceData.byteLength);
-              resourceMap.resourceList.forEach(function(resourceInfo) {
-                var len = dv.getUint32(resourceInfo.dataOffset, false);
-                var data = resourceData.subarray(
-                  resourceInfo.dataOffset + 4,
-                  resourceInfo.dataOffset + 4 + len);
-                if (resourceInfo.type in resourceHandlers) {
-                  var handler = resourceHandlers[resourceInfo.type];
-                  handler(item, path, data);
-                }
-                else {
-                  postMessage({
-                    item: item,
-                    headline: 'resource',
-                    path: path,
-                    type: resourceInfo.type,
-                    name: resourceInfo.name,
-                  });
-                }
-              });
+              return handleResource(res, item, path);
             }));
           }
           Promise.all(fileDone).then(function() {
@@ -2757,6 +2761,12 @@ MFSFileInfoView.prototype = {
 };
 
 function mfs(disk, vinfo, item) {
+  disk.fromExtents = function(byteLength, offset1, offset2) {
+    return this.get(offset1 + (offset2 || 0), byteLength);
+  };
+  disk.streamExtents = function(byteLength, offset, callback) {
+    return this.stream(offset, byteLength, callback);
+  };
   postMessage({
     headline: 'open',
     scope: 'disk',
@@ -2792,11 +2802,37 @@ function mfs(disk, vinfo, item) {
           type: fileInfo.type,
           creator: fileInfo.creator,
         });
-        postMessage({
-          item: item,
-          headline: 'close',
-          scope: 'file',
-          path: path,
+        var fileDone = [];
+        if (fileInfo.dataLogicalLength > 0) {
+          if (fileInfo.type in handlers) {
+            var handler = handlers[fileInfo.type];
+            fileDone.push(handler(
+              item,
+              path,
+              disk,
+              fileInfo.dataLogicalLength,
+              vinfo.firstAllocBlock * 512 + fileInfo.firstDataChunk * vinfo.allocChunkSize
+            ));
+          }
+        }
+        if (fileInfo.resourceLogicalLength > 0) {
+          var handler = (function(path, res) {
+            return handleResource(res, item, path);
+          }).bind(null, path);
+          fileDone.push(
+            disk.get(
+              vinfo.firstAllocBlock * 512 + fileInfo.firstResourceChunk * vinfo.allocChunkSize,
+              fileInfo.resourceLogicalLength)
+            .then(handler)
+          );
+        }
+        Promise.all(fileDone).then(function() {
+          postMessage({
+            item: item,
+            headline: 'close',
+            scope: 'file',
+            path: path,
+          });
         });
         nextPos += fileInfo.byteLength;
       } while (nextPos < endPos);
