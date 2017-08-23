@@ -2187,7 +2187,7 @@ var handlers = {
             item: item,
             path: path,
             headline: 'write',
-            text: macRoman(bytes, textPos, textLen) + '\n\n',
+            text: macRoman(bytes, textPos, textLen),
           });
         }
         paraPos = nextParaPos;
