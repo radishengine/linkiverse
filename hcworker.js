@@ -2594,7 +2594,7 @@ function hfs(disk, mdb, item) {
           });
           var dataFork = record.fileInfo.dataForkInfo;
           var resourceFork = record.fileInfo.resourceForkInfo;
-          var fileDone = [path];
+          var fileDone = [];
           if (dataFork.logicalEOF > 0) {
             var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
             var needDataBlocks = Math.ceil(dataFork.logicalEOF / disk.chunkSize);
@@ -2618,8 +2618,7 @@ function hfs(disk, mdb, item) {
               return handleResource(res, item, path);
             }));
           }
-          Promise.all(fileDone).then(function(values) {
-            var path = values[0];
+          Promise.all(fileDone).then(function() {
             postMessage({
               item: item,
               headline: 'close',
@@ -2831,7 +2830,7 @@ function mfs(disk, vinfo, item) {
             type: fileInfo.type,
             creator: fileInfo.creator,
           });
-          var fileDone = [];
+          var fileDone = [path];
           if (fileInfo.dataLogicalLength > 0) {
             if (fileInfo.type in handlers) {
               var handler = handlers[fileInfo.type];
@@ -2855,7 +2854,8 @@ function mfs(disk, vinfo, item) {
               .then(handler)
             );
           }
-          Promise.all(fileDone).then(function() {
+          Promise.all(fileDone).then(function(values) {
+            var path = values[0];
             postMessage({
               item: item,
               headline: 'close',
