@@ -2770,7 +2770,7 @@ function mfs(disk, vinfo, item) {
       // aaaabbbb
       // bbbbbbbb
       if (i % 2) {
-        map[i] = dv.getUint16(Math.floor(i/3)+1, false) & 0xffffff;
+        map[i] = dv.getUint16(Math.floor(i/3)+1, false) & 0xfff;
       }
       else {
         map[i] = dv.getUint16(Math.floor(i/3), false) >>> 4;
