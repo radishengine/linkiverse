@@ -2761,6 +2761,23 @@ MFSFileInfoView.prototype = {
 };
 
 function mfs(disk, vinfo, item) {
+  var mapBytes = Math.ceil((vinfo.allocChunkCount * 12) / 8);
+  return disk.get(512 * 3, mapBytes).then(function(bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var map = new Array(vinfo.allocChunkCount);
+    for (var i = 0; i < map.length; i++) {
+      // aaaaaaaa
+      // aaaabbbb
+      // bbbbbbbb
+      if (i % 2) {
+        map[i] = dv.getUint16(Math.floor(i/3)+1, false) & 0xffffff;
+      }
+      else {
+        map[i] = dv.getUint16(Math.floor(i/3), false) >>> 4;
+      }
+    }
+    console.log(map);
+  });
   disk.fromExtents = function(byteLength, offset1, offset2) {
     return this.get(offset1 + (offset2 || 0), byteLength);
   };
