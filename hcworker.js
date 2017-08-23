@@ -2159,6 +2159,47 @@ var handlers = {
       });
     });
   },
+  WORD: function(item, path, disk, byteLength, extents) {
+    return disk.fromExtents(byteLength, extents).then(function(bytes) {
+      if (bytes.length < 2 || bytes[0] !== 0x00 || bytes[1] !== 0x03) {
+        console.warn('unsupported MacWrite version');
+        return;
+      }
+      var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      var paraPos = dv.getUint16(2, false);
+      var mainParaCount = dv.getUint16(2, false);
+      var headerParaCount = dv.getUint16(4, false);
+      var footerParaCount = dv.getUint16(6, false);
+      var paraCount = mainParaCount + headerParaCount + footerParaCount;
+      postMessage({
+        item: item,
+        headline: 'open',
+        scope: 'text',
+        path: path,
+      });
+      for (var para_i = 0; para_i < paraCount; para_i++) {
+        var paraType = dv.getUint16(paraPos, false);
+        var nextParaPos = paraPos + 4 + dv.getUint16(paraPos + 2, false);
+        if (paraType === 1) {
+          var textLen = dv.getUint16(paraPos + 4);
+          var textPos = paraPos + 6;
+          postMessage({
+            item: item,
+            path: path,
+            headline: 'write',
+            text: macRoman(bytes, textPos, textLen) + '\n\n',
+          });
+        }
+        paraPos = nextParaPos;
+      }
+      postMessage({
+        item: item,
+        headline: 'close',
+        scope: 'text',
+        path: path,
+      });
+    });
+  },
   JPEG: function(item, path, disk, byteLength, extents) {
     return disk.fromExtents(byteLength, extents).then(function(bytes) {
       postMessage({
