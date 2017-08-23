@@ -2757,18 +2757,27 @@ MFSFileInfoView.prototype = {
 };
 
 function mfs(disk, vinfo, item) {
-  return disk.get(vinfo.firstDirBlock * 512, vinfo.dirBlockCount * 512)
-  .then(function(dirData) {
-    postMessage({
-      headline: 'open',
-      scope: 'disk',
-      item: item,
-      name: vinfo.name,
-    });
-    for (var block_i = 0; block_i < vinfo.dirBlockCount; block_i++) {
-      var block = dirData.subarray(block_i * 512, (block_i+1) * 512);
+  postMessage({
+    headline: 'open',
+    scope: 'disk',
+    item: item,
+    name: vinfo.name,
+  });
+  function nextDirBlock(block_i) {
+    if (block_i >= vinfo.dirBlockCount) {
+      postMessage({
+        headline: 'close',
+        scope: 'disk',
+        item: item,
+      });
+      return;
+    }
+    return disk.get(
+      (vinfo.firstDirBlock + block_i) * 512,
+      512
+    ).then(function(block) {
       var nextPos = block.byteOffset;
-      var endPos = nextPos + 512;
+      var endPos = nextPos + block.byteLength;
       do {
         var fileInfo = new MFSFileInfoView(block.buffer, nextPos);
         if (!fileInfo.exists) break;
@@ -2791,13 +2800,10 @@ function mfs(disk, vinfo, item) {
         });
         nextPos += fileInfo.byteLength;
       } while (nextPos < endPos);
-    }
-    postMessage({
-      headline: 'close',
-      scope: 'disk',
-      item: item,
+      return nextDirBlock(block_i + 1);
     });
-  });
+  }
+  return nextDirBlock(0);
 }
 
 function ondisk(disk, item) {
