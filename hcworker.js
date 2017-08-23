@@ -2763,7 +2763,7 @@ MFSFileInfoView.prototype = {
 
 function mfs(disk, vinfo, item) {
   disk.chunkSize = vinfo.allocChunkSize;
-  disk.allocOffset = vinfo.firstAllocBlock * 512;
+  disk.allocOffset = vinfo.firstAllocBlock * 512 - 2*vinfo.allocChunkSize;
   disk.fromExtents = disk_fromExtents;
   disk.streamExtents = disk_streamExtents;
   postMessage({
