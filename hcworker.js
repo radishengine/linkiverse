@@ -1158,10 +1158,12 @@ SoundHeaderView.prototype = {
     return (pos === 0) ? 'suffix' : pos;
   },
   get dataByteLength() {
-    if (this.encoding === 'standard') {
-      return this.dv.getUint32(4, false);
+    switch (this.encoding) {
+      case 'standard': this.dv.getUint32(4, false);
+      case 'compressed': return Math.ceil((this.frameCount * this.bitsPerPacket)/8);
+      case 'extended': return Math.ceil((this.frameCount * this.bitsPerSample)/8);
+      default: return NaN;
     }
-    return Math.ceil((this.frameCount * this.bitsPerPacket)/8);
   },
   get channelCount() {
     if (this.encoding === 'standard') return 1;
@@ -1221,12 +1223,12 @@ SoundHeaderView.prototype = {
     }
   },
   get bitsPerPacket() {
+    if (this.encoding !== 'compressed') return this.bitsPerSample;
     var bits = this.dv.getUint16(58, false);
     if (bits !== 0) return bits;
     switch (this.compression) {
-      case '3:1': return 16;
+      case 'NONE': return this.bitsPerSample;
       case 'MAC3': return 16;
-      case '6:1': return 8;
       case 'MAC6': return 8;
       default: throw new Error('unknown bits per packet value');
     }
