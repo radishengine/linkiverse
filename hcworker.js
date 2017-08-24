@@ -1242,7 +1242,7 @@ function makeImageBlob(bytes, width, height) {
 function makeWav(samples, samplingRate, channels, bytesPerSample) {
   var dv = new DataView(new ArrayBuffer(44));
   dv.setUint32(0, 0x46464952, true); // RIFF
-  dv.setUint32(4, dv.byteLength + samples.length - 8, true);
+  dv.setUint32(4, dv.byteLength + samples.length + (samples.length % 2) - 8, true);
   dv.setUint32(8, 0x45564157, true); // WAVE
   dv.setUint32(12, 0x20746d66, true); // fmt
   dv.setUint32(16, 16, true);
@@ -1254,7 +1254,11 @@ function makeWav(samples, samplingRate, channels, bytesPerSample) {
   dv.setUint16(34, bytesPerSample * 8, true);
   dv.setUint32(36, 0x61746164, true); // data
   dv.setUint32(40, samples.length, true);
-  return new Blob([dv, samples], {type:'audio/wav'});
+  var parts = [dv, samples];
+  if (samples.length % 2) {
+    parts.push(new Uint8Array(1));
+  }
+  return new Blob(parts, {type:'audio/wav'});
 }
 
 function unpackBits(packed, unpacked) {
