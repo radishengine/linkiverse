@@ -1167,7 +1167,12 @@ function disk_fromExtents(byteLength, extents, offset) {
   var buf = new Uint8Array(byteLength);
   buf.writeOffset = 0;
   function nextExtent(i, offset) {
-    if (i >= extents.length) return Promise.reject('insufficient space in extents');
+    if (i >= extents.length) {
+      if (buf.writeOffset < buf.length) {
+        return Promise.reject('insufficient space in extents');
+      }
+      return buf;
+    }
     var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset + offset;
     var chunkLength = Math.min(
       buf.length - buf.writeOffset,
