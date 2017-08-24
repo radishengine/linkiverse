@@ -3039,9 +3039,32 @@ self.onmessage = function onmessage(e) {
         ondisk(disk, item);
       });
       break;
+    case 'load-url':
+      var gotSource;
+      var ChunkedSource
+        = FetchChunkedSource.available ? FetchChunkedSource
+        : MozChunkedSource.available ? MozChunkedSource
+        : null;
+      if (ChunkedSource) {
+        gotSource = Promise.resolve(new ChunkedSource(url));
+      }
+      else {
+        gotSource = fetch(message.url).then(function(response) {
+          if (!response.ok) {
+            return Promise.reject('server returned code ' + response.code);
+          }
+          return response.blob();
+        })
+        .then(function(blob) {
+          return new BlobSource(blob);
+        });
+      }
+      gotSource.then(function(source) {
+        ondisk(source, message.item);
+      });
+      break;
     case 'load-blob':
-      var item = message.item;
-      ondisk(new BlobSource(message.blob), item);
+      ondisk(new BlobSource(message.blob), message.item);
       break;
   }
 };
