@@ -3046,7 +3046,7 @@ self.onmessage = function onmessage(e) {
         : MozChunkedSource.available ? MozChunkedSource
         : null;
       if (ChunkedSource) {
-        gotSource = Promise.resolve(new ChunkedSource(url));
+        gotSource = Promise.resolve(new ChunkedSource(message.url));
       }
       else {
         gotSource = fetch(message.url).then(function(response) {
