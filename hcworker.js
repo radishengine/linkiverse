@@ -2244,7 +2244,7 @@ var resourceHandlers = {
         if (header.bitsPerSample === 8) {
           data = new Uint8Array(uncompressed.length);
           for (var i = 0; i < data.length; i++) {
-            data[i] = uncompressed[i] >>> 8;
+            data[i] = (uncompressed[i] + 32768) >>> 8;
           }
         }
         else {
