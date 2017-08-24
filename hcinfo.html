@@ -354,16 +354,17 @@ function update() {
 
   'use strict';
   
-  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.]+)\/?$/);
-  name = name && name[1];
+  var name = location.hash.match(/^#\/?([a-zA-Z0-9_\-\.]+)(?:\/([^\/]+)?)?$/);
   if (!name) {
-    document.getElementById('content').innerHTML = 'Please set URL #hash to a hypercard item ID';
+    document.getElementById('content').innerHTML = 'Please drag & drop a MFS or HFS disk image onto this area';
     return;
   }
+  var path = name[1] + '/' + (name[2] || 'disk.img');
   
   init({
-    headline: 'load',
-    item: name,
+    headline: 'load-url',
+    item: path,
+    url: '//cors.archive.org/cors/' + path,
   });
 }
     
