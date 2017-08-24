@@ -2901,7 +2901,7 @@ function mfs(disk, vinfo, item) {
     function getExtents(allocNumber) {
       var prev = {offset:allocNumber, length:1};
       var chain = [prev];
-      for (var next = map[allocNumber-2]; next > allocNumber; next = map[next-2]) {
+      for (var next = map[allocNumber-2]; next > 1; next = map[next-2]) {
         if (prev.offset + prev.length === next) {
           prev.length++;
         }
