@@ -189,7 +189,7 @@ function init(def) {
           var header = document.createElement('H1');
           header.innerText = [
             '[' + (message.modifiedAt || message.createdAt || new Date(1904, 0)).toISOString().replace(/\..*/, '') + ']',
-            '[' + (message.type || -).replace(/\0/g, '\u24FF') + '/' + (message.creator || '-').replace(/\0/g, '\u24FF') + ']',
+            '[' + (message.type || '-').replace(/\0/g, '\u24FF') + '/' + (message.creator || '-').replace(/\0/g, '\u24FF') + ']',
             message.path,
           ].join(' ');
           container.appendChild(header);
