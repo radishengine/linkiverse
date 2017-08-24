@@ -2127,6 +2127,7 @@ function handleResource(res, item, path) {
     resourceData.byteLength);
   resourceMap.resourceList.forEach(function(resourceInfo) {
     var len = dv.getUint32(resourceInfo.dataOffset, false);
+    if (len === 0) return;
     var data = resourceData.subarray(
       resourceInfo.dataOffset + 4,
       resourceInfo.dataOffset + 4 + len);
