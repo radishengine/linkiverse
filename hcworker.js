@@ -1167,20 +1167,17 @@ function disk_fromExtents(byteLength, extents, offset) {
   var buf = new Uint8Array(byteLength);
   buf.writeOffset = 0;
   function nextExtent(i, offset) {
-    if (i >= extents.length) {
-      if (buf.writeOffset < buf.length) {
-        return Promise.reject('insufficient space in extents');
-      }
-      return buf;
-    }
+    if (i >= extents.length) return Promise.reject('insufficient space in extents');
     var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset + offset;
     var chunkLength = Math.min(
       buf.length - buf.writeOffset,
       disk.chunkSize * extents[i].length - offset);
     return disk.get(chunkOffset, chunkLength).then(function(chunk) {
       buf.set(chunk, buf.writeOffset);
-      buf.writeOffset += chunk.length;
-      return nextExtent(i + 1, 0);
+      if ((buf.writeOffset += chunk.length) < buf.length) {
+        return nextExtent(i + 1, 0);
+      }
+      return buf;
     });
   }
   return nextExtent(i, offset);
