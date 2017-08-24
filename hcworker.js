@@ -1148,6 +1148,99 @@ ReferenceListEntryView.prototype = {
 };
 ReferenceListEntryView.byteLength = 12;
 
+function SoundHeaderView(buffer, byteOffset, byteLength) {
+  this.dv = new DataView(buffer, byteOffset, byteLength);
+  this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+}
+SoundHeaderView.prototype = {
+  get samplePos() {
+    var pos = this.dv.getUint32(0, false);
+    return (pos === 0) ? 'suffix' : pos;
+  },
+  get dataByteLength() {
+    if (this.encoding === 'standard') {
+      return this.dv.getUint32(4, false);
+    }
+    return Math.ceil((this.frameCount * this.bitsPerPacket)/8);
+  },
+  get channelCount() {
+    if (this.encoding === 'standard') return NaN;
+    return this.dv.getUint32(4, false);
+  },
+  get sampleRate() {
+    return fixedPoint.fromInt32(this.dv.getInt32(8, false)); // NOTE: unsigned fixed point?
+  },
+  get loopStart() {
+    return this.dv.getUint32(12, false);
+  },
+  get loopEnd() {
+    return this.dv.getUint32(16, false);
+  },
+  get encoding() {
+    switch (this.bytes[20]) {
+      case 0: return 'standard';
+      case 0xFE: return 'compressed';
+      case 0xFF: return 'extended';
+      default: return this.bytes[20];
+    }
+  },
+  get baseFrequency() {
+    return this.dv.getUint8(21); // unused
+  },
+  get byteLength() {
+    return (this.encoding === 'standard') ? 22 : 64;
+  },
+  get frameCount() {
+    return this.dv.getUint32(22, false);
+  },
+  // 80-bit sample rate
+  get fixedCompressionMode() {
+    // 'NONE', 'ACE2', 'ACE8', 'MAC3', 'MAC6'
+    if (this.encoding !== 'compressed') return null;
+    return String.fromCharCode.apply(null, this.bytes.subarray(36, 40));
+  },
+  get instrumentChunksPos() {
+    if (this.encoding !== 'extended') return NaN;
+    return this.dv.getUint32(40, false);
+  },
+  get aesRecordingPos() {
+    if (this.encoding !== 'extended') return NaN;
+    return this.dv.getUint32(44, false);
+  },
+  // unused: stateVars[4]
+  // unused: leftOverBlock[4]
+  get compression() {
+    if (this.encoding !== 'compressed') return 'none';
+    switch (this.dv.getInt16(56, false)) {
+      case -2: return 'variable'; // unused
+      case -1: return this.fixedCompressionMode;
+      case 0: return 'none';
+      case 3: return '3:1';
+      case 6: return '6:1';
+      default: return this.dv.getInt16(56, false);
+    }
+  },
+  get bitsPerPacket() {
+    var bits = this.dv.getUint16(58, false);
+    if (bits !== 0) return bits;
+    switch (this.compression) {
+      case '3:1': return 16;
+      case 'MAC3': return 16;
+      case '6:1': return 8;
+      case 'MAC6': return 8;
+      default: throw new Error('unknown bits per packet value');
+    }
+  },
+  // unused synthID[2]
+  get bitsPerSample() {
+    switch (this.encoding) {
+      case 'compressed': return this.dv.getUint16(62, false);
+      case 'extended': return this.dv.getUint16(48, false);
+      default: return NaN;
+    }
+  },
+};
+
 function disk_fromExtents(byteLength, extents, offset) {
   var i = 0;
   if (offset) for (;;) {
@@ -1969,7 +2062,18 @@ var resourceHandlers = {
           console.warn('expected snd data format 5, got ' + firstDataFormatID);
           return;
         }
-        var initOption = dv.getUint32(6, false);
+        var init = dv.getUint32(6, false);
+        init = {
+          output: ({
+            0:'default', 1:'unknown', 2:'left', 3:'right',
+            4:'wave0', 5:'wave1', 6:'wave2', 7:'wave3',
+          })[init & 7],
+          mono: (init & 0xC0) === 0x80,
+          stereo: (init & 0xC0) === 0xC0,
+          compression: ({3:'MACE3', 4:'MACE4', 0:false})[init >>> 4] || 'unknown',
+          noLinearInterpolation: !!(init & 4),
+          noDropSampleConversion: !!(init & 8),
+        };
         offset = 10;
         break;
       case 2:
@@ -1993,27 +2097,12 @@ var resourceHandlers = {
       return;
     }
     var soundHeaderOffset = dv.getUint32(offset + 6, false);
-    var headerType;
-    var encoding = dv.getUint8(soundHeaderOffset + 20);
-    if (encoding === 0) {
-      headerType = 'standard';
-    }
-    else if (encoding === 0xff) {
-      headerType = 'extended';
-    }
-    else if (encoding === 0xfe) {
-      headerType = 'compressed';
-    }
-    else {
-      console.warn('unknown encoding: 0x' + encoding.toString(16));
-      return;
-    }
-    var dataOffset = dv.getUint32(soundHeaderOffset, false);
-    var samplingRate = fixedPoint.fromInt32(dv.getInt32(soundHeaderOffset + 8, false));
-    var loopStartPoint = dv.getUint32(soundHeaderOffset + 12, false);
-    var loopEndPoint = dv.getUint32(soundHeaderOffset + 16, false);
-    var baseFrequency = dv.getUint8(soundHeaderOffset + 21);
-    var totalBytes, channels, sampleAreaOffset, bytesPerSample;
+    var header = new SoundHeaderView(dv.buffer, dv.byteOffset + soundHeaderOffset);
+    var dataOffset = header.samplePos;
+    if (dataOffset === 'suffix') dataOffset = soundHeaderOffset + header.byteLength;
+    var dataLength = header.dataByteLength;
+    debugger;
+    /*
     if (headerType === 'standard') {
       totalBytes = dv.getUint32(soundHeaderOffset + 4, false);
       channels = 1;
@@ -2044,6 +2133,7 @@ var resourceHandlers = {
         bytesPerSample
       ),
     });
+    */
   },
   ASND: function(item, path, bytes) {
     var deltas = new Int8Array(bytes.buffer, bytes.byteOffset + 4, 16);
