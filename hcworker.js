@@ -2101,26 +2101,28 @@ var resourceHandlers = {
     var dataOffset = header.samplePos;
     if (dataOffset === 'suffix') dataOffset = soundHeaderOffset + header.byteLength;
     var dataLength = header.dataByteLength;
-    var data = bytes.subarray(dataOffset, dataOffset + dataLength);
-    if (header.compression === 'none') {
-      if (dataOffset+dataLength > bytes.length) {
-        console.warn('snd: not enough data');
-        return;
-      }
-      postMessage({
-        item: item,
-        path: path,
-        headline: 'file',
-        file: makeWav(
-          data,
-          header.sampleRate,
-          header.channelCount,
-          header.bitsPerSample/8
-        ),
-      });
+    if (dataOffset+dataLength > bytes.length) {
+      console.warn('snd: not enough data');
       return;
     }
-    debugger;
+    var data = bytes.subarray(dataOffset, dataOffset + dataLength);
+    switch (header.compression) {
+      case 'none': break;
+      default:
+        console.warn('snd: unsupported compression ' + header.compression);
+        return;
+    }
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'file',
+      file: makeWav(
+        data,
+        header.sampleRate,
+        header.channelCount,
+        header.bitsPerSample/8
+      ),
+    });
     /*
     if (headerType === 'standard') {
       totalBytes = dv.getUint32(soundHeaderOffset + 4, false);
