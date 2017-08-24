@@ -69,6 +69,25 @@ MemorySource.prototype = {
   },
 };
 
+function OffsetSource(source, offset) {
+  this.source = source;
+  this.offset = offset;
+}
+OffsetSource.prototype = {
+  get: function(offset, length) {
+    return this.source.get(this.offset + offset || 0, length);
+  },
+  getBlob: function() {
+    var offset = this.offset;
+    return this.source.getBlob().then(function(blob) {
+      return blob.slice(offset);
+    });
+  },
+  stream: function(offset, length, callback) {
+    return this.source.stream(this.offset + offset || 0, length, callback);
+  },
+};
+
 var chunked_proto = {
   get: function(offset, length) {
     var self = this;
@@ -2994,6 +3013,9 @@ function ondisk(disk, item) {
       bytes.byteLength);
     if (vinfo.hasValidSignature) {
       return mfs(disk, vinfo, item);
+    }
+    if (!(disk instanceof OffsetSource)) {
+      return ondisk(new OffsetSource(disk, 84), item);
     }
     return Promise.reject('not a recognised format');
   })
