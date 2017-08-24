@@ -1187,6 +1187,7 @@ function disk_streamExtents(byteLength, extents, callback) {
 
 var padBytes = new Uint8Array(3);
 padBytes = [
+  padBytes.subarray(0, 0),
   padBytes.subarray(0, 1),
   padBytes.subarray(0, 2),
   padBytes,
@@ -1194,13 +1195,10 @@ padBytes = [
 
 function makeImageBlob(bytes, width, height) {
   var rowBytes = Math.ceil(width / 8);
-  var padding = rowBytes % 4;
-  if (padding) {
-    padding = 4 - padding;
-  }
+  var padding = padBytes[rowBytes % 4];
   var header = new DataView(new ArrayBuffer(62));
   header.setUint16(0, ('B'.charCodeAt(0) << 8) | 'M'.charCodeAt(0), false);
-  header.setUint32(2, header.byteLength + bytes.length + padding * height, true);
+  header.setUint32(2, header.byteLength + bytes.length + padding.length * height, true);
   header.setUint32(10, header.byteLength, true);
   header.setUint32(14, 40, true); // BITMAPINFOHEADER
   header.setUint32(18, width, true);
@@ -1208,9 +1206,8 @@ function makeImageBlob(bytes, width, height) {
   header.setUint16(26, 1, true); // planes
   header.setUint16(28, 1, true); // bpp
   header.setUint32(54, 0xFFFFFF, true);
-  if (padding) {
+  if (padding.length > 0) {
     var parts = [header];
-    padding = padBytes[padding];
     for (var y = 0; y < height; y++) {
       parts.push(bytes.subarray(y * rowBytes, (y+1) * rowBytes), padding);
     }
