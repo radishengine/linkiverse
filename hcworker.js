@@ -1164,7 +1164,7 @@ SoundHeaderView.prototype = {
     return Math.ceil((this.frameCount * this.bitsPerPacket)/8);
   },
   get channelCount() {
-    if (this.encoding === 'standard') return NaN;
+    if (this.encoding === 'standard') return 1;
     return this.dv.getUint32(4, false);
   },
   get sampleRate() {
@@ -1236,7 +1236,7 @@ SoundHeaderView.prototype = {
     switch (this.encoding) {
       case 'compressed': return this.dv.getUint16(62, false);
       case 'extended': return this.dv.getUint16(48, false);
-      default: return NaN;
+      default: return 8;
     }
   },
 };
@@ -2101,6 +2101,25 @@ var resourceHandlers = {
     var dataOffset = header.samplePos;
     if (dataOffset === 'suffix') dataOffset = soundHeaderOffset + header.byteLength;
     var dataLength = header.dataByteLength;
+    var data = bytes.subarray(dataOffset, dataOffset + dataLength);
+    if (header.compression === 'none') {
+      if (dataOffset+dataLength > bytes.length) {
+        console.warn('snd: not enough data');
+        return;
+      }
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'file',
+        file: makeWav(
+          data,
+          header.sampleRate,
+          header.channelCount,
+          header.bitsPerSample/8
+        ),
+      });
+      return;
+    }
     debugger;
     /*
     if (headerType === 'standard') {
