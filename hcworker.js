@@ -1240,6 +1240,7 @@ function makeImageBlob(bytes, width, height) {
 }
 
 function makeWav(samples, samplingRate, channels, bytesPerSample) {
+  samplingRate = Math.round(samplingRate);
   var dv = new DataView(new ArrayBuffer(44));
   dv.setUint32(0, 0x46464952, true); // RIFF
   dv.setUint32(4, dv.byteLength + samples.length + (samples.length % 2) - 8, true);
