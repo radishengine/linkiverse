@@ -188,7 +188,7 @@ function init(def) {
           var container = document.createElement('DIV');
           var header = document.createElement('H1');
           header.innerText = [
-            '[' + message.modifiedAt.toISOString().replace(/\..*/, '') + ']',
+            '[' + (message.modifiedAt || message.createdAt || new Date(1904, 0)).toISOString().replace(/\..*/, '') + ']',
             '[' + message.type.replace(/\0/g, '\\0') + '/' + message.creator.replace(/\0/g, '\\0') + ']',
             message.path,
           ].join(' ');
