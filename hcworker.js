@@ -1188,9 +1188,9 @@ function disk_streamExtents(byteLength, extents, callback) {
 var padBytes = new Uint8Array(3);
 padBytes = [
   padBytes.subarray(0, 0),
-  padBytes.subarray(0, 1),
+  padBytes.subarray(0, 3),
   padBytes.subarray(0, 2),
-  padBytes,
+  padBytes.subarray(0, 1),
 ];
 
 function makeImageBlob(bytes, width, height) {
