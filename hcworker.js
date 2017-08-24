@@ -1931,6 +1931,23 @@ var resourceHandlers = {
       height: 16,
     });
   },
+  'ics#': function(item, path, bytes) {
+    var hasMask;
+    if (bytes.length !== 64) {
+      console.warn('unexpected length for ics# resource: ' + bytes.length);
+      return;
+    }
+    console.warn('TODO: ics# mask');
+    var pixels = bytes.subarray(0, 32);
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: makeImageBlob(pixels, 16, 16),
+      width: 16,
+      height: 16,
+    });
+  },
   'snd ': function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var formatNumber = dv.getUint16(0, false);
