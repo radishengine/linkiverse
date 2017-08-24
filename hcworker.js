@@ -1210,7 +1210,7 @@ SoundHeaderView.prototype = {
   // unused: stateVars[4]
   // unused: leftOverBlock[4]
   get compression() {
-    if (this.encoding !== 'compressed') return 'none';
+    if (this.encoding !== 'compressed') return 'NONE';
     switch (this.dv.getInt16(56, false)) {
       case -2: return 'variable'; // unused
       case -1: return this.fixedCompressionMode;
