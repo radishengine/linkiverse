@@ -2220,6 +2220,7 @@ var resourceHandlers = {
     offset += 2;
     while (commandCount > 1 && dv.getUint16(offset, false) === 0) {
       offset += 8;
+      commandCount--;
     }
     if (commandCount !== 1) {
       console.warn('audio data must have 1 sound command');
