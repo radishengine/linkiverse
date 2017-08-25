@@ -95,7 +95,7 @@ OTFTable.FontHeader = function OTFFontHeader(info) {
   this.masterChecksum = new DataView(this.buffer, 8, 4);
   dv.setUint32(12, 0x5F0F3CF5, false); // magic number
   dv.setUint16(16, info.flags || 0, false);
-  dv.setUint16(18, info.unitsPerEm, false); 16 to 16384
+  dv.setUint16(18, info.unitsPerEm, false); // 16 to 16384
   var created = info.createdAt || new Date;
   var modified = info.modifiedAt || created;
   dv.setUint32(24, (created - Date.UTC(4, 0)) / 1000, false);
