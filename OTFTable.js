@@ -494,3 +494,48 @@ OTFTable.encodeIndex = function(byteArrays) {
   }
   return bytes;
 };
+
+OTFTable.CompactFontFormat2 = function OTFCompactFontFormat2(info) {
+  var topDict = OTFTable.encodeDict([
+    ['FontMatrix', 1/info.unitsPerEm, 0, 0, 1/info.unitsPerEm, 0, 0],
+    ['FDArray', ['@','fontDictsAt']],
+    ['CharStrings', ['@','charStringsAt']],
+  ]);
+  topDict.offset = 5;
+
+  var globalSubrIndex = OTFTable.encodeIndex([ ]);
+  globalSubrIndex.offset = topDict.offset + topDict.byteLength;
+
+  var privateDict = OTFTable.encodeDict([ ]);
+  privateDict.offset = globalSubrIndex.offset + globalSubrIndex.byteLength;
+
+  var fontDictIndex = OTFTable.encodeIndex([
+    OTFTable.encodeDict([
+      ['Private', privateDict.byteLength, privateDict.offset]],
+    ]),
+  ]);
+  fontDictIndex.offset = privateDict.offset + privateDict.byteLength;
+  topDict.fontDictsAt.setUint32(0, fontDictIndex.offset, false);
+
+  var charStringIndex = OTFTable.encodeIndex(
+    info.glyphs.map(function(glyph) {
+      return OTFTable.encodeCharString(glyph.charString);
+    })
+  );
+  charStringIndex.offset = fontDictIndex.offset + fontDictIndex.byteLength;
+  topDict.charStringsAt.setUint32(0, charStringIndex.offset, false);
+
+  OTFTable.call(this, 'CFF2', charStringIndex.offset + charStringIndex.byteLength);
+  var bytes = new Uint8Array(this.buffer);
+  var dv = new DataView(this.buffer);
+
+  bytes[0] = 2; // major version
+  bytes[2] = topDict.offset;
+  dv.setUint16(3, topDict.byteLength, false);
+  bytes.set(topDict, topDict.offset);
+  bytes.set(globalSubrIndex, globalSubrIndex.offset);
+  bytes.set(privateDict, privateDict.offset);
+  bytes.set(fontDictIndex, fontDictIndex.offset);
+  bytes.set(charStringIndex, charStringIndex.offset);
+};
+OTFTable.CompactFontFormat2.prototype = Object.create(OTFTable.prototype);
