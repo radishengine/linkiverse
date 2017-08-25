@@ -2216,20 +2216,28 @@ var resourceHandlers = {
         console.warn('unknown "snd " format version: ' + formatNumber);
         return;
     }
-    if (dv.getUint16(offset, false) !== 1) {
+    var commandCount = dv.getUint16(offset, false) !== 1;
+    offset += 2;
+    while (commandCount > 1 && dv.getUint16(offset) === 0) {
+      offset += 8;
+    }
+    if (commandCount !== 1) {
       console.warn('audio data must have 1 sound command');
       return;
     }
-    var command = dv.getUint16(offset + 2, false);
+    var command = dv.getUint16(offset, false);
+    offset += 2;
     if (command !== 0x8051 && command !== 0x8050) {
       console.warn('audio command must be bufferCmd or soundCmd');
       return;
     }
-    if (dv.getUint16(offset + 4, false) !== 0) {
+    if (dv.getUint16(offset, false) !== 0) {
       console.warn('bufferCmd parameter must be 0');
       return;
     }
-    var soundHeaderOffset = dv.getUint32(offset + 6, false);
+    offset += 2;
+    var soundHeaderOffset = dv.getUint32(offset, false);
+    offset += 4;
     var header = new SoundHeaderView(dv.buffer, dv.byteOffset + soundHeaderOffset);
     var dataOffset = header.samplePos;
     if (dataOffset === 'suffix') dataOffset = soundHeaderOffset + header.byteLength;
