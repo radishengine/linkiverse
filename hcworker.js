@@ -2216,9 +2216,9 @@ var resourceHandlers = {
         console.warn('unknown "snd " format version: ' + formatNumber);
         return;
     }
-    var commandCount = dv.getUint16(offset, false) !== 1;
+    var commandCount = dv.getUint16(offset, false);
     offset += 2;
-    while (commandCount > 1 && dv.getUint16(offset) === 0) {
+    while (commandCount > 1 && dv.getUint16(offset, false) === 0) {
       offset += 8;
     }
     if (commandCount !== 1) {
