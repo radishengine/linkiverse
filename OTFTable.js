@@ -367,7 +367,8 @@ const dictOpcodes = {
 
 OTFTable.encodeDict = function encodeDict(sExpr) {
   var output = [];
-
+  var placeholders = Object.create(null);
+  
   function encNumber(n) {
     if (n !== (n|0)) {
       n = n.toString().replace(/e-/i, 'c')
@@ -400,6 +401,11 @@ OTFTable.encodeDict = function encodeDict(sExpr) {
   }
 
   function encOp(op) {
+    if (op[0] === '@') {
+      placeholders[op[1]] = output.push(29);
+      output.push(0, 0, 0, 0);
+      return;
+    }
     for (var i = 1; i < op.length; i++) {
       if (typeof op[i] === 'number') {
         encodeNumber(op[i]);
@@ -423,6 +429,13 @@ OTFTable.encodeDict = function encodeDict(sExpr) {
   for (var i = 0; i < sExpr.length; i++) {
     encOp(sExpr[i]);
   }
-
-  return new Uint8Array(output);
+  
+  output = new Uint8Array(output);
+  for (var placeholder in placeholders) {
+    output[placeholder] = new DataView(
+      output.buffer,
+      output.byteOffset + placeholders[placeholder],
+      4);
+  }
+  return output;
 };
