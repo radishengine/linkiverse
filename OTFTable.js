@@ -439,3 +439,58 @@ OTFTable.encodeDict = function encodeDict(sExpr) {
   }
   return output;
 };
+
+OTFTable.encodeIndex = function(byteArrays) {
+  if (byteArrays.length === 0) return new Uint8Array(4);
+  var totalSize = 0;
+  for (var i = 0; i < byteArrays.length; i++) {
+    totalSize += byteArrays[i].length;
+  }
+  var endOffset = totalSize + 1;
+  var offSize = (endOffset < 0x100) ? 1
+              : (endOffset < 0x10000) ? 2
+              : (endOffset < 0x1000000) ? 3
+              : 4;
+  var bytes = new Uint8Array(5 + offSize * (byteArrays.length + 1) + totalSize);
+  var dv = new DataView(bytes.buffer);
+  dv.setUint32(0, byteArrays.length, false);
+  bytes[4] = offSize;
+  var base = 5 + offSize * (byteArrays.length + 1) - 1;
+  var offset = 1;
+  switch (offSize) {
+    case 1:
+      for (var i = 0; i < byteArrays.length; i++) {
+        bytes[5 + i] = offset;
+        bytes.set(byteArrays[i], base + offset);
+        offset += byteArrays[i].length;
+      }
+      bytes[5 + byteArrays.length] = offset;
+      break;
+    case 2:
+      for (var i = 0; i < byteArrays.length; i++) {
+        dv.setUint16(5 + 2*i, offset, false);
+        bytes.set(byteArrays[i], base + offset);
+        offset += byteArrays[i].length;
+      }
+      dv.setUint16(5 + 2*byteArrays.length, offset, false);
+      break;
+    case 3:
+      for (var i = 0; i < byteArrays.length; i++) {
+        dv.setUint32(5 + 3*i, (offset << 8), false);
+        bytes.set(byteArrays[i], base + offset);
+        offset += byteArrays[i].length;
+      }
+      bytes[5 + 3*byteArrays.length] = (offset >>> 16) & 0xff;
+      dv.setUint16(5 + 3*byteArrays.length + 1, offset & 0xffff, false);
+      break;
+    case 4:
+      for (var i = 0; i < byteArrays.length; i++) {
+        dv.setUint32(5 + 4*i, offset, false);
+        bytes.set(byteArrays[i], base + offset);
+        offset += byteArrays[i].length;
+      }
+      dv.setUint32(5 + 4*byteArrays.length, offset, false);
+      break;
+  }
+  return bytes;
+};
