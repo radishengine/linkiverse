@@ -261,7 +261,7 @@ OTFTable.PostScript = function OTFPostScript(info) {
 };
 OTFTable.PostScript.prototype = Object.create(OTFTable.prototype);
 
-const opcodes = {
+const charStringOpcodes = {
   hstem: 0x01,
   vstem: 0x03,
   vmoveto: 0x04,
@@ -322,7 +322,7 @@ OTFTable.encodeCharString = function encodeCharString(sExpr) {
       }
       else encOp(op[i]);
     }
-    if (!(op[0] in opcodes)) {
+    if (!(op[0] in charStringOpcodes)) {
       throw new Error('invalid op: ' + op[0]);
     }
     var opcode = opcodes[op[0]];
@@ -336,5 +336,93 @@ OTFTable.encodeCharString = function encodeCharString(sExpr) {
   for (var i = 0; i < sExpr.length; i++) {
     encOp(sExpr[i]);
   }
+  return new Uint8Array(output);
+};
+
+const dictOpcodes = {
+  BlueValues: 0x06,
+  OtherBlues: 0x07,
+  FamilyBlues: 0x08,
+  FamilyOtherBlues: 0x09,
+  StdHW: 0x0a,
+  StdVW: 0x0b,
+  CharStrings: 0x11,
+  Private: 0x12,
+  Subrs: 0x13,
+  vsindex: 0x16,
+  blend: 0x17,
+  vstore: 0x18,
+  BCD: 0x1e,
+  FontMatrix: 0x0c07,
+  BlueScale: 0x0c09,
+  BlueShift: 0x0c0a,
+  BlueFuzz: 0x0c0b,
+  StemSnapH: 0x0c0c,
+  StemSnapV: 0x0c0d,
+  LanguageGroup: 0x0c11,
+  ExpansionFactor: 0x0c12,
+  FDArray: 0x0c24,
+  FDSelect: 0x0c25,
+};
+
+OTFTable.encodeDict = function encodeDict(sExpr) {
+  var output = [];
+
+  function encNumber(n) {
+    if (n !== (n|0)) {
+      n = n.toString().replace(/e-/i, 'c')
+        .replace(/e\+?/i, 'b')
+        .replace(/^-/, 'e')
+        .replace('.', 'a');
+      n += (n.length % 2) ? 'f' : 'ff';
+      output.push(30);
+      for (var i = 0; i < n.length; i += 2) {
+        output.push(parseInt(n.slice(i, i+2), 16));
+      }
+    }
+    else if (n >= -107 && n <= 107) {
+      output.push(n + 139);
+    }
+    else if (n >= 108 && n <= 1131) {
+      n -= 108;
+      output.push(247 + (n >> 8), n & 0xff);
+    }
+    else if (n >= -1131 && n <= -108) {
+      n = -n - 108;
+      output.push(251 + (n >> 8), n & 0xff);
+    }
+    else if (n >= -32768 && n <= 32767) {
+      output.push(28, (n >> 8) & 0xff, n & 0xff);
+    }
+    else {
+      output.push(29, (n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff);
+    }
+  }
+
+  function encOp(op) {
+    for (var i = 1; i < op.length; i++) {
+      if (typeof op[i] === 'number') {
+        encodeNumber(op[i]);
+      }
+      else {
+        encOp(op[i]);
+      }
+    }
+    if (!(op[0] in dictOpcodes)) {
+      throw new Error('unknown opcode ' + op[0]);
+    }
+    var opcode = dictOpcodes[op[0]];
+    if (opcode >= 0x100) {
+      output.push(opcode >> 8, opcode & 0xff);
+    }
+    else {
+      output.push(opcode);
+    }
+  }
+
+  for (var i = 0; i < sExpr.length; i++) {
+    encOp(sExpr[i]);
+  }
+
   return new Uint8Array(output);
 };
