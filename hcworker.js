@@ -1,4 +1,6 @@
 
+importScripts('OTFTable.js');
+
 function download(v) {
   if (!(v instanceof Blob)) v = new Blob([v]);
   postMessage({
