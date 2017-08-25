@@ -539,3 +539,44 @@ OTFTable.CompactFontFormat2 = function OTFCompactFontFormat2(info) {
   bytes.set(charStringIndex, charStringIndex.offset);
 };
 OTFTable.CompactFontFormat2.prototype = Object.create(OTFTable.prototype);
+
+OTFTable.SbitLineMetricsView = function SbitLineMetricsView(buffer, byteOffset, byteLength) {
+  this.sbytes = new Int8Array(buffer, byteOffset, byteLength);
+};
+OTFTable.SbitLineMetricsView.prototype = {
+  get ascender() { return this.sbytes[0]; },
+  set ascender(v) { this.sbytes[0] = v; },
+  get descender() { return this.sbytes[1]; },
+  set descender(v) { this.sbytes[1] = v; },  
+  get widthMax() { return this.sbytes[2] & 0xff; },
+  set widthMax(v) { this.sbytes[2] = v; },
+  get caretSlopeNumerator() { return this.sbytes[3]; },
+  set caretSlopeNumerator(v) { this.sbytes[3] = v; },
+  get caretSlopeDenominator() { return this.sbytes[4]; },
+  set caretSlopeDenominator(v) { this.sbytes[4] = v; },
+  get caretOffset() { return this.sbytes[5]; },
+  set caretOffset(v) { this.sbytes[5] = v; },
+  get minOriginSB() { return this.sbytes[6]; },
+  set minOriginSB(v) { this.sbytes[6] = v; },
+  get minAdvanceSB() { return this.sbytes[7]; },
+  set minAdvanceSB(v) { this.sbytes[7] = v; },
+  get maxBeforeBL() { return this.sbytes[8]; },
+  set maxBeforeBL(v) { this.sbytes[8] = v; },
+  get minAfterBL() { return this.sbytes[9]; },
+  set minAfterBL(v) { this.sbytes[9] = v; },
+};
+OTFTable.SbitLineMetricsView.byteLength = 12;
+
+OTFTable.EmbeddedBitmapLocation = function OTFEmbeddedBitmapLocationTable(info) {
+  OTFTable.call(this, 'EBLC', 8 + (16 + OTFTable.SbitLineMetricsView.byteLength * 2 + 8) * info.strikes.length);
+};
+OTFTable.EmbeddedBitmapLocation.prototype = Object.create(OTFTable.prototype);
+
+OTFTable.EmbeddedBitmapScaling = function OTFEmbeddedBitmapScalingTable(info) {
+  OTFTable.call(this, 'EBSC', 8 + (OTFTable.SbitLineMetricsView.byteLength * 2 + 4) * info.strikes.length);
+};
+OTFTable.EmbeddedBitmapScaling.prototype = Object.create(OTFTable.prototype);
+
+OTFTable.EmbeddedBitmapData = function OTFEmbeddedBitmapDataTable(info) {
+};
+OTFTable.EmbeddedBitmapData.prototype = Object.create(OTFTable.prototype);
