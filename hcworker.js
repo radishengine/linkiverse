@@ -1159,7 +1159,7 @@ SoundHeaderView.prototype = {
   },
   get dataByteLength() {
     switch (this.encoding) {
-      case 'standard': this.dv.getUint32(4, false);
+      case 'standard': return this.dv.getUint32(4, false);
       case 'compressed': return Math.ceil((this.frameCount * this.bitsPerPacket)/8);
       case 'extended': return Math.ceil((this.frameCount * this.bitsPerSample * this.channelCount)/8);
       default: return NaN;
