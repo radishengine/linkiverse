@@ -260,3 +260,81 @@ OTFTable.PostScript = function OTFPostScript(info) {
   dv.setUint32(12, !!info.isMonospace, false);
 };
 OTFTable.PostScript.prototype = Object.create(OTFTable.prototype);
+
+const opcodes = {
+  hstem: 0x01,
+  vstem: 0x03,
+  vmoveto: 0x04,
+  rlineto: 0x05,
+  hlineto: 0x06,
+  vlineto: 0x07,
+  rrcurveto: 0x08,
+  callsubr: 0x0a,
+  vsindex: 0x0f,
+  blend: 0x10,
+  hstemhm: 0x12,
+  hintmask: 0x13,
+  cntrmask: 0x14,
+  rmoveto: 0x15,
+  hmoveto: 0x16,
+  vstemhm: 0x17,
+  rcurveline: 0x18,
+  rlinecurve: 0x19,
+  vvcurveto: 0x1a,
+  hhcurveto: 0x1b,
+  callgsubr: 0x1c,
+  vhcurveto: 0x1e,
+  hvcurveto: 0x1f,
+  hflex: 0x0c22,
+  flex: 0x0c23,
+  hflex1: 0x0c24,
+  flex1: 0x0c25,
+};
+
+OTFTable.encodeCharString = function encodeCharString(sExpr) {
+  var output = [];
+  function encNumber(n) {
+    if (n !== n|0) {
+      output.push(255, (n >>> 8) & 0xff, n & 0xff, (n * 0x100) & 0xff, (n * 0x10000) & 0xff);
+    }
+    else if (n >= -107 && n <= 107) {
+      output.push(n + 139);
+    }
+    else if (n >= 108 && n <= 1131) {
+      n -= 108;
+      output.push(247 + (n >> 8), n & 0xff);
+    }
+    else if (n >= -1131 && n <= -108) {
+      n = -n - 108;
+      output.push(251 + (n >> 8), n & 0xff);
+    }
+    else if (n >= -32768 && n <= 32767) {
+      output.push(28, (n >> 8) & 0xff, n & 0xff);
+    }
+    else {
+      throw new Error('out of range');
+    }
+  }
+  function encOp(op) {
+    for (var i = 1; i < op.length; i++) {
+      if (typeof op[i] === 'number') {
+        encNumber(op[i]);
+      }
+      else encOp(op[i]);
+    }
+    if (!(op[0] in opcodes)) {
+      throw new Error('invalid op: ' + op[0]);
+    }
+    var opcode = opcodes[op[0]];
+    if (opcode >= 0x100) {
+      output.push(opcode >>> 8, opcode & 0xff);
+    }
+    else {
+      output.push(opcode);
+    }
+  }
+  for (var i = 0; i < sExpr.length; i++) {
+    encOp(sExpr[i]);
+  }
+  return new Uint8Array(output);
+};
