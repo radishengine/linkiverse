@@ -28,8 +28,8 @@ OTFTable.joinToBlob = function(tables) {
   fileHeader.setUint16(6, Math.pow(2, searchRange) * 16, false);
   fileHeader.setUint16(8, searchRange, false);
   fileHeader.setUint16(10, tables.length * 16 - searchRange, false);
-  var headerOffset = 12, bodyOffset = header.byteLength;
-  parts = [header];
+  var headerOffset = 12, bodyOffset = fileHeader.byteLength;
+  var parts = [fileHeader];
   var masterChecksum = 0, fontHeader;
   for (var i = 0; i < tables.length; i++) {
     var table = tables[i];
@@ -511,7 +511,7 @@ OTFTable.CompactFontFormat2 = function OTFCompactFontFormat2(info) {
 
   var fontDictIndex = OTFTable.encodeIndex([
     OTFTable.encodeDict([
-      ['Private', privateDict.byteLength, privateDict.offset]],
+      ['Private', privateDict.byteLength, privateDict.offset],
     ]),
   ]);
   fontDictIndex.offset = privateDict.offset + privateDict.byteLength;
