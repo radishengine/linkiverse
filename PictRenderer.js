@@ -687,6 +687,12 @@ PictRenderer.prototype = {
       case 0x0C00:
         op_i += 24; // reserved header
         continue;
+      case 0x8200: // compressed
+      case 0x8201: // uncompressed
+        console.warn('PICT: quicktime data');
+        var dataLen = dv.getUint32(op_i);
+        op_i += 4 + dataLen;
+        continue;
       default:
         console.error('PICTv' + version + ': unknown opcode 0x' + op.toString(16));
         return false;
