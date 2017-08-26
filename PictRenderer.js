@@ -23,7 +23,7 @@ PictRenderer.prototype = {
       op_i = 12;
       nextOp = function nextOpV1() { return bytes[op_i++]; };
     }
-    else if (dv.getUint16(10, false) === 0x0011 && dv.getUint16(12, false)) {
+    else if (dv.getUint16(10, false) === 0x0011 && bytes[12] === 2) {
       version = 2;
       op_i = 14;
       nextOp = function nextOpV2() {
