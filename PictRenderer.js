@@ -553,7 +553,7 @@ PictRenderer.prototype = {
             console.error('expecting PixMap, got BitMap');
             return false;
           }
-          op_i += pixmap.byteLength - 4;
+          op_i += pixmap.byteLength;
           var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
           op_i += colors.byteLength;
           var srcRect = rect();
