@@ -580,7 +580,7 @@ PictRenderer.prototype = {
             unpacked = bytes.subarray(op_i, op_i + rowBytes * height);
             op_i += unpacked.length;
           }
-          this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
+          this.copyBits(rowBytes, pixmap, srcRect, destRect, mode, unpacked);
         }
         continue;
       case 0x99:
