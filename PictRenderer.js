@@ -1,8 +1,8 @@
 
-function PixOrBitMapHeaderView(buffer, byteOffset, byteLength) {
+function PixOrBitMapView(buffer, byteOffset, byteLength) {
   this.dv = new DataView(buffer, byteOffset, byteLength);
 }
-PixOrBitMapHeaderView.prototype = {
+PixOrBitMapView.prototype = {
   get rowBytes() {
     return this.dv.getUint16(4) & ~0xC000;
   },
