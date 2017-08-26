@@ -548,7 +548,7 @@ PictRenderer.prototype = {
         }
         else {
           var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
-          if (!pixmap.isPixmap) {
+          if (!pixmap.isPixMap) {
             console.error('expecting PixMap, got BitMap');
             return false;
           }
