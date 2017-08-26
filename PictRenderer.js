@@ -354,7 +354,6 @@ PictRenderer.prototype = {
       case 0x95:
       case 0x96:
       case 0x97:
-      case 0x9A:
       case 0x9B:
       case 0x9C:
       case 0x9D:
