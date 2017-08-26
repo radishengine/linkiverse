@@ -534,8 +534,38 @@ PictRenderer.prototype = {
           this.copyBits(rowBytes, bounds, srcRect, destRect, mode, rows);
         }
         else {
-          console.error('copy bits v2 not supported');
-          return false;
+          op_i -= 4; // first field of PixMap is missing?
+          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
+          op_i += pixmap.byteLength;
+          if (pixmap.isPixMap) {
+            var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
+            op_i += colors.byteLength;
+          }
+          var srcRect = rect();
+          var destRect = rect();
+          var mode = dv.getUint16(op_i);
+          op_i += 2;
+          var unpacked;
+          var rowBytes = pixmap.rowBytes;
+          var height = pixmap.bottom - pixmap.top;
+          if (rowBytes >= 8) {
+            unpacked = new Uint8Array(rowBytes * height);
+            if (rowBytes > 250) for (var y = 0; y < height; y++) {
+              var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
+              unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+              op_i += 2 + packed.length;
+            }
+            else for (var y = 0; y < height; y++) {
+              var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
+              unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+              op_i += 1 + packed.length;
+            }
+          }
+          else {
+            unpacked = bytes.subarray(op_i, op_i + rowBytes * height);
+            op_i += unpacked.length;
+          }
+          this.copyBits(rowBytes, pixmap, srcRect, destRect, mode, unpacked);
         }
         continue;
       case 0x91:
