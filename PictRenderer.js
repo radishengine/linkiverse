@@ -765,14 +765,15 @@ PictRenderer.prototype = {
         var height = pixmap.bottom - pixmap.top;
         if (rowBytes >= 8) {
           unpacked = new Uint8Array(rowBytes * height);
+          var unpack = pixmap.pixelSize === 16 ? unpackBits16 : unpackBits;
           if (rowBytes > 250) for (var y = 0; y < height; y++) {
             var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
-            unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+            unpack(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
             op_i += 2 + packed.length;
           }
           else for (var y = 0; y < height; y++) {
             var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
-            unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+            unpack(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
             op_i += 1 + packed.length;
           }
         }
