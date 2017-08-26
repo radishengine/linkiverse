@@ -76,6 +76,27 @@ PictRenderer.prototype = {
       op_i += len;
       return region;
     }
+    function patternV2() {
+      var patType = dv.getUint16(op_i);
+      op_i += 2;
+      var pattern = bytes.subarray(op_i, op_i + 8);
+      op_i += 8;
+      switch (patType) {
+        case 0: break;
+        case 1:
+          throw new Error('TODO: PixMap');
+        case 2:
+          pattern = {
+            pattern: pattern,
+            red: dv.getUint16(op_i),
+            green: dv.getUint16(op_i + 2),
+            blue: dv.getUint16(op_i + 4),
+          };
+          op_i += 6;
+          break;
+      }
+      return pattern;
+    }
     var clipRegion, op;
     pictLoop: for (;;) switch (op = nextOp()) {
       case 0xFF: break pictLoop;
@@ -148,13 +169,13 @@ PictRenderer.prototype = {
         this.picVersion(bytes[op_i++]);
         continue;
       case 0x12:
-        this.colorBackgroundPattern(.);
+        this.colorBackgroundPattern(pattern());
         continue;
       case 0x13:
-        this.colorPenPattern(.);
+        this.colorPenPattern(pattern());
         continue;
       case 0x14:
-        this.colorFillPattern(.);
+        this.colorFillPattern(pattern());
         continue;
       case 0x15:
         this.fractionalPenPosition(dv.getUint16(op_i, false));
@@ -182,22 +203,38 @@ PictRenderer.prototype = {
         // reserved, no data
         continue;
       case 0x1A:
-        this.foregroundColor(.);
+        var red = dv.getUint16(op_i, false);
+        var green = dv.getUint16(op_i + 2, false);
+        var blue = dv.getUint16(op_i + 4, false);
+        op_i += 6;
+        this.foregroundColor(red, green, blue);
         continue;
       case 0x1B:
-        this.backgroundColor(.);
+        var red = dv.getUint16(op_i, false);
+        var green = dv.getUint16(op_i + 2, false);
+        var blue = dv.getUint16(op_i + 4, false);
+        op_i += 6;
+        this.backgroundColor(red, green, blue);
         continue;
       case 0x1C:
         this.hiliteMode();
         continue;
       case 0x1D:
-        this.hiliteColor(.);
+        var red = dv.getUint16(op_i, false);
+        var green = dv.getUint16(op_i + 2, false);
+        var blue = dv.getUint16(op_i + 4, false);
+        op_i += 6;
+        this.hiliteColor(red, green, blue);
         continue;
       case 0x1E:
         this.hiliteColor('default');
         continue;
       case 0x1F:
-        this.opColor(.);
+        var red = dv.getUint16(op_i, false);
+        var green = dv.getUint16(op_i + 2, false);
+        var blue = dv.getUint16(op_i + 4, false);
+        op_i += 6;
+        this.opColor(red, green, blue);
         continue;
       case 0x20:
         this.startLine(dv.getInt16(op_i + 2, false), dv.getInt16(op_i, false));
