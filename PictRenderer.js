@@ -344,7 +344,6 @@ PictRenderer.prototype = {
       case 0x25:
       case 0x26:
       case 0x27:
-      case 0x2C:
       case 0x2D:
       case 0x2E:
       case 0x2F:
@@ -360,6 +359,13 @@ PictRenderer.prototype = {
       case 0x9F:
         // reserved with specified data length
         var dataLen = dv.getUint16(op_i, false);
+        op_i += 2 + dataLen;
+        continue;
+      case 0x2C:
+        var dataLen = dv.getUint16(op_i, false);
+        var oldFontID = dv.getUint16(op_i + 2);
+        var name = macRoman(bytes, op_i + 5, bytes[op_i + 4]);
+        this.fontName(oldFontID, name);
         op_i += 2 + dataLen;
         continue;
       case 0x28: // long text
@@ -677,6 +683,8 @@ PictRenderer.prototype = {
   backgroundPattern: function(patternBytes) {
   },
   fontNumber: function(fontNumber) {
+  },
+  fontName: function(oldId, name) {
   },
   fontFace: function(faceNumber) {
   },
