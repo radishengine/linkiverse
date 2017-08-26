@@ -344,8 +344,6 @@ PictRenderer.prototype = {
       case 0x25:
       case 0x26:
       case 0x27:
-      case 0x2D:
-      case 0x2E:
       case 0x2F:
       case 0x92:
       case 0x93:
@@ -359,13 +357,6 @@ PictRenderer.prototype = {
       case 0x9F:
         // reserved with specified data length
         var dataLen = dv.getUint16(op_i, false);
-        op_i += 2 + dataLen;
-        continue;
-      case 0x2C:
-        var dataLen = dv.getUint16(op_i, false);
-        var oldFontID = dv.getUint16(op_i + 2);
-        var name = macRoman(bytes, op_i + 5, bytes[op_i + 4]);
-        this.fontName(oldFontID, name);
         op_i += 2 + dataLen;
         continue;
       case 0x28: // long text
@@ -389,6 +380,30 @@ PictRenderer.prototype = {
         op_i += 2;
         this.text(macRoman(bytes, op_i+1, bytes[op_i]));
         op_i += 1 + bytes[op_i];
+        continue;
+      case 0x2C:
+        var dataLen = dv.getUint16(op_i, false);
+        var oldFontID = dv.getUint16(op_i + 2);
+        var name = macRoman(bytes, op_i + 5, bytes[op_i + 4]);
+        this.fontName(oldFontID, name);
+        op_i += 2 + dataLen;
+        continue;
+      case 0x2D:
+        // line justify
+        var dataLen = dv.getUint16(op_i, false);
+        var charSpacing = fixedPoint.fromInt32(dv.getInt32(op_i + 2));
+        var extraSpace = fixedPoint.fromInt32(dv.getInt32(op_i + 6));
+        op_i += 2 + dataLen;
+        continue;
+      case 0x2E:
+        // glyph state
+        var next_i = op_i + 2 + dv.getUint16(op_i, false);
+        op_i += 2;
+        var preferOutline = !!bytes[op_i++];
+        var preserveGlyph = !!bytes[op_i++];
+        var fractionalWidths = !!bytes[op_i++];
+        var disableScaling = !!bytes[op_i++];
+        op_i = next_i;
         continue;
         
       case 0x30: this.op('rect', 'frame', this.rect = rect()); continue;
