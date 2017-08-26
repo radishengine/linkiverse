@@ -2459,10 +2459,10 @@ var resourceHandlers = {
       text: dataObject.major
         + '.' + dataObject.minor
         + '-' + dataObject.developmentStage
-        + dataObject.preReleaseRevisionLevel
+        + (dataObject.preReleaseRevisionLevel ? dataObject.preReleaseRevisionLevel : '')
         + '[' + dataObject.region + ']'
         + ' ' + dataObject.versionNumber
-        + ' ' + dataObject.versionMessage,
+        + ' "' + dataObject.versionMessage + '"',
     });
   },
 };
