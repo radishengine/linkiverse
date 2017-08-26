@@ -2381,7 +2381,7 @@ var resourceHandlers = {
       item: item,
       path: path,
       headline: 'image',
-      file: makeImageBlob(fontImage, glyphBitmapPitch, rectHeight),
+      file: makeImageBlob(fontImage, glyphBitmapPitch * 8, rectHeight),
       width: glyphBitmapPitch,
       height: rectHeight,
     });
