@@ -2382,7 +2382,7 @@ var resourceHandlers = {
       path: path,
       headline: 'image',
       file: makeImageBlob(fontImage, glyphBitmapPitch * 8, rectHeight),
-      width: glyphBitmapPitch,
+      width: glyphBitmapPitch * 8,
       height: rectHeight,
     });
   },
