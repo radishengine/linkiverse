@@ -2406,6 +2406,16 @@ function handleResource(res, item, path) {
     resourceData.byteLength);
   resourceMap.resourceList.forEach(function(resourceInfo) {
     var len = dv.getUint32(resourceInfo.dataOffset, false);
+    if (len === 0) {
+      postMessage({
+        item: item,
+        headline: 'empty-resource',
+        path: path,
+        type: resourceInfo.type,
+        name: resourceInfo.name,
+      });
+      return;
+    }
     var data = resourceData.subarray(
       resourceInfo.dataOffset + 4,
       resourceInfo.dataOffset + 4 + len);
@@ -2420,6 +2430,7 @@ function handleResource(res, item, path) {
         path: path,
         type: resourceInfo.type,
         name: resourceInfo.name,
+        byteLength: len,
       });
     }
   });
