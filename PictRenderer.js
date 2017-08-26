@@ -70,6 +70,7 @@ PixOrBitMapView.prototype = {
     return this.dv.getUint16(30);
   },
   get pixelSize() {
+    if (!this.isPixMap) return 1;
     return this.dv.getUint16(32);
   },
   get componentCount() {
