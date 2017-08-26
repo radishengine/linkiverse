@@ -17,11 +17,23 @@ PictRenderer.prototype = {
       bottom: dv.getInt16(6, false),
       right: dv.getInt16(8, false),
     };
-    if (bytes[10] !== 0x11 && bytes[11] !== 0x01) {
+    var version, op_i, nextOp;
+    if (bytes[10] === 0x11 && bytes[11] === 0x01) {
+      version = 1;
+      op_i = 12;
+      nextOp = function nextOpV1() { return bytes[op_i++]; };
+    }
+    else if (dv.getUint16(10, false) === 0x0011 && dv.getUint16(12, false)) {
+      version = 2;
+      op_i = 14;
+      nextOp = function nextOpV2() {
+        return dv.getUint16((op_i += (op_i%2) + 2) - 2, false);
+      };
+    }
+    else {
       console.warn('PICT: unsupported version');
       return false;
     }
-    var op_i = 12;
     function rect() {
       var rect = {
         top: dv.getInt16(op_i),
@@ -64,9 +76,9 @@ PictRenderer.prototype = {
       op_i += len;
       return region;
     }
-    var clipRegion;
-    pictV1Loop: for (;;) switch (bytes[op_i++]) {
-      case 0xFF: break pictV1Loop;
+    var clipRegion, op;
+    pictLoop: for (;;) switch (op = nextOp()) {
+      case 0xFF: break pictLoop;
       case 0x00: continue; // no-op
       case 0x01:
         this.clipRegion(region());
@@ -135,6 +147,58 @@ PictRenderer.prototype = {
       case 0x11:
         this.picVersion(bytes[op_i++]);
         continue;
+      case 0x12:
+        this.colorBackgroundPattern(.);
+        continue;
+      case 0x13:
+        this.colorPenPattern(.);
+        continue;
+      case 0x14:
+        this.colorFillPattern(.);
+        continue;
+      case 0x15:
+        this.fractionalPenPosition(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x16:
+        this.characterExtra(dv.getUint16(op_i, false));
+        op_i += 2;
+        continue;
+      case 0x17:
+      case 0x18:
+      case 0x19:
+      case 0x3D:
+      case 0x3E:
+      case 0x3F:
+      case 0x5D:
+      case 0x5E:
+      case 0x5F:
+      case 0x7D:
+      case 0x7E:
+      case 0x7F:
+      case 0x8D:
+      case 0x8E:
+      case 0x8F:
+        // reserved, no data
+        continue;
+      case 0x1A:
+        this.foregroundColor(.);
+        continue;
+      case 0x1B:
+        this.backgroundColor(.);
+        continue;
+      case 0x1C:
+        this.hiliteMode();
+        continue;
+      case 0x1D:
+        this.hiliteColor(.);
+        continue;
+      case 0x1E:
+        this.hiliteColor('default');
+        continue;
+      case 0x1F:
+        this.opColor(.);
+        continue;
       case 0x20:
         this.startLine(dv.getInt16(op_i + 2, false), dv.getInt16(op_i, false));
         this.lineTo(dv.getInt16(op_i + 6, false), dv.getInt16(op_i + 4, false));
@@ -152,6 +216,30 @@ PictRenderer.prototype = {
       case 0x23:
         this.lineTo(dv.getInt8(op_i + 1, false), dv.getInt8(op_i, false));
         op_i += 2;
+        continue;
+      case 0x24:
+      case 0x25:
+      case 0x26:
+      case 0x27:
+      case 0x2C:
+      case 0x2D:
+      case 0x2E:
+      case 0x2F:
+      case 0x92:
+      case 0x93:
+      case 0x94:
+      case 0x95:
+      case 0x96:
+      case 0x97:
+      case 0x9A:
+      case 0x9B:
+      case 0x9C:
+      case 0x9D:
+      case 0x9E:
+      case 0x9F:
+        // reserved with specified data length
+        var dataLen = dv.getUint16(op_i, false);
+        op_i += 2 + dataLen;
         continue;
       case 0x28: // long text
         this.origin(dv.getUint16(op_i + 2, false), dv.getUint16(op_i, false));
@@ -181,6 +269,19 @@ PictRenderer.prototype = {
       case 0x32: this.op('rect', 'erase', this.rect = rect()); continue;
       case 0x33: this.op('rect', 'invert', this.rect = rect()); continue;
       case 0x34: this.op('rect', 'fill', this.rect = rect()); continue;
+        
+      case 0x35:
+      case 0x36:
+      case 0x37:
+      case 0x4D:
+      case 0x4E:
+      case 0x4F:
+      case 0x55:
+      case 0x56:
+      case 0x57:
+        // reserved, 8 bytes data
+        op_i += 8;
+        continue;
         
       case 0x38: this.op('rect', 'frame', this.rect); continue;
       case 0x39: this.op('rect', 'paint', this.rect); continue;
@@ -218,17 +319,38 @@ PictRenderer.prototype = {
       case 0x63: this.op('arc', 'invert', this.arc = arc()); continue;
       case 0x64: this.op('arc', 'fill', this.arc = arc()); continue;
         
+      case 0x65:
+      case 0x66:
+      case 0x67:
+        // reserved, 12 bytes data
+        op_i += 12;
+        continue;
+        
       case 0x68: this.op('arc', 'frame', this.arc); continue;
       case 0x69: this.op('arc', 'paint', this.arc); continue;
       case 0x6A: this.op('arc', 'erase', this.arc); continue;
       case 0x6B: this.op('arc', 'invert', this.arc); continue;
       case 0x6C: this.op('arc', 'fill', this.arc); continue;
+        
+      case 0x6D:
+      case 0x6E:
+      case 0x6F:
+        // reserved, 4 bytes data
+        op_i += 8;
+        continue;
 
       case 0x70: this.op('arc', 'frame', this.poly = poly()); continue;
       case 0x71: this.op('arc', 'paint', this.poly = poly()); continue;
       case 0x72: this.op('arc', 'erase', this.poly = poly()); continue;
       case 0x73: this.op('arc', 'invert', this.poly = poly()); continue;
       case 0x74: this.op('arc', 'fill', this.poly = poly()); continue;
+        
+      case 0x75:
+      case 0x76:
+      case 0x77:
+        // reserved, poly
+        poly();
+        continue;
         
       case 0x78: this.op('arc', 'frame', this.poly); continue;
       case 0x79: this.op('arc', 'paint', this.poly); continue;
@@ -241,6 +363,13 @@ PictRenderer.prototype = {
       case 0x82: this.op('region', 'erase', this.region = region()); continue;
       case 0x83: this.op('region', 'invert', this.region = region()); continue;
       case 0x84: this.op('region', 'fill', this.region = region()); continue;
+       
+      case 0x75:
+      case 0x76:
+      case 0x77:
+        // reserved, region
+        region();
+        continue;
         
       case 0x88: this.op('region', 'frame', this.region); continue;
       case 0x89: this.op('region', 'paint', this.region); continue;
@@ -249,43 +378,55 @@ PictRenderer.prototype = {
       case 0x8C: this.op('region', 'fill', this.region); continue;
 
       case 0x90:
-        var rowBytes = dv.getUint16(op_i, false);
-        op_i += 2;
-        var bounds = rect();
-        var srcRect = rect();
-        var destRect = rect();
-        var mode = dv.getUint16(op_i, false);
-        op_i += 2;
-        var height = (bounds.bottom - bounds.top);
-        var rows = bytes.subarray(op_i, op_i + rowBytes * height);
-        op_i += rows.length;
-        this.copyBits(rowBytes, bounds, srcRect, destRect, mode, rows);
+        if (version === 1) {
+          var rowBytes = dv.getUint16(op_i, false);
+          op_i += 2;
+          var bounds = rect();
+          var srcRect = rect();
+          var destRect = rect();
+          var mode = dv.getUint16(op_i, false);
+          op_i += 2;
+          var height = (bounds.bottom - bounds.top);
+          var rows = bytes.subarray(op_i, op_i + rowBytes * height);
+          op_i += rows.length;
+          this.copyBits(rowBytes, bounds, srcRect, destRect, mode, rows);
+        }
+        else {
+          console.error('copy bits v2 not supported');
+          return false;
+        }
         continue;
       case 0x91:
         console.error('copy bits to clipped region not supported');
         return false;
         
       case 0x98: // copy packed bits to clipped rect
-        var rowBytes = dv.getUint16(op_i, false);
-        op_i += 2;
-        var bounds = rect();
-        var srcRect = rect();
-        var destRect = rect();
-        var mode = dv.getUint16(op_i, false);
-        op_i += 2;
-        var height = (bounds.bottom - bounds.top);
-        var unpacked = new Uint8Array(rowBytes * height);
-        if (rowBytes > 250) for (var y = 0; y < height; y++) {
-          var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
-          unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
-          op_i += 2 + packed.length;
+        if (version === 1) {
+          var rowBytes = dv.getUint16(op_i, false);
+          op_i += 2;
+          var bounds = rect();
+          var srcRect = rect();
+          var destRect = rect();
+          var mode = dv.getUint16(op_i, false);
+          op_i += 2;
+          var height = (bounds.bottom - bounds.top);
+          var unpacked = new Uint8Array(rowBytes * height);
+          if (rowBytes > 250) for (var y = 0; y < height; y++) {
+            var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
+            unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+            op_i += 2 + packed.length;
+          }
+          else for (var y = 0; y < height; y++) {
+            var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
+            unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+            op_i += 1 + packed.length;
+          }
+          this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         }
-        else for (var y = 0; y < height; y++) {
-          var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
-          unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
-          op_i += 1 + packed.length;
+        else {
+          console.error('copy bits v2 not supported');
+          return false;
         }
-        this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         continue;
       case 0x99:
         console.error('PICT: copy packed bits to clipped region');
@@ -301,8 +442,11 @@ PictRenderer.prototype = {
         this.comment(kind, len);
         op_i += 4 + len;
         continue;
+      case 0x0C00:
+        op_i += 24; // reserved header
+        continue;
       default:
-        console.error('PICT: unknown opcode 0x' + bytes[op_i-1].toString(16));
+        console.error('PICTv' + version + ': unknown opcode 0x' + op.toString(16));
         return false;
     }
     return true;
