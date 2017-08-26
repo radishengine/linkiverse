@@ -651,6 +651,8 @@ PictRenderer.prototype = {
           var destRect = rect();
           var mode = dv.getUint16(op_i);
           op_i += 2;
+          var region = region();
+          console.warn('PICT: PackBitsRgn region ignored');
           var unpacked;
           var rowBytes = pixmap.rowBytes;
           var height = pixmap.bottom - pixmap.top;
@@ -685,8 +687,6 @@ PictRenderer.prototype = {
         var destRect = rect();
         var mode = dv.getUint16(op_i);
         op_i += 2;
-        var region = region();
-        console.warn('PICT: PackBitsRgn region ignored');
         var unpacked;
         var rowBytes = pixmap.rowBytes;
         var height = pixmap.bottom - pixmap.top;
