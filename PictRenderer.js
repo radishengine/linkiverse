@@ -688,13 +688,11 @@ PictRenderer.prototype = {
         else {
           op_i -= 4; // first field of PixMap is missing?
           var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
-          if (!pixmap.isPixMap) {
-            console.error('expecting PixMap, got BitMap');
-            return false;
-          }
           op_i += pixmap.byteLength;
-          var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
-          op_i += colors.byteLength;
+          if (pixmap.isPixMap) {
+            var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
+            op_i += colors.byteLength;
+          }
           var srcRect = rect();
           var destRect = rect();
           var mode = dv.getUint16(op_i);
