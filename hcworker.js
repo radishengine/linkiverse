@@ -2374,15 +2374,20 @@ var resourceHandlers = {
     var maximumDescent = dv.getUint16(20, false);
     var leading = dv.getUint16(22, false);
     var bitImageRowWords = dv.getUint16(24, false);
-    var fontImage = bytes.subarray(26, 26 + bitImageRowWords * 2 * rectHeight);
-    postMessage({
-      item: item,
-      path: path,
-      headline: 'image',
-      file: makeImageBlob(fontImage, bitImageRowWords * 16, rectHeight),
-      width: bitImageRowWords * 16,
-      height: rectHeight,
-    });    
+    var glyphBitmapPitch = bitImageRowWords * 2;
+    var glyphBitmapSize = glyphBitmapPitch * rectHeight;
+    var fontCount = lastCharacter - firstCharacter + 1;
+    for (var i = 0; i < fontCount; i++) {
+      var fontImage = bytes.subarray(26 + glyphBitmapSize * i, 26 + glyphBitmapSize * (i+1));
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'image',
+        file: makeImageBlob(fontImage, glyphBitmapPitch, rectHeight),
+        width: glyphBitmapPitch,
+        height: rectHeight,
+      });
+    }
   },
 };
 resourceHandlers.NFNT = resourceHandlers.FONT;
