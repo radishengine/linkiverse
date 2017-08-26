@@ -2376,18 +2376,15 @@ var resourceHandlers = {
     var bitImageRowWords = dv.getUint16(24, false);
     var glyphBitmapPitch = bitImageRowWords * 2;
     var glyphBitmapSize = glyphBitmapPitch * rectHeight;
-    var fontCount = lastCharacter - firstCharacter + 1;
-    for (var i = 0; i < fontCount; i++) {
-      var fontImage = bytes.subarray(26 + glyphBitmapSize * i, 26 + glyphBitmapSize * (i+1));
-      postMessage({
-        item: item,
-        path: path,
-        headline: 'image',
-        file: makeImageBlob(fontImage, glyphBitmapPitch, rectHeight),
-        width: glyphBitmapPitch,
-        height: rectHeight,
-      });
-    }
+    var fontImage = bytes.subarray(26, 26 + glyphBitmapSize);
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: makeImageBlob(fontImage, glyphBitmapPitch, rectHeight),
+      width: glyphBitmapPitch,
+      height: rectHeight,
+    });
   },
 };
 resourceHandlers.NFNT = resourceHandlers.FONT;
