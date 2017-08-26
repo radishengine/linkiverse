@@ -569,8 +569,58 @@ PictRenderer.prototype = {
         }
         continue;
       case 0x91:
-        console.error('copy bits to clipped region not supported');
-        return false;
+        if (version === 1) {
+          var rowBytes = dv.getUint16(op_i, false);
+          op_i += 2;
+          var bounds = rect();
+          var srcRect = rect();
+          var destRect = rect();
+          var mode = dv.getUint16(op_i, false);
+          op_i += 2;
+          var rgn = region();
+          console.warn('PICT: BitsRgn region ignored');
+          var height = (bounds.bottom - bounds.top);
+          var rows = bytes.subarray(op_i, op_i + rowBytes * height);
+          op_i += rows.length;
+          this.copyBits(rowBytes, bounds, srcRect, destRect, mode, rows);
+        }
+        else {
+          op_i -= 4; // first field of PixMap is missing?
+          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
+          op_i += pixmap.byteLength;
+          if (pixmap.isPixMap) {
+            var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
+            op_i += colors.byteLength;
+          }
+          var srcRect = rect();
+          var destRect = rect();
+          var mode = dv.getUint16(op_i);
+          op_i += 2;
+          var rgn = region();
+          console.warn('PICT: BitsRgn region ignored');
+          var unpacked;
+          var rowBytes = pixmap.rowBytes;
+          var height = pixmap.bottom - pixmap.top;
+          if (rowBytes >= 8) {
+            unpacked = new Uint8Array(rowBytes * height);
+            if (rowBytes > 250) for (var y = 0; y < height; y++) {
+              var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
+              unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+              op_i += 2 + packed.length;
+            }
+            else for (var y = 0; y < height; y++) {
+              var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
+              unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+              op_i += 1 + packed.length;
+            }
+          }
+          else {
+            unpacked = bytes.subarray(op_i, op_i + rowBytes * height);
+            op_i += unpacked.length;
+          }
+          this.copyBits(rowBytes, pixmap, srcRect, destRect, mode, unpacked);
+        }
+        continue;
         
       case 0x98: // copy packed bits to clipped rect
         if (version === 1) {
@@ -651,7 +701,7 @@ PictRenderer.prototype = {
           var destRect = rect();
           var mode = dv.getUint16(op_i);
           op_i += 2;
-          var region = region();
+          var rgn = region();
           console.warn('PICT: PackBitsRgn region ignored');
           var unpacked;
           var rowBytes = pixmap.rowBytes;
@@ -720,7 +770,7 @@ PictRenderer.prototype = {
         var destRect = rect();
         var mode = dv.getUint16(op_i);
         op_i += 2;
-        var region = region();
+        var rgn = region();
         console.warn('PICT: DirectBitsRgn region ignored');
         var unpacked;
         var rowBytes = pixmap.rowBytes;
