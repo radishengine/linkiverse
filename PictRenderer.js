@@ -904,4 +904,6 @@ PictRenderer.prototype = {
   },
   hiliteColor: function() {
   },
+  opColor: function(r,g,b) {
+  },
 };
