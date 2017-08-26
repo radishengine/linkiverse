@@ -568,4 +568,6 @@ PictRenderer.prototype = {
   },
   op: function(shapeType, drawMode, shapeDef) {
   },
+  hiliteColor: function() {
+  },
 };
