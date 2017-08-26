@@ -2280,38 +2280,6 @@ var resourceHandlers = {
         header.bitsPerSample/8
       ),
     });
-    /*
-    if (headerType === 'standard') {
-      totalBytes = dv.getUint32(soundHeaderOffset + 4, false);
-      channels = 1;
-      sampleAreaOffset = 22;
-      bytesPerSample = 1;
-    }
-    else {
-      channels = dv.getUint32(soundHeaderOffset + 4, false);
-      var bitsPerSample = dv.getUint16(soundHeaderOffset + 48, false);
-      if (bitsPerSample % 8 !== 0) {
-        console.warn('unsupported bits per sample: ' + bitsPerSample);
-        return;
-      }
-      bytesPerSample = bitsPerSample / 8;
-      var totalFrames = dv.getUint32(soundHeaderOffset + 22, false);
-      totalBytes = channels * totalFrames * bytesPerSample;
-      sampleAreaOffset = 64;
-    }
-    var sampleDataOffset = soundHeaderOffset + sampleAreaOffset + dataOffset;
-    postMessage({
-      item: item,
-      path: path,
-      headline: 'file',
-      file: makeWav(
-        bytes.subarray(sampleDataOffset, sampleDataOffset + totalBytes),
-        samplingRate,
-        channels,
-        bytesPerSample
-      ),
-    });
-    */
   },
   ASND: function(item, path, bytes) {
     var deltas = new Int8Array(bytes.buffer, bytes.byteOffset + 4, 16);
@@ -2374,7 +2342,50 @@ var resourceHandlers = {
       text: text,
     });
   },
+  FONT: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var fontType = dv.getUint16(0, false);
+    var hasImageHeightTable = !!(fontType & (1 << 0));
+    var hasGlyphWidthTable = !!(fontType & (1 << 1));
+    var bitsPerPixel = 1 << ((fontType >> 2) & 3);
+    var has_fctb = !!(fontType & (1 << 7));
+    if (has_fctb) {
+      console.warn('font has fctb');
+    }
+    var isSynthetic = !!(fontType & (1 << 8));
+    if (isSynthetic) {
+      console.warn('synthetic font');
+    }
+    var hasColorsExceptBlack = !!(fontType & (1 << 9));
+    if (hasColorsExceptBlack) {
+      console.warn('font has colors except black');
+    }
+    var isFixedWidth = !!(fontType & (1 << 13));
+    var doNotScale = !!(fontType & (1 << 14));
+    var firstCharacter = dv.getUint16(2, false);
+    var lastCharacter = dv.getUint16(4, false);
+    var maximumWidth = dv.getUint16(6, false);
+    var maximumKerning = dv.getInt16(8, false);
+    var negatedDescent = dv.getInt16(10, false);
+    var rectWidth = dv.getUint16(12, false);
+    var rectHeight = dv.getUint16(14, false);
+    var widthOffsetTableOffset = dv.getUint16(16, false);
+    var maximumAscent = dv.getUint16(18, false);
+    var maximumDescent = dv.getUint16(20, false);
+    var leading = dv.getUint16(22, false);
+    var bitImageRowWords = dv.getUint16(24, false);
+    var fontImage = bytes.subarray(26, 26 + bitImageRowWords * 2 * rectHeight);
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: makeImageBlob(fontImage, bitImageRowWords * 16, rectHeight),
+      width: bitImageRowWords * 16,
+      height: rectHeight,
+    });    
+  },
 };
+handlers.NFNT = handlers.FONT;
 
 function handleResource(res, item, path) {
   var resourceHeader = new ResourceHeaderView(
