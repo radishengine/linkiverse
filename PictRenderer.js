@@ -562,8 +562,9 @@ PictRenderer.prototype = {
           op_i += 2;
           var unpacked;
           var rowBytes = pixmap.rowBytes;
+          var height = pixmap.bottom - pixmap.top;
           if (rowBytes >= 8) {
-            unpacked = new Uint8Array(rowBytes * (pixmap.bottom - pixmap.top));
+            unpacked = new Uint8Array(rowBytes * height);
             if (rowBytes > 250) for (var y = 0; y < height; y++) {
               var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
               unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
@@ -576,7 +577,7 @@ PictRenderer.prototype = {
             }
           }
           else {
-            unpacked = bytes.subarray(op_i, op_i + rowBytes * (pixmap.bottom - pixmap.top));
+            unpacked = bytes.subarray(op_i, op_i + rowBytes * height);
             op_i += unpacked.length;
           }
           this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
