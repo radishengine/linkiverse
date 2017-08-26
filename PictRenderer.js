@@ -1,4 +1,90 @@
 
+function PixOrBitMapHeaderView(buffer, byteOffset, byteLength) {
+  this.dv = new DataView(buffer, byteOffset, byteLength);
+}
+PixOrBitMapHeaderView.prototype = {
+  get rowBytes() {
+    return this.dv.getUint16(4) & ~0xC000;
+  },
+  get isPixMap() {
+    return !!(this.dv.getUint16(4) & 0x8000);
+  },
+  get byteLength() {
+    return this.isPixMap ? 50 : 14;
+  },
+  get top() {
+    return this.dv.getInt16(6);
+  },
+  get left() {
+    return this.dv.getInt16(8);
+  },
+  get bottom() {
+    return this.dv.getInt16(10);
+  },
+  get right() {
+    return this.dv.getInt16(12);
+  },
+  // below this point: PixMap only
+  get version() {
+    return this.dv.getUint16(14);
+  },
+  get packType() {
+    return this.dv.getUint16(16);
+  },
+  get packedSize() {
+    return this.dv.getUint32(18);
+  },
+  get xResolution() {
+    return Fixed.fromInt32(this.dv.getInt32(22));
+  },
+  get yResolution() {
+    return Fixed.fromInt32(this.dv.getInt32(26));
+  },
+  get pixelType() {
+    return this.dv.getUint16(30);
+  },
+  get pixelSize() {
+    return this.dv.getUint16(32);
+  },
+  get componentCount() {
+    return this.dv.getUint16(34);
+  },
+  get componentSize() {
+    return this.dv.getUint16(36);
+  },
+};
+
+function ColorTableView(buffer, byteOffset, byteLength) {
+  this.dv = new DataView(buffer, byteOffset, byteLength);
+}
+ColorTableView.prototype = {
+  get id() {
+    return this.dv.getUint32(0);
+  },
+  get flags() {
+    return this.dv.getUint16(4);
+  },
+  get entryCount() {
+    return this.dv.getUint16(6) + 1;
+  },
+  get byteLength() {
+    return 8 + this.entryCount * 8;
+  },
+  get entries() {
+    var list = new Array(this.entryCount);
+    for (var i = 0; i < list.length; i++) {
+      list[i] = {
+        value: this.dv.getUint16(8 + i * 8),
+        red: this.dv.getUint16(8 + i * 8 + 2),
+        green: this.dv.getUint16(8 + i * 8 + 4),
+        blue: this.dv.getUint16(8 + i * 8 + 6),
+      };
+    }
+    Object.defineProperty(this, 'entries', {value:list});
+    return list;
+  },
+};
+
 function PictRenderer(frame) {
   this.parts = [];
 }
@@ -461,8 +547,38 @@ PictRenderer.prototype = {
           this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         }
         else {
-          console.error('copy bits v2 not supported');
-          return false;
+          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
+          if (!pixmap.isPixmap) {
+            console.error('expecting PixMap, got BitMap');
+            return false;
+          }
+          op_i += pixmap.byteLength;
+          var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
+          op_i += colors.byteLength;
+          var srcRect = rect();
+          var destRect = rect();
+          var mode = dv.getUint16(op_i);
+          op_i += 2;
+          var unpacked;
+          var rowBytes = pixmap.rowBytes;
+          if (rowBytes >= 8) {
+            unpacked = new Uint8Array(rowBytes * (pixmap.bottom - pixmap.top));
+            if (rowBytes > 250) for (var y = 0; y < height; y++) {
+              var packed = bytes.subarray(op_i + 2, op_i + 2 + dv.getUint16(op_i, false));
+              unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+              op_i += 2 + packed.length;
+            }
+            else for (var y = 0; y < height; y++) {
+              var packed = bytes.subarray(op_i + 1, op_i + 1 + bytes[op_i]);
+              unpackBits(packed, unpacked.subarray(y*rowBytes, (y+1)*rowBytes));
+              op_i += 1 + packed.length;
+            }
+          }
+          else {
+            unpacked = bytes.subarray(op_i, op_i + rowBytes * (pixmap.bottom - pixmap.top));
+            op_i += unpacked.length;
+          }
+          this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         }
         continue;
       case 0x99:
