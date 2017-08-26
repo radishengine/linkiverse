@@ -547,12 +547,13 @@ PictRenderer.prototype = {
           this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         }
         else {
-          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i - 4);
+          op_i -= 4; // first field of PixMap is missing?
+          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
           if (!pixmap.isPixMap) {
             console.error('expecting PixMap, got BitMap');
             return false;
           }
-          op_i += pixmap.byteLength;
+          op_i += pixmap.byteLength - 4;
           var colors = new ColorTableView(dv.buffer, dv.byteOffset + op_i);
           op_i += colors.byteLength;
           var srcRect = rect();
