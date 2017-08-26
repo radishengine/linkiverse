@@ -2385,7 +2385,7 @@ var resourceHandlers = {
     });    
   },
 };
-handlers.NFNT = handlers.FONT;
+resourceHandlers.NFNT = resourceHandlers.FONT;
 
 function handleResource(res, item, path) {
   var resourceHeader = new ResourceHeaderView(
