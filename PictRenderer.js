@@ -169,13 +169,13 @@ PictRenderer.prototype = {
         this.picVersion(bytes[op_i++]);
         continue;
       case 0x12:
-        this.colorBackgroundPattern(pattern());
+        this.colorBackgroundPattern(patternV2());
         continue;
       case 0x13:
-        this.colorPenPattern(pattern());
+        this.colorPenPattern(patternV2());
         continue;
       case 0x14:
-        this.colorFillPattern(pattern());
+        this.colorFillPattern(patternV2());
         continue;
       case 0x15:
         this.fractionalPenPosition(dv.getUint16(op_i, false));
