@@ -547,7 +547,7 @@ PictRenderer.prototype = {
           this.copyBits(rowBytes, bounds, srcRect, destRect, mode, unpacked);
         }
         else {
-          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i);
+          var pixmap = new PixOrBitMapView(dv.buffer, dv.byteOffset + op_i - 4);
           if (!pixmap.isPixMap) {
             console.error('expecting PixMap, got BitMap');
             return false;
