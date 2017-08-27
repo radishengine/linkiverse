@@ -35,6 +35,9 @@ function BlobSource(blob, useByteStrings) {
 }
 BlobSource.prototype = {
   get: function(offset, length) {
+    if (!isFinite(length)) {
+      length = this.blob.size - offset;
+    }
     var gotBuffer = this.gotBuffer, useByteStrings = this.useByteStrings;
     if (!gotBuffer || offset > gotBuffer.start || (offset + length) > gotBuffer.end) {
       var readStart = offset;
@@ -97,6 +100,7 @@ var chunked_proto = {
   get: function(offset, length) {
     var self = this;
     return new Promise(function(resolve, reject) {
+      // finalRead() only called when length is finite
       function finalRead() {
         var i;
         for (i = 0; i < self.chunks.length; i++) {
@@ -144,11 +148,13 @@ var chunked_proto = {
       }
       else self.listeners.push(function listener() {
         if (offset+length > self.totalRead) {
-          if (self.complete) {
+          if (!self.complete) return;
+          if (isFinite(length)) {
             self.listeners.splice(self.listeners.indexOf(listener), 1);
             reject('not enough data');
+            return;
           }
-          return;
+          length = self.totalRead - offset;
         }
         self.listeners.splice(self.listeners.indexOf(listener), 1);
         finalRead();
@@ -168,24 +174,41 @@ var chunked_proto = {
         }
         for (; i < self.chunks.length; i++) {
           var chunk = self.chunks[i];
-          chunk = chunk.subarray(offset, Math.min(chunk.length, offset + length));
+          if (typeof chunk === 'string') {
+            chunk = chunk.substring(offset, Math.min(chunk.length, offset + length));
+          }
+          else {
+            chunk = chunk.subarray(offset, Math.min(chunk.length, offset + length));
+          }
           callback(chunk);
-          length -= chunk.length;
-          if (length === 0) {
-            self.listeners.splice(self.listeners.indexOf(listen), 1);
-            resolve();
-            return;
+          if (isFinite(length)) {
+            length -= chunk.length;
+            if (length === 0) {
+              self.listeners.splice(self.listeners.indexOf(listen), 1);
+              resolve();
+              return;
+            }
           }
           offset = 0;
         }
         if (self.complete) {
           self.listeners.splice(self.listeners.indexOf(listen), 1);
-          reject('unexpected end of data');
+          if (isFinite(length)) {
+            reject('unexpected end of data');
+          }
+          else {
+            resolve();
+          }
         }
       }
       self.listeners.push(listen);
       listen();
     });
+  },
+  callListeners: function() {
+    for (var i = this.listeners.length-1; i >= 0; i--) {
+      this.listeners[i]();
+    }
   },
 };
 
@@ -199,18 +222,14 @@ function FetchChunkedSource(url, useByteStrings) {
   this.fetched = fetch(url).then(function(req) {
     if (!req.ok) {
       self.complete = true;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
+      self.callListeners();
       return Promise.reject('download error');
     }
     var reader = req.body.getReader();
     function nextChunk(chunk) {
       if (chunk.done) {
         self.complete = true;
-        self.listeners.forEach(function(listener) {
-          listener();
-        });
+        self.callListeners();
         return;
       }
       chunk = chunk.value;
@@ -219,9 +238,7 @@ function FetchChunkedSource(url, useByteStrings) {
       }
       self.chunks.push(chunk);
       self.totalRead += chunk.length;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
+      self.callListeners();
       return reader.read().then(nextChunk);
     }
     return reader.read().then(nextChunk);
@@ -253,23 +270,17 @@ function MozChunkedSource(url, useByteStrings) {
       }
       self.chunks.push(chunk);
       self.totalRead += this.response.byteLength;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
+      self.callListeners();
     };
     xhr.onload = function() {
       self.complete = true;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
+      self.callListeners();
       resolve();
     };
     xhr.onerror = function() {
       reject('download error');
       self.complete = true;
-      self.listeners.forEach(function(listener) {
-        listener();
-      });
+      self.callListeners();
     };
     xhr.send();
   });
@@ -291,6 +302,105 @@ Object.defineProperty(MozChunkedSource, 'available', {
   },
 });
 MozChunkedSource.prototype = Object.create(chunked_proto);
+
+const HQX_LOOKUP = (function(b) {
+  var chars = '!"#$%&\'()*+,-012345689@ABCDEFGHIJKLMNPQRSTUVXYZ[`abcdefhijklmpqr';
+  for (var i = 0; i < chars.length; i++) {
+    b[chars.charCodeAt(i)] = i;
+  }
+  return b;
+})(new Uint8Array(256));
+
+function HqxEncodedSource(source) {
+  this.chunks = [];
+  this.listeners = [];
+  var phase = 'before', chunkPrefix = '';
+  var self = this;
+  function listener(chunk) {
+    if (phase === 'after') return;
+    if (typeof chunk !== 'string') {
+      chunk = byteStringDecoder.decode(chunk);
+    }
+    if (chunkPrefix) chunk = chunkPrefix + chunk;
+    if (phase === 'before') {
+      var prefix = chunk.match(/(^|\r|\n)\(This file must be converted with BinHex[^\r\n]*[\r\n]+:/);
+      if (!prefix) {
+        chunkPrefix = chunk.slice(-64);
+        return;
+      }
+      chunk = chunk.substr(prefix.index + prefix[0].length);
+      phase = 'data';
+    }
+    var dataEnd = chunk.indexOf(':');
+    if (dataEnd > -1) {
+      chunk = chunk.slice(), dataEnd);
+      phase = 'after';
+      self.complete = true;
+    }
+    chunk = chunk.replace(/\s+/g, '');
+    chunkPrefix = chunk.slice(-chunk.length % 4);
+    if (chunkPrefix) {
+      chunk = chunk.slice(0, -chunkPrefix.length);
+    }
+    if (chunk === '') return;
+    var buf = new Uint8Array((chunk.length/4) * 3);
+    var buf_i = 0;
+    function byte(b) {
+      if (phase === 'rle') {
+        phase = 'data';
+        if (b === 0x00) {
+          buf[buf_i++] = 0x90;
+          return;
+        }
+        var copy = buf[buf_i-1];
+        buf[buf_i++] = copy;
+        if (--b === 0) {
+          return;
+        }
+        buf[buf_i++] = copy;
+        if (--b === 0) {
+          return;
+        }
+        self.chunks.push(buf.subarray(0, buf_i));
+        buf = buf.subarray(buf_i);
+        buf_i = 0;
+        var rep = new Uint8Array(b);
+        if (copy !== 0) for (var i = 0; i < b; i++) {
+          rep[i] = b;
+        }
+        self.chunks.push(rep);
+      }
+      else if (b === 0x90 && buf_i > 0) {
+        phase = 'rle';
+      }
+      else {
+        buf[buf_i++] = b;
+      }
+    }
+    for (var i = 0; i < chunk.length; i += 4) {
+      var c1 = HQX_LOOKUP[chunk.charCodeAt(i)];
+      var c2 = HQX_LOOKUP[chunk.charCodeAt(i+1)];
+      var c3 = HQX_LOOKUP[chunk.charCodeAt(i+2)];
+      var c4 = HQX_LOOKUP[chunk.charCodeAt(i+3)];
+      
+      byte((c1 << 2) | (c2 >> 4));
+      byte(((c2 << 4) | (c3 >> 2)) & 0xff);
+      byte(((c3 << 6) | c4) & 0xff);
+    }
+    if (buf_i > 0) {
+      self.chunks.push(buf.subarray(0, buf_i));
+    }
+    self.callListeners();
+  }
+  source.stream(0, Infinity, listener).then(function() {
+    if (!self.complete) {
+      console.error('unterminated hqx data');
+      self.complete = true;
+      self.callListeners();
+    }
+  });
+}
+HqxEncodedSource.prototype = Object.create(chunked_proto);
 
 const MAC_CHARSET_128_255
   = '\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8'
@@ -3237,7 +3347,15 @@ self.onmessage = function onmessage(e) {
       });
       break;
     case 'load-blob':
-      ondisk(new BlobSource(message.blob), message.item);
+      if (/\.hqx$/i.test(message.blob.name || '')) {
+        var hqxSource = new HqxEncodedSource(new BlobSource(message.blob, true));
+        hqxSource.get(0, Infinity).then(function(data) {
+          download(data);
+        });
+      }
+      else {
+        ondisk(new BlobSource(message.blob), message.item);
+      }
       break;
   }
 };
