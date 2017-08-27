@@ -2113,7 +2113,7 @@ var resourceHandlers = {
           ]);
           break;
         case 24:
-          var imgDV = new DataView(dv.buffer, dv.byteOffset + i + 2, dv.getUint16(i));
+          var imgDV = new DataView(dv.buffer, dv.byteOffset + i + 2, dv.getUint16(i) - 2);
           i += 2 + imgDV.byteLength;
           var top = imgDV.getInt16(0);
           var left = imgDV.getInt16(2);
