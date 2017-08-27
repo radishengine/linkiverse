@@ -1961,7 +1961,7 @@ var resourceHandlers = {
   },
   ASCN: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    var design = bytes.subarray(2, 2 + dv.getUint16(0, false));
+    var design = bytes.subarray(2, dv.getUint16(0, false));
     var pos = 2 + design.byteLength;
     var obj = {
       top: dv.getInt16(pos, false),
