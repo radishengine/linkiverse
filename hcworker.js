@@ -1,6 +1,24 @@
 
 importScripts('OTFTable.js');
 
+if (!('TextDecoder' in self)) {
+  self.TextDecoder = function TextDecoder(encoding) {
+    this.encoding = encoding;
+    this.fileReaderSync = new FileReaderSync;
+  };
+  self.TextDecoder.prototype = {
+    decode: function(bytes) {
+      if (bytes.length < 1024 && this.encoding === 'iso-8859-1') {
+        return String.fromCharCode.apply(null, bytes);
+      }
+      this.fileReaderSync.readAsText(new Blob([bytes]), this.encoding);
+      return this.fileReaderSync.result;
+    },
+  };
+}
+
+var byteStringDecoder = new TextDecoder('iso-8859-1');
+
 function download(v) {
   if (!(v instanceof Blob)) v = new Blob([v]);
   postMessage({
@@ -11,12 +29,13 @@ function download(v) {
 
 const BUFFER_LENGTH = 1024 * 1024 * 2;
 
-function BlobSource(blob) {
+function BlobSource(blob, useByteStrings) {
   this.blob = blob;
+  this.useByteStrings = !!useByteStrings;
 }
 BlobSource.prototype = {
   get: function(offset, length) {
-    var gotBuffer = this.gotBuffer;
+    var gotBuffer = this.gotBuffer, useByteStrings = this.useByteStrings;
     if (!gotBuffer || offset > gotBuffer.start || (offset + length) > gotBuffer.end) {
       var readStart = offset;
       var readEnd = offset + length;
@@ -33,10 +52,16 @@ BlobSource.prototype = {
         };
         fr.onload = function() {
           var buffer = this.result;
+          if (useByteStrings) buffer = {text:buffer};
           buffer.fileOffset = readStart;
           resolve(buffer);
         };
-        fr.readAsArrayBuffer(self.blob.slice(readStart, readEnd));
+        if (useByteStrings) {
+          fr.readAsText(self.blob.slice(readStart, readEnd), 'iso-8859-1');
+        }
+        else {
+          fr.readAsArrayBuffer(self.blob.slice(readStart, readEnd));
+        }
       });
       if (createBuffer) {
         gotBuffer.start = readStart;
@@ -45,28 +70,12 @@ BlobSource.prototype = {
       }
     }
     return gotBuffer.then(function(buffer) {
+      if (useByteStrings) return buffer.text.substr(offset - buffer.fileOffset, length);
       return new Uint8Array(buffer, offset - buffer.fileOffset, length);
     });
   },
-  getBlob: function() {
-    return Promise.resolve(this.blob);
-  },
   stream: function(offset, length, callback) {
-    return this.get(offset, length).then(callback);
-  },
-};
-
-function MemorySource(arrayBuffer) {
-  this.arrayBuffer = arrayBuffer;
-}
-MemorySource.prototype = {
-  get: function(offset, length) {
-    return Promise.resolve(new Uint8Array(this.arrayBuffer, offset, length));
-  },
-  getBlob: function() {
-    return Promise.resolve(new Blob([this.arrayBuffer]));
-  },
-  stream: function(offset, length, callback) {
+    // TODO: chunk if length is huge?
     return this.get(offset, length).then(callback);
   },
 };
@@ -78,12 +87,6 @@ function OffsetSource(source, offset) {
 OffsetSource.prototype = {
   get: function(offset, length) {
     return this.source.get(this.offset + offset || 0, length);
-  },
-  getBlob: function() {
-    var offset = this.offset;
-    return this.source.getBlob().then(function(blob) {
-      return blob.slice(offset);
-    });
   },
   stream: function(offset, length, callback) {
     return this.source.stream(this.offset + offset || 0, length, callback);
@@ -103,20 +106,38 @@ var chunked_proto = {
           offset -= self.chunks[i].length;
         }
         if (offset+length <= self.chunks[i].length) {
-          resolve(self.chunks[i].subarray(offset, offset+length));
+          if (self.useByteStrings) {
+            resolve(self.chunks[i].substr(offset, length));
+          }
+          else {
+            resolve(self.chunks[i].subarray(offset, offset+length));
+          }
           return;
         }
-        var buf = new Uint8Array(length);
-        var chunk = self.chunks[i].subarray(offset);
-        buf.set(chunk);
-        buf.writeOffset = chunk.length;
-        do {
-          chunk = self.chunks[++i];
-          chunk = chunk.subarray(0, Math.min(chunk.length, buf.length - buf.writeOffset));
-          buf.set(chunk, buf.writeOffset);
-          buf.writeOffset += chunk.length;
-        } while (buf.writeOffset < buf.length);
-        resolve(buf);
+        if (self.useByteStrings) {
+          var buf = [self.chunks[i].slice(offset)];
+          var bufLen = buf[0].length;
+          do {
+            var chunk = self.chunks[++i];
+            chunk = chunk.slice(0, Math.min(chunk.length, buf.length - buf.writeOffset));
+            buf.push(chunk);
+            bufLen += chunk.length;
+          } while (bufLen < length);
+          resolve(buf.join(''));
+        }
+        else {
+          var buf = new Uint8Array(length);
+          var chunk = self.chunks[i].subarray(offset);
+          buf.set(chunk);
+          buf.writeOffset = chunk.length;
+          do {
+            chunk = self.chunks[++i];
+            chunk = chunk.subarray(0, Math.min(chunk.length, buf.length - buf.writeOffset));
+            buf.set(chunk, buf.writeOffset);
+            buf.writeOffset += chunk.length;
+          } while (buf.writeOffset < buf.length);
+          resolve(buf);
+        }
       }
       if (offset+length <= self.totalRead) {
         finalRead();
@@ -132,12 +153,6 @@ var chunked_proto = {
         self.listeners.splice(self.listeners.indexOf(listener), 1);
         finalRead();
       });
-    });
-  },
-  getBlob: function() {
-    var self = this;
-    return this.fetched.then(function() {
-      return new Blob(self.chunks);
     });
   },
   stream: function(offset, length, callback) {
@@ -173,9 +188,11 @@ var chunked_proto = {
     });
   },
 };
-    
-function FetchChunkedSource(url) {
+
+function FetchChunkedSource(url, useByteStrings) {
   var self = this;
+  useByteStrings = !!useByteStrings;
+  this.useByteStrings = useByteStrings;
   this.listeners = [];
   this.chunks = [];
   this.totalRead = 0;
@@ -197,6 +214,9 @@ function FetchChunkedSource(url) {
         return;
       }
       chunk = chunk.value;
+      if (useByteStrings) {
+        chunk = byteStringDecoder.decode(chunk);
+      }
       self.chunks.push(chunk);
       self.totalRead += chunk.length;
       self.listeners.forEach(function(listener) {
@@ -210,17 +230,28 @@ function FetchChunkedSource(url) {
 FetchChunkedSource.available = (typeof self.ReadableStream === 'function' && 'getReader' in ReadableStream.prototype);
 FetchChunkedSource.prototype = Object.create(chunked_proto);
     
-function MozChunkedSource(url) {
-  var self = this;
+function MozChunkedSource(url, useByteStrings) {
+  this.useByteStrings = useByteStrings = !!useByteStrings;
   this.listeners = [];
   this.chunks = [];
   this.totalRead = 0;
+  var self = this;
   this.fetched = new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest;
     xhr.open('GET', url);
-    xhr.responseType = 'moz-chunked-arraybuffer';
+    if (useByteStrings) {
+      xhr.overrideMimeType('text/plain; charset=iso-8859-1');
+      xhr.responseType = 'moz-chunked-text';
+    }
+    else {
+      xhr.responseType = 'moz-chunked-arraybuffer';
+    }
     xhr.onprogress = function() {
-      self.chunks.push(new Uint8Array(this.response));
+      var chunk = this.response;
+      if (!useByteStrings) {
+        chunk = new Uint8Array(this.response);
+      }
+      self.chunks.push(chunk);
       self.totalRead += this.response.byteLength;
       self.listeners.forEach(function(listener) {
         listener();
@@ -261,92 +292,6 @@ Object.defineProperty(MozChunkedSource, 'available', {
 });
 MozChunkedSource.prototype = Object.create(chunked_proto);
 
-function getDB() {
-  return getDB.result = getDB.result || new Promise(function(resolve, reject) {
-    var opening = indexedDB.open('hctemp', 1);
-    opening.onerror = function() {
-      reject('db error ' + this.errorCode);
-    };
-    opening.onsuccess = function() {
-      resolve(this.result);
-    };
-    opening.onupgradeneeded = function() {
-      var db = this.result;
-      db.createObjectStore('cache');
-    };
-  });
-}
-
-// TODO: enable cache only in ?debug mode
-function getCache() {
-  return Promise.resolve({});
-  /*
-  return getDB().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      var getting = db.transaction(['cache'], 'readonly').objectStore('cache').get(1);
-      getting.onerror = function(e) {
-        reject('db error ' + this.errorCode);
-      };
-      getting.onsuccess = function(e) {
-        resolve(this.result || {});
-      };
-    });
-  });
-  */
-}
-
-function setCache(record) {
-  return;
-  /*
-  getDB().then(function(db) {
-    db.transaction(['cache'], 'readwrite').objectStore('cache').put(record, 1);
-  });
-  */
-}
-
-function getBuffer(identifier) {
-  function downloadItem() {
-    var url = '//cors.archive.org/cors/' + identifier;
-    var ChunkedSource
-      = FetchChunkedSource.available ? FetchChunkedSource
-      : MozChunkedSource.available ? MozChunkedSource
-      : null;
-    if (ChunkedSource) {
-      var source = new ChunkedSource(url);
-      source.fetched.then(function() {
-        return source.getBlob();
-      })
-      .then(function(blob) {
-        setCache({identifier:identifier, blob:blob});
-      });
-      return Promise.resolve(source);
-    }
-    return fetch('//cors.archive.org/cors/' + identifier)
-    .then(function(response) {
-      if (!response.ok) {
-        return Promise.reject('server returned code ' + response.code);
-      }
-      return response.arrayBuffer();
-    })
-    .then(function(buffer) {
-      setCache({identifier:identifier, blob:new Blob([buffer])});
-      return new MemorySource(buffer);
-    });
-  }
-  return getCache().then(function(cache) {
-    if (cache.identifier === identifier) {
-      return new Promise(function(resolve, reject) {
-        var fr = new FileReader();
-        fr.onload = function() {
-          resolve(new MemorySource(this.result));
-        };
-        fr.readAsArrayBuffer(cache.blob);
-      });
-    }
-    return downloadItem();
-  });
-}
-
 const MAC_CHARSET_128_255
   = '\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8'
   + '\xEA\xEB\xED\xEC\xEE\xEF\xF1\xF3\xF2\xF4\xF6\xF5\xFA\xF9\xFB\xFC'
@@ -357,28 +302,12 @@ const MAC_CHARSET_128_255
   + '\u2021\xB7\u201A\u201E\u2030\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4'
   + '\uF8FF\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7';
 
-var decoder = ('TextDecoder' in self) ? new TextDecoder('iso-8859-1') : {
-  max: 512 * 1024,
-  decode: function(bytes) {
-    while (bytes.length <= this.max) {
-      try {
-        return String.fromCharCode.apply(null, bytes);
-      }
-      catch (e) {
-        this.max /= 2;
-      }
-    }
-    return this.decode(bytes.subarray(0, this.max)) +
-      this.decode(bytes.subarray(this.max));
-  },
-};
-
 function macRoman(u8array, offset, length) {
   switch(arguments.length) {
     case 2: u8array = u8array.subarray(offset); break;
     case 3: u8array = u8array.subarray(offset, offset + length); break;
   }
-  return decoder.decode(u8array)
+  return byteStringDecoder.decode(u8array)
   .replace(/[\x80-\xFF]/g, function(c) {
     return MAC_CHARSET_128_255[c.charCodeAt(0) - 128];
   })
@@ -3283,12 +3212,6 @@ function ondisk(disk, item) {
 self.onmessage = function onmessage(e) {
   var message = e.data;
   switch (message.headline) {
-    case 'load':
-      var item = message.item;
-      getBuffer(item + '/disk.img').then(function(disk) {
-        ondisk(disk, item);
-      });
-      break;
     case 'load-url':
       var gotSource;
       var ChunkedSource
