@@ -2152,8 +2152,8 @@ var resourceHandlers = {
         case 16: // polygon
         case 20:
           var numBytes = dv.getUint16(i + 2);
+          var coords = new DataView(dv.buffer, dv.byteOffset + i + 4 + 8, numBytes - 10);
           i += 2 + numBytes;
-          var coords = new DataView(dv.buffer, dv.byteOffset + i + 4, numBytes - 10);
           var y = coords.getInt16(2), x = coords.getInt16(0);
           var path = ['M' + x + ',' + y];
           var j = 4;
