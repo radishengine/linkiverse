@@ -1867,6 +1867,13 @@ var resourceHandlers = {
     var soundHeaderOffset = dv.getUint32(offset, false);
     offset += 4;
     var header = new SoundHeaderView(dv.buffer, dv.byteOffset + soundHeaderOffset);
+    if (header.samplePos > bytes.length && soundHeaderOffset > offset) {
+      header = new SoundHeaderView(dv.buffer, dv.byteOffset + offset);
+      if (header.samplePos > bytes.length) {
+        console.error('snd: not enough data');
+        return;
+      }
+    }
     var dataOffset = header.samplePos;
     if (dataOffset === 'suffix') dataOffset = soundHeaderOffset + header.byteLength;
     var dataLength = header.dataByteLength;
