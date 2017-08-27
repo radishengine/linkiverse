@@ -2033,18 +2033,18 @@ var resourceHandlers = {
       var borderThickness = design[i++];
       var borderFillType = design[i++];
       var type = design[i++];
-      var fill, stroke;
+      var fill, stroke, strokeWidth;
       if (fillType === 0) {
         fillType = 'none';
       }
       else {
-        fillType = '#000'; // TODO: get pattern #(fillType-1)
+        fillType = '#888'; // TODO: get pattern #(fillType-1)
       }
       if (borderThickness === 0 || borderFillType === 0) {
         stroke = 'none';
       }
       else {
-        stroke = '#000';
+        stroke = '#444'; // TODO: get pattern #(borderFillType-1)
       }
       switch (type) {
         case 4: // rect
@@ -2061,6 +2061,7 @@ var resourceHandlers = {
             'height="'+(bottom-top)+'"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
+            'stroke-width="' + borderThickness + '"',
             '/>',
           ].join(' '));
           break;
@@ -2081,6 +2082,7 @@ var resourceHandlers = {
             'ry="12"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
+            'stroke-width="' + borderThickness + '"',
             '/>',
           ].join(' '));
           break;
@@ -2098,6 +2100,7 @@ var resourceHandlers = {
             'ry="' + (bottom-top)/2 + '"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
+            'stroke-width="' + borderThickness + '"',
             '/>',
           ].join(' '));
           break;
@@ -2135,6 +2138,7 @@ var resourceHandlers = {
             'd="' + path.join(' ') + '"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
+            'stroke-width="' + borderThickness + '"',
             '/>',
           ].join(' '));
           break;
