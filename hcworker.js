@@ -1868,7 +1868,8 @@ var resourceHandlers = {
     offset += 4;
     var header = new SoundHeaderView(dv.buffer, dv.byteOffset + soundHeaderOffset);
     if (header.samplePos > bytes.length && soundHeaderOffset > offset) {
-      header = new SoundHeaderView(dv.buffer, dv.byteOffset + offset);
+      soundHeaderOffset = offset;
+      header = new SoundHeaderView(dv.buffer, dv.byteOffset + soundHeaderOffset);
       if (header.samplePos > bytes.length) {
         console.error('snd: not enough data');
         return;
