@@ -340,6 +340,7 @@ function HqxEncodedSource(source) {
     if (chunk.length % 4) {
       if (phase === 'after') {
         chunk += '!!!!'.slice(chunk.length % 4);
+        chunkPrefix = '';
       }
       else {
         chunkPrefix = chunk.slice(-(chunk.length % 4));
