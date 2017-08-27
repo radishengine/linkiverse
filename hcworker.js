@@ -97,6 +97,7 @@ OffsetSource.prototype = {
 };
 
 var chunked_proto = {
+  totalRead: 0,
   get: function(offset, length) {
     var self = this;
     return new Promise(function(resolve, reject) {
@@ -218,7 +219,6 @@ function FetchChunkedSource(url, useByteStrings) {
   this.useByteStrings = useByteStrings;
   this.listeners = [];
   this.chunks = [];
-  this.totalRead = 0;
   this.fetched = fetch(url).then(function(req) {
     if (!req.ok) {
       self.complete = true;
@@ -251,7 +251,6 @@ function MozChunkedSource(url, useByteStrings) {
   this.useByteStrings = useByteStrings = !!useByteStrings;
   this.listeners = [];
   this.chunks = [];
-  this.totalRead = 0;
   var self = this;
   this.fetched = new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest;
@@ -359,6 +358,7 @@ function HqxEncodedSource(source) {
         buf[buf_i++] = copy;
         if (--b === 0) return;
         self.chunks.push(buf.subarray(0, buf_i));
+        self.totalRead += buf_i + b;
         buf = buf.subarray(buf_i);
         buf_i = 0;
         var rep = new Uint8Array(b);
@@ -386,6 +386,7 @@ function HqxEncodedSource(source) {
     }
     if (buf_i > 0) {
       self.chunks.push(buf.subarray(0, buf_i));
+      self.totalRead += buf_i;
     }
     self.callListeners();
   }
