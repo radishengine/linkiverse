@@ -2035,10 +2035,10 @@ var resourceHandlers = {
       var type = design[i++];
       var fill, stroke, strokeWidth;
       if (fillType === 0) {
-        fillType = 'none';
+        fill = 'none';
       }
       else {
-        fillType = '#888'; // TODO: get pattern #(fillType-1)
+        fill = '#888'; // TODO: get pattern #(fillType-1)
       }
       if (borderThickness === 0 || borderFillType === 0) {
         stroke = 'none';
