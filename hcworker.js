@@ -2133,7 +2133,7 @@ var resourceHandlers = {
                 resolve(this.result);
               };
               fr.readAsDataURL(makeImageBlob(unpacked, rowBytes*8, height));
-            },
+            }),
             '"/>');
           break;
         default:
