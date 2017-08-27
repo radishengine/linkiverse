@@ -333,7 +333,7 @@ function HqxEncodedSource(source) {
     }
     var dataEnd = chunk.indexOf(':');
     if (dataEnd > -1) {
-      chunk = chunk.slice(), dataEnd);
+      chunk = chunk.slice(0, dataEnd);
       phase = 'after';
       self.complete = true;
     }
