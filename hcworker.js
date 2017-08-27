@@ -2015,20 +2015,37 @@ var resourceHandlers = {
     var i = 0;
     var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
     var imgX=0, imgY=0, imgWidth=512, imgHeight=342; // full screen: should it be the rect in the data above?
-    var parts = [
+    var parts = [];
+    parts.push([
       '<svg',
-      ' xmlns="http://www.w3.org/2000/svg"',
-      ' xmlns:xlink="http://www.w3.org/1999/xlink"',
-      ' width="' + imgWidth + '"',
-      ' height="' + imgHeight + '"',
-      ' viewBox="' + [imgX, imgY, imgWidth, imgHeight].join(' ') + '"',
+      'xmlns="http://www.w3.org/2000/svg"',
+      'xmlns:xlink="http://www.w3.org/1999/xlink"',
+      'width="' + imgWidth + '"',
+      'height="' + imgHeight + '"',
+      'viewBox="' + [imgX, imgY, imgWidth, imgHeight].join(' ') + '"',
+      'shape-rendering="crispEdges"',
+      'stroke-linecap="square"',
+      'stroke-linejoin="bevel"',
       '>',
-    ];
+    ].join(' '));
     while (i < design.length) {
       var fillType = design[i++];
       var borderThickness = design[i++];
       var borderFillType = design[i++];
       var type = design[i++];
+      var fill, stroke;
+      if (fillType === 0) {
+        fillType = 'none';
+      }
+      else {
+        fillType = '#000'; // TODO: get pattern #(fillType-1)
+      }
+      if (borderThickness === 0 || borderFillType === 0) {
+        stroke = 'none';
+      }
+      else {
+        stroke = '#000';
+      }
       switch (type) {
         case 4: // rect
           var top = dv.getInt16(i);
@@ -2041,7 +2058,10 @@ var resourceHandlers = {
             'x="'+left+'"',
             'y="'+top+'"',
             'width="'+(right-left)+'"',
-            'height="'+(bottom-top)+'"/>',
+            'height="'+(bottom-top)+'"',
+            'fill="' + fill + '"',
+            'stroke="' + stroke + '"',
+            '/>',
           ].join(' '));
           break;
         case 8: // round rect
@@ -2059,6 +2079,8 @@ var resourceHandlers = {
             'height="'+(bottom-top)+'"',
             'rx="12"',
             'ry="12"',
+            'fill="' + fill + '"',
+            'stroke="' + stroke + '"',
             '/>',
           ].join(' '));
           break;
@@ -2074,6 +2096,8 @@ var resourceHandlers = {
             'cy="' + (top+bottom)/2 + '"',
             'rx="' + (right-left)/2 + '"',
             'ry="' + (bottom-top)/2 + '"',
+            'fill="' + fill + '"',
+            'stroke="' + stroke + '"',
             '/>',
           ].join(' '));
           break;
@@ -2106,10 +2130,11 @@ var resourceHandlers = {
             }
             path.push('L' + x + ',' + y);
           }
-          path.push('Z');
           parts.push([
             '<path',
             'd="' + path.join(' ') + '"',
+            'fill="' + fill + '"',
+            'stroke="' + stroke + '"',
             '/>',
           ].join(' '));
           break;
