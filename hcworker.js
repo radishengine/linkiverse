@@ -353,7 +353,7 @@ function HqxEncodedSource(source) {
           return;
         }
         if (--b === 0) return;
-        var copy = = buf[buf_i-1];
+        var copy = buf[buf_i-1];
         buf[buf_i++] = copy;
         if (--b === 0) return;
         buf[buf_i++] = copy;
