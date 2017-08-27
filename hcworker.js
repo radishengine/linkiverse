@@ -1961,8 +1961,8 @@ var resourceHandlers = {
   },
   ASCN: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    var designLength = dv.getUint16(0, false);
-    var pos = designLength;
+    var design = bytes.subarray(2, 2 + dv.getUint16(0, false));
+    var pos = 2 + design.byteLength;
     var obj = {
       top: dv.getInt16(pos, false),
       left: dv.getInt16(pos + 2, false),
@@ -2011,6 +2011,49 @@ var resourceHandlers = {
       headline: 'text',
       text: obj.westMessage,
     });
+    var i = 0;
+    var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
+    while (i < design.length) {
+      var fillType = design[i++];
+      var borderThickness = design[i++];
+      var borderFillType = design[i++];
+      var type = design[i++];
+      switch (type) {
+        case 4: // rect
+          var top = dv.getInt16(i);
+          var left = dv.getInt16(i + 2);
+          var bottom = dv.getInt16(i + 4);
+          var right = dv.getInt16(i + 6);
+          i += 8;
+          break;
+        case 8: // round rect
+          var top = dv.getInt16(i);
+          var left = dv.getInt16(i + 2);
+          var bottom = dv.getInt16(i + 4);
+          var right = dv.getInt16(i + 6);
+          var arc = dv.getInt16(i + 8);
+          i += 10;
+          break;
+        case 12: // oval
+          var top = dv.getInt16(i);
+          var left = dv.getInt16(i + 2);
+          var bottom = dv.getInt16(i + 4);
+          var right = dv.getInt16(i + 6);
+          i += 8;
+          break;
+        case 16: // polygon
+        case 20:
+          var numBytes = dv.getUint16(i + 2);
+          i += 2 + numBytes;
+          break;
+        case 24:
+          var end_i = i + dv.getUint16(i);
+          i = end_i;
+          break;
+        default:
+          throw new Error('unknown drawing code');
+      }
+    }
   },
   ATXT: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
