@@ -2013,6 +2013,16 @@ var resourceHandlers = {
     });
     var i = 0;
     var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
+    var imgX=0, imgY=0, imgWidth=512, imgHeight=342; // full screen: should it be the rect in the data above?
+    var parts = [
+      '<svg ',
+      ' xmlns="http://www.w3.org/2000/svg"',
+      ' xmlns:xlink="http://www.w3.org/1999/xlink"',
+      ' width="' + imgX + '"',
+      ' height="' + imgY + '"',
+      ' viewBox="' + [imgX, imgY, imgWidth, imgHeight].join(' ') + '"',
+      '>',
+    ];
     while (i < design.length) {
       var fillType = design[i++];
       var borderThickness = design[i++];
@@ -2025,6 +2035,13 @@ var resourceHandlers = {
           var bottom = dv.getInt16(i + 4);
           var right = dv.getInt16(i + 6);
           i += 8;
+          parts.push([
+            '<rect',
+            'x="'+top+'"',
+            'y="'+left+'"',
+            'width="'+(right-left)+'"',
+            'height="'+(bottom-top)+'"/>',
+          ].join(' '));
           break;
         case 8: // round rect
           var top = dv.getInt16(i);
@@ -2033,6 +2050,16 @@ var resourceHandlers = {
           var right = dv.getInt16(i + 6);
           var arc = dv.getInt16(i + 8);
           i += 10;
+          parts.push([
+            '<rect',
+            'x="'+top+'"',
+            'y="'+left+'"',
+            'width="'+(right-left)+'"',
+            'height="'+(bottom-top)+'"',
+            'rx="12"',
+            'ry="12"',
+            '/>',
+          ].join(' '));
           break;
         case 12: // oval
           var top = dv.getInt16(i);
@@ -2040,20 +2067,91 @@ var resourceHandlers = {
           var bottom = dv.getInt16(i + 4);
           var right = dv.getInt16(i + 6);
           i += 8;
+          parts.push([
+            '<ellipse',
+            'cx="' + (left+right)/2 + '"',
+            'cy="' + (top+bottom)/2 + '"',
+            'rx="' + (right-left)/2 + '"',
+            'ry="' + (bottom-top)/2 + '"',
+            '/>',
+          ].join(' '));
           break;
         case 16: // polygon
         case 20:
           var numBytes = dv.getUint16(i + 2);
           i += 2 + numBytes;
+          var coords = new DataView(dv.buffer, dv.byteOffset + i + 4, numBytes - 10);
+          var y = coords.getInt16(2), x = coords.getInt16(0);
+          var path = ['M' + x + ',' + y];
+          var j = 4;
+          while (j < coords.byteLength) {
+            var yb = coords.getInt8(j);
+            if (yb === -128) {
+              y = coords.getInt16(j+1);
+              j += 3;
+            }
+            else {
+              y += yb;
+              j++;
+            }
+            var xb = coords.getInt8(j);
+            if (xb === -128) {
+              x = coords.getInt16(j+1);
+              j += 3;
+            }
+            else {
+              x += xb;
+              j++;
+            }
+            path.push('L' + x + ',' + y);
+          }
+          path.push('Z');
+          parts.push([
+            '<path',
+            'd="' + path.join(' ') + '"',
+            '/>',
+          ]);
           break;
         case 24:
-          var end_i = i + dv.getUint16(i);
-          i = end_i;
+          var imgDV = new DataView(dv.buffer, dv.byteOffset + i + 2, dv.getUint16(i));
+          i += 2 + imgDV.byteLength;
+          var top = imgDV.getInt16(0);
+          var left = imgDV.getInt16(2);
+          var bottom = imgDV.getInt16(4);
+          var right = imgDV.getInt16(6);
+          var width = right-left;
+          var height = bottom-top;
+          var rowBytes = Math.ceil(width/8);
+          var packed = new Uint8Array(imgDV.buffer, imgDV.byteOffset + 8, imgDV.byteLength - 8);
+          var unpacked = new Uint8Array(rowBytes);
+          unpackBits(packed, unpacked);
+          parts.push(
+            '<image x="' + top + '" y="' + left + '" xlink:href="',
+            new Promise(function(resolve, reject) {
+              var fr = new FileReader;
+              fr.onload = function() {
+                resolve(this.result);
+              };
+              fr.readAsDataURL(makeImageBlob(unpacked, rowBytes*8, height));
+            },
+            '"/>');
           break;
         default:
-          throw new Error('unknown drawing code');
+          console.error('ASCN: unknown drawing code ' + type);
+          return;
       }
     }
+    parts.push('</svg>');
+    return Promise.all(parts).then(function(parts) {
+      postMessage({
+        item: item,
+        path: path,
+        headline: 'image',
+        file: new Blob(parts, {type:'image/svg+xml'}),
+        width: obj.right - obj.left,
+        height: obj.bottom - obj.top,
+      });
+    });
   },
   ATXT: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
