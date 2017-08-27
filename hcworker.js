@@ -348,7 +348,7 @@ function HqxEncodedSource(source) {
     function byte(b) {
       if (phase === 'rle') {
         phase = 'data';
-        if (b === 0x90) {
+        if (b === 0) {
           buf[buf_i++] = 0x90;
           return;
         }
