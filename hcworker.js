@@ -3357,8 +3357,15 @@ self.onmessage = function onmessage(e) {
       if (/\.hqx$/i.test(message.blob.name || '')) {
         var hqxSource = new HqxEncodedSource(new BlobSource(message.blob, true));
         hqxSource.get(0, Infinity).then(function(data) {
-          download(data);
+          var name = macRoman(data, 1, data[0]);
+          var dataStart = 1 + data[0] + 1 + 20;
+          var dataLen = new DataView(data.buffer, data.byteOffset + 1 + data[0] + 1 + 4 + 4 + 2, 4).getUint32(0);
+          var file = new File([data.subarray(dataStart, dataStart + dataLen)], name);
+          onmessage({headline:'load-blob', blob:file, item:message.item});
         });
+      }
+      else if (/\.sit$/i.test(message.blob.name || '')) {
+        console.log('.SIT file');
       }
       else {
         ondisk(new BlobSource(message.blob), message.item);
