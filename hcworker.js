@@ -2038,8 +2038,8 @@ var resourceHandlers = {
           i += 8;
           parts.push([
             '<rect',
-            'x="'+top+'"',
-            'y="'+left+'"',
+            'x="'+left+'"',
+            'y="'+top+'"',
             'width="'+(right-left)+'"',
             'height="'+(bottom-top)+'"/>',
           ].join(' '));
@@ -2053,8 +2053,8 @@ var resourceHandlers = {
           i += 10;
           parts.push([
             '<rect',
-            'x="'+top+'"',
-            'y="'+left+'"',
+            'x="'+left+'"',
+            'y="'+top+'"',
             'width="'+(right-left)+'"',
             'height="'+(bottom-top)+'"',
             'rx="12"',
@@ -2127,7 +2127,7 @@ var resourceHandlers = {
           var unpacked = new Uint8Array(rowBytes * height);
           unpackBits(packed, unpacked);
           parts.push(
-            '<image x="' + top + '" y="' + left + '" xlink:href="',
+            '<image x="' + left + '" y="' + top + '" xlink:href="',
             new Promise(function(resolve, reject) {
               var fr = new FileReader;
               fr.onload = function() {
