@@ -3364,8 +3364,9 @@ self.onmessage = function onmessage(e) {
           onmessage({data:{headline:'load-blob', blob:file, item:message.item}});
         });
       }
-      else if (/\.sit$/i.test(message.blob.name || '')) {
-        console.log('.SIT file');
+      else if (/\.sit$/i.test(message.blob.name || '') || message.blob.type === 'application/x-stuffit') {
+        if (!('futz' in self)) importScripts('futz.js');
+        futz(new BlobSource(message.blob), message.item);
       }
       else {
         ondisk(new BlobSource(message.blob), message.item);
