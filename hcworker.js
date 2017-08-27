@@ -2011,6 +2011,7 @@ var resourceHandlers = {
       headline: 'text',
       text: obj.westMessage,
     });
+    if (design.length === 0) return;
     var i = 0;
     var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
     var imgX=0, imgY=0, imgWidth=512, imgHeight=342; // full screen: should it be the rect in the data above?
@@ -2148,8 +2149,8 @@ var resourceHandlers = {
         path: path,
         headline: 'image',
         file: new Blob(parts, {type:'image/svg+xml'}),
-        width: obj.right - obj.left,
-        height: obj.bottom - obj.top,
+        width: imgWidth,
+        height: imgHeight,
       });
     });
   },
