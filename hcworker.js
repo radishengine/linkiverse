@@ -337,10 +337,18 @@ function HqxEncodedSource(source) {
       self.complete = true;
     }
     chunk = chunk.replace(/\s+/g, '');
-    chunkPrefix = chunk.slice(-chunk.length % 4);
-    if (chunkPrefix) {
-      chunk = chunk.slice(0, -chunkPrefix.length);
+    if (chunk.length % 4) {
+      if (phase === 'after') {
+        chunk += '!!!!'.slice(chunk.length % 4);
+      }
+      else {
+        chunkPrefix = chunk.slice(-(chunk.length % 4));
+        if (chunkPrefix) {
+          chunk = chunk.slice(0, -chunkPrefix.length);
+        }
+      }
     }
+    else chunkPrefix = '';
     if (chunk === '') return;
     var buf = new Uint8Array((chunk.length/4) * 3);
     var buf_i = 0;
