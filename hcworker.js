@@ -2123,7 +2123,7 @@ var resourceHandlers = {
           var height = bottom-top;
           var rowBytes = Math.ceil(width/8);
           var packed = new Uint8Array(imgDV.buffer, imgDV.byteOffset + 8, imgDV.byteLength - 8);
-          var unpacked = new Uint8Array(rowBytes);
+          var unpacked = new Uint8Array(rowBytes * height);
           unpackBits(packed, unpacked);
           parts.push(
             '<image x="' + top + '" y="' + left + '" xlink:href="',
