@@ -2110,7 +2110,7 @@ var resourceHandlers = {
             '<path',
             'd="' + path.join(' ') + '"',
             '/>',
-          ]);
+          ].join(' '));
           break;
         case 24:
           var imgDV = new DataView(dv.buffer, dv.byteOffset + i + 2, dv.getUint16(i) - 2);
