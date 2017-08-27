@@ -348,19 +348,15 @@ function HqxEncodedSource(source) {
     function byte(b) {
       if (phase === 'rle') {
         phase = 'data';
-        if (b === 0x00) {
+        if (b === 0x90) {
           buf[buf_i++] = 0x90;
           return;
         }
-        var copy = buf[buf_i-1];
+        if (--b === 0) return;
+        var copy = buf[buf_i++] = buf[buf_i-1];
+        if (--b === 0) return;
         buf[buf_i++] = copy;
-        if (--b === 0) {
-          return;
-        }
-        buf[buf_i++] = copy;
-        if (--b === 0) {
-          return;
-        }
+        if (--b === 0) return;
         self.chunks.push(buf.subarray(0, buf_i));
         buf = buf.subarray(buf_i);
         buf_i = 0;
