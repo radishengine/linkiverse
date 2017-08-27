@@ -2025,7 +2025,6 @@ var resourceHandlers = {
       'viewBox="' + [imgX, imgY, imgWidth, imgHeight].join(' ') + '"',
       'shape-rendering="crispEdges"',
       'stroke-linecap="square"',
-      'stroke-linejoin="bevel"',
       '>',
     ].join(' '));
     while (i < design.length) {
@@ -2139,6 +2138,7 @@ var resourceHandlers = {
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
             'stroke-width="' + borderThickness + '"',
+            'stroke-linejoin="bevel"',
             '/>',
           ].join(' '));
           break;
