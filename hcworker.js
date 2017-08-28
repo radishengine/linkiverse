@@ -2179,13 +2179,13 @@ var resourceHandlers = {
             path.push('L' + x + ',' + y);
           }
           parts.push([
-            '<path',
+            '<!-- <path',
             'd="' + path.join(' ') + '"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
             'stroke-width="' + borderThickness + '"',
             'stroke-linejoin="bevel"',
-            '/>',
+            '/> -->',
           ].join(' '));
           break;
         case 24:
@@ -2216,12 +2216,6 @@ var resourceHandlers = {
           console.error('ASCN: unknown drawing code ' + type);
           return;
       }
-    }
-    if (parts.join('').match(/<path/)) {
-      parts.push('<rect x="0" y="0" width="50" height="50" fill="#f00" />');
-    }
-    else {
-      parts.push('<rect x="0" y="0" width="50" height="50" fill="#00f" />');
     }
     parts.push('</svg>');
     return Promise.all(parts).then(function(parts) {
