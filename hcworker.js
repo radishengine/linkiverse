@@ -2060,10 +2060,10 @@ var resourceHandlers = {
     if (design.length === 0) return;
     var i = 0;
     var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
-    var imgX = obj.left,
-        imgY = obj.top,
-        imgWidth = obj.right - obj.left,
-        imgHeight = obj.bottom - obj.top;
+    var imgX = 0, // obj.left,
+        imgY = 0, // obj.top,
+        imgWidth = 512, // obj.right - obj.left,
+        imgHeight = 342; // obj.bottom - obj.top;
     var parts = [];
     parts.push([
       '<svg',
