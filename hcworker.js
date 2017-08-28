@@ -2178,10 +2178,11 @@ var resourceHandlers = {
             }
             pathData.push('L' + x + ',' + y);
           }
+          fill = 'none';
           parts.push([
             '<path',
             'd="' + pathData.join(' ') + '"',
-            //'fill="' + fill + '"',
+            'fill="' + fill + '"',
             'stroke="' + stroke + '"',
             'stroke-width="' + borderThickness + '"',
             'stroke-linejoin="bevel"',
