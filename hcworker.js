@@ -2083,7 +2083,7 @@ var resourceHandlers = {
         fill = 'none';
       }
       else {
-        fill = '#888'; // TODO: get pattern #(fillType-1)
+        fill = 'rgba(0,0,0, 0.3)'; // TODO: get pattern #(fillType-1)
       }
       if (borderThickness === 0 || borderFillType === 0) {
         stroke = 'none';
@@ -2216,6 +2216,12 @@ var resourceHandlers = {
           console.error('ASCN: unknown drawing code ' + type);
           return;
       }
+    }
+    if (path.join('').test(/<path/)) {
+      parts.push('<rect x="0" y="0" width="50" height="50" fill="#f00" />');
+    }
+    else {
+      parts.push('<rect x="0" y="0" width="50" height="50" fill="#00f" />');
     }
     parts.push('</svg>');
     return Promise.all(parts).then(function(parts) {
