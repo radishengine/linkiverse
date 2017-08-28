@@ -2217,7 +2217,7 @@ var resourceHandlers = {
           return;
       }
     }
-    if (path.join('').test(/<path/)) {
+    if (parts.join('').match(/<path/)) {
       parts.push('<rect x="0" y="0" width="50" height="50" fill="#f00" />');
     }
     else {
