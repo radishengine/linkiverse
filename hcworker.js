@@ -2155,7 +2155,7 @@ var resourceHandlers = {
           var coords = new DataView(dv.buffer, dv.byteOffset + i + 4 + 8, numBytes - 10);
           i += 2 + numBytes;
           var y = coords.getInt16(2), x = coords.getInt16(0);
-          var path = ['M' + x + ',' + y];
+          var pathData = ['M' + x + ',' + y];
           var j = 4;
           while (j < coords.byteLength) {
             var yb = coords.getUint8(j);
@@ -2176,11 +2176,11 @@ var resourceHandlers = {
               x += xb;
               j++;
             }
-            path.push('L' + x + ',' + y);
+            pathData.push('L' + x + ',' + y);
           }
           parts.push([
             '<path',
-            'd="' + path.join(' ') + '"',
+            'd="' + pathData.join(' ') + '"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
             'stroke-width="' + borderThickness + '"',
