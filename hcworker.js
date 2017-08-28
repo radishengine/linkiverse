@@ -2158,8 +2158,8 @@ var resourceHandlers = {
           var pathData = ['M' + x + ',' + y];
           var j = 4;
           while (j < coords.byteLength) {
-            var yb = coords.getUint8(j);
-            if (yb === 0x80) {
+            var yb = coords.getInt8(j);
+            if (yb === -128) {
               y = coords.getInt16(j+1);
               j += 3;
             }
@@ -2167,8 +2167,8 @@ var resourceHandlers = {
               y += yb;
               j++;
             }
-            var xb = coords.getUint8(j);
-            if (xb === 0x80) {
+            var xb = coords.getInt8(j);
+            if (xb === -128) {
               x = coords.getInt16(j+1);
               j += 3;
             }
