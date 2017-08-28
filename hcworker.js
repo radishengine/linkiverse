@@ -3091,6 +3091,62 @@ function hfs(disk, mdb, item) {
   });
 }
 
+function ApplePartitionView(buffer, byteOffset, byteLength) {
+  this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
+  this.dv = new DataView(buffer, byteOffset, byteLength);
+}
+ApplePartitionView.prototype = {
+  get signature() {
+    return String.fromCharCode(this.bytes[0], this.bytes[1]);
+  },
+  get hasValidSignature() {
+    return (this.signature === 'PM');
+  },
+  get totalPartitionCount() {
+    return this.dv.getUint32(4);
+  },
+  get firstSector() {
+    return this.dv.getUint32(8);
+  },
+  get sectorCount() {
+    return this.dv.getUint32(12);
+  },
+  get name() {
+    return byteStringDecoder.decode(this.bytes.subarray(16, 48)).replace(/\0.*/, '');
+  },
+  get type() {
+    return byteStringDecoder.decode(this.bytes.subarray(48, 80)).replace(/\0.*/, '');
+  },
+  get firstDataSector() {
+    return this.dv.getUint32(80);
+  },
+  get dataSectorCount() {
+    return this.dv.getUint32(84);
+  },
+  get flags() {
+    return this.dv.getUint32(88);
+  },
+  get firstBootCodeSector() {
+    return this.dv.getUint32(92);
+  },
+  get bootCodeByteLength() {
+    return this.dv.getUint32(96);
+  },
+  get bootLoaderAddress() {
+    return this.dv.getUint32(100);
+  },
+  get bootCodeEntryPoint() {
+    return this.dv.getUint32(108);
+  },
+  get bootCodeChecksum() {
+    return this.dv.getUint32(112);
+  },
+  get processorType() {
+    return byteStringDecoder.decode(this.bytes.subarray(120, 136)).replace(/\0.*/, '');
+  },
+};
+ApplePartitionView.byteLength = 512;
+
 function MFSVolumeInfoView(buffer, byteOffset, byteLength) {
   this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
   this.dv = new DataView(buffer, byteOffset, byteLength);
@@ -3356,6 +3412,34 @@ function ondisk(disk, item) {
       bytes.byteLength);
     if (vinfo.hasValidSignature) {
       return mfs(disk, vinfo, item);
+    }
+    var partition1 = new ApplePartitionView(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength);
+    if (partition1.hasValidSignature) {
+      function onPartition(partition, i) {
+        if (partition.type === 'Apple_HFS' || partition.type === 'Apple_MFS') {
+          return ondisk(new OffsetSource(disk, 512 * partition.firstSector));
+        }
+        if (i === 1) i = 0;
+        else if (i === 0) i = 2;
+        else i++;
+        if (i >= partition.totalPartitionCount) {
+          return Promise.reject('no supported partition type found');
+        }
+        return disk.get(512 * (i+1), 512).then(function(bytes) {
+          var partition = new ApplePartitionView(
+            bytes.buffer,
+            bytes.byteOffset,
+            bytes.byteLength);
+          if (!partition.hasValidSignature) {
+            return Promise.reject('invalid partition map');
+          }
+          return onPartition(partition, i);
+        });
+      }
+      return onPartition(partition1, 1);
     }
     if (!(disk instanceof OffsetSource)) {
       return ondisk(new OffsetSource(disk, 84), item);
