@@ -2154,7 +2154,7 @@ var resourceHandlers = {
           var numBytes = dv.getUint16(i + 2);
           var coords = new DataView(dv.buffer, dv.byteOffset + i + 4 + 8, numBytes - 10);
           i += 2 + numBytes;
-          var y = coords.getInt16(2), x = coords.getInt16(0);
+          var y = coords.getInt16(0), x = coords.getInt16(2);
           var pathData = ['M' + x + ',' + y];
           var j = 4;
           while (j < coords.byteLength) {
