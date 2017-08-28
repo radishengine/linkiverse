@@ -3420,7 +3420,7 @@ function ondisk(disk, item) {
     if (partition1.hasValidSignature) {
       function onPartition(partition, i) {
         if (partition.type === 'Apple_HFS' || partition.type === 'Apple_MFS') {
-          return ondisk(new OffsetSource(disk, 512 * partition.firstSector));
+          return ondisk(new OffsetSource(disk, 512 * partition.firstSector), item);
         }
         if (i === 1) i = 0;
         else if (i === 0) i = 2;
