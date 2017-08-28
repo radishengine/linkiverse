@@ -2060,7 +2060,10 @@ var resourceHandlers = {
     if (design.length === 0) return;
     var i = 0;
     var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
-    var imgX=0, imgY=0, imgWidth=512, imgHeight=342; // full screen: should it be the rect in the data above?
+    var imgX = obj.left,
+        imgY = obj.top,
+        imgWidth = obj.right - obj.left,
+        imgHeight = obj.bottom - obj.top;
     var parts = [];
     parts.push([
       '<svg',
