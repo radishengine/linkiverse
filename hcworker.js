@@ -1726,8 +1726,10 @@ function wbDesign(design, item, path, bounds) {
   }
   parts.push([
     '<rect',
-    'x="' + bounds.left + '"',
-    'y="' + bounds.top + '"',
+    'x="10"',
+    'y="10"',
+    // 'x="' + bounds.left + '"',
+    // 'y="' + bounds.top + '"',
     'width="' + (bounds.right-bounds.left) + '"',
     'height="' + (bounds.bottom-bounds.top) + '"',
     'fill="rgba(255,0,0, 0.5)"',
