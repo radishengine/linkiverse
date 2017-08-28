@@ -1684,6 +1684,7 @@ function wbDesign(design, item, path, bounds) {
           }
           pathData.push('L' + x + ',' + y);
         }
+        pathData.push('Z');
         fill = 'none';
         parts.push([
           '<path',
