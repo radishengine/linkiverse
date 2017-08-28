@@ -2181,7 +2181,7 @@ var resourceHandlers = {
           parts.push([
             '<path',
             'd="' + pathData.join(' ') + '"',
-            'fill="' + fill + '"',
+            //'fill="' + fill + '"',
             'stroke="' + stroke + '"',
             'stroke-width="' + borderThickness + '"',
             'stroke-linejoin="bevel"',
