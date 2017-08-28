@@ -1560,7 +1560,7 @@ function unpackBits(packed, unpacked) {
   return pos;
 };
 
-function wbDesign(design, item, path) {
+function wbDesign(design, item, path, bounds) {
   var i = 0;
   var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
   var imgX = 0, // obj.left,
@@ -1724,6 +1724,15 @@ function wbDesign(design, item, path) {
         return;
     }
   }
+  parts.push([
+    '<rect',
+    'x="' + bounds.left + '"',
+    'y="' + bounds.top + '"',
+    'width="' + (bounds.right-bounds.left) + '"',
+    'height="' + (bounds.bottom-bounds.top) + '"',
+    'fill="rgba(255,0,0, 0.5)"',
+    '/>',
+  ].join(' '));
   parts.push('</svg>');
   return Promise.all(parts).then(function(parts) {
     postMessage({
@@ -2185,12 +2194,26 @@ var resourceHandlers = {
   ACHR: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var design = bytes.subarray(2, dv.getUint16(0, false));
-    if (design.length !== 0) return wbDesign(design, item, path);
+    var pos = 2 + design.byteLength;
+    var obj = {
+      top: dv.getInt16(pos, false),
+      left: dv.getInt16(pos + 2, false),
+      bottom: dv.getInt16(pos + 4, false),
+      right: dv.getInt16(pos + 6, false),
+    };
+    if (design.length !== 0) return wbDesign(design, item, path, obj);
   },
   AOBJ: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var design = bytes.subarray(2, dv.getUint16(0, false));
-    if (design.length !== 0) return wbDesign(design, item, path);
+    var pos = 2 + design.byteLength;
+    var obj = {
+      top: dv.getInt16(pos, false),
+      left: dv.getInt16(pos + 2, false),
+      bottom: dv.getInt16(pos + 4, false),
+      right: dv.getInt16(pos + 6, false),
+    };
+    if (design.length !== 0) return wbDesign(design, item, path, obj);
   },
   ASCN: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -2244,7 +2267,7 @@ var resourceHandlers = {
       headline: 'text',
       text: obj.westMessage,
     });
-    if (design.length !== 0) return wbDesign(design, item, path);
+    if (design.length !== 0) return wbDesign(design, item, path, obj);
   },
   ATXT: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
