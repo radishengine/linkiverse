@@ -1726,12 +1726,14 @@ function wbDesign(design, item, path, bounds) {
   }
   parts.push([
     '<rect',
-    'x="10"',
-    'y="10"',
+    'x="16"',
+    'y="16"',
+    'width="' + (bounds.right-16) + '"',
+    'height="' + (bounds.bottom-16) + '"',
     // 'x="' + bounds.left + '"',
     // 'y="' + bounds.top + '"',
-    'width="' + (bounds.right-bounds.left) + '"',
-    'height="' + (bounds.bottom-bounds.top) + '"',
+    //'width="' + (bounds.right-bounds.left) + '"',
+    //'height="' + (bounds.bottom-bounds.top) + '"',
     'fill="rgba(255,0,0, 0.5)"',
     '/>',
   ].join(' '));
