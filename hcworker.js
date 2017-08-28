@@ -1560,6 +1560,183 @@ function unpackBits(packed, unpacked) {
   return pos;
 };
 
+function wbDesign(design, item, path) {
+  var i = 0;
+  var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
+  var imgX = 0, // obj.left,
+      imgY = 0, // obj.top,
+      imgWidth = 512, // obj.right - obj.left,
+      imgHeight = 342; // obj.bottom - obj.top;
+  var parts = [];
+  parts.push([
+    '<svg',
+    'xmlns="http://www.w3.org/2000/svg"',
+    'xmlns:xlink="http://www.w3.org/1999/xlink"',
+    'width="' + imgWidth + '"',
+    'height="' + imgHeight + '"',
+    'viewBox="' + [imgX, imgY, imgWidth, imgHeight].join(' ') + '"',
+    'shape-rendering="crispEdges"',
+    'stroke-linecap="square"',
+    '>',
+  ].join(' '));
+  while (i < design.length) {
+    var fillType = design[i++];
+    var borderThickness = design[i++];
+    var borderFillType = design[i++];
+    var type = design[i++];
+    var fill, stroke, strokeWidth;
+    if (fillType === 0) {
+      fill = 'none';
+    }
+    else {
+      fill = 'rgba(0,0,0, 0.3)'; // TODO: get pattern #(fillType-1)
+    }
+    if (borderThickness === 0 || borderFillType === 0) {
+      stroke = 'none';
+    }
+    else {
+      stroke = '#444'; // TODO: get pattern #(borderFillType-1)
+    }
+    switch (type) {
+      case 4: // rect
+        var top = dv.getInt16(i);
+        var left = dv.getInt16(i + 2);
+        var bottom = dv.getInt16(i + 4);
+        var right = dv.getInt16(i + 6);
+        i += 8;
+        parts.push([
+          '<rect',
+          'x="'+left+'"',
+          'y="'+top+'"',
+          'width="'+(right-left)+'"',
+          'height="'+(bottom-top)+'"',
+          'fill="' + fill + '"',
+          'stroke="' + stroke + '"',
+          'stroke-width="' + borderThickness + '"',
+          '/>',
+        ].join(' '));
+        break;
+      case 8: // round rect
+        var top = dv.getInt16(i);
+        var left = dv.getInt16(i + 2);
+        var bottom = dv.getInt16(i + 4);
+        var right = dv.getInt16(i + 6);
+        var arc = dv.getInt16(i + 8);
+        i += 10;
+        parts.push([
+          '<rect',
+          'x="'+left+'"',
+          'y="'+top+'"',
+          'width="'+(right-left)+'"',
+          'height="'+(bottom-top)+'"',
+          'rx="12"',
+          'ry="12"',
+          'fill="' + fill + '"',
+          'stroke="' + stroke + '"',
+          'stroke-width="' + borderThickness + '"',
+          '/>',
+        ].join(' '));
+        break;
+      case 12: // oval
+        var top = dv.getInt16(i);
+        var left = dv.getInt16(i + 2);
+        var bottom = dv.getInt16(i + 4);
+        var right = dv.getInt16(i + 6);
+        i += 8;
+        parts.push([
+          '<ellipse',
+          'cx="' + (left+right)/2 + '"',
+          'cy="' + (top+bottom)/2 + '"',
+          'rx="' + (right-left)/2 + '"',
+          'ry="' + (bottom-top)/2 + '"',
+          'fill="' + fill + '"',
+          'stroke="' + stroke + '"',
+          'stroke-width="' + borderThickness + '"',
+          '/>',
+        ].join(' '));
+        break;
+      case 16: // polygon
+      case 20:
+        var numBytes = dv.getUint16(i + 2);
+        var coords = new DataView(dv.buffer, dv.byteOffset + i + 4 + 8, numBytes - 10);
+        i += 2 + numBytes;
+        var y = coords.getInt16(0), x = coords.getInt16(2);
+        var pathData = ['M' + x + ',' + y];
+        var j = 4;
+        while (j < coords.byteLength) {
+          var yb = coords.getInt8(j);
+          if (yb === -128) {
+            y = coords.getInt16(j+1);
+            j += 3;
+          }
+          else {
+            y += yb;
+            j++;
+          }
+          var xb = coords.getInt8(j);
+          if (xb === -128) {
+            x = coords.getInt16(j+1);
+            j += 3;
+          }
+          else {
+            x += xb;
+            j++;
+          }
+          pathData.push('L' + x + ',' + y);
+        }
+        fill = 'none';
+        parts.push([
+          '<path',
+          'd="' + pathData.join(' ') + '"',
+          'fill="' + fill + '"',
+          'stroke="' + stroke + '"',
+          'stroke-width="' + borderThickness + '"',
+          'stroke-linejoin="bevel"',
+          '/>',
+        ].join(' '));
+        break;
+      case 24:
+        var imgDV = new DataView(dv.buffer, dv.byteOffset + i + 2, dv.getUint16(i) - 2);
+        i += 2 + imgDV.byteLength;
+        var top = imgDV.getInt16(0);
+        var left = imgDV.getInt16(2);
+        var bottom = imgDV.getInt16(4);
+        var right = imgDV.getInt16(6);
+        var width = right-left;
+        var height = bottom-top;
+        var rowBytes = Math.ceil(width/8);
+        var packed = new Uint8Array(imgDV.buffer, imgDV.byteOffset + 8, imgDV.byteLength - 8);
+        var unpacked = new Uint8Array(rowBytes * height);
+        unpackBits(packed, unpacked);
+        parts.push(
+          '<image x="'+left+'" y="'+top+'" width="'+width+'" height="'+height+'" xlink:href="',
+          new Promise(function(resolve, reject) {
+            var fr = new FileReader;
+            fr.onload = function() {
+              resolve(this.result);
+            };
+            fr.readAsDataURL(makeImageBlob(unpacked, rowBytes*8, height));
+          }),
+          '"/>');
+        break;
+      default:
+        console.error('WBdesign: unknown drawing code ' + type);
+        return;
+    }
+  }
+  parts.push('</svg>');
+  return Promise.all(parts).then(function(parts) {
+    postMessage({
+      item: item,
+      path: path,
+      headline: 'image',
+      file: new Blob(parts, {type:'image/svg+xml'}),
+      width: imgWidth,
+      height: imgHeight,
+    });
+  });
+}
+
 var resourceHandlers = {
   TEXT: function(item, path, data) {
     postMessage({
@@ -2005,6 +2182,16 @@ var resourceHandlers = {
       pos += len;
     }
   },
+  ACHR: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var design = bytes.subarray(2, dv.getUint16(0, false));
+    if (design.length !== 0) return wbDesign(design, item, path);
+  },
+  AOBJ: function(item, path, bytes) {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var design = bytes.subarray(2, dv.getUint16(0, false));
+    if (design.length !== 0) return wbDesign(design, item, path);
+  },
   ASCN: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var design = bytes.subarray(2, dv.getUint16(0, false));
@@ -2057,181 +2244,7 @@ var resourceHandlers = {
       headline: 'text',
       text: obj.westMessage,
     });
-    if (design.length === 0) return;
-    var i = 0;
-    var dv = new DataView(design.buffer, design.byteOffset, design.byteLength);
-    var imgX = 0, // obj.left,
-        imgY = 0, // obj.top,
-        imgWidth = 512, // obj.right - obj.left,
-        imgHeight = 342; // obj.bottom - obj.top;
-    var parts = [];
-    parts.push([
-      '<svg',
-      'xmlns="http://www.w3.org/2000/svg"',
-      'xmlns:xlink="http://www.w3.org/1999/xlink"',
-      'width="' + imgWidth + '"',
-      'height="' + imgHeight + '"',
-      'viewBox="' + [imgX, imgY, imgWidth, imgHeight].join(' ') + '"',
-      'shape-rendering="crispEdges"',
-      'stroke-linecap="square"',
-      '>',
-    ].join(' '));
-    while (i < design.length) {
-      var fillType = design[i++];
-      var borderThickness = design[i++];
-      var borderFillType = design[i++];
-      var type = design[i++];
-      var fill, stroke, strokeWidth;
-      if (fillType === 0) {
-        fill = 'none';
-      }
-      else {
-        fill = 'rgba(0,0,0, 0.3)'; // TODO: get pattern #(fillType-1)
-      }
-      if (borderThickness === 0 || borderFillType === 0) {
-        stroke = 'none';
-      }
-      else {
-        stroke = '#444'; // TODO: get pattern #(borderFillType-1)
-      }
-      switch (type) {
-        case 4: // rect
-          var top = dv.getInt16(i);
-          var left = dv.getInt16(i + 2);
-          var bottom = dv.getInt16(i + 4);
-          var right = dv.getInt16(i + 6);
-          i += 8;
-          parts.push([
-            '<rect',
-            'x="'+left+'"',
-            'y="'+top+'"',
-            'width="'+(right-left)+'"',
-            'height="'+(bottom-top)+'"',
-            'fill="' + fill + '"',
-            'stroke="' + stroke + '"',
-            'stroke-width="' + borderThickness + '"',
-            '/>',
-          ].join(' '));
-          break;
-        case 8: // round rect
-          var top = dv.getInt16(i);
-          var left = dv.getInt16(i + 2);
-          var bottom = dv.getInt16(i + 4);
-          var right = dv.getInt16(i + 6);
-          var arc = dv.getInt16(i + 8);
-          i += 10;
-          parts.push([
-            '<rect',
-            'x="'+left+'"',
-            'y="'+top+'"',
-            'width="'+(right-left)+'"',
-            'height="'+(bottom-top)+'"',
-            'rx="12"',
-            'ry="12"',
-            'fill="' + fill + '"',
-            'stroke="' + stroke + '"',
-            'stroke-width="' + borderThickness + '"',
-            '/>',
-          ].join(' '));
-          break;
-        case 12: // oval
-          var top = dv.getInt16(i);
-          var left = dv.getInt16(i + 2);
-          var bottom = dv.getInt16(i + 4);
-          var right = dv.getInt16(i + 6);
-          i += 8;
-          parts.push([
-            '<ellipse',
-            'cx="' + (left+right)/2 + '"',
-            'cy="' + (top+bottom)/2 + '"',
-            'rx="' + (right-left)/2 + '"',
-            'ry="' + (bottom-top)/2 + '"',
-            'fill="' + fill + '"',
-            'stroke="' + stroke + '"',
-            'stroke-width="' + borderThickness + '"',
-            '/>',
-          ].join(' '));
-          break;
-        case 16: // polygon
-        case 20:
-          var numBytes = dv.getUint16(i + 2);
-          var coords = new DataView(dv.buffer, dv.byteOffset + i + 4 + 8, numBytes - 10);
-          i += 2 + numBytes;
-          var y = coords.getInt16(0), x = coords.getInt16(2);
-          var pathData = ['M' + x + ',' + y];
-          var j = 4;
-          while (j < coords.byteLength) {
-            var yb = coords.getInt8(j);
-            if (yb === -128) {
-              y = coords.getInt16(j+1);
-              j += 3;
-            }
-            else {
-              y += yb;
-              j++;
-            }
-            var xb = coords.getInt8(j);
-            if (xb === -128) {
-              x = coords.getInt16(j+1);
-              j += 3;
-            }
-            else {
-              x += xb;
-              j++;
-            }
-            pathData.push('L' + x + ',' + y);
-          }
-          fill = 'none';
-          parts.push([
-            '<path',
-            'd="' + pathData.join(' ') + '"',
-            'fill="' + fill + '"',
-            'stroke="' + stroke + '"',
-            'stroke-width="' + borderThickness + '"',
-            'stroke-linejoin="bevel"',
-            '/>',
-          ].join(' '));
-          break;
-        case 24:
-          var imgDV = new DataView(dv.buffer, dv.byteOffset + i + 2, dv.getUint16(i) - 2);
-          i += 2 + imgDV.byteLength;
-          var top = imgDV.getInt16(0);
-          var left = imgDV.getInt16(2);
-          var bottom = imgDV.getInt16(4);
-          var right = imgDV.getInt16(6);
-          var width = right-left;
-          var height = bottom-top;
-          var rowBytes = Math.ceil(width/8);
-          var packed = new Uint8Array(imgDV.buffer, imgDV.byteOffset + 8, imgDV.byteLength - 8);
-          var unpacked = new Uint8Array(rowBytes * height);
-          unpackBits(packed, unpacked);
-          parts.push(
-            '<image x="'+left+'" y="'+top+'" width="'+width+'" height="'+height+'" xlink:href="',
-            new Promise(function(resolve, reject) {
-              var fr = new FileReader;
-              fr.onload = function() {
-                resolve(this.result);
-              };
-              fr.readAsDataURL(makeImageBlob(unpacked, rowBytes*8, height));
-            }),
-            '"/>');
-          break;
-        default:
-          console.error('ASCN: unknown drawing code ' + type);
-          return;
-      }
-    }
-    parts.push('</svg>');
-    return Promise.all(parts).then(function(parts) {
-      postMessage({
-        item: item,
-        path: path,
-        headline: 'image',
-        file: new Blob(parts, {type:'image/svg+xml'}),
-        width: imgWidth,
-        height: imgHeight,
-      });
-    });
+    if (design.length !== 0) return wbDesign(design, item, path);
   },
   ATXT: function(item, path, bytes) {
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
