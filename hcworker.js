@@ -2179,13 +2179,13 @@ var resourceHandlers = {
             path.push('L' + x + ',' + y);
           }
           parts.push([
-            '<!-- <path',
+            '<path',
             'd="' + path.join(' ') + '"',
             'fill="' + fill + '"',
             'stroke="' + stroke + '"',
             'stroke-width="' + borderThickness + '"',
             'stroke-linejoin="bevel"',
-            '/> -->',
+            '/>',
           ].join(' '));
           break;
         case 24:
