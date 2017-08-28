@@ -2206,7 +2206,7 @@ var resourceHandlers = {
           var unpacked = new Uint8Array(rowBytes * height);
           unpackBits(packed, unpacked);
           parts.push(
-            '<image x="' + left + '" y="' + top + '" xlink:href="',
+            '<image x="'+left+'" y="'+top+'" width="'+width+'" height="'+height+'" xlink:href="',
             new Promise(function(resolve, reject) {
               var fr = new FileReader;
               fr.onload = function() {
