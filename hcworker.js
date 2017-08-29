@@ -11,8 +11,7 @@ if (!('TextDecoder' in self)) {
       if (bytes.length < 1024 && this.encoding === 'iso-8859-1') {
         return String.fromCharCode.apply(null, bytes);
       }
-      this.fileReaderSync.readAsText(new Blob([bytes]), this.encoding);
-      return this.fileReaderSync.result;
+      return this.fileReaderSync.readAsText(new Blob([bytes]), this.encoding);
     },
   };
 }
@@ -41,12 +40,10 @@ BlobSource.prototype = {
     }
     var blob = this.blob.slice(offset, offset+length);
     if (this.useByteStrings) {
-      this.frs.readAsText(blob, 'iso-8859-1');
-      return Promise.resolve(this.frs.result);
+      return Promise.resolve(this.frs.readAsText(blob, 'iso-8859-1'));
     }
     else {
-      this.frs.readAsArrayBuffer(blob);
-      return Promise.resolve(new Uint8Array(this.frs.result));
+      return Promise.resolve(new Uint8Array(this.frs.readAsArrayBuffer(blob)));
     }
     /*
     var gotBuffer = this.gotBuffer, useByteStrings = this.useByteStrings;
