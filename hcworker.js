@@ -3087,6 +3087,16 @@ function hfs(disk, mdb, item) {
               var handler = handlers[record.fileInfo.type];
               fileDone.push(handler(item, path, disk, dataFork.logicalEOF, dataForkExtents));
             }
+            else {
+              fileDone.push(disk.fromExtents(dataFork.logicalEOF, dataForkExtents).then(function(bytes) {
+                postMessage({
+                  item: item,
+                  headline: 'file',
+                  path: path,
+                  file: new Blob([bytes]),
+                });
+              });
+            }
           }
           if (resourceFork.logicalEOF > 0) {
             var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord.concat(
