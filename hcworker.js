@@ -503,13 +503,16 @@ function nullTerminate(str) {
   return str.replace(/\0.*/, '');
 }
 
-function extentDataRecord(dv, offset) {
+function extentDataRecord(dv, offset, chunkSize) {
   var record = [];
   for (var i = 0; i < 3; i++) {
-    record.push({
-      offset: dv.getUint16(offset + i*4, false),
-      length: dv.getUint16(offset + i*4 + 2, false),
-    });
+    var entry = {
+      offset: dv.getUint16(offset + i*4, false) * chunkSize,
+      length: dv.getUint16(offset + i*4 + 2, false) * chunkSize,
+    };
+    if (entry.length > 0) {
+      record.push(entry);
+    }
   }
   return record;
 }  
@@ -619,20 +622,24 @@ MasterDirectoryBlockView.prototype = {
     return this.dv.getInt32(130, false);
   },
   get overflowFirstExtents() {
-    return extentDataRecord(this.dv, 134);
+    return extentDataRecord(this.dv, 134, this.allocationChunkByteLength);
   },
   get catalogByteLength() {
     return this.dv.getInt32(146, false);
   },
   get catalogFirstExtents() {
-    return extentDataRecord(this.dv, 150);
+    return extentDataRecord(this.dv, 150, this.allocationChunkByteLength);
   },
 };
 MasterDirectoryBlockView.byteLength = 162;
 
 const NODE_BYTES = 512;
 
-function BTreeNodeView(buffer, byteOffset) {
+function BTreeNodeView(mdb, buffer, byteOffset) {
+  if (!(mdb instanceof MasterDirectoryBlockView)) {
+    throw new Error('mdb required');
+  }
+  this.mdb = mdb;
   this.dv = new DataView(buffer, byteOffset, NODE_BYTES);
   this.bytes = new Uint8Array(buffer, byteOffset, NODE_BYTES);
 }
@@ -701,9 +708,10 @@ BTreeNodeView.prototype = {
         });
         break;
       case 'leaf':
+        var mdb = this.mdb;
         records = this.rawRecords
         .map(function(rawLeaf) {
-          return new LeafRecordView(rawLeaf.buffer, rawLeaf.byteOffset, rawLeaf.byteLength);
+          return new LeafRecordView(mdb, rawLeaf.buffer, rawLeaf.byteOffset, rawLeaf.byteLength);
         })
         .filter(function(leaf) {
           return !leaf.isDeleted;
@@ -783,7 +791,12 @@ MapRecordView.prototype = {
   },
 };
 
-function LeafRecordView(buffer, byteOffset, byteLength) {
+function LeafRecordView(mdb, buffer, byteOffset, byteLength) {
+  if (!(mdb instanceof MasterDirectoryBlockView)) {
+    throw new Error('mdb required');
+  }
+  this.mdb = mdb;
+  
   this.dv = new DataView(buffer, byteOffset, byteLength);
   this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
 
@@ -818,7 +831,7 @@ LeafRecordView.prototype = {
     return macRoman(this.bytes, 7, this.bytes[6]).replace(/\x7F+$/, '');
   },
   get overflowExtentDataRecord() {
-    return extentDataRecord(this.dv, 1 + this.bytes[0]);
+    return extentDataRecord(this.dv, 1 + this.bytes[0], this.mdb.allocationBlockByteLength);
   },
   get leafType() {
     switch (this.dataBytes[0]) {
@@ -832,6 +845,7 @@ LeafRecordView.prototype = {
   get fileInfo() {
     if (this.leafType !== 'file') return null;
     var fileInfo = new FileInfoView(
+      this.mdb,
       this.dataBytes.buffer,
       this.dataBytes.byteOffset,
       this.dataBytes.byteLength);
@@ -858,7 +872,12 @@ LeafRecordView.prototype = {
   },
 };
 
-function FileInfoView(buffer, byteOffset, byteLength) {
+function FileInfoView(mdb, buffer, byteOffset, byteLength) {
+  if (!(mdb instanceof MasterDirectoryBlockView)) {
+    throw new Error('mdb required');
+  }
+  this.mdb = mdb;
+    
   this.dv = new DataView(buffer, byteOffset, byteLength);
   this.bytes = new Uint8Array(buffer, byteOffset, byteLength);
 }
@@ -952,10 +971,10 @@ FileInfoView.prototype = {
     return this.dv.getUint16(72, false);
   },
   get dataForkFirstExtentRecord() {
-    return extentDataRecord(this.dv, 74);
+    return extentDataRecord(this.dv, 74, this.mdb.allocationChunkByteLength);
   },
   get resourceForkFirstExtentRecord() {
-    return extentDataRecord(this.dv, 86);
+    return extentDataRecord(this.dv, 86, this.mdb.allocationChunkByteLength);
   },
 };
 
@@ -1303,7 +1322,7 @@ SoundHeaderView.prototype = {
 function disk_fromExtents(byteLength, extents, offset) {
   var i = 0;
   if (offset) for (;;) {
-    var chunkLength = this.chunkSize * extents[i].length;
+    var chunkLength = extents[i].length;
     if (offset < chunkLength) break;
     offset -= chunkLength;
     if (++i >= extents.length) {
@@ -1311,8 +1330,8 @@ function disk_fromExtents(byteLength, extents, offset) {
     }
   }
   else offset = 0;
-  if ((offset + byteLength) <= this.chunkSize * extents[i].length) {
-    var byteOffset = this.allocOffset + this.chunkSize * extents[0].offset + offset;
+  if ((offset + byteLength) <= extents[i].length) {
+    var byteOffset = this.allocOffset + extents[0].offset + offset;
     return this.get(byteOffset, byteLength);
   }
   var disk = this;
@@ -1320,10 +1339,10 @@ function disk_fromExtents(byteLength, extents, offset) {
   buf.writeOffset = 0;
   function nextExtent(i, offset) {
     if (i >= extents.length) return Promise.reject('insufficient space in extents');
-    var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset + offset;
+    var chunkOffset = disk.allocOffset + extents[i].offset + offset;
     var chunkLength = Math.min(
       buf.length - buf.writeOffset,
-      disk.chunkSize * extents[i].length - offset);
+      extents[i].length - offset);
     return disk.get(chunkOffset, chunkLength).then(function(chunk) {
       buf.set(chunk, buf.writeOffset);
       if ((buf.writeOffset += chunk.length) < buf.length) {
@@ -1336,17 +1355,17 @@ function disk_fromExtents(byteLength, extents, offset) {
 }
 
 function disk_streamExtents(byteLength, extents, callback) {
-  if (byteLength <= this.chunkSize * extents[0].length) {
-    var byteOffset = this.allocOffset + this.chunkSize * extents[0].offset;
+  if (byteLength <= extents[0].length) {
+    var byteOffset = this.allocOffset + extents[0].offset;
     return this.stream(byteOffset, byteLength, callback);
   }
   var disk = this;
   function nextExtent(i) {
     if (i > extents.length) return Promise.reject('insufficient space in extents');
-    var chunkOffset = disk.allocOffset + disk.chunkSize * extents[i].offset;
+    var chunkOffset = disk.allocOffset + extents[i].offset;
     var chunkLength = Math.min(
       byteLength,
-      disk.chunkSize * extents[i].length);
+      extents[i].length);
     return disk.stream(chunkOffset, chunkLength, function(chunk) {
       callback(chunk);
       byteLength -= chunk.length;
@@ -3058,11 +3077,10 @@ function hfs(disk, mdb, item) {
           var resourceFork = record.fileInfo.resourceForkInfo;
           var fileDone = [];
           if (dataFork.logicalEOF > 0) {
-            var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord;
-            var needDataBlocks = Math.ceil(dataFork.logicalEOF / disk.chunkSize);
-            needDataBlocks -= dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
-            if (needDataBlocks > 0) {
-              dataForkExtents = dataForkExtents.concat(dataForkOverflowExtents[record.fileInfo.id]);
+            var dataForkExtents = record.fileInfo.dataForkFirstExtentRecord.concat(
+              dataForkOverflowExtents[record.fileInfo.id] || []);
+            if (dataFork.lgicalEOF > dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0)) {
+              throw new Error('insufficient extents');
             }
             if (record.fileInfo.type in handlers) {
               var handler = handlers[record.fileInfo.type];
@@ -3070,11 +3088,10 @@ function hfs(disk, mdb, item) {
             }
           }
           if (resourceFork.logicalEOF > 0) {
-            var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord;
-            var needResourceBlocks = Math.ceil(resourceFork.logicalEOF / disk.chunkSize);
-            needResourceBlocks -= resourceForkExtents.reduce(function(total,e){ return total + e.length; }, 0);
-            if (needResourceBlocks > 0) {
-              resourceForkExtents = resourceForkExtents.concat(resourceForkOverflowExtents[record.fileInfo.id]);
+            var resourceForkExtents = record.fileInfo.resourceForkFirstExtentRecord.concat(
+              resourceForkOverflowExtents[record.fileInfo.id] || []);
+            if (resourceFork.logicalEOF > resourceForkExtents.reduce(function(total,e){ return total + e.length; }, 0)) {
+              throw new Error('insufficient extents');
             }
             fileDone.push(disk.fromExtents(resourceFork.logicalEOF, resourceForkExtents).then(function(res) {
               return handleResource(res, item, path);
@@ -3280,7 +3297,7 @@ MFSFileInfoView.prototype = {
 };
 
 function mfs(disk, vinfo, item) {
-  disk.chunkSize = vinfo.allocChunkSize;
+  var chunkSize = disk.chunkSize = vinfo.allocChunkSize;
   disk.allocOffset = vinfo.firstAllocBlock * 512 - 2*vinfo.allocChunkSize;
   disk.fromExtents = disk_fromExtents;
   disk.streamExtents = disk_streamExtents;
@@ -3316,6 +3333,10 @@ function mfs(disk, vinfo, item) {
         else {
           chain.push(prev = {offset:next, length:1});
         }
+      }
+      for (var i = 0; i < chain.length; i++) {
+        chain[i].offset *= chunkSize;
+        chain[i].length *= chunkSize;
       }
       return chain;
     }
