@@ -32,12 +32,17 @@ const BUFFER_LENGTH = 1024 * 1024 * 2;
 function BlobSource(blob, useByteStrings) {
   this.blob = blob;
   this.useByteStrings = !!useByteStrings;
+  this.frs = new FileReaderSync;
 }
 BlobSource.prototype = {
   get: function(offset, length) {
     if (!isFinite(length)) {
       length = this.blob.size - offset;
     }
+    var blob = this.blob.slice(offset, offset.length);
+    this.frs.loadAsArrayBuffer(blob);
+    return Promise.resolve(new Uint8Array(this.frs.result));
+    /*
     var gotBuffer = this.gotBuffer, useByteStrings = this.useByteStrings;
     if (!gotBuffer || offset > gotBuffer.start || (offset + length) > gotBuffer.end) {
       var readStart = offset;
@@ -76,6 +81,7 @@ BlobSource.prototype = {
       if (useByteStrings) return buffer.text.substr(offset - buffer.fileOffset, length);
       return new Uint8Array(buffer, offset - buffer.fileOffset, length);
     });
+    */
   },
   stream: function(offset, length, callback) {
     // TODO: chunk if length is huge?
