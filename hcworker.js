@@ -3083,7 +3083,7 @@ function hfs(disk, mdb, item) {
             if (dataFork.lgicalEOF > dataForkExtents.reduce(function(total,e){ return total + e.length; }, 0)) {
               throw new Error('insufficient extents');
             }
-            if (record.fileInfo.type in handlers) {
+            if (record.fileInfo.type in handlers && !(record.fileInfo.type === 'TEXT' && /\.(?:pdf)$/i.test(record.name))) {
               var handler = handlers[record.fileInfo.type];
               fileDone.push(handler(item, path, disk, dataFork.logicalEOF, dataForkExtents));
             }
