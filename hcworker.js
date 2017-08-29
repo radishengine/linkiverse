@@ -2635,16 +2635,6 @@ var handlers = {
       });
     });
   },
-  'PDF ': function(item, path, disk, byteLength, extents) {
-    return disk.fromExtents(byteLength, extents).then(function(bytes) {
-      postMessage({
-        item: item,
-        headline: 'pdf',
-        path: path,
-        file: new Blob([bytes], {type:'application/pdf'}),
-      });
-    });
-  },
   STAK: function(item, path, disk, byteLength, extents) {
     function onChunk(chunk) {
       switch (chunk.type) {
