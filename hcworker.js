@@ -3095,7 +3095,7 @@ function hfs(disk, mdb, item) {
                   path: path,
                   file: new Blob([bytes]),
                 });
-              });
+              }));
             }
           }
           if (resourceFork.logicalEOF > 0) {
