@@ -3007,7 +3007,7 @@ function hfs(disk, mdb, item) {
     var dataForkOverflowExtents = {};
     var resourceForkOverflowExtents = {};
 
-    var overflowHeader = new BTreeNodeView(overflow.buffer, overflow.byteOffset, 512);
+    var overflowHeader = new BTreeNodeView(mdb, overflow.buffer, overflow.byteOffset, 512);
     if (overflowHeader.type !== 'header') {
       return Promise.reject('invalid overflow');
     }
@@ -3015,6 +3015,7 @@ function hfs(disk, mdb, item) {
     var overflowNodeNumber = overflowHeader.firstLeaf;
     while (overflowNodeNumber !== 0) {
       var overflowLeaf = new BTreeNodeView(
+        mdb,
         overflow.buffer,
         overflow.byteOffset + overflowNodeNumber * 512,
         512);
@@ -3031,7 +3032,7 @@ function hfs(disk, mdb, item) {
       overflowNodeNumber = overflowLeaf.nextNodeNumber;
     }
 
-    var catalogHeader = new BTreeNodeView(catalog.buffer, catalog.byteOffset, NODE_BYTES);
+    var catalogHeader = new BTreeNodeView(mdb, catalog.buffer, catalog.byteOffset, NODE_BYTES);
     if (catalogHeader.type !== 'header') {
       throw new Error('invalid catalog tree');
     }
@@ -3039,7 +3040,7 @@ function hfs(disk, mdb, item) {
     catalogHeader = catalogHeader.records[0];
     var leaf;
     for (var nodeNumber = catalogHeader.firstLeaf; nodeNumber !== 0; nodeNumber = leaf.nextNodeNumber) {
-      leaf = new BTreeNodeView(catalog.buffer, catalog.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
+      leaf = new BTreeNodeView(mdb, catalog.buffer, catalog.byteOffset + NODE_BYTES * nodeNumber, NODE_BYTES);
       if (leaf.type !== 'leaf') throw new Error('non-leaf node in the leaf chain');
       leaf.records.forEach(function(record) {
         if (!/^(folder|file)$/.test(record.leafType)) return;
