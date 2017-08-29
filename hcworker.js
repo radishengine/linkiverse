@@ -40,8 +40,14 @@ BlobSource.prototype = {
       length = this.blob.size - offset;
     }
     var blob = this.blob.slice(offset, offset.length);
-    this.frs.loadAsArrayBuffer(blob);
-    return Promise.resolve(new Uint8Array(this.frs.result));
+    if (this.useByteStrings) {
+      this.frs.readAsText(blob, 'iso-8859-1');
+      return Promise.resolve(this.frs.result);
+    }
+    else {
+      this.frs.readAsArrayBuffer(blob);
+      return Promise.resolve(new Uint8Array(this.frs.result));
+    }
     /*
     var gotBuffer = this.gotBuffer, useByteStrings = this.useByteStrings;
     if (!gotBuffer || offset > gotBuffer.start || (offset + length) > gotBuffer.end) {
