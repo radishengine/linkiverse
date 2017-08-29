@@ -39,7 +39,7 @@ BlobSource.prototype = {
     if (!isFinite(length)) {
       length = this.blob.size - offset;
     }
-    var blob = this.blob.slice(offset, offset.length);
+    var blob = this.blob.slice(offset, offset+length);
     if (this.useByteStrings) {
       this.frs.readAsText(blob, 'iso-8859-1');
       return Promise.resolve(this.frs.result);
