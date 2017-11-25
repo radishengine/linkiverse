@@ -41,7 +41,7 @@ define(function() {
   function utf8len(str) {
     var acc = 0;
     for (var i = 0; i < str.length; i++) {
-      var c = str.charCodeAt(i);
+      var c = str.codePointAt(i);
       if (c < 0x80) acc++;
       else if (c < 0x800) acc += 2;
       else if (c < 0x10000) acc += 3;
